@@ -25,7 +25,7 @@ namespace AssetManager.Desktop
         private async void BtnCreateBucket_Click(object sender, RoutedEventArgs e)
         {
             // Create a bucket
-            string bucketName = "assetBucket"; // Replace with a unique name
+            string bucketName = "assetbucket1"; 
             string bucketKey = await OssService.CreateBucket(bucketName);
 
             if (!string.IsNullOrEmpty(bucketKey))
@@ -41,8 +41,9 @@ namespace AssetManager.Desktop
         private async void BtnUploadFile_Click(object sender, RoutedEventArgs e)
         {
             // Upload file to the bucket
-            string bucketKey = "assetBucket"; // Replace with an actual bucket key
-            string filePath = @"C:\Users\tomgr\source\repos\AssetManager\Uploads\test.txt"; // Replace with the actual file path
+            string bucketName = "assetbucket7"; 
+            string bucketKey = await OssService.CreateBucket(bucketName);
+            string filePath = @"C:\Users\tomgr\source\repos\AssetManager\Uploads\test.txt"; 
 
             string objectId = await OssService.UploadFile(bucketKey, filePath);
 
