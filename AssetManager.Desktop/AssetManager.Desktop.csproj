@@ -8,4 +8,14 @@
         <UseWPF>true</UseWPF>
     </PropertyGroup>
 
+    <ItemGroup>
+      <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.3" />
+      <PackageReference Include="RestSharp" Version="112.1.1-alpha.0.4" />
+    </ItemGroup>
+    
+    <ItemGroup>
+        <ProjectReference Include="..\AssetManager.Core\AssetManager.Core.csproj" />
+        <ProjectReference Include="..\AssetManager.Infrastructure\AssetManager.Infrastructure.csproj" />
+    </ItemGroup>
+
 </Project>
