@@ -1,16 +1,4 @@
-﻿using System.Text;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using System.Windows;
-using System.Threading.Tasks;
-
+﻿using System.Windows;
 using AssetManager.Infrastructure.Services;
 
 namespace AssetManager.Desktop
@@ -41,20 +29,27 @@ namespace AssetManager.Desktop
         private async void BtnUploadFile_Click(object sender, RoutedEventArgs e)
         {
             // Upload file to the bucket
-            string bucketName = "assetbucket7"; 
-            string bucketKey = await OssService.CreateBucket(bucketName);
+            string bucketName = "assetbucket11"; 
             string filePath = @"C:\Users\tomgr\source\repos\AssetManager\Uploads\test.txt"; 
+            string fileName = System.IO.Path.GetFileName(filePath);
 
-            string objectId = await OssService.UploadFile(bucketKey, filePath);
+            string bucketKey = await OssService.CreateBucket(bucketName);
+            string token = await AuthService.GetAccessToken();
+            var ossService = new OssService(token);
 
-            if (!string.IsNullOrEmpty(objectId))
+            // Step 1: Get Signed URL
+            string signedUrl = await ossService.GetSignedUploadUrlAsync(bucketKey, fileName);
+    
+            if (string.IsNullOrEmpty(signedUrl))
             {
-                MessageBox.Show($"File uploaded successfully! Object ID: {objectId}");
+                MessageBox.Show("Failed to get signed URL.");
+                return;
             }
-            else
-            {
-                MessageBox.Show("Failed to upload file.");
-            }
+
+            // Step 2: Upload file using signed URL
+            bool success = await ossService.UploadFileToSignedUrlAsync(signedUrl, filePath);
+
+            MessageBox.Show(success ? "File uploaded successfully!" : "File upload failed.");
         }
     }
 }

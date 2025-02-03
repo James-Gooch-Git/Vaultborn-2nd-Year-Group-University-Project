@@ -1,11 +1,21 @@
+using System.Net.Http.Headers;
 using RestSharp;
 using Newtonsoft.Json;
-using System.Threading.Tasks;
+using System.Text.Json;
+
 
 namespace AssetManager.Infrastructure.Services
 {
-    public static class OssService
+    public class OssService
     {
+        private const string BaseUrl = "https://developer.api.autodesk.com";
+        private readonly string _accessToken;
+
+        public OssService(string accessToken)
+        {
+            _accessToken = accessToken;
+        }
+
         private const string OssBaseUrl = "https://developer.api.autodesk.com/oss/v2";
 
         // Create a new bucket
@@ -44,74 +54,69 @@ namespace AssetManager.Infrastructure.Services
             else
             {
                 // Handle error
-                Console.WriteLine($"Error: {response.StatusCode} - {response.Content}"); 
+                Console.WriteLine($"Error: {response.StatusCode} - {response.Content}");
                 return null;
             }
         }
 
         // Upload a file to the OSS bucket
-        public static async Task<string> UploadFile(string bucketKey, string filePath)
+        public async Task<string> GetSignedUploadUrlAsync(string bucketKey, string objectName)
         {
-            string token = await AuthService.GetAccessToken();
-            string fileName = System.IO.Path.GetFileName(filePath);
-
-            Console.WriteLine($"Requesting upload URL for file {filePath} in bucket {bucketKey}");
-
-            var client = new RestClient(OssBaseUrl);
-    
-            // **Step 1: Request an upload URL**
-            var request = new RestRequest($"/buckets/{bucketKey}/objects/{fileName}/signeds3upload", Method.Post);
-            request.AddHeader("Authorization", $"Bearer {token}");
-            request.AddHeader("Content-Type", "application/json");
-            
-            var requestBody = new
+            using (var client = new HttpClient())
             {
-                uploadKey = fileName, 
-                minutesExpiration = 10 // Set expiration time for pre-signed URL (max: 60)
-            };
-            request.AddJsonBody(requestBody);
-            
-            var preSignedResponse = await client.ExecuteAsync<PreSignedUrlResponse>(request);
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
 
-            if (!preSignedResponse.IsSuccessful || preSignedResponse.Data == null)
-            {
-                Console.WriteLine($"Error getting upload URL: {preSignedResponse.StatusCode} - {preSignedResponse.Content}");
-                return null;
+                string requestUrl = $"{OssBaseUrl}/buckets/{bucketKey}/objects/{objectName}/signeds3upload";
+
+                var response = await client.GetAsync(requestUrl);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var content = await response.Content.ReadAsStringAsync();
+                    var json = System.Text.Json.JsonSerializer.Deserialize<SignedUploadResponse>(content);
+
+                    Console.WriteLine($"Upload URL: {json.Urls[0]}");
+                    return json.Urls[0]; // First signed URL for upload
+                }
+                else
+                {
+                    Console.WriteLine(
+                        $"Error getting signed upload URL: {response.StatusCode} - {await response.Content.ReadAsStringAsync()}");
+                    return null;
+                }
             }
-
-            string uploadUrl = preSignedResponse.Data.uploadUrl;
-            Console.WriteLine($"Received upload URL: {uploadUrl}");
-
-            // **Step 2: Upload File to S3 using Pre-signed URL**
-            var fileBytes = await File.ReadAllBytesAsync(filePath);
-            var uploadClient = new RestClient();
-            var uploadRequest = new RestRequest(uploadUrl, Method.Put);
-    
-            uploadRequest.AddHeader("Content-Type", "application/octet-stream");
-            uploadRequest.AddParameter("application/octet-stream", fileBytes, ParameterType.RequestBody);
-
-            var uploadResponse = await uploadClient.ExecuteAsync(uploadRequest);
-
-            if (uploadResponse.IsSuccessful)
-            {
-                Console.WriteLine("File uploaded successfully!");
-                return preSignedResponse.Data.objectId;
-            }
-
-            Console.WriteLine($"Upload failed: {uploadResponse.StatusCode} - {uploadResponse.Content}");
-            return null;
         }
 
-        public class PreSignedUrlResponse
+        private class SignedUploadResponse
         {
-            public string uploadUrl { get; set; }
-            public string objectId { get; set; }
+            public string UploadKey { get; set; }
+            public string UploadExpiration { get; set; }
+            public string UrlExpiration { get; set; }
+            public string[] Urls { get; set; }
         }
 
-
-        private class FileUploadResponse
+        public async Task<bool> UploadFileToSignedUrlAsync(string signedUrl, string filePath)
         {
-            public string objectId { get; set; }
+            using (var client = new HttpClient())
+            {
+                var fileBytes = await System.IO.File.ReadAllBytesAsync(filePath);
+                var content = new ByteArrayContent(fileBytes);
+                content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+
+                var response = await client.PutAsync(signedUrl, content);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine("File uploaded successfully!");
+                    return true;
+                }
+                else
+                {
+                    Console.WriteLine(
+                        $"Upload failed: {response.StatusCode} - {await response.Content.ReadAsStringAsync()}");
+                    return false;
+                }
+            }
         }
     }
 }
