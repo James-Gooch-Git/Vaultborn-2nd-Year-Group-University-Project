@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.IO;
+using AssetManager.Infrastructure.Services;
 
 namespace ForgeViewerApp
 {
@@ -14,22 +15,14 @@ namespace ForgeViewerApp
         string ClientId = Environment.GetEnvironmentVariable("CLIENT_ID");
         string ClientSecret = Environment.GetEnvironmentVariable("CLIENT_SECRET");
         private readonly HttpClient _client = new HttpClient();
+        private readonly TokenService _tokenService;
 
-        public AutodeskApiService()
+        public AutodeskApiService(TokenService tokenService)
         {
+            _client = new HttpClient();
+            _tokenService = tokenService;
             Console.WriteLine("ID: " + ClientId);
             Console.WriteLine("Secret: " + ClientSecret);
-        }
-        /// <summary>
-        /// 1. Retrieves an access token from Autodesk
-        /// </summary>
-        ///
-        
-        public class TokenResponse
-        {
-            public string access_token { get; set; }
-            public string token_type { get; set; }
-            public int expires_in { get; set; }
         }
 
         public class SignedUrlResponse
@@ -38,27 +31,6 @@ namespace ForgeViewerApp
             public string uploadExpiration { get; set; }
             public string urlExpiration { get; set; }
             public List<string> urls { get; set; }
-        }
-
-        public async Task<string> GetAccessTokenAsync()
-        {
-            var tokenUrl = "https://developer.api.autodesk.com/authentication/v2/token";
-            var formData = new Dictionary<string, string>
-            {
-                { "client_id", ClientId },
-                { "client_secret", ClientSecret },
-                { "grant_type", "client_credentials" },
-                { "scope", "data:read data:write bucket:create bucket:read" }
-            };
-
-            using var content = new FormUrlEncodedContent(formData);
-            HttpResponseMessage response = await _client.PostAsync(tokenUrl, content);
-            response.EnsureSuccessStatusCode();
-
-            string jsonResponse = await response.Content.ReadAsStringAsync();
-            TokenResponse tokenResponse = JsonSerializer.Deserialize<TokenResponse>(jsonResponse);
-            Console.WriteLine("AccessToken: " + tokenResponse.access_token);
-            return tokenResponse.access_token;
         }
 
         /// <summary>
@@ -179,7 +151,7 @@ namespace ForgeViewerApp
         public async Task<string> UploadAndTranslateAsync(string bucketKey, string filePath)
         {
             string fileName = Path.GetFileName(filePath);
-            string accessToken = await GetAccessTokenAsync();
+            string accessToken = await _tokenService.GetAccessTokenAsync();
 
             // Step 1: Get Signed URL
             SignedUrlResponse signedUrlResponse = await GetSignedUrlForUploadAsync(bucketKey, fileName, accessToken);

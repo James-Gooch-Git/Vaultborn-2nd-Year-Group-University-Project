@@ -26,5 +26,6 @@ namespace AssetManager.Infrastructure.Services
         {
             public string access_token { get; set; }
         }
+        
     }
 }

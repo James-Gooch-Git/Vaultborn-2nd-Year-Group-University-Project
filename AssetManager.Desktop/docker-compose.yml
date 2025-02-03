@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  infrastructure:
+    build:
+      context: .
+      dockerfile: AssetManager.Desktop/Dockerfile
+    image: infrastructure-api
+    container_name: infrastructure-api
+#  api:
+#    build: .
+#    image: asset-mgr-api
+#    container_name: asset-mgr-api
+#    environment:
+#      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Username=postgres;Password=PGadm1n;Database=postgres
+    ports:
+      - "5000:5000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  postgres:
+    image: postgres:latest
+    container_name: postgres-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: PGadm1n
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U myuser"]
+      interval: 10s
+      retries: 5
+
+volumes:
+  postgres_data:
+
+networks:
+  app-network:

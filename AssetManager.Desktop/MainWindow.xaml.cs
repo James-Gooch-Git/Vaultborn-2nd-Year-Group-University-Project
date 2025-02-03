@@ -11,7 +11,8 @@ namespace AssetManager.Desktop
         public MainWindow()
         {
             InitializeComponent();
-            _autodeskService = new AutodeskApiService(); // Create an instance of the service
+            var tokenService = new TokenService();
+            _autodeskService = new AutodeskApiService(tokenService);
         }
 
         private async void BtnCreateBucket_Click(object sender, RoutedEventArgs e)

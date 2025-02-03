@@ -1,19 +1,27 @@
 using AssetManager.Infrastructure.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Npgsql;
 
 namespace AssetManager.Infrastructure.Data
 {
     public class DatabaseContext : DbContext
     {
+        private readonly IConfiguration _configuration;
+
         public DbSet<User> Users { get; set; }
         public DbSet<Model> Models { get; set; }
         public DbSet<ModelVersion> ModelVersions { get; set; }
         public DbSet<UploadQueue> UploadQueue { get; set; }
 
+        public DatabaseContext(IConfiguration configuration)
+        {
+            _configuration = configuration;
+        }
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseNpgsql("Host=localhost;Database=AssetManagerDB;Username=postgres;Password=");
+            var connectionString = _configuration.GetConnectionString("DefaultConnection");
+            optionsBuilder.UseNpgsql(connectionString);
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
