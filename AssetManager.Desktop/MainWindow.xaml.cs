@@ -1,23 +1,50 @@
-﻿using System.Text;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+﻿using System.Windows;
+using AssetManager.Infrastructure.Services;
+using ForgeViewerApp;
 
-namespace AssetManager.Desktop;
-
-/// <summary>
-/// Interaction logic for MainWindow.xaml
-/// </summary>
-public partial class MainWindow : Window
+namespace AssetManager.Desktop
 {
-    public MainWindow()
+    public partial class MainWindow : Window
     {
-        InitializeComponent();
+        private readonly AutodeskApiService _autodeskService;
+
+        public MainWindow()
+        {
+            InitializeComponent();
+            _autodeskService = new AutodeskApiService(); // Create an instance of the service
+        }
+
+        private async void BtnCreateBucket_Click(object sender, RoutedEventArgs e)
+        {
+            // Create a bucket
+            string bucketName = "assetbucket19"; 
+            string bucketKey = await OssService.CreateBucket(bucketName);
+
+            if (!string.IsNullOrEmpty(bucketKey))
+            {
+                MessageBox.Show($"Bucket created successfully! Bucket Key: {bucketKey}");
+            }
+            else
+            {
+                MessageBox.Show("Failed to create bucket.");
+            }
+        }
+
+        private async void BtnUploadFile_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string bucketName = "assetbucket19";
+                string filePath = @"C:\Users\tomgr\source\repos\AssetManager\Uploads\p3166.glb";
+
+                string bucketKey = await OssService.CreateBucket(bucketName);
+                string urn = await _autodeskService.UploadAndTranslateAsync(bucketKey, filePath);
+                MessageBox.Show($"Upload successful! Model URN: {urn}", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error: {ex.Message}", "Upload Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
     }
 }
