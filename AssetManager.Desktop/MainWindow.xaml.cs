@@ -13,7 +13,7 @@ namespace AssetManager.Desktop
         private async void BtnCreateBucket_Click(object sender, RoutedEventArgs e)
         {
             // Create a bucket
-            string bucketName = "assetbucket1"; 
+            string bucketName = "assetbucket15"; 
             string bucketKey = await OssService.CreateBucket(bucketName);
 
             if (!string.IsNullOrEmpty(bucketKey))
@@ -29,7 +29,7 @@ namespace AssetManager.Desktop
         private async void BtnUploadFile_Click(object sender, RoutedEventArgs e)
         {
             // Upload file to the bucket
-            string bucketName = "assetbucket11"; 
+            string bucketName = "assetbucket15"; 
             string filePath = @"C:\Users\tomgr\source\repos\AssetManager\Uploads\test.txt"; 
             string fileName = System.IO.Path.GetFileName(filePath);
 

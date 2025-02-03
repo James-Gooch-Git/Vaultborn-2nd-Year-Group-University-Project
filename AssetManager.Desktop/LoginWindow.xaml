@@ -1,0 +1,12 @@
+<Window x:Class="AssetManager.Desktop.LoginWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:local="clr-namespace:AssetManager.Desktop"
+        mc:Ignorable="d"
+        Title="LoginWindow" Height="450" Width="800">
+    <Grid>
+        <Button x:Name="LoginButton" Content="Click here to sign in with AutoDesk" Width="230" Height="50"></Button>
+    </Grid>
+</Window>
