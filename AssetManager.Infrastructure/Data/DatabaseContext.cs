@@ -30,6 +30,11 @@ namespace AssetManager.Infrastructure.Data
             modelBuilder.Entity<Model>().ToTable("models");
             modelBuilder.Entity<ModelVersion>().ToTable("model_versions");
             modelBuilder.Entity<UploadQueue>().ToTable("upload_queue");
+            
+            modelBuilder.Entity<User>().HasData(
+                new User { Id = 1, Username = "12345", Email = "tom.green@example.com" },
+                new User { Id = 2, Username = "67890", Email = "alice.brown@example.com" }
+            );
         }
     }
 }

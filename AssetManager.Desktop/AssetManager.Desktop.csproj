@@ -20,11 +20,5 @@
         <ProjectReference Include="..\AssetManager.Core\AssetManager.Core.csproj" />
         <ProjectReference Include="..\AssetManager.Infrastructure\AssetManager.Infrastructure.csproj" />
     </ItemGroup>
-    
-    <ItemGroup>
-        <None Update="appsettings.json">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </None>
-    </ItemGroup>
 
 </Project>

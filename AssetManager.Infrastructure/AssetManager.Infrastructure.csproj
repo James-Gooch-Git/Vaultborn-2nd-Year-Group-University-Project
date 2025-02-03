@@ -17,5 +17,11 @@
     <ItemGroup>
         <ProjectReference Include="..\AssetManager.Core\AssetManager.Core.csproj" />
     </ItemGroup>
+    
+    <ItemGroup>
+      <None Update="appsettings.json">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
 
 </Project>

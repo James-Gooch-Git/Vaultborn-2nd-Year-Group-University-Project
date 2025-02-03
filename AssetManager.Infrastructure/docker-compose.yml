@@ -4,15 +4,9 @@ services:
   infrastructure:
     build:
       context: .
-      dockerfile: AssetManager.Desktop/Dockerfile
-    image: infrastructure-api
-    container_name: infrastructure-api
-#  api:
-#    build: .
-#    image: asset-mgr-api
-#    container_name: asset-mgr-api
-#    environment:
-#      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Username=postgres;Password=PGadm1n;Database=postgres
+      dockerfile: Dockerfile
+    image: infrastructure
+    container_name: infrastructure
     ports:
       - "5000:5000"
     depends_on:
@@ -35,7 +29,7 @@ services:
     networks:
       - app-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U myuser"]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       retries: 5
 
@@ -44,3 +38,4 @@ volumes:
 
 networks:
   app-network:
+    driver: bridge
