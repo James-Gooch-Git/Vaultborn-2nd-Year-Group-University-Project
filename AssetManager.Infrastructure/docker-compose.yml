@@ -14,7 +14,20 @@ services:
         condition: service_healthy
     networks:
       - app-network
-
+        
+  wpf-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: wpf-app
+    container_name: wpf-container
+    networks:
+      - app-network
+    volumes:
+      - .:/app
+    environment:
+      DISPLAY: ":0"
+  
   postgres:
     image: postgres:latest
     container_name: postgres-db

@@ -38,7 +38,9 @@ namespace AssetManager.Desktop
                 string bucketName = "assetbucket19";
                 string filePath = @"C:\Users\tomgr\source\repos\AssetManager\Uploads\p3166.glb";
 
-                string bucketKey = await OssService.CreateBucket(bucketName);
+                //string bucketKey = await OssService.CreateBucket(bucketName);
+                string bucketKey = bucketName;
+                
                 string urn = await _autodeskService.UploadAndTranslateAsync(bucketKey, filePath);
                 MessageBox.Show($"Upload successful! Model URN: {urn}", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
             }
@@ -46,6 +48,12 @@ namespace AssetManager.Desktop
             {
                 MessageBox.Show($"Error: {ex.Message}", "Upload Failed", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+        
+        private void OpenDownloadWindow_Click(object sender, RoutedEventArgs e)
+        {
+            Download downloadWindow = new Download();
+            downloadWindow.Show();
         }
     }
 }

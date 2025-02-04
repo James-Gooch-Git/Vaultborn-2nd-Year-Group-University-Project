@@ -34,5 +34,7 @@ public partial class App : Application
     {
         base.OnStartup(e);
         // Here you can add code to configure and start your application
+        MainWindow mainWindow = new MainWindow();
+        mainWindow.Show();
     }
 }
