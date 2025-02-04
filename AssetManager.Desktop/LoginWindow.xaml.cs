@@ -13,8 +13,8 @@ public partial class LoginWindow : Window
 {
     //private string loginURL = "https://developer.api.autodesk.com/authentication/v2/authorize";
     private string tokenURL = "https://developer.api.autodesk.com/authentication/v2/token";
-    string clientID = "";
-    private string redirect = "";
+    string clientID = "ONI3GGJaqwHUKpXUmOJeYUfUMu5UUfNX11oqHSxuuLFr0ELv";
+    private string redirect = "myapp://callback";
     string grantType = "authorization_code";
     
     public LoginWindow()
