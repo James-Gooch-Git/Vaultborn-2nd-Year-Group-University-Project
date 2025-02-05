@@ -8,6 +8,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Core.Raw;
+using Autodesk.Authentication;
 
 namespace AssetManager.Desktop;
 
@@ -23,13 +24,7 @@ public partial class LoginWindow : Window
     public LoginWindow()
     {
         InitializeComponent();
-
-        /*if (Environment.GetCommandLineArgs().Length > 1 && Environment.GetCommandLineArgs()[1].StartsWith(redirect))
-        {
-            Uri uri = new Uri(Environment.GetCommandLineArgs()[1]);
-            string authCode = HttpUtility.ParseQueryString(uri.Query).Get("code");
-            GetAccessToken(authCode);
-        }*/
+        
     }
 
     private async void LoginButton_Click(object sender, RoutedEventArgs e)
@@ -71,6 +66,7 @@ public partial class LoginWindow : Window
             var tokenResponseContent = await tokenResponse.Content.ReadAsStringAsync();
             var tokenData = JsonConvert.DeserializeObject<TokenData>(tokenResponseContent);
             MessageBox.Show($"Access Token: {tokenData.AccessToken}");
+            GetUserData(tokenData.AccessToken);
         }
     }
 
@@ -93,7 +89,7 @@ public partial class LoginWindow : Window
             args.Cancel = true;
             Uri uri = new Uri(Environment.GetCommandLineArgs()[1]);
             string authCode = HttpUtility.ParseQueryString(uri.Query).Get("code");
-            
+
             if (!string.IsNullOrEmpty(authCode))
                 GetAccessToken(authCode);
         }
