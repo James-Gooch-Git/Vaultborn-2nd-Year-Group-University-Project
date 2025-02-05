@@ -65,8 +65,8 @@ public partial class LoginWindow : Window
             var tokenResponse = await client.PostAsync(tokenURL, tokenParameters);
             var tokenResponseContent = await tokenResponse.Content.ReadAsStringAsync();
             var tokenData = JsonConvert.DeserializeObject<TokenData>(tokenResponseContent);
-            MessageBox.Show($"Access Token: {tokenData.AccessToken}");
-            GetUserData(tokenData.AccessToken);
+            MessageBox.Show($"Access Token: {tokenData.access_token}");
+            GetUserData(tokenData.access_token);
         }
     }
 
@@ -83,11 +83,12 @@ public partial class LoginWindow : Window
 
     private async void Redirected(object sender, CoreWebView2NavigationStartingEventArgs args)
     {
-        string redirectedURL = args.Uri;
-        if (redirectedURL.StartsWith("https://localhost/auth/callback"))
+        //MessageBox.Show($"Redirect URL: {args.Uri}");
+        //string redirectedURL = args.Uri;
+        if (args.Uri.StartsWith("https://localhost/auth/callback"))
         {
             args.Cancel = true;
-            Uri uri = new Uri(Environment.GetCommandLineArgs()[1]);
+            Uri uri = new Uri(args.Uri);
             string authCode = HttpUtility.ParseQueryString(uri.Query).Get("code");
 
             if (!string.IsNullOrEmpty(authCode))
@@ -103,10 +104,10 @@ public partial class LoginWindow : Window
 
     public class TokenData
     {
-        public string AccessToken { get; set; }
-        public string TokenType { get; set; }
-        public string ExpiresIn { get; set; }
-        public string RefreshToken { get; set; }
+        public string access_token { get; set; }
+        public string token_type { get; set; }
+        public string expires_in { get; set; }
+        public string refresh_token { get; set; }
         
     }
 

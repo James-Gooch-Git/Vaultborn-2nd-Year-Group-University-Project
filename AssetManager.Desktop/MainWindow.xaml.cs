@@ -51,5 +51,12 @@ namespace AssetManager.Desktop
 
             MessageBox.Show(success ? "File uploaded successfully!" : "File upload failed.");
         }
+
+        private async void BtnSwitchLogin_Click(object sender, RoutedEventArgs e)
+        {
+            LoginWindow loginWindow = new LoginWindow();
+            this.Hide();
+            loginWindow.Show();
+        }
     }
 }

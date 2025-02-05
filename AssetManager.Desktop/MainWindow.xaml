@@ -20,6 +20,12 @@
                     Content="Upload File" 
                     Width="200" Height="40" 
                     Click="BtnUploadFile_Click"/>
+            
+            <!-- Switch To Login Window Button -->
+            <Button x:Name="BtnSwitchToLogin"
+                    Content="Click Here to Login"
+                    Width="200" Height="40"
+                    Click="BtnSwitchLogin_Click" />
         </StackPanel>
     </Grid>
 </Window>

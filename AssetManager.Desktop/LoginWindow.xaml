@@ -8,7 +8,7 @@
         mc:Ignorable="d"
         Title="LoginWindow" Height="450" Width="800">
     <DockPanel>
-        <Button x:Name="LoginButton" Content="Click here to sign in with AutoDesk" Width="230" Height="50"></Button>
+        <Button x:Name="LoginButton" Content="Click here to sign in with AutoDesk" Width="230" Height="50" Click="LoginButton_Click"></Button>
         <wv2:WebView2 Name="webView" Source="about:blank" />
     </DockPanel>
 </Window>
