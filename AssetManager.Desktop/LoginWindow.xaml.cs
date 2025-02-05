@@ -6,6 +6,8 @@ using System.Windows;
 using Newtonsoft.Json;
 using System.Security.Cryptography;
 using System.Text;
+using Microsoft.Web.WebView2.Core;
+using Microsoft.Web.WebView2.Core.Raw;
 
 namespace AssetManager.Desktop;
 
@@ -14,19 +16,20 @@ public partial class LoginWindow : Window
     //private string loginURL = "https://developer.api.autodesk.com/authentication/v2/authorize";
     private string tokenURL = "https://developer.api.autodesk.com/authentication/v2/token";
     string clientID = "ONI3GGJaqwHUKpXUmOJeYUfUMu5UUfNX11oqHSxuuLFr0ELv";
-    private string redirect = "myapp://callback";
+    private string redirect = "https://localhost/auth/callback";
     string grantType = "authorization_code";
+    public string codeVerifier;
     
     public LoginWindow()
     {
         InitializeComponent();
 
-        if (Environment.GetCommandLineArgs().Length > 1 && Environment.GetCommandLineArgs()[1].StartsWith(redirect))
+        /*if (Environment.GetCommandLineArgs().Length > 1 && Environment.GetCommandLineArgs()[1].StartsWith(redirect))
         {
             Uri uri = new Uri(Environment.GetCommandLineArgs()[1]);
             string authCode = HttpUtility.ParseQueryString(uri.Query).Get("code");
             GetAccessToken(authCode);
-        }
+        }*/
     }
 
     private async void LoginButton_Click(object sender, RoutedEventArgs e)
@@ -35,9 +38,13 @@ public partial class LoginWindow : Window
         {
             string nonce = GenerateNonce();
             Pkce pkce = GeneratePkce();
+            codeVerifier = pkce.CodeVerifier;
             string loginURL = $"https://developer.api.autodesk.com/authentication/v2/authorize?response_type=code&client_id={clientID}&redirect_uri={redirect}&scope=data:read%20user-profile:read&nonce={nonce}&prompt=login&code_challenge={pkce.CodeChallenge}&code_challenge_method=S256";
 
-            Process.Start(new ProcessStartInfo{FileName = loginURL, UseShellExecute = true});
+            webView.CoreWebView2.NavigationStarting -= Redirected;
+            webView.CoreWebView2.NavigationStarting += Redirected;
+            
+            webView.CoreWebView2.Navigate(loginURL);
         }
         catch (Exception ex)
         {
@@ -54,7 +61,7 @@ public partial class LoginWindow : Window
             {
                 { "grant_type", grantType },
                 { "client_id", clientID },
-                { "code_verifier", "" },
+                { "code_verifier", codeVerifier },
                 { "code", authCode },
                 { "redirect_uri", redirect }
             };
@@ -75,6 +82,20 @@ public partial class LoginWindow : Window
             var userDataResponse = await client.GetAsync("https://api.userprofile.autodesk.com/userinfo");
             string userDataContent = await userDataResponse.Content.ReadAsStringAsync();
             MessageBox.Show($"User Data: {userDataContent}");
+        }
+    }
+
+    private async void Redirected(object sender, CoreWebView2NavigationStartingEventArgs args)
+    {
+        string redirectedURL = args.Uri;
+        if (redirectedURL.StartsWith("https://localhost/auth/callback"))
+        {
+            args.Cancel = true;
+            Uri uri = new Uri(Environment.GetCommandLineArgs()[1]);
+            string authCode = HttpUtility.ParseQueryString(uri.Query).Get("code");
+            
+            if (!string.IsNullOrEmpty(authCode))
+                GetAccessToken(authCode);
         }
     }
 
