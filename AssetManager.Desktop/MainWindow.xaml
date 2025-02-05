@@ -21,7 +21,7 @@
                     Width="200" Height="40" 
                     Click="BtnUploadFile_Click"/>
             
-            <Button Content="Download Model" Click="OpenDownloadWindow_Click" Width="150" Height="40"/>
+            <Button Content="Download Model" Click="DownloadModelButton_Click" Width="150" Height="40"/>
 
         </StackPanel>
     </Grid>

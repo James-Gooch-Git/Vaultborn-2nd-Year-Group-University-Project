@@ -11,9 +11,9 @@ namespace AssetManager.Desktop
     public partial class Download : Window
     {
         private readonly FileDownloadService _fileDownloadService = new();
-        private readonly TokenService token = new();
+        private readonly TokenService _token = new();
         
-        private const string ClientId = "YOUR_CLIENT_ID";
+        private string ClientId = Environment.GetEnvironmentVariable("CLIENT_ID");
         private const string RedirectUri = "http://localhost:5000/callback";
         private const string Scope = "data:read";
         private const string BucketName = "assetbucket19";
@@ -24,9 +24,12 @@ namespace AssetManager.Desktop
             InitializeComponent();
         }
 
-        private async void DownloadModelButton_Click(object sender, RoutedEventArgs e)
+        public async void DownloadModelButton_Click(object sender, RoutedEventArgs e)
         {
-            string defaultDownloadPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Downloads");
+            string rootFolder = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.Parent.FullName;
+            string defaultDownloadPath = Path.Combine(rootFolder, "Downloads");
+            Console.WriteLine("path: " + defaultDownloadPath);
+            Console.WriteLine("rootFolder: " + rootFolder);
             
             if (!Directory.Exists(defaultDownloadPath))
                 Directory.CreateDirectory(defaultDownloadPath);
@@ -40,7 +43,7 @@ namespace AssetManager.Desktop
 
             string localFilePath = Path.Combine(selectedFolderPath, "DownloadedModel.ext");
 
-            string accessToken = await token.GetAccessTokenAsync();
+            string accessToken = await _token.GetAccessTokenAsync();
             if (!string.IsNullOrEmpty(accessToken))
             {
                 await FileDownloadService.DownloadFileAsync(accessToken, BucketName, ItemId, localFilePath);

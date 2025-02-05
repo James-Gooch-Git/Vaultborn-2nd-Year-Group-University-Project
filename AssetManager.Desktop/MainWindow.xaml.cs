@@ -50,10 +50,12 @@ namespace AssetManager.Desktop
             }
         }
         
-        private void OpenDownloadWindow_Click(object sender, RoutedEventArgs e)
+        private void DownloadModelButton_Click(object sender, RoutedEventArgs e)
         {
             Download downloadWindow = new Download();
-            downloadWindow.Show();
+    
+            // Manually trigger the download function inside Download.xaml.cs
+            downloadWindow.DownloadModelButton_Click(sender, e);        
         }
     }
 }
