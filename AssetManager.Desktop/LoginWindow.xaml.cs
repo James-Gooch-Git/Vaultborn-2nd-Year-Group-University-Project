@@ -77,7 +77,8 @@ public partial class LoginWindow : Window
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
             var userDataResponse = await client.GetAsync("https://api.userprofile.autodesk.com/userinfo");
             string userDataContent = await userDataResponse.Content.ReadAsStringAsync();
-            MessageBox.Show($"User Data: {userDataContent}");
+            var userData = JsonConvert.DeserializeObject<UserData>(userDataContent);
+            MessageBox.Show($"Id: {userData.sub}, Name: {userData.name}, Email: {userData.email}"); 
         }
     }
 
@@ -108,7 +109,17 @@ public partial class LoginWindow : Window
         public string token_type { get; set; }
         public string expires_in { get; set; }
         public string refresh_token { get; set; }
-        
+    }
+
+    public class UserData
+    {
+        public string sub { get; set; } //user id
+        public string name { get; set; } //full name
+        public string given_name { get; set; } //first name
+        public string family_name { get; set; } //last name
+        public string preferred_username { get; set; } //username
+        public string email { get; set; } //email address
+        public string picture { get; set; } // profile pic
     }
 
     public string GenerateNonce()
