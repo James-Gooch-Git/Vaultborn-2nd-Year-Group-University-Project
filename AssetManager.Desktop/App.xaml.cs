@@ -3,7 +3,6 @@ using System.Data;
 using System.IO;
 using System.Windows;
 using AssetManager.Infrastructure.Data;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 
@@ -26,8 +25,7 @@ public partial class App : Application
     public void ConfigureServices(IServiceCollection services)
     {
         // Register the DbContext with the connection string from the configuration
-        services.AddDbContext<DatabaseContext>(options =>
-            options.UseNpgsql(Configuration.GetConnectionString("DefaultConnection")));
+
     }
 
     protected override void OnStartup(StartupEventArgs e)
