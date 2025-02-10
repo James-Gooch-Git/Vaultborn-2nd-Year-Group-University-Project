@@ -148,27 +148,27 @@ namespace ForgeViewerApp
         /// <summary>
         /// **Runs the entire process: Upload → Verify → Translate → View**
         /// </summary>
-        public async Task<string> UploadAndTranslateAsync(string bucketKey, string filePath)
-        {
-            string fileName = Path.GetFileName(filePath);
-            string accessToken = await _tokenService.GetAccessTokenAsync();
-
-            // Step 1: Get Signed URL
-            SignedUrlResponse signedUrlResponse = await GetSignedUrlForUploadAsync(bucketKey, fileName, accessToken);
-
-            // Step 2: Upload File
-            await UploadFileToSignedUrlAsync(signedUrlResponse.urls[0], filePath);
-
-            // Step 3: Verify Upload
-            string verifyResponse = await VerifyUploadAsync(bucketKey, fileName, signedUrlResponse.uploadKey, accessToken);
-            Console.WriteLine($"Upload Verified: {verifyResponse}");
-
-            // Step 4: Submit Translation Job
-            string objectId = $"urn:adsk.objects:os.object:{bucketKey}/{fileName}";
-            await SubmitTranslationJobAsync(objectId, accessToken);
-
-            // Step 5: Return URN for Viewer
-            return EncodeObjectIdToUrn(objectId);
-        }
+        // public async Task<string> UploadAndTranslateAsync(string bucketKey, string filePath)
+        // {
+        //     string fileName = Path.GetFileName(filePath);
+        //     string accessToken = await _tokenService.GetAccessTokenAsync();
+        //
+        //     // Step 1: Get Signed URL
+        //     SignedUrlResponse signedUrlResponse = await GetSignedUrlForUploadAsync(bucketKey, fileName, accessToken);
+        //
+        //     // Step 2: Upload File
+        //     await UploadFileToSignedUrlAsync(signedUrlResponse.urls[0], filePath);
+        //
+        //     // Step 3: Verify Upload
+        //     string verifyResponse = await VerifyUploadAsync(bucketKey, fileName, signedUrlResponse.uploadKey, accessToken);
+        //     Console.WriteLine($"Upload Verified: {verifyResponse}");
+        //
+        //     // Step 4: Submit Translation Job
+        //     string objectId = $"urn:adsk.objects:os.object:{bucketKey}/{fileName}";
+        //     await SubmitTranslationJobAsync(objectId, accessToken);
+        //
+        //     // Step 5: Return URN for Viewer
+        //     return EncodeObjectIdToUrn(objectId);
+        // }
     }
 }

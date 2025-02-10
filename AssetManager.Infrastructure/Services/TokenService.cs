@@ -1,44 +1,54 @@
-using System.Text.Json;
+using Newtonsoft.Json;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace AssetManager.Infrastructure.Services;
 
 public class TokenService
 {
     private readonly HttpClient _httpClient;
-    private readonly string _clientId;
-    private readonly string _clientSecret;
+    
+    private string _tokenUrl  = "https://developer.api.autodesk.com/authentication/v2/token";
+    string _clientId  = "ONI3GGJaqwHUKpXUmOJeYUfUMu5UUfNX11oqHSxuuLFr0ELv";
+    private string _redirectUri  = "https://localhost/auth/callback";
 
     public TokenService()
     {
         _httpClient = new HttpClient();
-        _clientId = Environment.GetEnvironmentVariable("CLIENT_ID");
-        _clientSecret = Environment.GetEnvironmentVariable("CLIENT_SECRET");
     }
-
-    public async Task<string> GetAccessTokenAsync()
+    
+    public async Task<string> GetAccessTokenAsync(string authCode, string codeVerifier)
     {
-        var tokenUrl = "https://developer.api.autodesk.com/authentication/v2/token";
-        var formData = new Dictionary<string, string>
+        using (HttpClient client = new HttpClient())
         {
-            { "client_id", _clientId },
-            { "client_secret", _clientSecret },
-            { "grant_type", "client_credentials" },
-            { "scope", "data:read data:write bucket:create bucket:read" }
-        };
+            var tokenContent = new Dictionary<string, string>
+            {
+                { "grant_type", "authorization_code" },
+                { "client_id", _clientId },
+                { "code_verifier", codeVerifier },
+                { "code", authCode },
+                { "redirect_uri", _redirectUri }
+            };
 
-        using var content = new FormUrlEncodedContent(formData);
-        HttpResponseMessage response = await _httpClient.PostAsync(tokenUrl, content);
-        response.EnsureSuccessStatusCode();
+            var tokenParameters = new FormUrlEncodedContent(tokenContent);
+            var tokenResponse = await client.PostAsync(_tokenUrl, tokenParameters);
+            var tokenResponseContent = await tokenResponse.Content.ReadAsStringAsync();
 
-        string jsonResponse = await response.Content.ReadAsStringAsync();
-        TokenResponse tokenResponse = JsonSerializer.Deserialize<TokenResponse>(jsonResponse);
-        Console.WriteLine("AccessToken: " + tokenResponse.access_token);
-        return tokenResponse.access_token;
+            var tokenData = JsonConvert.DeserializeObject<TokenData>(tokenResponseContent);
+                
+            if (!string.IsNullOrEmpty(tokenData?.access_token))
+            {
+                TokenManager.SetToken(tokenData.access_token);  // Store token
+                return tokenData.access_token;
+            }
+                
+            throw new Exception("Failed to retrieve access token.");
+        }
     }
-    public class TokenResponse
-    {
-        public string access_token { get; set; }
-        public string token_type { get; set; }
-        public int expires_in { get; set; }
-    }
+}
+
+public class TokenData
+{
+    public string access_token { get; set; }
+    public int expires_in { get; set; }
+    public string token_type { get; set; }
 }

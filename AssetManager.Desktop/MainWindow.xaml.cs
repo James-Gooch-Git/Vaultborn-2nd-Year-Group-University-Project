@@ -17,22 +17,6 @@ namespace AssetManager.Desktop
 
         }
 
-        private async void BtnCreateBucket_Click(object sender, RoutedEventArgs e)
-        {
-            // Create a bucket
-            string bucketName = "assetbucket15"; 
-            string bucketKey = await OssService.CreateBucket(bucketName);
-
-            if (!string.IsNullOrEmpty(bucketKey))
-            {
-                MessageBox.Show($"Bucket created successfully! Bucket Key: {bucketKey}");
-            }
-            else
-            {
-                MessageBox.Show("Failed to create bucket.");
-            }
-        }
-
         private async void BtnUploadFile_Click(object sender, RoutedEventArgs e)
         {
             Console.WriteLine("Button Clicked");
@@ -70,6 +54,7 @@ namespace AssetManager.Desktop
         private Task<string> GetAccessToken()
         {
             string token = LoginWindow.TokenManager.GetToken();
+            Console.WriteLine($"🔹 Access Token: {token}");
             return Task.FromResult(token);
         }
 

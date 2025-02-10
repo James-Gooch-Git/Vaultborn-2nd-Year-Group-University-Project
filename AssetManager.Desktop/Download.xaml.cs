@@ -43,7 +43,7 @@ namespace AssetManager.Desktop
 
             string localFilePath = Path.Combine(selectedFolderPath, "DownloadedModel.ext");
 
-            string accessToken = await _token.GetAccessTokenAsync();
+            string accessToken = TokenManager.GetToken();
             if (!string.IsNullOrEmpty(accessToken))
             {
                 await FileDownloadService.DownloadFileAsync(accessToken, BucketName, ItemId, localFilePath);

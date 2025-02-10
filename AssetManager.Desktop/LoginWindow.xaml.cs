@@ -6,6 +6,7 @@ using System.Windows;
 using Newtonsoft.Json;
 using System.Security.Cryptography;
 using System.Text;
+using AssetManager.Infrastructure.Services;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Core.Raw;
 using Autodesk.Authentication;
@@ -19,7 +20,8 @@ public partial class LoginWindow : Window
     string clientID = "ONI3GGJaqwHUKpXUmOJeYUfUMu5UUfNX11oqHSxuuLFr0ELv";
     private string redirect = "https://localhost/auth/callback";
     string grantType = "authorization_code";
-    public string codeVerifier;
+    public string _codeVerifier;
+    private readonly TokenService _tokenService = new TokenService();
     
     public LoginWindow()
     {
@@ -41,7 +43,7 @@ public partial class LoginWindow : Window
         {
             string nonce = GenerateNonce();
             Pkce pkce = GeneratePkce();
-            codeVerifier = pkce.CodeVerifier;
+            _codeVerifier = pkce.CodeVerifier;
             string loginURL = $"https://developer.api.autodesk.com/authentication/v2/authorize?response_type=code&client_id={clientID}&redirect_uri={redirect}&scope=data:read%20user-profile:read&nonce={nonce}&prompt=login&code_challenge={pkce.CodeChallenge}&code_challenge_method=S256";
 
             webView.CoreWebView2.NavigationStarting -= Redirected;
@@ -58,28 +60,15 @@ public partial class LoginWindow : Window
 
     private async void GetAccessToken(string authCode)
     {
-        using (HttpClient client = new HttpClient())
+        try
         {
-            var tokenContent = new Dictionary<string, string>
-            {
-                { "grant_type", grantType },
-                { "client_id", clientID },
-                { "code_verifier", codeVerifier },
-                { "code", authCode },
-                { "redirect_uri", redirect }
-            };
-            
-            var tokenParameters = new FormUrlEncodedContent(tokenContent);
-            var tokenResponse = await client.PostAsync(tokenURL, tokenParameters);
-            var tokenResponseContent = await tokenResponse.Content.ReadAsStringAsync();
-            var tokenData = JsonConvert.DeserializeObject<TokenData>(tokenResponseContent);
-            
-            TokenManager.SetToken(tokenData.access_token);      // Store globally
-
-            MessageBox.Show($"Access Token: {tokenData.access_token}");
-            GetUserData(tokenData.access_token);
-            
-            
+            string token = await _tokenService.GetAccessTokenAsync(authCode, _codeVerifier);
+            MessageBox.Show($"✅ Access Token: {token}");
+            GetUserData(token);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"❌ Error: {ex.Message}");
         }
     }
 
