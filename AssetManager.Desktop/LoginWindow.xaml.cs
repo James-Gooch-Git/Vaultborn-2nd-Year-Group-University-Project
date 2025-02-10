@@ -26,6 +26,14 @@ public partial class LoginWindow : Window
         InitializeComponent();
         
     }
+    
+    public class TokenManager
+    {
+        private static string _accessToken;
+        public static void SetToken(string token) => _accessToken = token;
+        public static string GetToken() => _accessToken;
+    }
+
 
     private async void LoginButton_Click(object sender, RoutedEventArgs e)
     {
@@ -65,8 +73,13 @@ public partial class LoginWindow : Window
             var tokenResponse = await client.PostAsync(tokenURL, tokenParameters);
             var tokenResponseContent = await tokenResponse.Content.ReadAsStringAsync();
             var tokenData = JsonConvert.DeserializeObject<TokenData>(tokenResponseContent);
+            
+            TokenManager.SetToken(tokenData.access_token);      // Store globally
+
             MessageBox.Show($"Access Token: {tokenData.access_token}");
             GetUserData(tokenData.access_token);
+            
+            
         }
     }
 

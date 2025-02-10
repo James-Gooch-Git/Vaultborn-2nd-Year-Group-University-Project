@@ -9,19 +9,13 @@
     <Grid>
         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
             
-            <!-- Create Bucket Button -->
-            <Button x:Name="BtnCreateBucket" 
-                    Content="Create Bucket" 
-                    Width="200" Height="40" 
-                    Click="BtnCreateBucket_Click"/>
-            
             <!-- Upload File Button -->
             <Button x:Name="BtnUploadFile" 
                     Content="Upload File" 
                     Width="200" Height="40" 
                     Click="BtnUploadFile_Click"/>
             
-            <Button Content="Download Model" Click="DownloadModelButton_Click" Width="150" Height="40"/>
+            <!-- <Button Content="Download Model" Click="DownloadModelButton_Click" Width="150" Height="40"/> -->
 
         </StackPanel>
     </Grid>

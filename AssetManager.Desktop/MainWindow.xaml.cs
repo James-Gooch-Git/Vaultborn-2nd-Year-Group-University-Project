@@ -1,13 +1,20 @@
 ﻿using System.Windows;
 using AssetManager.Infrastructure.Services;
+using Microsoft.Win32;
 
 namespace AssetManager.Desktop
 {
     public partial class MainWindow : Window
     {
+        private readonly ModelUpload _uploadService = new ModelUpload();
+        private string projectId = "YOUR_PROJECT_ID";
+        private string folderId = "YOUR_FOLDER_ID";
+
         public MainWindow()
         {
             InitializeComponent();
+            BtnUploadFile.Click += BtnUploadFile_Click;
+
         }
 
         private async void BtnCreateBucket_Click(object sender, RoutedEventArgs e)
@@ -28,28 +35,29 @@ namespace AssetManager.Desktop
 
         private async void BtnUploadFile_Click(object sender, RoutedEventArgs e)
         {
-            // Upload file to the bucket
-            string bucketName = "assetbucket15"; 
-            string filePath = @"C:\Users\tomgr\source\repos\AssetManager\Uploads\test.txt"; 
-            string fileName = System.IO.Path.GetFileName(filePath);
+            Console.WriteLine("Button Clicked");
 
-            string bucketKey = await OssService.CreateBucket(bucketName);
-            string token = await AuthService.GetAccessToken();
-            var ossService = new OssService(token);
-
-            // Step 1: Get Signed URL
-            string signedUrl = await ossService.GetSignedUploadUrlAsync(bucketKey, fileName);
-    
-            if (string.IsNullOrEmpty(signedUrl))
+            OpenFileDialog openFileDialog = new OpenFileDialog
             {
-                MessageBox.Show("Failed to get signed URL.");
-                return;
+                Title = "Select a Model File",
+                Filter = "All Files (*.*)|*.*"
+            };
+
+            if (openFileDialog.ShowDialog() == true)
+            {
+                string filePath = openFileDialog.FileName;
+                string accessToken = await GetAccessToken(); // 🔹 Get token
+
+                try
+                {
+                    string fileUrn = await _uploadService.UploadModel(filePath, projectId, folderId, accessToken);
+                    MessageBox.Show($"✅ Upload Successful!\nFile URN: {fileUrn}", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"❌ Upload Failed: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
-
-            // Step 2: Upload file using signed URL
-            bool success = await ossService.UploadFileToSignedUrlAsync(signedUrl, filePath);
-
-            MessageBox.Show(success ? "File uploaded successfully!" : "File upload failed.");
         }
 
         private async void BtnSwitchLogin_Click(object sender, RoutedEventArgs e)
@@ -58,5 +66,12 @@ namespace AssetManager.Desktop
             this.Hide();
             loginWindow.Show();
         }
+        
+        private Task<string> GetAccessToken()
+        {
+            string token = LoginWindow.TokenManager.GetToken();
+            return Task.FromResult(token);
+        }
+
     }
 }
