@@ -1,12 +1,14 @@
 ﻿using System.Windows;
 using AssetManager.Infrastructure.Services;
 using ForgeViewerApp;
+using Microsoft.Win32;
 
 namespace AssetManager.Desktop
 {
     public partial class MainWindow : Window
     {
         private readonly AutodeskApiService _autodeskService;
+        private readonly ModelUpload _uploadService = new ModelUpload();
 
         public MainWindow()
         {
@@ -33,20 +35,26 @@ namespace AssetManager.Desktop
 
         private async void BtnUploadFile_Click(object sender, RoutedEventArgs e)
         {
-            try
+            OpenFileDialog openFileDialog = new OpenFileDialog
             {
-                string bucketName = "assetbucket19";
-                string filePath = @"C:\Users\tomgr\source\repos\AssetManager\Uploads\p3166.glb";
+                Title = "Select a Model File",
+                Filter = "All Files (*.*)|*.*"
+            };
 
-                //string bucketKey = await OssService.CreateBucket(bucketName);
-                string bucketKey = bucketName;
-                
-                string urn = await _autodeskService.UploadAndTranslateAsync(bucketKey, filePath);
-                MessageBox.Show($"Upload successful! Model URN: {urn}", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            catch (Exception ex)
+            if (openFileDialog.ShowDialog() == true)
             {
-                MessageBox.Show($"Error: {ex.Message}", "Upload Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+                string filePath = openFileDialog.FileName;
+                string accessToken = await TokenService.GetAccessTokenAsync(); // 🔹 Get token
+
+                try
+                {
+                    string fileUrn = await _uploadService.UploadModel(filePath, projectId, folderId, accessToken);
+                    MessageBox.Show($"✅ Upload Successful!\nFile URN: {fileUrn}", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"❌ Upload Failed: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
         }
         
