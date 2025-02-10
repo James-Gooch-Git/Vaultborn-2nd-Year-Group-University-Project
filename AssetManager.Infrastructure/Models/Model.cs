@@ -1,13 +1,26 @@
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
+
 namespace AssetManager.Infrastructure.Models
 {
     public class Model
     {
-        public int Id { get; set; }
+        [BsonId]  // This tells MongoDB to use Id as the primary key
+        [BsonRepresentation(BsonType.ObjectId)]  // Converts string & int 
+        public string Id { get; set; } 
         public string Name { get; set; }
         public string Description { get; set; }
+        
         public string BucketKey { get; set; }
         public string FileUrn { get; set; }
-        public int CreatedBy { get; set; }
+        
+        public string HubId { get; set; } 
+        public string ProjectId { get; set; }  
+        public string FolderId { get; set; } 
+        public string ItemId { get; set; }  
+        public string VersionId { get; set; }
+        
+        public string CreatedBy { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.Now;
     }
 }
