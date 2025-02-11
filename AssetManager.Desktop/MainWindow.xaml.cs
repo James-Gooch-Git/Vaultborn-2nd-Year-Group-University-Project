@@ -7,14 +7,13 @@ namespace AssetManager.Desktop
     public partial class MainWindow : Window
     {
         private readonly ModelUpload _uploadService = new ModelUpload();
-        private string projectId = "YOUR_PROJECT_ID";
-        private string folderId = "YOUR_FOLDER_ID";
+        private string projectId = "PROJECT_ID";
+        private string folderId = "FOLDER_ID";
 
         public MainWindow()
         {
             InitializeComponent();
             BtnUploadFile.Click += BtnUploadFile_Click;
-
         }
 
         private async void BtnUploadFile_Click(object sender, RoutedEventArgs e)

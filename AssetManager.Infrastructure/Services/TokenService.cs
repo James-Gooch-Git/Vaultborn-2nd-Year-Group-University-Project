@@ -1,6 +1,4 @@
 using Newtonsoft.Json;
-using JsonSerializer = System.Text.Json.JsonSerializer;
-
 namespace AssetManager.Infrastructure.Services;
 
 public class TokenService

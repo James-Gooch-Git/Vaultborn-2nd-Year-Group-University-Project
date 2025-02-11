@@ -26,7 +26,6 @@ public partial class LoginWindow : Window
     public LoginWindow()
     {
         InitializeComponent();
-        
     }
     
     public class TokenManager
