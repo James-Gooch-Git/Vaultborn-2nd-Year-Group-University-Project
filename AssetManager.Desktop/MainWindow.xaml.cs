@@ -15,6 +15,10 @@ namespace AssetManager.Desktop
         {
             InitializeComponent();
             BtnUploadFile.Click += BtnUploadFile_Click;
+
+            //DATA TESTING
+            //DataManagement.GetPersonalHub();
+            DataManagement.GetProjectIdAsync(DataManagement.GetPersonalHub());
         }
 
         private async void BtnUploadFile_Click(object sender, RoutedEventArgs e)

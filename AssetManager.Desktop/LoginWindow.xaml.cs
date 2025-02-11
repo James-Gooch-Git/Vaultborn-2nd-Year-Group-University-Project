@@ -44,7 +44,7 @@ public partial class LoginWindow : Window
             string nonce = GenerateNonce();
             Pkce pkce = GeneratePkce();
             _codeVerifier = pkce.CodeVerifier;
-            string loginURL = $"https://developer.api.autodesk.com/authentication/v2/authorize?response_type=code&client_id={clientID}&redirect_uri={redirect}&scope=data:read%20user-profile:read&nonce={nonce}&prompt=login&code_challenge={pkce.CodeChallenge}&code_challenge_method=S256";
+            string loginURL = $"https://developer.api.autodesk.com/authentication/v2/authorize?response_type=code&client_id={clientID}&redirect_uri={redirect}&scope=data:read%20user-profile:read%20data:create&nonce={nonce}&prompt=login&code_challenge={pkce.CodeChallenge}&code_challenge_method=S256";
 
             webView.CoreWebView2.NavigationStarting -= Redirected;
             webView.CoreWebView2.NavigationStarting += Redirected;
