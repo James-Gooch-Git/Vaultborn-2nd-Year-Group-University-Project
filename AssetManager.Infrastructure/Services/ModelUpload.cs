@@ -3,6 +3,7 @@ using Autodesk.Forge.Model;
 using System.Net.Http;
 using System;
 using System.IO;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -70,7 +71,8 @@ public class ModelUpload
 
         using FileStream fileStream = new FileStream(filePath, FileMode.Open);
         using var content = new StreamContent(fileStream);
-        content.Headers.Add("Authorization", $"Bearer {accessToken}");
+        
+        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
         content.Headers.Add("Content-Type", "application/octet-stream");
 
         HttpResponseMessage response = await _httpClient.PutAsync(uploadUrl, content);
@@ -99,8 +101,9 @@ public class ModelUpload
 
         string json = JsonSerializer.Serialize(requestBody);
         HttpContent content = new StringContent(json, Encoding.UTF8, "application/json");
-        content.Headers.Add("Authorization", $"Bearer {accessToken}");
-
+        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        Console.WriteLine(_httpClient.DefaultRequestHeaders.Authorization);
+        
         HttpResponseMessage response = await _httpClient.PostAsync(url, content);
         response.EnsureSuccessStatusCode();
 
