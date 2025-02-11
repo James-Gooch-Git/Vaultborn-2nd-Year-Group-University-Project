@@ -59,5 +59,11 @@ namespace AssetManager.Desktop
             return Task.FromResult(token);
         }
 
+        private void BtnLogout_OnClick_Click(object sender, RoutedEventArgs e)
+        {
+            LoginWindow loginWindow = new LoginWindow(true);
+            loginWindow.Show();
+            this.Close();
+        }
     }
 }

@@ -37,6 +37,13 @@ public partial class LoginWindow : Window
             this.Close();
         }        
     }
+
+    public LoginWindow(bool logOut)
+    {
+        InitializeComponent();
+        if (logOut)
+            Environment.SetEnvironmentVariable("userId", "", EnvironmentVariableTarget.User);
+    }
     
     public class TokenManager
     {
