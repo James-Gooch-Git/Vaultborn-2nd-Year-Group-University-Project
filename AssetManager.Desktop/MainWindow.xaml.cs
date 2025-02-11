@@ -15,7 +15,7 @@ namespace AssetManager.Desktop
         {
             InitializeComponent();
             string userId = uId;
-            WelcomeMessage.Content += userId;
+            //WelcomeMessage.Content += userId;
         }
 
         private async void BtnUploadFile_Click(object sender, RoutedEventArgs e)
