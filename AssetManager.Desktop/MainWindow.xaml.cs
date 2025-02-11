@@ -11,10 +11,11 @@ namespace AssetManager.Desktop
         private string projectId = "PROJECT_ID";
         private string folderId = "FOLDER_ID";
 
-        public MainWindow(UserInfo userData = null)
+        public MainWindow(string uId)
         {
             InitializeComponent();
-            BtnUploadFile.Click += BtnUploadFile_Click;
+            string userId = uId;
+            WelcomeMessage.Content += userId;
         }
 
         private async void BtnUploadFile_Click(object sender, RoutedEventArgs e)

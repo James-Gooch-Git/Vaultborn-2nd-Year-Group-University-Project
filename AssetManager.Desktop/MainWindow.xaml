@@ -7,6 +7,7 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="100" Width="100">
     <Grid>
+        <Label x:Name="WelcomeMessage"></Label>
         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
             
             <!-- Upload File Button -->

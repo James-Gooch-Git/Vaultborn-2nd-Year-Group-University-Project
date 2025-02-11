@@ -23,10 +23,19 @@ public partial class LoginWindow : Window
     string grantType = "authorization_code";
     public string _codeVerifier;
     private readonly TokenService _tokenService = new TokenService();
+    private readonly string userSession;
     
     public LoginWindow()
     {
         InitializeComponent();
+        userSession = Environment.GetEnvironmentVariable("userId", EnvironmentVariableTarget.User);
+        MessageBox.Show($"Your user session is: {userSession}");
+        if (!string.IsNullOrEmpty(userSession))
+        {
+            MainWindow mainWindow = new MainWindow(userSession);
+            mainWindow.Show();
+            this.Close();
+        }        
     }
     
     public class TokenManager
@@ -77,7 +86,9 @@ public partial class LoginWindow : Window
         AuthenticationClient authClient = new AuthenticationClient();
         UserInfo userDataResponse = await authClient.GetUserInfoAsync(accessToken);
         MessageBox.Show($"Id: {userDataResponse.Sub}, Name: {userDataResponse.Name}, Email: {userDataResponse.Email}");
-        MainWindow mainWindow = new MainWindow(userDataResponse);
+        Environment.SetEnvironmentVariable("userId", userDataResponse.Sub, EnvironmentVariableTarget.User);
+        MessageBox.Show($"User Id: {Environment.GetEnvironmentVariable("userId", EnvironmentVariableTarget.User)}");
+        MainWindow mainWindow = new MainWindow(userDataResponse.Sub);
         mainWindow.Show();
         this.Close();
     }
