@@ -10,6 +10,7 @@ using AssetManager.Infrastructure.Services;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Core.Raw;
 using Autodesk.Authentication;
+using Autodesk.Authentication.Model;
 
 namespace AssetManager.Desktop;
 
@@ -73,14 +74,12 @@ public partial class LoginWindow : Window
 
     private async void GetUserData(string accessToken)
     {
-        using (HttpClient client = new HttpClient())
-        {
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-            var userDataResponse = await client.GetAsync("https://api.userprofile.autodesk.com/userinfo");
-            string userDataContent = await userDataResponse.Content.ReadAsStringAsync();
-            var userData = JsonConvert.DeserializeObject<UserData>(userDataContent);
-            MessageBox.Show($"Id: {userData.sub}, Name: {userData.name}, Email: {userData.email}"); 
-        }
+        AuthenticationClient authClient = new AuthenticationClient();
+        UserInfo userDataResponse = await authClient.GetUserInfoAsync(accessToken);
+        MessageBox.Show($"Id: {userDataResponse.Sub}, Name: {userDataResponse.Name}, Email: {userDataResponse.Email}");
+        MainWindow mainWindow = new MainWindow(userDataResponse);
+        mainWindow.Show();
+        this.Close();
     }
 
     private async void Redirected(object sender, CoreWebView2NavigationStartingEventArgs args)

@@ -1,5 +1,6 @@
 ﻿using System.Windows;
 using AssetManager.Infrastructure.Services;
+using Autodesk.Authentication.Model;
 using Microsoft.Win32;
 
 namespace AssetManager.Desktop
@@ -10,7 +11,7 @@ namespace AssetManager.Desktop
         private string projectId = "PROJECT_ID";
         private string folderId = "FOLDER_ID";
 
-        public MainWindow()
+        public MainWindow(UserInfo userData)
         {
             InitializeComponent();
             BtnUploadFile.Click += BtnUploadFile_Click;
