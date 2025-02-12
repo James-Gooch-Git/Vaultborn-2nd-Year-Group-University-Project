@@ -2,6 +2,7 @@
 using AssetManager.Infrastructure.Services;
 using Autodesk.Authentication.Model;
 using Microsoft.Win32;
+using AssetManager.Core;
 
 namespace AssetManager.Desktop
 {
@@ -20,7 +21,9 @@ namespace AssetManager.Desktop
 
         private async void BtnUploadFile_Click(object sender, RoutedEventArgs e)
         {
-            Console.WriteLine("Button Clicked");
+            HelloWorld.RunHW();
+
+            Console.WriteLine("Upload Button Clicked");
 
             OpenFileDialog openFileDialog = new OpenFileDialog
             {
