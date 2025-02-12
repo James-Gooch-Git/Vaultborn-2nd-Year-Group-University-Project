@@ -11,6 +11,10 @@ using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Core.Raw;
 using Autodesk.Authentication;
 using Autodesk.Authentication.Model;
+using AssetManager.Infrastructure.Data;
+using AssetManager.Infrastructure.Models;
+using Microsoft.WindowsAPICodePack.Shell.PropertySystem;
+using MongoDB.Driver;
 
 namespace AssetManager.Desktop;
 
@@ -95,6 +99,9 @@ public partial class LoginWindow : Window
         MessageBox.Show($"Id: {userDataResponse.Sub}, Name: {userDataResponse.Name}, Email: {userDataResponse.Email}");
         Environment.SetEnvironmentVariable("userId", userDataResponse.Sub, EnvironmentVariableTarget.User);
         MessageBox.Show($"User Id: {Environment.GetEnvironmentVariable("userId", EnvironmentVariableTarget.User)}");
+        
+        InsertUserDataDB(userDataResponse);
+        
         MainWindow mainWindow = new MainWindow(userDataResponse.Sub);
         mainWindow.Show();
         this.Close();
@@ -113,6 +120,19 @@ public partial class LoginWindow : Window
             if (!string.IsNullOrEmpty(authCode))
                 GetAccessToken(authCode);
         }
+    }
+
+    private async void InsertUserDataDB(UserInfo userInfo)
+    {
+        MongoConnection database = new MongoConnection();
+        
+        /*var findUser = database.Users.Find(x => x.Id == userInfo.Sub).FirstOrDefault();
+
+        if (findUser == null)
+        {
+            User newUser = new User { Id = userInfo.Sub, Username = userInfo.PreferredUsername, Email = userInfo.Email };
+            await database.Users.InsertOneAsync(newUser);
+        }*/
     }
 
     public class Pkce
