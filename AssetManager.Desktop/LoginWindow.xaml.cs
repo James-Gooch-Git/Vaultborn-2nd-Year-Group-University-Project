@@ -37,13 +37,6 @@ public partial class LoginWindow : Window
             this.Close();
         }        
     }
-    
-    public class TokenManager
-    {
-        private static string _accessToken;
-        public static void SetToken(string token) => _accessToken = token;
-        public static string GetToken() => _accessToken;
-    }
 
 
     private async void LoginButton_Click(object sender, RoutedEventArgs e)
@@ -67,12 +60,13 @@ public partial class LoginWindow : Window
         }
     }
 
-    private async void GetAccessToken(string authCode)
+    public async void GetAccessToken(string authCode)
     {
         try
         {
             string token = await _tokenService.GetAccessTokenAsync(authCode, _codeVerifier);
             MessageBox.Show($"✅ Access Token: {token}");
+            TokenManager.SetToken(token);
             GetUserData(token);
         }
         catch (Exception ex)

@@ -9,8 +9,8 @@ namespace AssetManager.Desktop
     public partial class MainWindow : Window
     {
         private readonly ModelUpload _uploadService = new ModelUpload();
-        private string projectId = "PROJECT_ID";
-        private string folderId = "FOLDER_ID";
+        private string projectId = "Admin Project";
+        private string folderId = "Folder";
 
         public MainWindow(string uId)
         {
@@ -57,7 +57,7 @@ namespace AssetManager.Desktop
         
         private Task<string> GetAccessToken()
         {
-            string token = LoginWindow.TokenManager.GetToken();
+            string token = TokenManager.GetToken();
             Console.WriteLine($"🔹 Access Token: {token}");
             return Task.FromResult(token);
         }

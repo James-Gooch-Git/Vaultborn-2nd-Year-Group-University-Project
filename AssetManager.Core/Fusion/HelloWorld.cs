@@ -4,6 +4,7 @@ using System.IO;
 
 namespace AssetManager.Core;
 
+
 public class HelloWorld
 {
     public static void RunHW()
