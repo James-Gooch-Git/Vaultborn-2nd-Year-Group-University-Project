@@ -50,15 +50,16 @@ namespace AssetManager.Desktop
 
         private async void BtnSwitchLogin_Click(object sender, RoutedEventArgs e)
         {
-            LoginWindow loginWindow = new LoginWindow();
+            LoginWindow loginWindow = new LoginWindow(true);
             this.Hide();
             loginWindow.Show();
+            this.Close();
         }
         
         private Task<string> GetAccessToken()
         {
             string token = TokenManager.GetToken();
-            Console.WriteLine($"🔹 Access Token: {token}");
+            Console.WriteLine($"🔹 (mainwindow) Access Token: {token}");
             return Task.FromResult(token);
         }
 

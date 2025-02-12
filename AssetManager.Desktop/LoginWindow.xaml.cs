@@ -6,11 +6,12 @@ using System.Windows;
 using Newtonsoft.Json;
 using System.Security.Cryptography;
 using System.Text;
-using AssetManager.Infrastructure.Services;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Core.Raw;
 using Autodesk.Authentication;
 using Autodesk.Authentication.Model;
+using Microsoft.Web.WebView2.Wpf;
+using AssetManager.Infrastructure.Services;
 
 namespace AssetManager.Desktop;
 
@@ -20,11 +21,11 @@ public partial class LoginWindow : Window
     private string tokenURL = "https://developer.api.autodesk.com/authentication/v2/token";
     string clientID = "ONI3GGJaqwHUKpXUmOJeYUfUMu5UUfNX11oqHSxuuLFr0ELv";
     private string redirect = "https://localhost/auth/callback";
-    string grantType = "authorization_code";
-    public string _codeVerifier;
-    private readonly TokenService _tokenService = new TokenService();
-    private readonly string userSession;
+    private string grantType = "authorization_code";
     
+    private string codeVerifier;
+    private string userSession;
+
     public LoginWindow()
     {
         InitializeComponent();
@@ -35,9 +36,15 @@ public partial class LoginWindow : Window
             MainWindow mainWindow = new MainWindow(userSession);
             mainWindow.Show();
             this.Close();
-        }        
+        }
     }
-
+    
+    public LoginWindow(bool logOut)
+    {
+        InitializeComponent();
+        if (logOut)
+            Environment.SetEnvironmentVariable("userId", "", EnvironmentVariableTarget.User);
+    }
 
     private async void LoginButton_Click(object sender, RoutedEventArgs e)
     {
@@ -45,7 +52,7 @@ public partial class LoginWindow : Window
         {
             string nonce = GenerateNonce();
             Pkce pkce = GeneratePkce();
-            _codeVerifier = pkce.CodeVerifier;
+            codeVerifier = pkce.CodeVerifier;
             string loginURL = $"https://developer.api.autodesk.com/authentication/v2/authorize?response_type=code&client_id={clientID}&redirect_uri={redirect}&scope=data:read%20user-profile:read&nonce={nonce}&prompt=login&code_challenge={pkce.CodeChallenge}&code_challenge_method=S256";
 
             webView.CoreWebView2.NavigationStarting -= Redirected;
@@ -60,18 +67,27 @@ public partial class LoginWindow : Window
         }
     }
 
-    public async void GetAccessToken(string authCode)
+    public async Task<string> GetAccessToken(string authCode)
     {
-        try
+        using (HttpClient client = new HttpClient())
         {
-            string token = await _tokenService.GetAccessTokenAsync(authCode, _codeVerifier);
-            MessageBox.Show($"✅ Access Token: {token}");
-            TokenManager.SetToken(token);
-            GetUserData(token);
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show($"❌ Error: {ex.Message}");
+            var tokenContent = new Dictionary<string, string>
+            {
+                { "grant_type", grantType },
+                { "client_id", clientID },
+                { "code_verifier", codeVerifier },
+                { "code", authCode },
+                { "redirect_uri", redirect }
+            };
+            
+            var tokenParameters = new FormUrlEncodedContent(tokenContent);
+            var tokenResponse = await client.PostAsync(tokenURL, tokenParameters);
+            var tokenResponseContent = await tokenResponse.Content.ReadAsStringAsync();
+            var tokenData = JsonConvert.DeserializeObject<TokenData>(tokenResponseContent);
+            MessageBox.Show($"Expires in: {tokenData.expires_in} seconds");
+            //GetUserData(tokenData.access_token);
+            TokenManager.SetToken(tokenData.access_token);
+            return tokenData.access_token;
         }
     }
 
@@ -85,6 +101,35 @@ public partial class LoginWindow : Window
         MainWindow mainWindow = new MainWindow(userDataResponse.Sub);
         mainWindow.Show();
         this.Close();
+        
+        using (HttpClient client = new HttpClient())
+        {
+            /*client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+            var userDataResponse = await client.GetAsync("https://api.userprofile.autodesk.com/userinfo");
+            string userDataContent = await userDataResponse.Content.ReadAsStringAsync();
+            var userData = JsonConvert.DeserializeObject<UserData>(userDataContent);
+            MessageBox.Show($"Id: {userData.sub}, Name: {userData.name}, Email: {userData.email}");*/
+        }
+    }
+
+    private async Task<TokenData> RefreshToken(string refreshToken)
+    {
+        using (HttpClient client = new HttpClient())
+        {
+            var tokenContent = new Dictionary<string, string>
+            {
+                { "grant_type", "refresh_token" },
+                { "refresh_token", refreshToken },
+                { "client_id", clientID },
+                { "scope", "data:read user-profile:read" },
+            };
+            
+            var tokenParameters = new FormUrlEncodedContent(tokenContent);
+            var tokenResponse = await client.PostAsync(tokenURL, tokenParameters);
+            var tokenResponseContent = await tokenResponse.Content.ReadAsStringAsync();
+            var tokenData = JsonConvert.DeserializeObject<TokenData>(tokenResponseContent);
+            return tokenData;
+        }
     }
 
     private async void Redirected(object sender, CoreWebView2NavigationStartingEventArgs args)
@@ -96,9 +141,14 @@ public partial class LoginWindow : Window
             args.Cancel = true;
             Uri uri = new Uri(args.Uri);
             string authCode = HttpUtility.ParseQueryString(uri.Query).Get("code");
+            webView.CoreWebView2.Navigate("about:blank");
 
             if (!string.IsNullOrEmpty(authCode))
-                GetAccessToken(authCode);
+            {
+                //GetAccessToken(authCode);
+                string accessToken = await GetAccessToken(authCode);
+                GetUserData(accessToken);
+            }
         }
     }
 
@@ -106,6 +156,14 @@ public partial class LoginWindow : Window
     {
         public string CodeVerifier { get; set; }
         public string CodeChallenge { get; set; }
+    }
+
+    public class TokenData
+    {
+        public string access_token { get; set; }
+        public string token_type { get; set; }
+        public string expires_in { get; set; }
+        public string refresh_token { get; set; }
     }
 
     public class UserData
