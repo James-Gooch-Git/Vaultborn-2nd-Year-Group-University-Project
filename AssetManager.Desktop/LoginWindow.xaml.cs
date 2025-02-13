@@ -13,6 +13,7 @@ using Autodesk.Authentication;
 using Autodesk.Authentication.Model;
 using AssetManager.Infrastructure.Data;
 using AssetManager.Infrastructure.Models;
+using AssetManager.Infrastructure.Services;
 using Microsoft.WindowsAPICodePack.Shell.PropertySystem;
 using MongoDB.Driver;
 
@@ -28,12 +29,15 @@ public partial class LoginWindow : Window
     public string _codeVerifier;
     private readonly TokenService _tokenService = new TokenService();
     private readonly string userSession;
+    private readonly string aToken;
     
     public LoginWindow()
     {
         InitializeComponent();
         userSession = Environment.GetEnvironmentVariable("userId", EnvironmentVariableTarget.User);
-        MessageBox.Show($"Your user session is: {userSession}");
+        aToken = Environment.GetEnvironmentVariable("accessToken", EnvironmentVariableTarget.User);
+        Infrastructure.Services.TokenManager.SetToken(aToken);
+        MessageBox.Show($"Your accessToken is: {aToken}");
         if (!string.IsNullOrEmpty(userSession))
         {
             MainWindow mainWindow = new MainWindow(userSession);
@@ -84,6 +88,8 @@ public partial class LoginWindow : Window
         {
             string token = await _tokenService.GetAccessTokenAsync(authCode, _codeVerifier);
             MessageBox.Show($"✅ Access Token: {token}");
+            Infrastructure.Services.TokenManager.SetToken(token);
+            Environment.SetEnvironmentVariable("accessToken", token, EnvironmentVariableTarget.User);
             GetUserData(token);
         }
         catch (Exception ex)
@@ -100,7 +106,7 @@ public partial class LoginWindow : Window
         Environment.SetEnvironmentVariable("userId", userDataResponse.Sub, EnvironmentVariableTarget.User);
         MessageBox.Show($"User Id: {Environment.GetEnvironmentVariable("userId", EnvironmentVariableTarget.User)}");
         
-        InsertUserDataDB(userDataResponse);
+        //InsertUserDataDB(userDataResponse);
         
         MainWindow mainWindow = new MainWindow(userDataResponse.Sub);
         mainWindow.Show();

@@ -15,6 +15,7 @@ namespace AssetManager.Desktop
         {
             InitializeComponent();
             string userId = uId;
+            MessageBox.Show($"Access Token: {Infrastructure.Services.TokenManager.GetToken()}");
             //WelcomeMessage.Content += userId;
         }
 
