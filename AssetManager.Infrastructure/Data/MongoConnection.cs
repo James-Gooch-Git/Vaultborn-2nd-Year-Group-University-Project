@@ -9,7 +9,8 @@ public class MongoConnection
 
     public MongoConnection()
     {
-        string connectionString = "mongodb+srv://tomgrout65@gmail.com:9#Td*A5vrAXsddV@your-cluster.mongodb.net/AssetManagementDB?retryWrites=true&w=majority";
+        //string connectionString = "mongodb+srv://tomgrout65@gmail.com:9#Td*A5vrAXsddV@asset-manager.mongodb.net/AssetManagementDB?retryWrites=true&w=majority";
+        string connectionString = "mongodb+srv://tomgrout65:9#Td*A5vrAXsddV@asset-manager.7m7m4.mongodb.net/?retryWrites=true&w=majority&appName=Asset-Manager";
         var client = new MongoClient(connectionString);
         _database = client.GetDatabase("AssetManagementDB");
     }
