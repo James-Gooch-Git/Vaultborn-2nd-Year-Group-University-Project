@@ -44,17 +44,32 @@ public partial class LoginWindow : Window
             string nonce = GenerateNonce();
             Pkce pkce = GeneratePkce();
             _codeVerifier = pkce.CodeVerifier;
-            string loginURL = $"https://developer.api.autodesk.com/authentication/v2/authorize?response_type=code&client_id={clientID}&redirect_uri={redirect}&scope=data:read%20user-profile:read%20data:create&nonce={nonce}&prompt=login&code_challenge={pkce.CodeChallenge}&code_challenge_method=S256";
+
+            string loginURL = $"https://developer.api.autodesk.com/authentication/v2/authorize"
+                              + $"?response_type=code"
+                              + $"&client_id={clientID}"
+                              + $"&redirect_uri={redirect}"
+                              + $"&scope=data:read%20data:write%20data:create%20bucket:read%20bucket:create%20bucket:update"
+                              + $"&nonce={nonce}"
+                              + $"&prompt=login"
+                              + $"&code_challenge={pkce.CodeChallenge}"
+                              + $"&code_challenge_method=S256";
+
+            if (webView.CoreWebView2 == null)
+            {
+                Console.WriteLine("❌ WebView is not initialized. Initializing...");
+                await webView.EnsureCoreWebView2Async(); // ✅ Ensure initialization
+            }
 
             webView.CoreWebView2.NavigationStarting -= Redirected;
             webView.CoreWebView2.NavigationStarting += Redirected;
-            
+
+            Console.WriteLine($"🔹 Navigating to: {loginURL}");
             webView.CoreWebView2.Navigate(loginURL);
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error Logging in: {ex.Message}");
-            throw;
+            Console.WriteLine($"❌ Error Logging in: {ex.Message}");
         }
     }
 
@@ -62,7 +77,9 @@ public partial class LoginWindow : Window
     {
         try
         {
-            string token = await _tokenService.GetAccessTokenAsync(authCode, _codeVerifier);
+            string clientId = clientID; // Use the client ID from the class variable
+
+            string token = await _tokenService.GetAccessTokenAsync(authCode, _codeVerifier, clientId);
             MessageBox.Show($"✅ Access Token: {token}");
             GetUserData(token);
         }
@@ -71,6 +88,8 @@ public partial class LoginWindow : Window
             MessageBox.Show($"❌ Error: {ex.Message}");
         }
     }
+
+    
 
     private async void GetUserData(string accessToken)
     {
@@ -107,9 +126,10 @@ public partial class LoginWindow : Window
     {
         public string access_token { get; set; }
         public string token_type { get; set; }
-        public string expires_in { get; set; }
+        public int expires_in { get; set; }  // ✅ Fix: Ensure this is an integer
         public string refresh_token { get; set; }
     }
+
 
     public class UserData
     {

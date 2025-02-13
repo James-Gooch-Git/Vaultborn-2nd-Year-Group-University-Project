@@ -11,64 +11,76 @@ namespace AssetManager.Infrastructure.Services
     {
         private static readonly HttpClient client = new HttpClient();
 
-public static async Task<string> GetPersonalHub()
-{
-    string url = "https://developer.api.autodesk.com/project/v1/hubs";
-    string _accessToken = TokenManager.GetToken(); 
-
-    if (string.IsNullOrEmpty(_accessToken))
+    public static async Task<string> GetPersonalHub()
     {
-        Console.WriteLine("Error: Access token is missing or invalid.");
-        return null;
-    }
+        string url = "https://developer.api.autodesk.com/project/v1/hubs";
+        string _accessToken = TokenManager.GetToken();
 
-    try
-    {
-        client.DefaultRequestHeaders.Clear();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
-
-        HttpResponseMessage response = await client.GetAsync(url);
-
-        if (response.IsSuccessStatusCode)
+        if (string.IsNullOrEmpty(_accessToken))
         {
+            Console.WriteLine("❌ Error: Access token is missing or invalid.");
+            return null;
+        }
+
+        try
+        {
+            client.DefaultRequestHeaders.Clear();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
+
+            HttpResponseMessage response = await client.GetAsync(url);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                Console.WriteLine($"❌ Error: {response.StatusCode} - {response.ReasonPhrase}");
+                return null;
+            }
+
             string jsonResponse = await response.Content.ReadAsStringAsync();
 
-            // Parse JSON response
             using JsonDocument doc = JsonDocument.Parse(jsonResponse);
             JsonElement root = doc.RootElement;
 
-            // Look for the personal hub
+            string selectedHubId = null;
+            string selectedHubType = null;
+
             foreach (JsonElement hub in root.GetProperty("data").EnumerateArray())
             {
                 string type = hub.GetProperty("attributes").GetProperty("extension").GetProperty("type").GetString();
+                string hubId = hub.GetProperty("id").GetString();
+                string hubName = hub.GetProperty("attributes").GetProperty("name").GetString();
 
-                // Debugging: Print the type of each hub
-                Console.WriteLine($"Found hub type: {type}");
+                Console.WriteLine($"🔍 Found hub type: {type}, ID: {hubId}, Name: {hubName}");
 
-                if (type == "hubs:autodesk.a360:PersonalHub") // Check for personal hub type
+                // Store the first available hub
+                if (selectedHubId == null)
                 {
-                    string hubId = hub.GetProperty("id").GetString();
-                    string hubName = hub.GetProperty("attributes").GetProperty("name").GetString();
+                    selectedHubId = hubId;
+                    selectedHubType = type;
+                }
 
-                    Console.WriteLine($"Personal Hub Found: ID = {hubId}, Name = {hubName}");
-                    return hubId;  // Return the Personal Hub ID as a string
+                // Prioritize Personal Hub if available
+                if (type == "hubs:autodesk.a360:PersonalHub")
+                {
+                    Console.WriteLine($"✅ Selected Personal Hub: {hubId}");
+                    return hubId;
                 }
             }
-            Console.WriteLine("No Personal Hub found.");
-            return null;  // No personal hub found, return null
+
+            if (selectedHubId != null)
+            {
+                Console.WriteLine($"✅ No Personal Hub found, using {selectedHubType} instead: {selectedHubId}");
+                return selectedHubId;
+            }
+
+            Console.WriteLine("❌ No hubs found.");
+            return null;
         }
-        else
+        catch (Exception ex)
         {
-            Console.WriteLine($"Error: {response.StatusCode} - {response.ReasonPhrase}");
-            return null;  // If the response is not successful, return null
+            Console.WriteLine($"❌ Exception occurred: {ex.Message}");
+            return null;
         }
     }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"Exception occurred: {ex.Message}");
-        return null;  // Return null if an exception occurs
-    }
-}
 
 
         private static readonly HttpClient _httpClient = new HttpClient();

@@ -1,49 +1,55 @@
 using ForgeViewerApp;
 using Newtonsoft.Json;
 namespace AssetManager.Infrastructure.Services;
-using AutodeskApiService;
 
 public class TokenService
 {
     private readonly HttpClient _httpClient;
-    
-    private string _tokenUrl  = "https://developer.api.autodesk.com/authentication/v2/token";
-    private string _clientId = ClientId;
-    private string _redirectUri  = "https://localhost/auth/callback";
+    private const string _tokenUrl = "https://developer.api.autodesk.com/authentication/v2/token";
+    private readonly string _redirectUri = "https://localhost/auth/callback";
 
     public TokenService()
     {
         _httpClient = new HttpClient();
     }
-    
-    public async Task<string> GetAccessTokenAsync(string authCode, string codeVerifier)
+
+    public async Task<string> GetAccessTokenAsync(string authCode, string codeVerifier, string clientId)
     {
+        if (string.IsNullOrEmpty(clientId))
+        {
+            throw new ArgumentException("Client ID cannot be null or empty.", nameof(clientId));
+        }
+
         using (HttpClient client = new HttpClient())
         {
             var tokenContent = new Dictionary<string, string>
             {
                 { "grant_type", "authorization_code" },
-                { "client_id", _clientId },
+                { "client_id", clientId },
                 { "code_verifier", codeVerifier },
                 { "code", authCode },
-                { "redirect_uri", _redirectUri }
+                { "redirect_uri", _redirectUri },
+                { "scope", "data:read data:write data:create bucket:read bucket:create bucket:update account:read" } // ✅ Include required scopes
             };
 
             var tokenParameters = new FormUrlEncodedContent(tokenContent);
             var tokenResponse = await client.PostAsync(_tokenUrl, tokenParameters);
             var tokenResponseContent = await tokenResponse.Content.ReadAsStringAsync();
 
+            Console.WriteLine($"🔹 Debug: Token API Response: {tokenResponseContent}"); // ✅ Print response for debugging
+
             var tokenData = JsonConvert.DeserializeObject<TokenData>(tokenResponseContent);
-                
+
             if (!string.IsNullOrEmpty(tokenData?.access_token))
             {
-                TokenManager.SetToken(tokenData.access_token);  // Store token
+                TokenManager.SetToken(tokenData.access_token);  // ✅ Store token
                 return tokenData.access_token;
             }
-                
+
             throw new Exception("Failed to retrieve access token.");
         }
     }
+
 }
 
 public class TokenData
