@@ -35,11 +35,12 @@ public partial class LoginWindow : Window
     {
         InitializeComponent();
         userSession = Environment.GetEnvironmentVariable("userId", EnvironmentVariableTarget.User);
-        aToken = Environment.GetEnvironmentVariable("accessToken", EnvironmentVariableTarget.User);
-        Infrastructure.Services.TokenManager.SetToken(aToken);
-        MessageBox.Show($"Your accessToken is: {aToken}");
+        
+        //MessageBox.Show($"Your accessToken is: {aToken}");
         if (!string.IsNullOrEmpty(userSession))
         {
+            aToken = Environment.GetEnvironmentVariable("accessToken", EnvironmentVariableTarget.User);
+            Infrastructure.Services.TokenManager.SetToken(aToken);
             MainWindow mainWindow = new MainWindow(userSession);
             mainWindow.Show();
             this.Close();
@@ -50,7 +51,10 @@ public partial class LoginWindow : Window
     {
         InitializeComponent();
         if (logOut)
+        {
             Environment.SetEnvironmentVariable("userId", "", EnvironmentVariableTarget.User);
+            Environment.SetEnvironmentVariable("accessToken", "", EnvironmentVariableTarget.User);
+        }
     }
     
     public class TokenManager
@@ -111,6 +115,26 @@ public partial class LoginWindow : Window
         MainWindow mainWindow = new MainWindow(userDataResponse.Sub);
         mainWindow.Show();
         this.Close();
+    }
+    
+    private async Task<TokenData> RefreshToken(string refreshToken)
+    {
+        using (HttpClient client = new HttpClient())
+        {
+            var tokenContent = new Dictionary<string, string>
+            {
+                { "grant_type", "refresh_token" },
+                { "refresh_token", refreshToken },
+                { "client_id", clientID },
+                { "scope", "data:read user-profile:read" },
+            };
+            
+            var tokenParameters = new FormUrlEncodedContent(tokenContent);
+            var tokenResponse = await client.PostAsync(tokenURL, tokenParameters);
+            var tokenResponseContent = await tokenResponse.Content.ReadAsStringAsync();
+            var tokenData = JsonConvert.DeserializeObject<TokenData>(tokenResponseContent);
+            return tokenData;
+        }
     }
 
     private async void Redirected(object sender, CoreWebView2NavigationStartingEventArgs args)

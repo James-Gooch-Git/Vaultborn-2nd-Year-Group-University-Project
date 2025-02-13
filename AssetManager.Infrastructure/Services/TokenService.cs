@@ -1,4 +1,5 @@
 using Newtonsoft.Json;
+using System;
 namespace AssetManager.Infrastructure.Services;
 
 public class TokenService
@@ -35,7 +36,8 @@ public class TokenService
                 
             if (!string.IsNullOrEmpty(tokenData?.access_token))
             {
-                TokenManager.SetToken(tokenData.access_token);  // Store token
+                TokenManager.SetToken(tokenData.access_token); // Store token
+                TokenManager.SetRefreshToken(tokenData.refresh_token);
                 return tokenData.access_token;
             }
                 
@@ -49,4 +51,5 @@ public class TokenData
     public string access_token { get; set; }
     public int expires_in { get; set; }
     public string token_type { get; set; }
+    public string refresh_token { get; set; }
 }
