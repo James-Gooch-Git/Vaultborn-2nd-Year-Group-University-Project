@@ -1,12 +1,14 @@
+using ForgeViewerApp;
 using Newtonsoft.Json;
 namespace AssetManager.Infrastructure.Services;
+using AutodeskApiService;
 
 public class TokenService
 {
     private readonly HttpClient _httpClient;
     
     private string _tokenUrl  = "https://developer.api.autodesk.com/authentication/v2/token";
-    string _clientId  = "ONI3GGJaqwHUKpXUmOJeYUfUMu5UUfNX11oqHSxuuLFr0ELv";
+    private string _clientId = ClientId;
     private string _redirectUri  = "https://localhost/auth/callback";
 
     public TokenService()

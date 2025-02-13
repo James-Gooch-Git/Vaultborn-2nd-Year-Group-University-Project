@@ -1,4 +1,6 @@
-﻿using System.Windows;
+﻿using System;
+using System.Threading.Tasks;
+using System.Windows;
 using AssetManager.Infrastructure.Services;
 using Autodesk.Authentication.Model;
 using Microsoft.Win32;
@@ -8,22 +10,41 @@ namespace AssetManager.Desktop
     public partial class MainWindow : Window
     {
         private readonly ModelUpload _uploadService = new ModelUpload();
-        private string projectId = "PROJECT_ID";
-        private string folderId = "FOLDER_ID";
+        private string _projectId = "PROJECT_ID";
+        private string _folderId = "FOLDER_ID";
+
 
         public MainWindow(UserInfo userData)
         {
             InitializeComponent();
             BtnUploadFile.Click += BtnUploadFile_Click;
-
-            //DATA TESTING
-            //DataManagement.GetPersonalHub();
-            DataManagement.GetProjectIdAsync(DataManagement.GetPersonalHub());
+            LoadProjectIdAsync();
         }
+
+        private async void LoadProjectIdAsync()
+        {
+            try
+            {
+                string hubId = await DataManagement.GetPersonalHub();  // ✅ Await it first
+                if (hubId == null)
+                {
+                    Console.WriteLine("❌ Failed to retrieve Hub ID.");
+                    return;
+                }
+
+                _projectId = await DataManagement.GetProjectIdAsync(hubId); // ✅ Now it's a string
+                Console.WriteLine($"📂 Loaded Project ID: {_projectId}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error: {ex.Message}");
+            }
+        }
+
 
         private async void BtnUploadFile_Click(object sender, RoutedEventArgs e)
         {
-            Console.WriteLine("Button Clicked");
+            Console.WriteLine("📤 Upload button clicked");
 
             OpenFileDialog openFileDialog = new OpenFileDialog
             {
@@ -34,11 +55,18 @@ namespace AssetManager.Desktop
             if (openFileDialog.ShowDialog() == true)
             {
                 string filePath = openFileDialog.FileName;
-                string accessToken = await GetAccessToken(); // 🔹 Get token
+                Console.WriteLine($"📂 File selected: {filePath}");
+
+                string accessToken = await GetAccessToken();
+                if (string.IsNullOrEmpty(accessToken))
+                {
+                    MessageBox.Show("❌ Access Token is missing!", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
 
                 try
                 {
-                    string fileUrn = await _uploadService.UploadModel(filePath, projectId, folderId, accessToken);
+                    string fileUrn = await _uploadService.UploadModel(filePath, _projectId, _folderId, accessToken);
                     MessageBox.Show($"✅ Upload Successful!\nFile URN: {fileUrn}", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
                 catch (Exception ex)
@@ -48,19 +76,9 @@ namespace AssetManager.Desktop
             }
         }
 
-        private async void BtnSwitchLogin_Click(object sender, RoutedEventArgs e)
+        private async Task<string> GetAccessToken()
         {
-            LoginWindow loginWindow = new LoginWindow();
-            this.Hide();
-            loginWindow.Show();
+            return await Task.Run(() => LoginWindow.TokenManager.GetToken());
         }
-        
-        private Task<string> GetAccessToken()
-        {
-            string token = LoginWindow.TokenManager.GetToken();
-            Console.WriteLine($"🔹 Access Token: {token}");
-            return Task.FromResult(token);
-        }
-
     }
 }
