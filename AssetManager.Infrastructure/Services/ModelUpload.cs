@@ -117,7 +117,7 @@ public class ModelUpload
             return null;
         }
     }
-    private async Task<string> CreateNewFolder(string projectId, string accessToken)
+    public async Task<string> CreateNewFolder(string projectId, string accessToken)
         {
             try
             {
@@ -144,7 +144,7 @@ public class ModelUpload
                             name = "MyModels",
                             extension = new
                             {
-                                type = "folders:autodesk.bim360:Folder",
+                                type = "folders:autodesk.core:Folder",
                                 version = "1.0"
                             }
                         },

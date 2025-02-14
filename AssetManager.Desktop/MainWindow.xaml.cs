@@ -92,28 +92,24 @@ namespace AssetManager.Desktop
                     TestProject = projectId;
                 }
             }
-            List<(string FolderId, string FolderName)> folders = await DataManagement.GetTopLevelFolders(hubID, TestProject);
+            var topFolder = await DataManagement.GetTopLevelFolder(hubID, TestProject);
             
             string TestFolder = null;
             
-            if (folders != null && folders.Count > 0)
+            Console.WriteLine("\n📂 Top-Level Folders:");
+
+            Console.WriteLine($"📁 Folder Name: {topFolder.FolderName}");
+            Console.WriteLine($"🔹 Folder ID: {topFolder.FolderId}\n");
+            if (topFolder.FolderId == "DefaultTestFolder")
             {
-                Console.WriteLine("\n📂 Top-Level Folders:");
-                foreach (var folder in folders)
-                {
-                    Console.WriteLine($"📁 Folder Name: {folder.FolderName}");
-                    Console.WriteLine($"🔹 Folder ID: {folder.FolderId}\n");
-                    if (folder.FolderId == "DefaultTestFolder")
-                    {
-                        TestFolder = folder.FolderId;
-                    }
-                }
+                TestFolder = topFolder.FolderId;
             }
+            
             else
             {
                 Console.WriteLine("⚠️ No folders found or request failed.");
             }
-            // Get the list of items with their IDs, Names, and Types
+            //Get the list of items with their IDs, Names, and Types
             // List<(string ItemId, string ItemName, string ItemType)> items = await DataManagement.GetFolderItems(TestProject, TestFolder);
             //
             // if (items == null || items.Count == 0)
@@ -130,6 +126,8 @@ namespace AssetManager.Desktop
             //     Console.WriteLine($"Item Type: {item.ItemType}");
             //     Console.WriteLine(new string('-', 40)); // Separator line for clarity
             // }
+            //await DataManagement.CreateProjectAsync(hubID, "TestTestTestProject", "Test Description");
+            await DataManagement.CreateNewFolder(TestProject, TokenManager.GetToken(), "Toms folder");
         }
 
         private async void InitializeAsync()
