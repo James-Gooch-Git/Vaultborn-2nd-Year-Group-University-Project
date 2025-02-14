@@ -71,7 +71,7 @@ public class ModelUpload
         return fileUrn;
     
     }
-    private async Task<string> GetOrCreateFolderAsync(string projectId, string accessToken)
+    /*private async Task<string> GetOrCreateFolderAsync(string projectId, string accessToken)
     {
         try
         {
@@ -116,8 +116,8 @@ public class ModelUpload
             Console.WriteLine($"❌ Exception while retrieving or creating folder: {ex.Message}");
             return null;
         }
-    }
-    private async Task<string> CreateNewFolder(string projectId, string accessToken)
+    }*/
+    /*private async Task<string> CreateNewFolder(string projectId, string accessToken)
         {
             try
             {
@@ -189,7 +189,8 @@ public class ModelUpload
                 Console.WriteLine($"❌ Exception while creating folder: {ex.Message}");
                 return null;
             }
-        }
+        }*/
+    /*
     private async Task<string> GetDefaultFolderIdAsync(string projectId, string accessToken)
     {
         try
@@ -267,7 +268,9 @@ public class ModelUpload
             return null;
         }
     }
+    */
 
+    /*
     public static async Task<string> CreateFolderAsync(string projectId, string folderName, string accessToken)
     {
         string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/folders";
@@ -315,6 +318,7 @@ public class ModelUpload
         Console.WriteLine($"✅ New Folder Created: {folderName} (ID: {folderId})");
         return folderId;
     }
+    */
 
 
 
