@@ -71,74 +71,80 @@ namespace AssetManager.Desktop
 
         private async void TestDataManagement()
         {
-            var result = await DataManagement.GetPersonalHubDetails(); // Ensure you await the async call
+            // Get personal hub details
+            var result = await DataManagement.GetPersonalHubDetails(); 
 
             string hubID = null;
 
             if (result == null)
             {
-                Console.WriteLine("No personal hub details found.");
+                Console.WriteLine("❌ No personal hub details found.");
+                return;
             }
-            else
-            {
-                // Deconstruct only if result is not null
-                (hubID, string HubName, string HubType) = result.Value;
-                Console.WriteLine($"Hub Id = {hubID}, Hub Name = {HubName}, Hub Type = {HubType}");
-            }
+            
+            // Deconstruct only if result is not null
+            (hubID, string hubName, string hubType) = result.Value;
+            Console.WriteLine($"🏠 Hub ID: {hubID}, Name: {hubName}, Type: {hubType}");
 
+            // Get all projects from the hub
             var projects = await DataManagement.GetAllProjectsFromHub(hubID);
 
-            string TestProject = null; //Default project
+            string testProject = null; // Default project
 
             foreach (var (projectId, projectName) in projects)
             {
                 Console.WriteLine($"📌 Project ID: {projectId}, Name: {projectName}");
+                
                 if (projectName == "Default Project")
                 {
-                    TestProject = projectId;
+                    testProject = projectId;
                 }
             }
 
-            List<(string FolderId, string FolderName)> folders =
-                await DataManagement.GetTopLevelFolders(hubID, TestProject);
-
-            string TestFolder = null;
-
-            if (folders != null && folders.Count > 0)
+            if (string.IsNullOrEmpty(testProject))
             {
-                Console.WriteLine("\n📂 Top-Level Folders:");
-                foreach (var folder in folders)
-                {
-                    Console.WriteLine($"📁 Folder Name: {folder.FolderName}");
-                    Console.WriteLine($"🔹 Folder ID: {folder.FolderId}\n");
-                    if (folder.FolderId == "DefaultTestFolder")
-                    {
-                        TestFolder = folder.FolderId;
-                    }
-                }
+                Console.WriteLine("❌ No default project found.");
+                return;
             }
-            else
+
+            // Get the top-level folder
+            var topFolder = await DataManagement.GetTopLevelFolder(hubID, testProject);
+            
+
+            string testFolder = null;
+
+            Console.WriteLine("\n📂 Top-Level Folder:");
+            Console.WriteLine($"📁 Name: {topFolder.FolderName}");
+            Console.WriteLine($"🔹 ID: {topFolder.FolderId}\n");
+
+            if (topFolder.FolderId == "DefaultTestFolder")
             {
-                Console.WriteLine("⚠️ No folders found or request failed.");
+                testFolder = topFolder.FolderId;
             }
-            // Get the list of items with their IDs, Names, and Types
-            // List<(string ItemId, string ItemName, string ItemType)> items = await DataManagement.GetFolderItems(TestProject, TestFolder);
-            //
-            // if (items == null || items.Count == 0)
-            // {
-            //     Console.WriteLine("❌ No items found or an error occurred.");
-            //     return;
-            // }
-            //
-            // // Iterate through the list and print each item's details
-            // foreach (var item in items)
-            // {
-            //     Console.WriteLine($"Item ID: {item.ItemId}");
-            //     Console.WriteLine($"Item Name: {item.ItemName}");
-            //     Console.WriteLine($"Item Type: {item.ItemType}");
-            //     Console.WriteLine(new string('-', 40)); // Separator line for clarity
-            // }
+
+            // Optional: Get folder items
+            /*
+            var items = await DataManagement.GetFolderItems(testProject, testFolder);
+
+            if (items == null || items.Count == 0)
+            {
+                Console.WriteLine("❌ No items found or an error occurred.");
+                return;
+            }
+
+            foreach (var item in items)
+            {
+                Console.WriteLine($"📄 Item ID: {item.ItemId}");
+                Console.WriteLine($"📄 Name: {item.ItemName}");
+                Console.WriteLine($"📄 Type: {item.ItemType}");
+                Console.WriteLine(new string('-', 40)); // Separator line for clarity
+            }
+            */
+
+            // Create a new folder
+            //await DataManagement.CreateNewFolder(testProject, TokenManager.GetToken(), "Toms Folder");
         }
+
 
         private async void InitializeAsync()
         {
