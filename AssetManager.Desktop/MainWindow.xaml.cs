@@ -50,14 +50,87 @@ namespace AssetManager.Desktop
                 Console.WriteLine($"✅ Debug: Retrieved Access Token: {_accessToken}");
             }
 
+            
+            //DILLAN TESTING
             // ✅ Attach Click Events
-            BtnUploadFile.Click += BtnUploadFile_Click;
-            BtnRefreshModels.Click += BtnRefreshModels_Click;
+            //BtnUploadFile.Click += BtnUploadFile_Click;
+            //BtnRefreshModels.Click += BtnRefreshModels_Click;
 
             // ✅ Start initialization asynchronously
-            InitializeAsync();
+            //InitializeAsync();
+
+            TestDataManagement();
+
         }
-    
+
+        private async void TestDataManagement()
+        {
+            var result = await DataManagement.GetPersonalHubDetails(); // Ensure you await the async call
+
+            string hubID = null;
+            
+            if (result == null)
+            {
+                Console.WriteLine("No personal hub details found.");
+            }
+            else
+            {
+                // Deconstruct only if result is not null
+                (hubID, string HubName, string HubType) = result.Value;
+                Console.WriteLine($"Hub Id = {hubID}, Hub Name = {HubName}, Hub Type = {HubType}");
+            }
+
+            var projects = await DataManagement.GetAllProjectsFromHub(hubID);
+
+            string TestProject = null; //Default project
+            
+            foreach (var (projectId, projectName) in projects)
+            {
+                Console.WriteLine($"📌 Project ID: {projectId}, Name: {projectName}");
+                if (projectName == "Default Project")
+                {
+                    TestProject = projectId;
+                }
+            }
+            List<(string FolderId, string FolderName)> folders = await DataManagement.GetTopLevelFolders(hubID, TestProject);
+            
+            string TestFolder = null;
+            
+            if (folders != null && folders.Count > 0)
+            {
+                Console.WriteLine("\n📂 Top-Level Folders:");
+                foreach (var folder in folders)
+                {
+                    Console.WriteLine($"📁 Folder Name: {folder.FolderName}");
+                    Console.WriteLine($"🔹 Folder ID: {folder.FolderId}\n");
+                    if (folder.FolderId == "DefaultTestFolder")
+                    {
+                        TestFolder = folder.FolderId;
+                    }
+                }
+            }
+            else
+            {
+                Console.WriteLine("⚠️ No folders found or request failed.");
+            }
+            // Get the list of items with their IDs, Names, and Types
+            // List<(string ItemId, string ItemName, string ItemType)> items = await DataManagement.GetFolderItems(TestProject, TestFolder);
+            //
+            // if (items == null || items.Count == 0)
+            // {
+            //     Console.WriteLine("❌ No items found or an error occurred.");
+            //     return;
+            // }
+            //
+            // // Iterate through the list and print each item's details
+            // foreach (var item in items)
+            // {
+            //     Console.WriteLine($"Item ID: {item.ItemId}");
+            //     Console.WriteLine($"Item Name: {item.ItemName}");
+            //     Console.WriteLine($"Item Type: {item.ItemType}");
+            //     Console.WriteLine(new string('-', 40)); // Separator line for clarity
+            // }
+        }
 
         private async void InitializeAsync()
         {
@@ -207,10 +280,7 @@ namespace AssetManager.Desktop
                 return null;
             }
         }
-
-
         
-         
 
        private async Task<string> CreateNewFolder(string projectId, string accessToken)
         {
@@ -377,6 +447,7 @@ namespace AssetManager.Desktop
             }
         }
         
+        //Seems to be pointless function??
         private async Task<string> LoadProjectIdAsync()
         {
             try
