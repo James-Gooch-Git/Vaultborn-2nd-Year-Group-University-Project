@@ -5,11 +5,14 @@ using AssetManager.Infrastructure.Services;
 using Autodesk.Authentication.Model;
 using Microsoft.Win32;
 using System.Collections.Generic;
+using System.Data;
 using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Windows.Controls;
+
 
 namespace AssetManager.Desktop
 {
@@ -17,7 +20,8 @@ namespace AssetManager.Desktop
     {
         private string _accessToken;
         private string _projectId;
-        private string _folderId;
+        private string _folderId = "urn:adsk.wipprod:fs.folder:co.KVsRYzFtQdi1b6j3eLcjhA";
+        private string _selectedProjectId;
         private readonly ModelUpload _uploadService;
 
         // ✅ Default Constructor
@@ -39,7 +43,7 @@ namespace AssetManager.Desktop
 
         private void Initialize()
         {
-          
+
 
             if (string.IsNullOrEmpty(_accessToken))
             {
@@ -50,7 +54,7 @@ namespace AssetManager.Desktop
                 Console.WriteLine($"✅ Debug: Retrieved Access Token: {_accessToken}");
             }
 
-            
+
             //DILLAN TESTING
             // ✅ Attach Click Events
             //BtnUploadFile.Click += BtnUploadFile_Click;
@@ -61,6 +65,8 @@ namespace AssetManager.Desktop
 
             TestDataManagement();
 
+            LoadProjectsAsync();
+
         }
 
         private async void TestDataManagement()
@@ -68,7 +74,7 @@ namespace AssetManager.Desktop
             var result = await DataManagement.GetPersonalHubDetails(); // Ensure you await the async call
 
             string hubID = null;
-            
+
             if (result == null)
             {
                 Console.WriteLine("No personal hub details found.");
@@ -83,7 +89,7 @@ namespace AssetManager.Desktop
             var projects = await DataManagement.GetAllProjectsFromHub(hubID);
 
             string TestProject = null; //Default project
-            
+
             foreach (var (projectId, projectName) in projects)
             {
                 Console.WriteLine($"📌 Project ID: {projectId}, Name: {projectName}");
@@ -92,10 +98,12 @@ namespace AssetManager.Desktop
                     TestProject = projectId;
                 }
             }
-            List<(string FolderId, string FolderName)> folders = await DataManagement.GetTopLevelFolders(hubID, TestProject);
-            
+
+            List<(string FolderId, string FolderName)> folders =
+                await DataManagement.GetTopLevelFolders(hubID, TestProject);
+
             string TestFolder = null;
-            
+
             if (folders != null && folders.Count > 0)
             {
                 Console.WriteLine("\n📂 Top-Level Folders:");
@@ -136,7 +144,7 @@ namespace AssetManager.Desktop
         {
             try
             {
-                _accessToken = TokenManager.GetToken(); // ✅ Get token first
+                _accessToken = TokenManager.GetToken();
                 if (string.IsNullOrEmpty(_accessToken))
                 {
                     Console.WriteLine("❌ Error: Access token is missing.");
@@ -145,30 +153,8 @@ namespace AssetManager.Desktop
 
                 Console.WriteLine($"✅ Debug: Retrieved Access Token: {_accessToken}");
 
-                _projectId = await LoadProjectIdAsync();
-                if (string.IsNullOrEmpty(_projectId))
-                {
-                    Console.WriteLine("❌ Error: Project ID is missing.");
-                    return;
-                }
-
-                _folderId = await LoadProjectAndFolderIds(); // ✅ Wait for folder retrieval
-
-                if (string.IsNullOrEmpty(_folderId))
-                {
-                    Console.WriteLine("⚠️ Folder not found, creating a new one...");
-                    _folderId = await CreateNewFolder(_projectId, _accessToken); // ✅ Create folder only if needed
-                }
-
-                if (string.IsNullOrEmpty(_folderId))
-                {
-                    Console.WriteLine("❌ Error: Failed to create or retrieve a folder.");
-                    return;
-                }
-
-                Console.WriteLine($"✅ Loaded Folder ID: {_folderId}");
-
-                await LoadModelListAsync(); // ✅ Load models only after folder is ready
+                // 🔹 Load all projects
+                await LoadProjectsAsync();
             }
             catch (Exception ex)
             {
@@ -176,231 +162,28 @@ namespace AssetManager.Desktop
             }
         }
 
+
         private void BtnRefreshModels_Click(object sender, RoutedEventArgs e)
         {
-            LoadModelListAsync();
+            ListModelsForProject(_selectedProjectId, _folderId);
             Console.WriteLine("🔄 Models refreshed.");
         }
-        
-        private async Task<string> GetOrCreateFolderAsync(string projectId, string accessToken)
-        {
-            try
-            {
-                Console.WriteLine($"🔹 Debug: Checking for existing folders in project {projectId}");
 
-                string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/folders";
-
-                using var client = new HttpClient();
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-
-                HttpResponseMessage response = await client.GetAsync(url);
-                string responseContent = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"🔹 Debug: Folder API Response: {responseContent}");
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    Console.WriteLine($"❌ Error: Failed to retrieve existing folders. Status Code: {response.StatusCode}");
-                    return null;
-                }
-
-                using JsonDocument doc = JsonDocument.Parse(responseContent);
-
-                // 🔹 Search for an existing folder called "MyModels"
-                foreach (JsonElement folder in doc.RootElement.GetProperty("data").EnumerateArray())
-                {
-                    string folderName = folder.GetProperty("attributes").GetProperty("name").GetString();
-                    string folderId = folder.GetProperty("id").GetString();
-
-                    if (folderName == "MyModels")
-                    {
-                        Console.WriteLine($"✅ Found existing folder: {folderName} (ID: {folderId})");
-                        return folderId; // ✅ Return the found folder ID
-                    }
-                }
-
-                // 🔹 If no "MyModels" folder was found, create a new one
-                Console.WriteLine("⚠️ No 'MyModels' folder found. Creating one...");
-                return await CreateNewFolder(projectId, accessToken);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"❌ Exception while retrieving or creating folder: {ex.Message}");
-                return null;
-            }
-        }
-
-        private async Task<string> LoadProjectAndFolderIds()
-        {
-            try
-            {
-                await Task.Delay(500); // ✅ Prevent race condition
-                string hubId = await DataManagement.GetPersonalHub();
-
-                if (string.IsNullOrEmpty(hubId))
-                {
-                    Console.WriteLine("❌ Failed to retrieve Hub ID.");
-                    return null;
-                }
-
-                _projectId = await DataManagement.GetProjectIdAsync(hubId);
-
-                // 🔹 Ensure the project ID starts with "b."
-                if (!_projectId.StartsWith("b."))
-                {
-                    Console.WriteLine($"⚠️ Warning: Project ID '{_projectId}' does not start with 'b.', correcting it...");
-                    _projectId = "b." + _projectId.Substring(2); // ✅ Replace "a." or "w." with "b."
-                }
-
-                Console.WriteLine($"✅ Loaded Project ID: {_projectId}");
-
-                if (!string.IsNullOrEmpty(_projectId))
-                {
-                    _folderId = await GetOrCreateFolderAsync(_projectId, _accessToken);
-
-                    if (!string.IsNullOrEmpty(_folderId))
-                    {
-                        Console.WriteLine($"✅ Loaded Folder ID: {_folderId}");
-                        return _folderId; // ✅ Return the folder ID
-                    }
-                    else
-                    {
-                        Console.WriteLine("❌ Error: Folder ID retrieval failed.");
-                        return null;
-                    }
-                }
-                else
-                {
-                    Console.WriteLine("❌ Error: Cannot retrieve Folder ID without a valid Project ID.");
-                    return null;
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"❌ Error: {ex.Message}");
-                return null;
-            }
-        }
-        
-
-       private async Task<string> CreateNewFolder(string projectId, string accessToken)
-        {
-            try
-            {
-                Console.WriteLine("🔹 Debug: Creating a new folder...");
-
-                string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/folders";
-
-                // Retrieve the default storage location or parent folder
-                string parentFolderId = await GetDefaultFolderIdAsync(projectId, accessToken);
-                if (string.IsNullOrEmpty(parentFolderId))
-                {
-                    Console.WriteLine("❌ Error: No valid parent folder found for folder creation.");
-                    return null;
-                }
-
-                var requestBody = new
-                {
-                    jsonapi = new { version = "1.0" },
-                    data = new
-                    {
-                        type = "folders",
-                        attributes = new
-                        {
-                            name = "MyModels",
-                            extension = new
-                            {
-                                type = "folders:autodesk.bim360:Folder",
-                                version = "1.0"
-                            }
-                        },
-                        relationships = new
-                        {
-                            parent = new
-                            {
-                                data = new
-                                {
-                                    type = "folders",
-                                    id = parentFolderId // ✅ Ensure a valid parent ID
-                                }
-                            }
-                        }
-                    }
-                };
-
-                string json = JsonSerializer.Serialize(requestBody);
-                using var client = new HttpClient();
-                using var request = new HttpRequestMessage(HttpMethod.Post, url)
-                {
-                    Content = new StringContent(json, Encoding.UTF8, "application/json")
-                };
-
-                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-
-                HttpResponseMessage response = await client.SendAsync(request);
-                string responseContent = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"🔹 Debug: Folder Creation Response: {responseContent}");
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    Console.WriteLine($"❌ Error: Failed to create folder. Status: {response.StatusCode}");
-                    return null;
-                }
-
-                using JsonDocument doc = JsonDocument.Parse(responseContent);
-                return doc.RootElement.GetProperty("data").GetProperty("id").GetString();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"❌ Exception while creating folder: {ex.Message}");
-                return null;
-            }
-        }
-
-        
-        private async Task<string> GetDefaultFolderIdAsync(string projectId, string accessToken)
-        {
-            try
-            {
-                Console.WriteLine($"🔹 Debug: Retrieving top-level folder ID for project {projectId}");
-
-                string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/topFolders";
-
-                using var client = new HttpClient();
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-
-                HttpResponseMessage response = await client.GetAsync(url);
-                string responseContent = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"🔹 Debug: Folder API Response: {responseContent}");
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    Console.WriteLine($"❌ Error: Failed to retrieve Folder ID. Status Code: {response.StatusCode}");
-                    return null;
-                }
-
-                using JsonDocument doc = JsonDocument.Parse(responseContent);
-                string folderId = doc.RootElement.GetProperty("data")[0].GetProperty("id").GetString();
-
-                Console.WriteLine($"✅ Debug: Retrieved Folder ID: {folderId}");
-                return folderId;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"❌ Exception while retrieving folder ID: {ex.Message}");
-                return null;
-            }
-        }
+      
 
 
 
+      
         private async void BtnUploadFile_Click(object sender, RoutedEventArgs e)
         {
+
             Console.WriteLine("📤 Upload button clicked");
 
             if (_uploadService == null || string.IsNullOrEmpty(_projectId) || string.IsNullOrEmpty(_folderId))
             {
                 Console.WriteLine("❌ Error: Required variables are missing.");
-                MessageBox.Show("❌ Error: Required variables are missing. Cannot upload.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("❌ Error: Required variables are missing. Cannot upload.", "Error", MessageBoxButton.OK,
+                    MessageBoxImage.Error);
                 return;
             }
 
@@ -418,89 +201,163 @@ namespace AssetManager.Desktop
                 try
                 {
                     string fileUrn = await _uploadService.UploadModel(filePath, _projectId, _folderId);
-                    MessageBox.Show($"✅ Upload Successful!\nFile URN: {fileUrn}", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show($"✅ Upload Successful!\nFile URN: {fileUrn}", "Success", MessageBoxButton.OK,
+                        MessageBoxImage.Information);
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"❌ Upload Failed: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"❌ Upload Failed: {ex.Message}", "Error", MessageBoxButton.OK,
+                        MessageBoxImage.Error);
                 }
-            }
-        }
-
-        private async Task LoadModelListAsync()
-        {
-            try
-            {
-                List<string> modelNames = await GetModelsFromProject(_projectId, _folderId, _accessToken);
-                if (modelNames == null || modelNames.Count == 0)
-                {
-                    Console.WriteLine("❌ No models found in this project.");
-                    return;
-                }
-
-                ModelDropdown.ItemsSource = modelNames;
-                Console.WriteLine("✅ Model list loaded.");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"❌ Error loading model list: {ex.Message}");
             }
         }
         
-        //Seems to be pointless function??
-        private async Task<string> LoadProjectIdAsync()
+        
+        //Its this one
+        private async Task ListModelsForProject(string projectId, string folderId)
         {
+            // Get models from the project folder
+            List<string> models = await GetModelsFromProject(projectId, folderId);
+
+            // Check if models were retrieved
+            if (models != null && models.Any())
+            {
+                // Clear the existing items in the ComboBox
+                Dispatcher.Invoke(() =>
+                {
+                    ModelDropdown.Items.Clear(); // Clear the ComboBox before adding new items
+
+                    // Populate ComboBox with model names
+                    foreach (var model in models)
+                    {
+                        ModelDropdown.Items.Add(model); // Add each model name to the ComboBox
+                    }
+                });
+            }
+            else
+            {
+                Console.WriteLine("❌ No models found in the folder.");
+            }
+        }
+
+
+
+
+
+
+
+
+        /*public class Project
+        {
+            public string Id { get; set; }
+            public string Name { get; set; }
+        }*/
+
+// Method to load projects from the hub and populate ComboBox
+        private async Task LoadProjectsAsync()
+        {
+            var results = await DataManagement.GetPersonalHubDetails();
+            var (hubId, hubName, hubType) = results.Value; // Replace this with the actual Hub ID
+            var projects = await DataManagement.GetAllProjectsFromHub(hubId);
+
+            if (projects != null && projects.Any())
+            {
+                // Clear existing items in the ComboBox
+                ProjectComboBox.Items.Clear();
+
+                // Populate ComboBox with project names, store project IDs in Tag
+                foreach (var (projectId, projectName) in projects)
+                {
+                    ComboBoxItem item = new ComboBoxItem
+                    {
+                        Content = projectName, // Display project name
+                        Tag = projectId // Store project ID in Tag property
+                    };
+                    ProjectComboBox.Items.Add(item); // Add item to ComboBox
+                }
+            }
+            else
+            {
+                Console.WriteLine("❌ No projects found or failed to load projects.");
+            }
+        }
+
+// Event handler when the user selects a project
+        private void ProjectComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+
+
+            // Ensure that the selection is not null or empty
+            if (ProjectComboBox.SelectedItem is ComboBoxItem selectedItem)
+            {
+                _selectedProjectId =
+                    selectedItem.Tag as string; // Store the selected project ID in the class-level variable
+
+                // Optionally, print the selected project ID
+                Console.WriteLine($"Selected Project ID: {_selectedProjectId}");
+                ListModelsForProject(_selectedProjectId, _folderId);
+
+            }
+        }
+
+
+
+
+        public static async Task<List<string>> GetModelsFromProject(string projectId, string folderId)
+        {
+            // Get the access token
+            string accessToken = TokenManager.GetToken();
+
+            if (string.IsNullOrEmpty(accessToken))
+            {
+                Console.WriteLine("❌ No valid access token.");
+                return null;
+            }
+
+            string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/folders/{folderId}/contents";
+
             try
             {
-                await Task.Delay(500); // ✅ Prevent race condition
-                string hubId = await DataManagement.GetPersonalHub();
-
-                if (string.IsNullOrEmpty(hubId))
+                using (HttpClient client = new HttpClient())
                 {
-                    Console.WriteLine("❌ Failed to retrieve Hub ID.");
-                    return null;
+                    // Set the Authorization header with the access token
+                    client.DefaultRequestHeaders.Clear();
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+                    // Make the GET request
+                    HttpResponseMessage response = await client.GetAsync(url);
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        Console.WriteLine($"❌ Error: {response.StatusCode} - {response.ReasonPhrase}");
+                        return null;
+                    }
+
+                    string jsonResponse = await response.Content.ReadAsStringAsync();
+                    using JsonDocument doc = JsonDocument.Parse(jsonResponse);
+                    JsonElement root = doc.RootElement;
+
+                    List<string> modelNames = new List<string>();
+
+                    foreach (JsonElement item in root.GetProperty("data").EnumerateArray())
+                    {
+                        // Check if the item is a file (model)
+                        if (item.GetProperty("type").GetString() == "items")
+                        {
+                            string modelName = item.GetProperty("attributes").GetProperty("displayName").GetString();
+                            modelNames.Add(modelName); // Add the model name to the list
+                        }
+                    }
+
+                    return modelNames;
                 }
-
-                string projectId = await DataManagement.GetProjectIdAsync(hubId);
-                Console.WriteLine($"📂 Loaded Project ID: {projectId}");
-
-                return projectId;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ Error retrieving project ID: {ex.Message}");
+                Console.WriteLine($"❌ Exception occurred: {ex.Message}");
                 return null;
             }
         }
 
-
-        private async Task<List<string>> GetModelsFromProject(string projectId, string folderId, string accessToken)
-        {
-            List<string> modelNames = new List<string>();
-            string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/folders/{folderId}/contents";
-
-            using var client = new HttpClient();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-
-            HttpResponseMessage response = await client.GetAsync(url);
-            if (!response.IsSuccessStatusCode)
-            {
-                Console.WriteLine($"❌ Error retrieving models: {response.StatusCode}");
-                return null;
-            }
-
-            string responseContent = await response.Content.ReadAsStringAsync();
-            using JsonDocument doc = JsonDocument.Parse(responseContent);
-            foreach (JsonElement item in doc.RootElement.GetProperty("data").EnumerateArray())
-            {
-                if (item.GetProperty("type").GetString() == "items")
-                {
-                    string modelName = item.GetProperty("attributes").GetProperty("displayName").GetString();
-                    modelNames.Add(modelName);
-                }
-            }
-
-            return modelNames;
-        }
     }
 }

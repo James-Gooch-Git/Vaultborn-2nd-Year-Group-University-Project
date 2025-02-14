@@ -4,7 +4,7 @@ using System.Text.Json;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using AssetManager.Infrastructure.Services;
-
+using Newtonsoft.Json;
 namespace AssetManager.Infrastructure.Services
 {
     public class DataManagement
@@ -82,6 +82,62 @@ namespace AssetManager.Infrastructure.Services
             }
         }
 
+        public static async Task<List<Project>> GetProjectsAsync(string hubId)
+        {
+            List<Project> projects = new List<Project>();
+
+            try
+            {
+                // ✅ Ensure Hub ID is valid
+                if (string.IsNullOrEmpty(hubId))
+                {
+                    Console.WriteLine("❌ Error: Hub ID is null or empty.");
+                    return projects;
+                }
+
+                string url = $"https://developer.api.autodesk.com/project/v1/hubs/{hubId}/projects";
+                using (HttpClient client = new HttpClient())
+                {
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TokenManager.GetToken());
+            
+                    HttpResponseMessage response = await client.GetAsync(url);
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        Console.WriteLine($"❌ API Error: {response.StatusCode} - {await response.Content.ReadAsStringAsync()}");
+                        return projects;
+                    }
+
+                    string responseData = await response.Content.ReadAsStringAsync();
+                    dynamic jsonResponse = JsonConvert.DeserializeObject(responseData);
+
+                    foreach (var item in jsonResponse.data)
+                    {
+                        projects.Add(new Project
+                        {
+                            Id = item.id,
+                            Name = item.attributes.name
+                        });
+                    }
+                }
+
+                Console.WriteLine($"✅ Retrieved {projects.Count} projects.");
+                return projects;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Exception in GetProjectsAsync: {ex.Message}");
+                return projects;
+            }
+        }
+        
+        
+
+
+        public class Project
+        {
+            public string Id { get; set; }
+            public string Name { get; set; }
+        }
 
         private static readonly HttpClient _httpClient = new HttpClient();
 
