@@ -5,9 +5,10 @@ using System;
 using System.IO;
 using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
+
 using System.Net.Http.Headers;
 using AssetManager.Infrastructure.Services;
+using Newtonsoft.Json;
 
 
 
@@ -25,7 +26,114 @@ public class ModelUpload
         
         _accessToken = accessToken; // ✅ Set the token when the class is instantiated
     }
-    public async Task<string> UploadModel(string filePath, string projectId, string folderId)
+    
+    public static async Task<string> GetUploadUrl(string projectId, string folderId)
+    {
+        string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/folders/{folderId}/contents";
+        string accessToken = TokenManager.GetToken();
+
+        if (string.IsNullOrEmpty(accessToken))
+        {
+            Console.WriteLine("❌ Error: Access token is missing or invalid.");
+            return null;
+        }
+
+        try
+        {
+            using (HttpClient client = new HttpClient())
+            {
+                client.DefaultRequestHeaders.Clear();
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+                // Make a POST request to create an upload session
+                var data = new
+                {
+                    data = new
+                    {
+                        type = "items",
+                        attributes = new
+                        {
+                            extension = new { type = "authcore:application/vnd.autodesk.fusion360+json" }, // File extension can vary
+                            displayName = "your_model_file.f3d" // Replace with the actual model file name
+                        }
+                    }
+                };
+
+                var jsonContent = JsonConvert.SerializeObject(data);
+                var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+
+                HttpResponseMessage response = await client.PostAsync(url, content);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine($"❌ Error: {response.StatusCode} - {response.ReasonPhrase}");
+                    return null;
+                }
+
+                // Get the response and parse the upload URL
+                string jsonResponse = await response.Content.ReadAsStringAsync();
+                var responseData = JsonConvert.DeserializeObject<dynamic>(jsonResponse);
+                string uploadUrl = responseData.links.upload.href;
+
+                return uploadUrl;  // This is the URL to which you'll send the file data
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Exception occurred: {ex.Message}");
+            return null;
+        }
+    }
+    
+    public async Task UploadModel(string projectId, string folderId, string filePath)
+    {
+        // Step 1: Get the Upload URL
+        string uploadUrl = await GetUploadUrl(projectId, folderId);
+        if (string.IsNullOrEmpty(uploadUrl))
+        {
+            Console.WriteLine("❌ Could not retrieve the upload URL.");
+            return;
+        }
+
+        // Step 2: Upload the file to Forge
+        await UploadFileToForge(filePath, uploadUrl);
+    }
+
+    
+    public static async Task UploadFileToForge(string filePath, string uploadUrl)
+    {
+        try
+        {
+            byte[] fileBytes = File.ReadAllBytes(filePath);  // Read the file as byte array
+
+            using (HttpClient client = new HttpClient())
+            {
+                client.DefaultRequestHeaders.Clear();
+
+                // Make the PUT request to upload the file
+                var content = new ByteArrayContent(fileBytes);
+                content.Headers.Add("Content-Type", "application/octet-stream");
+
+                HttpResponseMessage response = await client.PutAsync(uploadUrl, content);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine("✔️ File uploaded successfully.");
+                }
+                else
+                {
+                    Console.WriteLine($"❌ Error uploading file: {response.StatusCode} - {response.ReasonPhrase}");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Exception occurred during file upload: {ex.Message}");
+        }
+    }
+
+
+    /*public async Task<string> UploadModel(string filePath, string projectId, string folderId)
     {
         string fileName = Path.GetFileName(filePath);
         Console.WriteLine($"🔹 Debug: Upload started for {fileName}");
@@ -70,7 +178,7 @@ public class ModelUpload
         Console.WriteLine($"✅ Upload completed successfully. File URN: {fileUrn}");
         return fileUrn;
     
-    }
+    }*/
     /*private async Task<string> GetOrCreateFolderAsync(string projectId, string accessToken)
     {
         try
@@ -359,8 +467,10 @@ public class ModelUpload
                 }
             }
         };
+   
 
-        string json = JsonSerializer.Serialize(requestBody);
+    string json = JsonConvert.SerializeObject(requestBody);
+
         using var client = new HttpClient();
         using var request = new HttpRequestMessage(HttpMethod.Post, url)
         {
@@ -442,7 +552,7 @@ public class ModelUpload
             }
         };
 
-        string json = JsonSerializer.Serialize(requestBody);
+        string json = JsonConvert.SerializeObject(requestBody);
         using var request = new HttpRequestMessage(HttpMethod.Post, url)
         {
             Content = new StringContent(json, Encoding.UTF8, "application/json")
