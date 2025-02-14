@@ -91,7 +91,7 @@ public partial class LoginWindow : Window
         try
         {
             string token = await _tokenService.GetAccessTokenAsync(authCode, _codeVerifier);
-            //MessageBox.Show($"✅ Access Token: {token}");
+            MessageBox.Show($"✅ Access Token: {token}");
             Infrastructure.Services.TokenManager.SetToken(token);
             Environment.SetEnvironmentVariable("accessToken", token, EnvironmentVariableTarget.User);
             GetUserData(token);
@@ -107,14 +107,14 @@ public partial class LoginWindow : Window
         AuthenticationClient authClient = new AuthenticationClient();
         UserInfo userDataResponse = await authClient.GetUserInfoAsync(accessToken);
         MessageBox.Show($"Id: {userDataResponse.Sub}, Name: {userDataResponse.Name}, Email: {userDataResponse.Email}");
-        //Environment.SetEnvironmentVariable("userId", userDataResponse.Sub, EnvironmentVariableTarget.User);
+        Environment.SetEnvironmentVariable("userId", userDataResponse.Sub, EnvironmentVariableTarget.User);
         //MessageBox.Show($"User Id: {Environment.GetEnvironmentVariable("userId", EnvironmentVariableTarget.User)}");
         
         InsertUserDataDB(userDataResponse);
         
-        /*MainWindow mainWindow = new MainWindow(userDataResponse.Sub);
+        MainWindow mainWindow = new MainWindow(userDataResponse.Sub);
         mainWindow.Show();
-        this.Close();*/
+        this.Close();
     }
     
     private async Task<TokenData> RefreshToken(string refreshToken)
@@ -156,19 +156,13 @@ public partial class LoginWindow : Window
     {
         try
         {
-            MessageBox.Show("connecting db...");
             MongoConnection database = new MongoConnection();
-            MessageBox.Show("db connected");
-            MessageBox.Show("finding user...");
             var findUser = await database.Users.Find(x => x.Id == userInfo.Sub).FirstOrDefaultAsync();
-            MessageBox.Show("checked for user");
         
             if (findUser == null)
             {
-                MessageBox.Show("not in db, adding user...");
                 User newUser = new User { Id = userInfo.Sub, Username = userInfo.PreferredUsername, Email = userInfo.Email, ProfilePic = userInfo.Picture};
                 await database.Users.InsertOneAsync(newUser);
-                MessageBox.Show("data added to db");
             }
         }
         catch (Exception e)
