@@ -22,8 +22,14 @@
                     Width="200" Height="40" 
                     Click="BtnLogout_OnClick_Click"/>
             
+            <Button x:Name="BtnAddComment" 
+                    Content="Create Comment" 
+                    Width="200" Height="40"
+                    Click="BtnAddComment_Click"/>
+            
+            <Button x:Name="BtnViewComment" Content="View Comments" Width="200" Height="40" Click="BtnViewComment_Click"/>
+            
             <!-- <Button Content="Download Model" Click="DownloadModelButton_Click" Width="150" Height="40"/> -->
-
         </StackPanel>
     </Grid>
 </Window>

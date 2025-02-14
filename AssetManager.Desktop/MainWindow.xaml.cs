@@ -66,5 +66,15 @@ namespace AssetManager.Desktop
             loginWindow.Show();
             this.Close();
         }
+
+        private void BtnAddComment_Click(object sender, RoutedEventArgs e)
+        {
+            
+        }
+
+        private void BtnViewComment_Click(object sender, RoutedEventArgs e)
+        {
+            
+        }
     }
 }
