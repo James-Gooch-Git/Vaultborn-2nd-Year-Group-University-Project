@@ -15,7 +15,7 @@ namespace AssetManager.Infrastructure.Services
         private readonly HttpClient _httpClient;
         private const string API_BASE_URL = "https://developer.api.autodesk.com";
         private string _uploadKey;  // ✅ Store the correct upload key at the class level
-
+        private bool _uploadFinalized = false; 
 
         public ModelUpload(string accessToken)
         {
@@ -160,6 +160,8 @@ namespace AssetManager.Infrastructure.Services
             }
         }*/
         
+   
+
         public async Task<bool> UploadFileToForge(string filePath, string projectId, string storageUrn)
         {
             var (signedUrl, uploadKey) = await GetSignedS3UploadUrl(storageUrn);
@@ -181,9 +183,18 @@ namespace AssetManager.Infrastructure.Services
                 {
                     Console.WriteLine($"✔️ File uploaded successfully: {filePath}");
 
-                    // ✅ Ensure we use `_uploadKey` instead of objectKey
-                    bool finalized = await CompleteUpload(storageUrn, uploadKey);
-                    return finalized;
+                    // ✅ Ensure we only finalize once
+                    if (!_uploadFinalized)
+                    {
+                        _uploadFinalized = true;
+                        bool finalized = await CompleteUpload(storageUrn, _uploadKey);
+                        return finalized;
+                    }
+                    else
+                    {
+                        Console.WriteLine("⚠️ Upload finalization already completed. Skipping duplicate call.");
+                        return true;
+                    }
                 }
                 else
                 {
@@ -199,6 +210,7 @@ namespace AssetManager.Infrastructure.Services
                 return false;
             }
         }
+
 
 
 
@@ -239,7 +251,9 @@ namespace AssetManager.Infrastructure.Services
             Console.WriteLine($"✅ Upload finalized successfully: {responseBody}");
             return true;
         }*/
-        public async Task<bool> CompleteUpload(string storageUrn, string _uploadKey)
+        private HashSet<string> finalizedUploads = new HashSet<string>(); // ✅ Track completed uploads
+
+        public async Task<bool> CompleteUpload(string storageUrn, string uploadKey)
         {
             var (bucketKey, objectKey) = ExtractBucketAndObjectKey(storageUrn);
             if (string.IsNullOrEmpty(bucketKey) || string.IsNullOrEmpty(objectKey))
@@ -248,17 +262,23 @@ namespace AssetManager.Infrastructure.Services
                 return false;
             }
 
-            if (string.IsNullOrEmpty(_uploadKey))
+            if (string.IsNullOrEmpty(uploadKey))
             {
                 Console.WriteLine("❌ Upload Key is missing. Cannot finalize upload.");
                 return false;
             }
 
+            // ✅ Check if this file has already been finalized
+            if (finalizedUploads.Contains(objectKey))
+            {
+                Console.WriteLine($"⚠️ Skipping redundant finalization for {objectKey} (already finalized).");
+                return true;
+            }
+
             string url = $"{API_BASE_URL}/oss/v2/buckets/{bucketKey}/objects/{objectKey}/signeds3upload";
-
-            var payload = new { uploadKey = _uploadKey };
-
+            var payload = new { uploadKey = uploadKey };
             string jsonPayload = JsonConvert.SerializeObject(payload);
+            
             Console.WriteLine($"🚀 Sending Finalization Request - {jsonPayload}");
 
             using var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
@@ -279,8 +299,14 @@ namespace AssetManager.Infrastructure.Services
             }
 
             Console.WriteLine($"✅ Upload Finalized Successfully! File is now accessible.");
+
+            // ✅ Mark this object as finalized to prevent future redundant calls
+            finalizedUploads.Add(objectKey);
+
             return true;
         }
+
+
 
 
 
@@ -423,7 +449,7 @@ namespace AssetManager.Infrastructure.Services
                         displayName = fileName,
                         extension = new
                         {
-                            type = "items:autodesk.bim360:File",
+                            type = "items:autodesk.core:File",
                             version = "1.0"
                         }
                     },
@@ -444,7 +470,7 @@ namespace AssetManager.Infrastructure.Services
                             name = fileName,
                             extension = new
                             {
-                                type = "versions:autodesk.bim360:File",
+                                type = "versions:autodesk.core:File",
                                 version = "1.0"
                             }
                         },
@@ -456,7 +482,7 @@ namespace AssetManager.Infrastructure.Services
                 }
             };
 
-            string jsonPayload = JsonConvert.SerializeObject(payload);
+            string jsonPayload = JsonConvert.SerializeObject(payload, Formatting.Indented);
             Console.WriteLine($"📤 Request JSON: {jsonPayload}");
 
             using var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
@@ -486,61 +512,63 @@ namespace AssetManager.Infrastructure.Services
         /// Handles the full upload process (storage + file upload).
         /// </summary>
         public async Task<bool> UploadModel(string projectId, string folderId, string filePath)
-{
-    string fileName = Path.GetFileName(filePath);
-    Console.WriteLine($"📤 Uploading {fileName} to Autodesk Forge...");
+        {
+            string fileName = Path.GetFileName(filePath);
+            Console.WriteLine($"📤 Uploading {fileName} to Autodesk Forge...");
 
-    // ✅ Step 1: Create Storage Location
-    string storageUrn = await CreateStorageLocation(projectId, folderId, fileName);
-    if (string.IsNullOrEmpty(storageUrn))
-    {
-        Console.WriteLine("❌ Failed to create storage location.");
-        return false;
-    }
+            // ✅ Step 1: Create Storage Location
+            string storageUrn = await CreateStorageLocation(projectId, folderId, fileName);
+            if (string.IsNullOrEmpty(storageUrn))
+            {
+                Console.WriteLine("❌ Failed to create storage location.");
+                return false;
+            }
 
-    Console.WriteLine($"✅ Storage Location Created: {storageUrn}");
+            Console.WriteLine($"✅ Storage Location Created: {storageUrn}");
 
-    // ✅ Step 2: Upload File to Forge
-    bool uploadSuccess = await UploadFileToForge(filePath, projectId, storageUrn);
-    if (!uploadSuccess)
-    {
-        Console.WriteLine("❌ File upload failed.");
-        return false;
-    }
+            // ✅ Step 2: Upload File to Forge
+            bool uploadSuccess = await UploadFileToForge(filePath, projectId, storageUrn);
+            if (!uploadSuccess)
+            {
+                Console.WriteLine("❌ File upload failed.");
+                return false;
+            }
 
-    Console.WriteLine($"✅ File Uploaded Successfully: {filePath}");
+            Console.WriteLine($"✅ File Uploaded Successfully: {filePath}");
 
-    // ✅ Step 3: Extract Bucket & Object Key
-    var (bucketKey, objectKey) = ExtractBucketAndObjectKey(storageUrn);
-    if (string.IsNullOrEmpty(bucketKey) || string.IsNullOrEmpty(objectKey))
-    {
-        Console.WriteLine("❌ Failed to extract bucket & object key.");
-        return false;
-    }
+            // ✅ Step 3: Extract Bucket & Object Key
+            var (bucketKey, objectKey) = ExtractBucketAndObjectKey(storageUrn);
+            if (string.IsNullOrEmpty(bucketKey) || string.IsNullOrEmpty(objectKey))
+            {
+                Console.WriteLine("❌ Failed to extract bucket & object key.");
+                return false;
+            }
 
-    // ✅ Step 4: Finalize Upload using `batchcompleteupload`
-    Console.WriteLine("🔹 Finalizing Upload with Batch Complete...");
-    bool finalizeSuccess = await CompleteUpload(storageUrn, _uploadKey);
-    if (!finalizeSuccess)
-    {
-        Console.WriteLine("❌ Upload finalization failed.");
-        return false;
-    }
+            // ✅ Step 4: Finalize Upload using `CompleteUpload()`
+            Console.WriteLine("🔹 Finalizing Upload with Batch Complete...");
+            bool finalizeSuccess = await CompleteUpload(storageUrn, _uploadKey) ; 
+            if (!finalizeSuccess)
+            {
+                Console.WriteLine("❌ Upload finalization failed.");
+                return false;
+            }
 
-    Console.WriteLine($"✅ Upload Finalized Successfully!");
+            Console.WriteLine($"✅ Upload Finalized Successfully!");
 
-    // ✅ Step 5: Register File in Autodesk Forge
-    Console.WriteLine("🔹 Registering file in Autodesk Forge...");
-    bool itemCreated = await CreateItemAndVersion(projectId, folderId, fileName, storageUrn);
-    if (!itemCreated)
-    {
-        Console.WriteLine("❌ Failed to create Item & Version. File may not appear in Forge.");
-        return false;
-    }
+            // ✅ Step 5: Register File in Autodesk Forge (Create Item & Version)
+            Console.WriteLine("🔹 Registering file in Autodesk Forge...");
+            bool itemCreated = await CreateItemAndVersion(projectId, folderId, fileName, storageUrn);
+            if (!itemCreated)
+            {
+                Console.WriteLine("❌ Failed to create Item & Version. File may not appear in Forge.");
+                return false;
+            }
 
-    Console.WriteLine($"✅ Upload process completed, and file is visible in Forge.");
-    return true;
-}
+            Console.WriteLine($"✅ Upload process completed, and file is visible in Forge.");
+            return true;
+        }
+
+
 
     }
 
