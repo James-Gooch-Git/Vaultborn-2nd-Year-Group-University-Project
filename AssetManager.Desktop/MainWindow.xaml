@@ -47,7 +47,7 @@
                             <ColumnDefinition Width="70*" />
                             <ColumnDefinition Width="10*" />
                         </Grid.ColumnDefinitions>
-                        <Label Content="{Binding UserID}" />
+                        <Label Content="{Binding User}" />
                         <Label Grid.Column="1" Content="{Binding Content}" />
                         <Label Grid.Column="2" Content="{Binding CreatedDateTime}" />
                     </Grid>
