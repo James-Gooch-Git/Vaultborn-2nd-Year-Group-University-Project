@@ -11,12 +11,13 @@ using AssetManager.Infrastructure.Services;
 
 
 
-public class ModelUpload
+public class ModelUpload2
 {
     private readonly HttpClient _httpClient = new HttpClient();
     private readonly string _accessToken; // ✅ Store the token as a class property
+    
 
-    public ModelUpload(string accessToken)
+    public ModelUpload2(string accessToken)
     {
         if (string.IsNullOrEmpty(accessToken))
         {
@@ -25,7 +26,7 @@ public class ModelUpload
         
         _accessToken = accessToken; // ✅ Set the token when the class is instantiated
     }
-    public async Task<string> UploadModel(string filePath, string projectId, string folderId)
+    /*public async Task<string> UploadModel(string filePath, string projectId, string folderId)
     {
         string fileName = Path.GetFileName(filePath);
         Console.WriteLine($"🔹 Debug: Upload started for {fileName}");
@@ -70,7 +71,7 @@ public class ModelUpload
         Console.WriteLine($"✅ Upload completed successfully. File URN: {fileUrn}");
         return fileUrn;
     
-    }
+    }*/
     /*private async Task<string> GetOrCreateFolderAsync(string projectId, string accessToken)
     {
         try
@@ -327,7 +328,7 @@ public class ModelUpload
 
 
     // 🔹 Step 1: Create a Storage Location
-    private async Task<string> CreateStorageLocation(string projectId, string folderId, string fileName)
+    /*private async Task<string> CreateStorageLocation(string projectId, string folderId, string fileName)
     {
         string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/storage";
 
@@ -384,7 +385,7 @@ public class ModelUpload
 
         using JsonDocument doc = JsonDocument.Parse(responseContent);
         return doc.RootElement.GetProperty("data").GetProperty("id").GetString();
-    }
+    }*/
 
 
 

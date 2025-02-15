@@ -1,17 +1,21 @@
-﻿/*using System;
+﻿using System;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Data;
 using System.IO;
-using System.Text;*/
+using System.Text;
 using System.Windows;
 using AssetManager.Infrastructure.Services;
 using Autodesk.Authentication.Model;
 using Microsoft.Win32;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Text.Json;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System.Windows.Controls;
+using System.Text.Json;
+
+
 
 
 namespace AssetManager.Desktop
@@ -23,6 +27,7 @@ namespace AssetManager.Desktop
         private string _folderId = "urn:adsk.wipprod:fs.folder:co.KVsRYzFtQdi1b6j3eLcjhA";
         private string _selectedProjectId;
         private readonly ModelUpload _uploadService;
+        
 
         // ✅ Default Constructor
         public MainWindow()
@@ -36,10 +41,10 @@ namespace AssetManager.Desktop
         {
             InitializeComponent();
             _accessToken = TokenManager.GetToken();
-            _uploadService = new ModelUpload(_accessToken); // ✅ Initialize here
-
+            _uploadService = new ModelUpload(_accessToken);  // ✅ Ensure this is correctly initialized
             Initialize();
         }
+
 
         private void Initialize()
         {
@@ -106,7 +111,7 @@ namespace AssetManager.Desktop
                 Console.WriteLine("❌ No default project found.");
                 return;
             }
-
+            
             // Get the top-level folder
             var topFolder = await DataManagement.GetTopLevelFolder(hubID, testProject);
             
@@ -144,6 +149,64 @@ namespace AssetManager.Desktop
             // Create a new folder
             //await DataManagement.CreateNewFolder(testProject, TokenManager.GetToken(), "Toms Folder");
         }
+        // Button click event to upload file
+        private async void BtnUploadFile_Click(object sender, RoutedEventArgs e)
+        {
+            string filePath = GetFilePathFromDialog();
+            if (string.IsNullOrEmpty(filePath))
+            {
+                Console.WriteLine("❌ No file selected.");
+                return;
+            }
+
+            if (string.IsNullOrEmpty(_selectedProjectId))
+            {
+                Console.WriteLine("❌ No project selected. Please select a project before uploading.");
+                return;
+            }
+
+            Console.WriteLine($"🚀 Uploading {Path.GetFileName(filePath)} to Autodesk Forge...");
+    
+            // Step 1: Create storage location
+            string storageUrn = await _uploadService.CreateStorageLocation(_selectedProjectId, _folderId, Path.GetFileName(filePath));
+            if (string.IsNullOrEmpty(storageUrn))
+            {
+                Console.WriteLine("❌ Failed to create storage location.");
+                return;
+            }
+
+            // Step 2: Upload the file directly using the storage URL
+            bool uploadSuccess = await _uploadService.UploadFileToForge(filePath, _selectedProjectId, storageUrn);
+            if (!uploadSuccess)
+            {
+                Console.WriteLine("❌ File upload failed.");
+                return;
+            }
+
+            Console.WriteLine("✅ Upload completed successfully!");
+            MessageBox.Show("✅ Upload Successful!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+
+
+
+
+
+// Method to open file dialog and return selected file path
+        private string GetFilePathFromDialog()
+        {
+            OpenFileDialog openFileDialog = new OpenFileDialog
+            {
+                Filter = "3D Files|*.stl;*.obj;*.f3d;*.step;*.igs;*.iges;*.sldprt;*.3mf;*.fbx;*.glb;*.gltf|All Files|*.*",
+                Title = "Select a 3D Model to Upload"
+            };
+
+            bool? result = openFileDialog.ShowDialog();
+            return result == true ? openFileDialog.FileName : null;
+        }
+
+
+    
 
 
         private async void InitializeAsync()
@@ -180,7 +243,7 @@ namespace AssetManager.Desktop
 
 
       
-        private async void BtnUploadFile_Click(object sender, RoutedEventArgs e)
+        /*private async void BtnUploadFile_Click(object sender, RoutedEventArgs e)
         {
 
             Console.WriteLine("📤 Upload button clicked");
@@ -216,7 +279,7 @@ namespace AssetManager.Desktop
                         MessageBoxImage.Error);
                 }
             }
-        }
+        }*/
         
         
         //Its this one
@@ -364,6 +427,114 @@ namespace AssetManager.Desktop
                 return null;
             }
         }
+        
+        /*private async void BtnUploadFile_Click(object sender, RoutedEventArgs e)
+        {
+            // Open file dialog to allow user to select a model
+            string filePath = GetFilePathFromDialog();
+            if (string.IsNullOrEmpty(filePath))
+            {
+                Console.WriteLine("❌ No file selected.");
+                return;
+            }
+
+            // Upload the selected file to Forge
+            await UploadModel(_projectId, _folderId, filePath);  // Pass filePath as an argument
+        }*/
+
+
+        /*private string GetFilePathFromDialog()
+        {
+            OpenFileDialog openFileDialog = new OpenFileDialog
+            {
+                Filter = "All Files|*.*|Fusion 360 Files|*.f3d|STL Files|*.stl", // Customize filter
+                Title = "Select a Model to Upload"
+            };
+
+            bool? result = openFileDialog.ShowDialog();
+            return result == true ? openFileDialog.FileName : null;
+        }*/
+
+        /*private async Task UploadModel(string projectId, string folderId, string filePath)
+        {
+            string uploadUrl = await GetUploadUrl(_selectedProjectId, _folderId, filePath);
+            if (string.IsNullOrEmpty(uploadUrl))
+            {
+                Console.WriteLine("❌ Could not retrieve the upload URL.");
+                return;
+            }
+
+            await UploadFileToForge(filePath, uploadUrl);
+        }*/
+
+        /*private async Task<string> GetUploadUrl(string projectId, string folderId, string filePath)
+        {
+            projectId = _selectedProjectId;
+            folderId = _folderId;
+            string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/folders/{folderId}/contents";
+            HttpClient client = new HttpClient();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
+
+            var data = new
+            {
+                data = new
+                {
+                    type = "items",
+                    attributes = new
+                    {
+                        extension = new { type = "authcore:application/vnd.autodesk.fusion360+json" },
+                        displayName = Path.GetFileName(filePath)  // Use file name dynamically
+                    }
+                }
+            };
+
+            var jsonContent = JsonConvert.SerializeObject(data);
+            var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+
+            HttpResponseMessage response = await client.PostAsync(url, content);
+            if (!response.IsSuccessStatusCode)
+            {
+                Console.WriteLine($"❌ Error: {response.StatusCode} - {response.ReasonPhrase}");
+                return null;
+            }
+
+            string jsonResponse = await response.Content.ReadAsStringAsync();
+            var responseData = JsonConvert.DeserializeObject<dynamic>(jsonResponse);
+            string uploadUrl = responseData.links.upload.href;
+
+            return uploadUrl;
+        }*/
+        
+     
+
+
+        /*private async Task UploadFileToForge(string filePath, string uploadUrl)
+        {
+            try
+            {
+                byte[] fileBytes = File.ReadAllBytes(filePath);
+                using (HttpClient client = new HttpClient())
+                {
+                    var content = new ByteArrayContent(fileBytes);
+                    content.Headers.Add("Content-Type", "application/octet-stream");
+
+                    HttpResponseMessage response = await client.PutAsync(uploadUrl, content);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        Console.WriteLine("✔️ File uploaded successfully.");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"❌ Error uploading file: {response.StatusCode} - {response.ReasonPhrase}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Exception occurred during file upload: {ex.Message}");
+            }
+        }*/
 
     }
 }
