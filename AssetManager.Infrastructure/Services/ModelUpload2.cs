@@ -26,7 +26,8 @@ namespace AssetManager.Infrastructure.Services
         /// </summary>
         public async Task<string> CreateStorageLocation(string projectId, string folderId, string fileName)
         {
-            Console.WriteLine($"🔍 Debug: Creating Storage Location for {fileName} in Project {projectId}, Folder {folderId}...");
+            Console.WriteLine(
+                $"🔍 Debug: Creating Storage Location for {fileName} in Project {projectId}, Folder {folderId}...");
 
             string url = $"{API_BASE_URL}/data/v1/projects/{projectId}/storage";
 
@@ -75,7 +76,7 @@ namespace AssetManager.Infrastructure.Services
 
             return storageUrn;
         }
-        
+
         public async Task<(string signedUrl, string uploadKey)> GetSignedS3UploadUrl(string storageUrn)
         {
             var (bucketKey, objectKey) = ExtractBucketAndObjectKey(storageUrn);
@@ -101,8 +102,8 @@ namespace AssetManager.Infrastructure.Services
 
             // ✅ Parse Response
             dynamic responseData = JsonConvert.DeserializeObject(json);
-            string signedUrl = responseData.urls[0];  
-            string uploadKey = responseData.uploadKey; 
+            string signedUrl = responseData.urls[0];
+            string uploadKey = responseData.uploadKey;
 
             Console.WriteLine($"✅ Debug: Signed URL: {signedUrl}");
             Console.WriteLine($"✅ Debug: Upload Key: {uploadKey}");
@@ -158,6 +159,7 @@ namespace AssetManager.Infrastructure.Services
 
         public async Task<bool> CompleteUpload(string storageUrn, string uploadKey)
         {
+            (var signedUrl, uploadKey) = await GetSignedS3UploadUrl(storageUrn);
             var (bucketKey, objectKey) = ExtractBucketAndObjectKey(storageUrn);
             if (string.IsNullOrEmpty(bucketKey) || string.IsNullOrEmpty(objectKey))
             {
@@ -166,12 +168,13 @@ namespace AssetManager.Infrastructure.Services
             }
 
             string url = $"{API_BASE_URL}/oss/v2/buckets/{bucketKey}/objects/{objectKey}/signeds3upload";
+            
             var payload = new { uploadKey };
 
             string jsonPayload = JsonConvert.SerializeObject(payload);
             using var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
             using var request = new HttpRequestMessage(HttpMethod.Post, url);
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", TokenManager.GetToken());
             request.Content = content;
 
             HttpResponseMessage response = await _httpClient.SendAsync(request);
@@ -187,8 +190,8 @@ namespace AssetManager.Infrastructure.Services
             Console.WriteLine($"✅ Upload finalized successfully: {responseBody}");
             return true;
         }
-        
-        private Tuple<string, string> ExtractBucketAndObjectKey(string storageUrn)
+
+        public Tuple<string, string> ExtractBucketAndObjectKey(string storageUrn)
         {
             if (string.IsNullOrEmpty(storageUrn))
             {
@@ -208,14 +211,14 @@ namespace AssetManager.Infrastructure.Services
             string urnBody = storageUrn.Substring(prefix.Length);
             string[] urnParts = urnBody.Split('/');
 
-            if (urnParts.Length < 2)  // We need at least "bucketKey/objectKey"
+            if (urnParts.Length < 2) // We need at least "bucketKey/objectKey"
             {
                 Console.WriteLine($"❌ Invalid URN format: {storageUrn}");
                 return new Tuple<string, string>(null, null);
             }
 
-            string bucketKey = urnParts[0];  // Extract bucket key
-            string objectKey = urnParts[1];  // Extract object key
+            string bucketKey = urnParts[0]; // Extract bucket key
+            string objectKey = urnParts[1]; // Extract object key
 
             Console.WriteLine($"✅ Debug: Extracted Bucket Key: {bucketKey}");
             Console.WriteLine($"✅ Debug: Extracted Object Key: {objectKey}");
@@ -223,9 +226,12 @@ namespace AssetManager.Infrastructure.Services
             return new Tuple<string, string>(bucketKey, objectKey);
         }
 
-        public async Task<bool> CreateItemAndVersion(string projectId, string folderId, string fileName, string objectUrn)
+       public async Task<bool> CreateItemAndVersion(string projectId, string folderId, string fileName, string objectUrn)
         {
+            Console.WriteLine("🔹 Creating Item & Version in Autodesk Forge...");
+
             string url = $"{API_BASE_URL}/data/v1/projects/{projectId}/items";
+
             var payload = new
             {
                 jsonapi = new { version = "1.0" },
@@ -237,7 +243,7 @@ namespace AssetManager.Infrastructure.Services
                         displayName = fileName,
                         extension = new
                         {
-                            type = "items:autodesk.core:File",
+                            type = "items:autodesk.bim360:File",
                             version = "1.0"
                         }
                     },
@@ -258,7 +264,7 @@ namespace AssetManager.Infrastructure.Services
                             name = fileName,
                             extension = new
                             {
-                                type = "versions:autodesk.core:File",
+                                type = "versions:autodesk.bim360:File",
                                 version = "1.0"
                             }
                         },
@@ -271,6 +277,8 @@ namespace AssetManager.Infrastructure.Services
             };
 
             string jsonPayload = JsonConvert.SerializeObject(payload);
+            Console.WriteLine($"📤 Request JSON: {jsonPayload}");
+
             using var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
             using var request = new HttpRequestMessage(HttpMethod.Post, url);
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
@@ -279,14 +287,16 @@ namespace AssetManager.Infrastructure.Services
             HttpResponseMessage response = await _httpClient.SendAsync(request);
             string responseBody = await response.Content.ReadAsStringAsync();
 
+            Console.WriteLine($"📥 Response: {responseBody}");
+
             if (!response.IsSuccessStatusCode)
             {
-                Console.WriteLine($"❌ Error creating Item: {response.StatusCode}");
+                Console.WriteLine($"❌ Error creating Item & Version: {response.StatusCode}");
                 Console.WriteLine($"Error details: {responseBody}");
                 return false;
             }
 
-            Console.WriteLine($"✅ Item created successfully: {responseBody}");
+            Console.WriteLine($"✅ Item & Version Created Successfully!");
             return true;
         }
 
@@ -295,10 +305,10 @@ namespace AssetManager.Infrastructure.Services
         /// <summary>
         /// Handles the full upload process (storage + file upload).
         /// </summary>
-                public async Task<bool> UploadModel(string projectId, string folderId, string filePath)
+        public async Task<bool> UploadModel(string projectId, string folderId, string filePath)
         {
             string fileName = Path.GetFileName(filePath);
-            
+
             Console.WriteLine($"📤 Uploading {fileName} to Autodesk Forge...");
 
             // ✅ Step 1: Create Storage Location in Forge
@@ -309,49 +319,43 @@ namespace AssetManager.Infrastructure.Services
                 Console.WriteLine("❌ Failed to create storage location.");
                 return false;
             }
+
             Console.WriteLine($"✅ Storage Location Created: {storageUrn}");
 
-            // ✅ Step 2: Extract Bucket Key & Object Key
-            var (bucketKey, objectKey) = ExtractBucketAndObjectKey(storageUrn);
-            if (string.IsNullOrEmpty(bucketKey) || string.IsNullOrEmpty(objectKey))
-            {
-                Console.WriteLine("❌ Failed to extract Bucket & Object Key.");
-                return false;
-            }
-            Console.WriteLine($"🔹 Extracted Bucket Key: {bucketKey}");
-            Console.WriteLine($"🔹 Extracted Object Key: {objectKey}");
-
-            // ✅ Step 3: Get Signed S3 Upload URL
+            // ✅ Step 2: Get Signed S3 Upload URL
             Console.WriteLine("🔹 Requesting Signed S3 URL...");
-            var (signedUrl, uploadKey) = await GetSignedS3UploadUrl(bucketKey, objectKey);
+            var (signedUrl, uploadKey) = await GetSignedS3UploadUrl(storageUrn);
             if (string.IsNullOrEmpty(signedUrl) || string.IsNullOrEmpty(uploadKey))
             {
                 Console.WriteLine("❌ Failed to get Signed S3 URL.");
                 return false;
             }
+
             Console.WriteLine($"✅ Retrieved Signed S3 URL: {signedUrl}");
 
-            // ✅ Step 4: Upload File to S3
+            // ✅ Step 3: Upload File to S3
             Console.WriteLine($"📤 Uploading {fileName} to Signed URL...");
-            bool uploadSuccess = await UploadFileToSignedUrl(signedUrl, filePath);
+            bool uploadSuccess = await UploadFileToForge(filePath, projectId, storageUrn);
             if (!uploadSuccess)
             {
                 Console.WriteLine("❌ File upload failed.");
                 return false;
             }
+
             Console.WriteLine($"✅ File Uploaded Successfully: {filePath}");
 
-            // ✅ Step 5: Finalize Upload in Forge
+            // ✅ Step 4: Finalize Upload in Forge
             Console.WriteLine("🔹 Finalizing Upload...");
-            bool finalizeSuccess = await CompleteUpload(bucketKey, objectKey, uploadKey);
+            bool finalizeSuccess = await CompleteUpload(storageUrn, uploadKey);
             if (!finalizeSuccess)
             {
                 Console.WriteLine("❌ Failed to finalize upload.");
                 return false;
             }
+
             Console.WriteLine($"✅ Upload Finalized Successfully!");
 
-            // ✅ Step 6: Create an Item & Version so file appears in Forge
+            // ✅ Step 5: Create an Item & Version so file appears in Forge
             Console.WriteLine("🔹 Registering file in Autodesk Forge...");
             bool itemCreated = await CreateItemAndVersion(projectId, folderId, fileName, storageUrn);
             if (!itemCreated)
@@ -364,8 +368,9 @@ namespace AssetManager.Infrastructure.Services
             return true;
         }
 
-    
-    
+    }
+
+
 
 
 }

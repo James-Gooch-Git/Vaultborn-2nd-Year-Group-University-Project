@@ -166,26 +166,58 @@ namespace AssetManager.Desktop
             }
 
             Console.WriteLine($"🚀 Uploading {Path.GetFileName(filePath)} to Autodesk Forge...");
-    
+
             // Step 1: Create storage location
+            Console.WriteLine("🔹 Creating Storage Location...");
             string storageUrn = await _uploadService.CreateStorageLocation(_selectedProjectId, _folderId, Path.GetFileName(filePath));
             if (string.IsNullOrEmpty(storageUrn))
             {
                 Console.WriteLine("❌ Failed to create storage location.");
                 return;
             }
+            Console.WriteLine($"✅ Storage Location Created: {storageUrn}");
 
-            // Step 2: Upload the file directly using the storage URL
+            // Step 2: Upload the file to the signed S3 URL
+            Console.WriteLine("🔹 Uploading file to Signed S3 URL...");
             bool uploadSuccess = await _uploadService.UploadFileToForge(filePath, _selectedProjectId, storageUrn);
             if (!uploadSuccess)
             {
                 Console.WriteLine("❌ File upload failed.");
                 return;
             }
+            Console.WriteLine($"✅ File Uploaded Successfully: {filePath}");
 
-            Console.WriteLine("✅ Upload completed successfully!");
+            // Step 3: Extract bucket & object key
+            var (bucketKey, objectKey) = _uploadService.ExtractBucketAndObjectKey(storageUrn);
+            if (string.IsNullOrEmpty(bucketKey) || string.IsNullOrEmpty(objectKey))
+            {
+                Console.WriteLine("❌ Failed to extract bucket & object key.");
+                return;
+            }
+
+            // Step 4: Finalize upload in Forge
+            Console.WriteLine("🔹 Finalizing Upload...");
+            bool finalizeSuccess = await _uploadService.CompleteUpload(storageUrn, objectKey);
+            if (!finalizeSuccess)
+            {
+                Console.WriteLine("❌ Failed to finalize upload.");
+                return;
+            }
+            Console.WriteLine($"✅ Upload Finalized Successfully!");
+
+            // Step 5: Create an Item & Version in Forge
+            Console.WriteLine("🔹 Registering file in Autodesk Forge...");
+            bool itemCreated = await _uploadService.CreateItemAndVersion(_selectedProjectId, _folderId, Path.GetFileName(filePath), storageUrn);
+            if (!itemCreated)
+            {
+                Console.WriteLine("❌ Failed to create Item & Version. File may not appear in Forge.");
+                return;
+            }
+
+            Console.WriteLine("✅ Upload process completed successfully, and file is now visible in Forge!");
             MessageBox.Show("✅ Upload Successful!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
         }
+
 
 
 
