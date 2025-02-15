@@ -14,6 +14,8 @@ namespace AssetManager.Infrastructure.Services
         private readonly string _accessToken;
         private readonly HttpClient _httpClient;
         private const string API_BASE_URL = "https://developer.api.autodesk.com";
+        private string _uploadKey;  // ✅ Store the correct upload key at the class level
+
 
         public ModelUpload(string accessToken)
         {
@@ -104,6 +106,7 @@ namespace AssetManager.Infrastructure.Services
             dynamic responseData = JsonConvert.DeserializeObject(json);
             string signedUrl = responseData.urls[0];
             string uploadKey = responseData.uploadKey;
+            _uploadKey = responseData.uploadKey;
 
             Console.WriteLine($"✅ Debug: Signed URL: {signedUrl}");
             Console.WriteLine($"✅ Debug: Upload Key: {uploadKey}");
@@ -116,6 +119,47 @@ namespace AssetManager.Infrastructure.Services
         /// <summary>
         /// Step 2: Upload the file directly to the storage endpoint.
         /// </summary>
+        /*public async Task<bool> UploadFileToForge(string filePath, string projectId, string storageUrn)
+        {
+            var (signedUrl, uploadKey) = await GetSignedS3UploadUrl(storageUrn);
+            if (string.IsNullOrEmpty(signedUrl) || string.IsNullOrEmpty(uploadKey))
+            {
+                Console.WriteLine("❌ Failed to get signed S3 upload URL.");
+                return false;
+            }
+
+            try
+            {
+                byte[] fileBytes = await File.ReadAllBytesAsync(filePath);
+                using var content = new ByteArrayContent(fileBytes);
+                content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+                content.Headers.ContentLength = fileBytes.Length; // Ensure content length is included
+
+                HttpResponseMessage response = await _httpClient.PutAsync(signedUrl, content);
+                string responseBody = await response.Content.ReadAsStringAsync();
+
+                Console.WriteLine($"📤 Upload Response Status: {response.StatusCode}");
+                Console.WriteLine($"📤 Upload Response Body: {responseBody}");
+
+                if (response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine($"✔️ File uploaded successfully: {filePath}");
+                    return await CompleteUpload(storageUrn, uploadKey);
+                }
+                else
+                {
+                    Console.WriteLine($"❌ Error uploading file: {response.StatusCode} - {response.ReasonPhrase}");
+                    Console.WriteLine($"Error details: {responseBody}");
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Exception during file upload: {ex.Message}");
+                return false;
+            }
+        }*/
+        
         public async Task<bool> UploadFileToForge(string filePath, string projectId, string storageUrn)
         {
             var (signedUrl, uploadKey) = await GetSignedS3UploadUrl(storageUrn);
@@ -137,7 +181,7 @@ namespace AssetManager.Infrastructure.Services
                 {
                     Console.WriteLine($"✔️ File uploaded successfully: {filePath}");
 
-                    // ✅ Finalize the upload in Forge
+                    // ✅ Ensure we use `_uploadKey` instead of objectKey
                     bool finalized = await CompleteUpload(storageUrn, uploadKey);
                     return finalized;
                 }
@@ -157,10 +201,15 @@ namespace AssetManager.Infrastructure.Services
         }
 
 
-        public async Task<bool> CompleteUpload(string storageUrn, string uploadKey)
+
+
+
+        /*public async Task<bool> CompleteUpload(string storageUrn, string uploadKey)
         {
-            (var signedUrl, uploadKey) = await GetSignedS3UploadUrl(storageUrn);
-            var (bucketKey, objectKey) = ExtractBucketAndObjectKey(storageUrn);
+            var urnParts = ExtractBucketAndObjectKey(storageUrn);
+            string bucketKey = urnParts.Item1;
+            string objectKey = urnParts.Item2;
+
             if (string.IsNullOrEmpty(bucketKey) || string.IsNullOrEmpty(objectKey))
             {
                 Console.WriteLine("❌ Failed to extract bucket and object key.");
@@ -168,13 +217,94 @@ namespace AssetManager.Infrastructure.Services
             }
 
             string url = $"{API_BASE_URL}/oss/v2/buckets/{bucketKey}/objects/{objectKey}/signeds3upload";
+            (var  signedUrl, uploadKey) = await GetSignedS3UploadUrl(storageUrn);
+            var payload = new { uploadKey = uploadKey };  // ✅ Use only the correct uploadKey
             
-            var payload = new { uploadKey };
-
             string jsonPayload = JsonConvert.SerializeObject(payload);
             using var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
             using var request = new HttpRequestMessage(HttpMethod.Post, url);
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", TokenManager.GetToken());
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
+            request.Content = content;
+
+            HttpResponseMessage response = await _httpClient.SendAsync(request);
+            string responseBody = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                Console.WriteLine($"❌ Error finalizing upload: {response.StatusCode}");
+                Console.WriteLine($"Error details: {responseBody}");
+                return false;
+            }
+
+            Console.WriteLine($"✅ Upload finalized successfully: {responseBody}");
+            return true;
+        }*/
+        public async Task<bool> CompleteUpload(string storageUrn, string _uploadKey)
+        {
+            var (bucketKey, objectKey) = ExtractBucketAndObjectKey(storageUrn);
+            if (string.IsNullOrEmpty(bucketKey) || string.IsNullOrEmpty(objectKey))
+            {
+                Console.WriteLine("❌ Failed to extract bucket and object key.");
+                return false;
+            }
+
+            if (string.IsNullOrEmpty(_uploadKey))
+            {
+                Console.WriteLine("❌ Upload Key is missing. Cannot finalize upload.");
+                return false;
+            }
+
+            string url = $"{API_BASE_URL}/oss/v2/buckets/{bucketKey}/objects/{objectKey}/signeds3upload";
+
+            var payload = new { uploadKey = _uploadKey };
+
+            string jsonPayload = JsonConvert.SerializeObject(payload);
+            Console.WriteLine($"🚀 Sending Finalization Request - {jsonPayload}");
+
+            using var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+            using var request = new HttpRequestMessage(HttpMethod.Post, url);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
+            request.Content = content;
+
+            HttpResponseMessage response = await _httpClient.SendAsync(request);
+            string responseBody = await response.Content.ReadAsStringAsync();
+
+            Console.WriteLine($"📥 Forge Finalization Response - {responseBody}");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                Console.WriteLine($"❌ Error finalizing upload: {response.StatusCode}");
+                Console.WriteLine($"Error details: {responseBody}");
+                return false;
+            }
+
+            Console.WriteLine($"✅ Upload Finalized Successfully! File is now accessible.");
+            return true;
+        }
+
+
+
+
+        /*public async Task<bool> CompleteUpload(string storageUrn, string uploadKey)
+        {
+            var urnParts = ExtractBucketAndObjectKey(storageUrn);
+            string bucketKey = urnParts.Item1;
+            string objectKey = urnParts.Item2;
+
+            if (string.IsNullOrEmpty(bucketKey) || string.IsNullOrEmpty(objectKey))
+            {
+                Console.WriteLine("❌ Failed to extract bucket and object key.");
+                return false;
+            }
+
+            string url = $"{API_BASE_URL}/oss/v2/buckets/{bucketKey}/objects/{objectKey}/signeds3upload";
+            (var  signedUrl, uploadKey) = await GetSignedS3UploadUrl(storageUrn);
+            var payload = new { uploadKey = uploadKey };  // ✅ Use only the correct uploadKey
+            
+            string jsonPayload = JsonConvert.SerializeObject(payload);
+            using var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+            using var request = new HttpRequestMessage(HttpMethod.Post, url);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
             request.Content = content;
 
             HttpResponseMessage response = await _httpClient.SendAsync(request);
@@ -190,6 +320,56 @@ namespace AssetManager.Infrastructure.Services
             Console.WriteLine($"✅ Upload finalized successfully: {responseBody}");
             return true;
         }
+
+        public async Task<bool> CompleteUpload(string storageUrn, string uploadKey)
+        {
+            var (bucketKey, objectKey) = ExtractBucketAndObjectKey(storageUrn);
+            if (string.IsNullOrEmpty(bucketKey) || string.IsNullOrEmpty(objectKey))
+            {
+                Console.WriteLine("❌ Failed to extract bucket and object key.");
+                return false;
+            }
+
+            string url = $"{API_BASE_URL}/oss/v2/buckets/{bucketKey}/objects/{objectKey}/signeds3upload";
+            (var  signedUrl, uploadKey) = await GetSignedS3UploadUrl(storageUrn);
+            var payload = new { uploadKey = uploadKey };  // ✅ Use only the correct uploadKey
+
+            string jsonPayload = JsonConvert.SerializeObject(payload);
+            Console.WriteLine($"🚀 Debug: Sending Finalization Request - {jsonPayload}");
+
+            int maxRetries = 5;
+            int retryDelay = 2000; // 2 seconds delay
+            for (int attempt = 1; attempt <= maxRetries; attempt++)
+            {
+                Console.WriteLine($"⏳ Attempt {attempt}: Waiting for upload to register...");
+
+                await Task.Delay(retryDelay); // Wait before retrying
+
+                using var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+                using var request = new HttpRequestMessage(HttpMethod.Post, url);
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", TokenManager.GetToken());
+                request.Content = content;
+
+                HttpResponseMessage response = await _httpClient.SendAsync(request);
+                string responseBody = await response.Content.ReadAsStringAsync();
+
+                Console.WriteLine($"📥 Debug: Forge Finalization Response - {responseBody}");
+
+                if (response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine($"✅ Upload Finalized Successfully!");
+                    return true;
+                }
+
+                Console.WriteLine($"⚠️ Finalization failed, retrying in {retryDelay / 1000} seconds...");
+                retryDelay *= 2; // Exponential backoff: 2s, 4s, 8s...
+            }
+
+            Console.WriteLine($"❌ Upload finalization failed after {maxRetries} attempts.");
+            return false;
+        }*/
+
+
 
         public Tuple<string, string> ExtractBucketAndObjectKey(string storageUrn)
         {
@@ -306,67 +486,61 @@ namespace AssetManager.Infrastructure.Services
         /// Handles the full upload process (storage + file upload).
         /// </summary>
         public async Task<bool> UploadModel(string projectId, string folderId, string filePath)
-        {
-            string fileName = Path.GetFileName(filePath);
+{
+    string fileName = Path.GetFileName(filePath);
+    Console.WriteLine($"📤 Uploading {fileName} to Autodesk Forge...");
 
-            Console.WriteLine($"📤 Uploading {fileName} to Autodesk Forge...");
+    // ✅ Step 1: Create Storage Location
+    string storageUrn = await CreateStorageLocation(projectId, folderId, fileName);
+    if (string.IsNullOrEmpty(storageUrn))
+    {
+        Console.WriteLine("❌ Failed to create storage location.");
+        return false;
+    }
 
-            // ✅ Step 1: Create Storage Location in Forge
-            Console.WriteLine("🔹 Creating Storage Location...");
-            string storageUrn = await CreateStorageLocation(projectId, folderId, fileName);
-            if (string.IsNullOrEmpty(storageUrn))
-            {
-                Console.WriteLine("❌ Failed to create storage location.");
-                return false;
-            }
+    Console.WriteLine($"✅ Storage Location Created: {storageUrn}");
 
-            Console.WriteLine($"✅ Storage Location Created: {storageUrn}");
+    // ✅ Step 2: Upload File to Forge
+    bool uploadSuccess = await UploadFileToForge(filePath, projectId, storageUrn);
+    if (!uploadSuccess)
+    {
+        Console.WriteLine("❌ File upload failed.");
+        return false;
+    }
 
-            // ✅ Step 2: Get Signed S3 Upload URL
-            Console.WriteLine("🔹 Requesting Signed S3 URL...");
-            var (signedUrl, uploadKey) = await GetSignedS3UploadUrl(storageUrn);
-            if (string.IsNullOrEmpty(signedUrl) || string.IsNullOrEmpty(uploadKey))
-            {
-                Console.WriteLine("❌ Failed to get Signed S3 URL.");
-                return false;
-            }
+    Console.WriteLine($"✅ File Uploaded Successfully: {filePath}");
 
-            Console.WriteLine($"✅ Retrieved Signed S3 URL: {signedUrl}");
+    // ✅ Step 3: Extract Bucket & Object Key
+    var (bucketKey, objectKey) = ExtractBucketAndObjectKey(storageUrn);
+    if (string.IsNullOrEmpty(bucketKey) || string.IsNullOrEmpty(objectKey))
+    {
+        Console.WriteLine("❌ Failed to extract bucket & object key.");
+        return false;
+    }
 
-            // ✅ Step 3: Upload File to S3
-            Console.WriteLine($"📤 Uploading {fileName} to Signed URL...");
-            bool uploadSuccess = await UploadFileToForge(filePath, projectId, storageUrn);
-            if (!uploadSuccess)
-            {
-                Console.WriteLine("❌ File upload failed.");
-                return false;
-            }
+    // ✅ Step 4: Finalize Upload using `batchcompleteupload`
+    Console.WriteLine("🔹 Finalizing Upload with Batch Complete...");
+    bool finalizeSuccess = await CompleteUpload(storageUrn, _uploadKey);
+    if (!finalizeSuccess)
+    {
+        Console.WriteLine("❌ Upload finalization failed.");
+        return false;
+    }
 
-            Console.WriteLine($"✅ File Uploaded Successfully: {filePath}");
+    Console.WriteLine($"✅ Upload Finalized Successfully!");
 
-            // ✅ Step 4: Finalize Upload in Forge
-            Console.WriteLine("🔹 Finalizing Upload...");
-            bool finalizeSuccess = await CompleteUpload(storageUrn, uploadKey);
-            if (!finalizeSuccess)
-            {
-                Console.WriteLine("❌ Failed to finalize upload.");
-                return false;
-            }
+    // ✅ Step 5: Register File in Autodesk Forge
+    Console.WriteLine("🔹 Registering file in Autodesk Forge...");
+    bool itemCreated = await CreateItemAndVersion(projectId, folderId, fileName, storageUrn);
+    if (!itemCreated)
+    {
+        Console.WriteLine("❌ Failed to create Item & Version. File may not appear in Forge.");
+        return false;
+    }
 
-            Console.WriteLine($"✅ Upload Finalized Successfully!");
-
-            // ✅ Step 5: Create an Item & Version so file appears in Forge
-            Console.WriteLine("🔹 Registering file in Autodesk Forge...");
-            bool itemCreated = await CreateItemAndVersion(projectId, folderId, fileName, storageUrn);
-            if (!itemCreated)
-            {
-                Console.WriteLine("❌ Failed to create Item & Version. File may not appear in Forge.");
-                return false;
-            }
-
-            Console.WriteLine($"✅ Upload process completed, and file is visible in Forge.");
-            return true;
-        }
+    Console.WriteLine($"✅ Upload process completed, and file is visible in Forge.");
+    return true;
+}
 
     }
 
