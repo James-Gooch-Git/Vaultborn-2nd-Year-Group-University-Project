@@ -99,7 +99,7 @@ namespace AssetManager.Desktop
                     {
                         CommentId = ObjectId.GenerateNewId(),
                         AssetId = "001",
-                        UserId = Environment.GetEnvironmentVariable("userId"),
+                        UserId = Environment.GetEnvironmentVariable("userId", EnvironmentVariableTarget.User),
                         Content = comment,
                         CreatedDateTime = DateTime.Now
                     };
@@ -123,7 +123,8 @@ namespace AssetManager.Desktop
                 
                 foreach (Comment comment in comments)
                 {
-                    commentItems.Add(new CommentItem {User = "test", Content = comment.Content, CreatedDateTime = comment.CreatedDateTime});
+                    string name = await GetUserName(comment.UserId);
+                    commentItems.Add(new CommentItem {User = name, Content = comment.Content, CreatedDateTime = comment.CreatedDateTime});
                 }
 
                 if (commentItems.Count != 0)
@@ -150,11 +151,14 @@ namespace AssetManager.Desktop
         private async void ListNewComment(Comment commentItem)
         {
             List<Comment> comments = await GetAllComments();
-                
+            
             foreach (Comment comment in comments)
             {
                 if (commentItem.CommentId == comment.CommentId)
-                    ListComments.Items.Add(new CommentItem {User = "test", Content = comment.Content, CreatedDateTime = comment.CreatedDateTime});
+                {
+                    string name = await GetUserName(commentItem.UserId);
+                    ListComments.Items.Add(new CommentItem { User = name, Content = comment.Content, CreatedDateTime = comment.CreatedDateTime });
+                }
             }
         }
         
@@ -171,6 +175,13 @@ namespace AssetManager.Desktop
                 MessageBox.Show($"Error: {e.Message}");
                 throw;
             }
+        }
+
+        private async Task<string> GetUserName(string userId)
+        {
+            MongoConnection database = new MongoConnection();
+            var userData = await database.Users.Find(x => x.Id == userId).FirstOrDefaultAsync();
+            return userData.Username;
         }
 
         private class CommentItem
