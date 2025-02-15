@@ -8,7 +8,7 @@
         Title="MainWindow" Height="450" Width="800">
     <Grid>
         <Label x:Name="WelcomeMessage"></Label>
-        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+        <StackPanel VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,20,0,0">
             
             <!-- Upload File Button -->
             <Button x:Name="BtnUploadFile" 
@@ -22,14 +22,37 @@
                     Width="200" Height="40" 
                     Click="BtnLogout_OnClick_Click"/>
             
-            <Button x:Name="BtnAddComment" 
-                    Content="Create Comment" 
-                    Width="200" Height="40"
-                    Click="BtnAddComment_Click"/>
-            
             <Button x:Name="BtnViewComment" Content="View Comments" Width="200" Height="40" Click="BtnViewComment_Click"/>
             
             <!-- <Button Content="Download Model" Click="DownloadModelButton_Click" Width="150" Height="40"/> -->
         </StackPanel>
+        
+        <TextBox x:Name="CommentContent" Text="Add a comment"
+               Width="200" Height="40" Margin="0, 0, 400, 0"
+               Visibility="Hidden"/>
+        <Button x:Name="BtnAddComment" 
+                    Content="Post Comment" 
+                    Width="200" Height="40"
+                    Click="BtnAddComment_Click"
+                    Margin="0, 100, 400, 0" Visibility="Hidden"/>
+        
+        <ListBox x:Name="ListComments" Width="450" Height="200" Margin="275,165,0,0" Visibility="Hidden">
+            <ListBoxItem>Comments</ListBoxItem>
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="20*" />
+                            <ColumnDefinition Width="70*" />
+                            <ColumnDefinition Width="10*" />
+                        </Grid.ColumnDefinitions>
+                        <Label Content="{Binding UserID}" />
+                        <Label Grid.Column="1" Content="{Binding Content}" />
+                        <Label Grid.Column="2" Content="{Binding CreatedDateTime}" />
+                    </Grid>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
     </Grid>
 </Window>
