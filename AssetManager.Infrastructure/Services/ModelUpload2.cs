@@ -113,52 +113,6 @@ namespace AssetManager.Infrastructure.Services
 
             return (signedUrl, uploadKey);
         }
-
-
-
-        /// <summary>
-        /// Step 2: Upload the file directly to the storage endpoint.
-        /// </summary>
-        /*public async Task<bool> UploadFileToForge(string filePath, string projectId, string storageUrn)
-        {
-            var (signedUrl, uploadKey) = await GetSignedS3UploadUrl(storageUrn);
-            if (string.IsNullOrEmpty(signedUrl) || string.IsNullOrEmpty(uploadKey))
-            {
-                Console.WriteLine("❌ Failed to get signed S3 upload URL.");
-                return false;
-            }
-
-            try
-            {
-                byte[] fileBytes = await File.ReadAllBytesAsync(filePath);
-                using var content = new ByteArrayContent(fileBytes);
-                content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
-                content.Headers.ContentLength = fileBytes.Length; // Ensure content length is included
-
-                HttpResponseMessage response = await _httpClient.PutAsync(signedUrl, content);
-                string responseBody = await response.Content.ReadAsStringAsync();
-
-                Console.WriteLine($"📤 Upload Response Status: {response.StatusCode}");
-                Console.WriteLine($"📤 Upload Response Body: {responseBody}");
-
-                if (response.IsSuccessStatusCode)
-                {
-                    Console.WriteLine($"✔️ File uploaded successfully: {filePath}");
-                    return await CompleteUpload(storageUrn, uploadKey);
-                }
-                else
-                {
-                    Console.WriteLine($"❌ Error uploading file: {response.StatusCode} - {response.ReasonPhrase}");
-                    Console.WriteLine($"Error details: {responseBody}");
-                    return false;
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"❌ Exception during file upload: {ex.Message}");
-                return false;
-            }
-        }*/
         
    
 
@@ -211,46 +165,6 @@ namespace AssetManager.Infrastructure.Services
             }
         }
 
-
-
-
-
-
-        /*public async Task<bool> CompleteUpload(string storageUrn, string uploadKey)
-        {
-            var urnParts = ExtractBucketAndObjectKey(storageUrn);
-            string bucketKey = urnParts.Item1;
-            string objectKey = urnParts.Item2;
-
-            if (string.IsNullOrEmpty(bucketKey) || string.IsNullOrEmpty(objectKey))
-            {
-                Console.WriteLine("❌ Failed to extract bucket and object key.");
-                return false;
-            }
-
-            string url = $"{API_BASE_URL}/oss/v2/buckets/{bucketKey}/objects/{objectKey}/signeds3upload";
-            (var  signedUrl, uploadKey) = await GetSignedS3UploadUrl(storageUrn);
-            var payload = new { uploadKey = uploadKey };  // ✅ Use only the correct uploadKey
-            
-            string jsonPayload = JsonConvert.SerializeObject(payload);
-            using var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
-            using var request = new HttpRequestMessage(HttpMethod.Post, url);
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
-            request.Content = content;
-
-            HttpResponseMessage response = await _httpClient.SendAsync(request);
-            string responseBody = await response.Content.ReadAsStringAsync();
-
-            if (!response.IsSuccessStatusCode)
-            {
-                Console.WriteLine($"❌ Error finalizing upload: {response.StatusCode}");
-                Console.WriteLine($"Error details: {responseBody}");
-                return false;
-            }
-
-            Console.WriteLine($"✅ Upload finalized successfully: {responseBody}");
-            return true;
-        }*/
         private HashSet<string> finalizedUploads = new HashSet<string>(); // ✅ Track completed uploads
 
         public async Task<bool> CompleteUpload(string storageUrn, string uploadKey)
@@ -311,91 +225,7 @@ namespace AssetManager.Infrastructure.Services
 
 
 
-        /*public async Task<bool> CompleteUpload(string storageUrn, string uploadKey)
-        {
-            var urnParts = ExtractBucketAndObjectKey(storageUrn);
-            string bucketKey = urnParts.Item1;
-            string objectKey = urnParts.Item2;
-
-            if (string.IsNullOrEmpty(bucketKey) || string.IsNullOrEmpty(objectKey))
-            {
-                Console.WriteLine("❌ Failed to extract bucket and object key.");
-                return false;
-            }
-
-            string url = $"{API_BASE_URL}/oss/v2/buckets/{bucketKey}/objects/{objectKey}/signeds3upload";
-            (var  signedUrl, uploadKey) = await GetSignedS3UploadUrl(storageUrn);
-            var payload = new { uploadKey = uploadKey };  // ✅ Use only the correct uploadKey
-            
-            string jsonPayload = JsonConvert.SerializeObject(payload);
-            using var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
-            using var request = new HttpRequestMessage(HttpMethod.Post, url);
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
-            request.Content = content;
-
-            HttpResponseMessage response = await _httpClient.SendAsync(request);
-            string responseBody = await response.Content.ReadAsStringAsync();
-
-            if (!response.IsSuccessStatusCode)
-            {
-                Console.WriteLine($"❌ Error finalizing upload: {response.StatusCode}");
-                Console.WriteLine($"Error details: {responseBody}");
-                return false;
-            }
-
-            Console.WriteLine($"✅ Upload finalized successfully: {responseBody}");
-            return true;
-        }
-
-        public async Task<bool> CompleteUpload(string storageUrn, string uploadKey)
-        {
-            var (bucketKey, objectKey) = ExtractBucketAndObjectKey(storageUrn);
-            if (string.IsNullOrEmpty(bucketKey) || string.IsNullOrEmpty(objectKey))
-            {
-                Console.WriteLine("❌ Failed to extract bucket and object key.");
-                return false;
-            }
-
-            string url = $"{API_BASE_URL}/oss/v2/buckets/{bucketKey}/objects/{objectKey}/signeds3upload";
-            (var  signedUrl, uploadKey) = await GetSignedS3UploadUrl(storageUrn);
-            var payload = new { uploadKey = uploadKey };  // ✅ Use only the correct uploadKey
-
-            string jsonPayload = JsonConvert.SerializeObject(payload);
-            Console.WriteLine($"🚀 Debug: Sending Finalization Request - {jsonPayload}");
-
-            int maxRetries = 5;
-            int retryDelay = 2000; // 2 seconds delay
-            for (int attempt = 1; attempt <= maxRetries; attempt++)
-            {
-                Console.WriteLine($"⏳ Attempt {attempt}: Waiting for upload to register...");
-
-                await Task.Delay(retryDelay); // Wait before retrying
-
-                using var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
-                using var request = new HttpRequestMessage(HttpMethod.Post, url);
-                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", TokenManager.GetToken());
-                request.Content = content;
-
-                HttpResponseMessage response = await _httpClient.SendAsync(request);
-                string responseBody = await response.Content.ReadAsStringAsync();
-
-                Console.WriteLine($"📥 Debug: Forge Finalization Response - {responseBody}");
-
-                if (response.IsSuccessStatusCode)
-                {
-                    Console.WriteLine($"✅ Upload Finalized Successfully!");
-                    return true;
-                }
-
-                Console.WriteLine($"⚠️ Finalization failed, retrying in {retryDelay / 1000} seconds...");
-                retryDelay *= 2; // Exponential backoff: 2s, 4s, 8s...
-            }
-
-            Console.WriteLine($"❌ Upload finalization failed after {maxRetries} attempts.");
-            return false;
-        }*/
-
-
+       
 
         public Tuple<string, string> ExtractBucketAndObjectKey(string storageUrn)
         {
