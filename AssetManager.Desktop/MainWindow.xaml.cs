@@ -62,6 +62,5 @@ namespace AssetManager.Desktop
             Console.WriteLine($"🔹 (mainwindow) Access Token: {token}");
             return Task.FromResult(token);
         }
-
     }
 }
