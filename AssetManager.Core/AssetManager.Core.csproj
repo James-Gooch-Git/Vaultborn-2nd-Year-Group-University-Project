@@ -7,7 +7,10 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="pythonnet" Version="3.0.5" />
+      <PackageReference Include="Microsoft.AspNetCore.App" Version="2.2.8" />
+        <!--<PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="7.0.0" />-->
+
+        <PackageReference Include="pythonnet" Version="3.0.5" />
       <PackageReference Include="RestSharp" Version="112.1.1-alpha.0.4" />
     </ItemGroup>
 
