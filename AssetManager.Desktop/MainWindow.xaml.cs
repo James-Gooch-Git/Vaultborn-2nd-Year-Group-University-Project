@@ -27,7 +27,9 @@ namespace AssetManager.Desktop
        //private string _folderId = "urn:adsk.wipprod:fs.folder:co.KVsRYzFtQdi1b6j3eLcjhA"; 
        private string _folderId; 
         private string _selectedProjectId;
+        private string _selectedItemId;
         private readonly ModelUpload _uploadService;
+        string hubID = null;
         
 
         // ✅ Default Constructor
@@ -80,9 +82,7 @@ namespace AssetManager.Desktop
         {
             // Get personal hub details
             var result = await DataManagement.GetPersonalHubDetails(); 
-
-            string hubID = null;
-
+            
             if (result == null)
             {
                 Console.WriteLine("❌ No personal hub details found.");
@@ -131,13 +131,44 @@ namespace AssetManager.Desktop
 
            
         }
+
+        private async void BtnDownloadModel_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(_selectedProjectId) || string.IsNullOrEmpty(_selectedItemId))
+            {
+                MessageBox.Show("❌ Please select a project and model before downloading.");
+                return;
+            }
+
+            try
+            {
+                // ✅ If no folder is selected, use the top-level folder
+                var (topFolderId, _) = await DataManagement.GetTopLevelFolder(hubID, _selectedProjectId);
+                string folderIdToUse = string.IsNullOrEmpty(_folderId) ? topFolderId : _folderId;
+
+
+                if (string.IsNullOrEmpty(folderIdToUse))
+                {
+                    MessageBox.Show("❌ Could not determine the folder for downloading.");
+                    return;
+                }
+
+                var fileDownloadService = new FileDownloadService();
+                await fileDownloadService.DownloadModel(_selectedProjectId, folderIdToUse, _selectedItemId);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"❌ Error downloading model: {ex.Message}");
+            }
+        }
         
         private async void BtnLogout_Click(object sender, RoutedEventArgs e)
         {
             LoginWindow loginWindow = new LoginWindow(true);
-            this.Hide();
+            this.Close();
             loginWindow.Show();
         }
+        
         // Button click event to upload file
         private async void BtnUploadFile_Click(object sender, RoutedEventArgs e)
         {
@@ -220,11 +251,6 @@ namespace AssetManager.Desktop
             ListModelsForProject(_selectedProjectId, _folderId);
             Console.WriteLine("🔄 Models refreshed.");
         }
-
-      
-
-
-
       
         
         //Its this one
@@ -239,12 +265,12 @@ namespace AssetManager.Desktop
                 // Clear the existing items in the ComboBox
                 Dispatcher.Invoke(() =>
                 {
-                    ModelDropdown.Items.Clear(); // Clear the ComboBox before adding new items
+                    ModelComboBox.Items.Clear(); // Clear the ComboBox before adding new items
 
                     // Populate ComboBox with model names
                     foreach (var model in models)
                     {
-                        ModelDropdown.Items.Add(model); // Add each model name to the ComboBox
+                        ModelComboBox.Items.Add(model); // Add each model name to the ComboBox
                     }
                 });
             }
@@ -253,22 +279,14 @@ namespace AssetManager.Desktop
                 Console.WriteLine("❌ No models found in the folder.");
             }
         }
-
-
-
-
-
-
-
-
       
 
 // Method to load projects from the hub and populate ComboBox
         private async Task LoadProjectsAsync()
         {
             var results = await DataManagement.GetPersonalHubDetails();
-            var (hubId, hubName, hubType) = results.Value; // Replace this with the actual Hub ID
-            var projects = await DataManagement.GetAllProjectsFromHub(hubId);
+            var (hubID, hubName, hubType) = results.Value; // Replace this with the actual Hub ID
+            var projects = await DataManagement.GetAllProjectsFromHub(hubID);
 
             if (projects != null && projects.Any())
             {
@@ -316,7 +334,7 @@ namespace AssetManager.Desktop
             {
                 _selectedProjectId = selectedItem.Tag as string; // Store the selected project ID
                 Console.WriteLine($"📌 Selected Project ID: {_selectedProjectId}");
-
+                
                 try
                 {
                     // 🔹 Get the user's hub details
@@ -326,11 +344,11 @@ namespace AssetManager.Desktop
                         Console.WriteLine("❌ Error: Could not retrieve hub details.");
                         return;
                     }
-                    var (hubId, hubName, hubType) = results.Value;
-                    Console.WriteLine($"🏠 Hub ID: {hubId}, Name: {hubName}, Type: {hubType}");
+                    var (hubID, hubName, hubType) = results.Value;
+                    Console.WriteLine($"🏠 Hub ID: {hubID}, Name: {hubName}, Type: {hubType}");
 
                     // 🔹 Retrieve the top-level folder for the selected project
-                    var topFolderResult = await DataManagement.GetTopLevelFolder(hubId, _selectedProjectId);
+                    var topFolderResult = await DataManagement.GetTopLevelFolder(hubID, _selectedProjectId);
 
                     // Correct null check (tuples cannot be directly checked for null)
                     if (topFolderResult.FolderId == null)
@@ -355,6 +373,14 @@ namespace AssetManager.Desktop
             }
         }
 
+        private void ModelComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (ModelComboBox.SelectedItem is ComboBoxItem selectedItem)
+            {
+                _selectedItemId = selectedItem.Tag as string;
+                Console.WriteLine($"📌 Selected Item ID: {_selectedItemId}");
+            }
+        }
 
 
 

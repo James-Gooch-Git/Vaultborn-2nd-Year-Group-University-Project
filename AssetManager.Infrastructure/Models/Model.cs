@@ -14,7 +14,7 @@ namespace AssetManager.Infrastructure.Models
         public string BucketKey { get; set; }
         public string FileUrn { get; set; }
         
-        public string HubId { get; set; } 
+        public string HubID { get; set; } 
         public string ProjectId { get; set; }  
         public string FolderId { get; set; } 
         public string ItemId { get; set; }  

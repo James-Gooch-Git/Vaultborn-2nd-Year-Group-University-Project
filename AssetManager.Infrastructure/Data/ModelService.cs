@@ -13,7 +13,7 @@ public class ModelService
         _models = mongoConnection.Models;
     }
 
-    public async Task UploadModelDB(string ownerId, string modelName, string autodeskUrn, string hubId, string projectId, 
+    public async Task UploadModelDB(string ownerId, string modelName, string autodeskUrn, string hubID, string projectId, 
         string folderId, string itemId, string versionId)
     {
         var model = new Model
@@ -24,7 +24,7 @@ public class ModelService
             FileUrn = autodeskUrn,  // Autodesk unique file identifier
         
             // Autodesk APS References
-            HubId = hubId,
+            HubID = hubID,
             ProjectId = projectId,
             FolderId = folderId,
             ItemId = itemId,

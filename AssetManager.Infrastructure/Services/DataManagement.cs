@@ -49,23 +49,23 @@ namespace AssetManager.Infrastructure.Services
                 {
                     string type = hub.GetProperty("attributes").GetProperty("extension").GetProperty("type")
                         .GetString();
-                    string hubId = hub.GetProperty("id").GetString();
+                    string hubID = hub.GetProperty("id").GetString();
                     string hubName = hub.GetProperty("attributes").GetProperty("name").GetString();
 
-                    Console.WriteLine($"🔍 Found hub type: {type}, ID: {hubId}, Name: {hubName}");
+                    Console.WriteLine($"🔍 Found hub type: {type}, ID: {hubID}, Name: {hubName}");
 
                     // Store the first available hub
                     if (selectedHubId == null)
                     {
-                        selectedHubId = hubId;
+                        selectedHubId = hubID;
                         selectedHubType = type;
                     }
 
                     // Prioritize Personal Hub if available
                     if (type == "hubs:autodesk.a360:PersonalHub")
                     {
-                        Console.WriteLine($"✅ Selected Personal Hub: {hubId}");
-                        return hubId;
+                        Console.WriteLine($"✅ Selected Personal Hub: {hubID}");
+                        return hubID;
                     }
                 }
 
@@ -88,13 +88,13 @@ namespace AssetManager.Infrastructure.Services
 
         private static readonly HttpClient _httpClient = new HttpClient();
 
-        public static async Task<string> GetProjectIdAsync(string hubId)
+        public static async Task<string> GetProjectIdAsync(string hubID)
         {
             string accessToken = TokenManager.GetToken();
 
             try
             {
-                string url = $"https://developer.api.autodesk.com/project/v1/hubs/{hubId}/projects";
+                string url = $"https://developer.api.autodesk.com/project/v1/hubs/{hubID}/projects";
 
                 // Set up request headers
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
@@ -166,15 +166,15 @@ namespace AssetManager.Infrastructure.Services
                 {
                     string hubType = hub.GetProperty("attributes").GetProperty("extension").GetProperty("type")
                         .GetString();
-                    string hubId = hub.GetProperty("id").GetString();
+                    string hubID = hub.GetProperty("id").GetString();
                     string hubName = hub.GetProperty("attributes").GetProperty("name").GetString();
 
-                    Console.WriteLine($"🔍 Found hub type: {hubType}, ID: {hubId}, Name: {hubName}");
+                    Console.WriteLine($"🔍 Found hub type: {hubType}, ID: {hubID}, Name: {hubName}");
 
                     // Store the first available hub
                     if (selectedHubId == null)
                     {
-                        selectedHubId = hubId;
+                        selectedHubId = hubID;
                         selectedHubType = hubType;
                         selectedHubName = hubName;
                     }
@@ -182,8 +182,8 @@ namespace AssetManager.Infrastructure.Services
                     // Prioritize Personal Hub if available
                     if (hubType == "hubs:autodesk.a360:PersonalHub")
                     {
-                        Console.WriteLine($"✅ Selected Personal Hub: {hubId}");
-                        return (hubId, hubName, hubType);
+                        Console.WriteLine($"✅ Selected Personal Hub: {hubID}");
+                        return (hubID, hubName, hubType);
                     }
                 }
 
@@ -204,9 +204,9 @@ namespace AssetManager.Infrastructure.Services
         }
 
         //Gets every project from a specific hub and returns them as a tuple of their respective Project ID and Project name
-        public static async Task<List<(string ProjectId, string ProjectName)>> GetAllProjectsFromHub(string hubId)
+        public static async Task<List<(string ProjectId, string ProjectName)>> GetAllProjectsFromHub(string hubID)
         {
-            string url = $"https://developer.api.autodesk.com/project/v1/hubs/{hubId}/projects";
+            string url = $"https://developer.api.autodesk.com/project/v1/hubs/{hubID}/projects";
             string _accessToken = TokenManager.GetToken();
 
             if (string.IsNullOrEmpty(_accessToken))
@@ -263,9 +263,9 @@ namespace AssetManager.Infrastructure.Services
         }
 
         //Gets a list of Folder IDs and Folder Names for all Top-level folders from a specific project 
-        public static async Task<(string FolderId, string FolderName)> GetTopLevelFolder(string hubId, string projectId)
+        public static async Task<(string FolderId, string FolderName)> GetTopLevelFolder(string hubID, string projectId)
         {
-            string url = $"https://developer.api.autodesk.com/project/v1/hubs/{hubId}/projects/{projectId}/topFolders";
+            string url = $"https://developer.api.autodesk.com/project/v1/hubs/{hubID}/projects/{projectId}/topFolders";
             string _accessToken = TokenManager.GetToken(); // Ensure you have a valid token
 
             if (string.IsNullOrEmpty(_accessToken))

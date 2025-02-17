@@ -9,6 +9,7 @@
             <RowDefinition Height="Auto"/> <!-- Upload Button -->
             <RowDefinition Height="Auto"/> <!-- Project Dropdown -->
             <RowDefinition Height="Auto"/> <!-- Model Dropdown -->
+            <RowDefinition Height="Auto"/> <!-- Download-->
             <RowDefinition Height="Auto"/> <!-- Refresh Button -->
             <RowDefinition Height="Auto"/> <!-- Logout Button (NEW) -->
         </Grid.RowDefinitions>
@@ -31,7 +32,8 @@
         <!-- Model Dropdown Section -->
         <StackPanel Grid.Row="2" Margin="10">
             <TextBlock Text="Model Selection:" />
-            <ComboBox x:Name="ModelDropdown" 
+            <ComboBox x:Name="ModelComboBox" 
+                      SelectionChanged="ModelComboBox_SelectionChanged"
                       Width="300" Height="30" />
         </StackPanel>
 
@@ -41,13 +43,19 @@
                 Width="150" Height="30" 
                 Click="BtnRefreshModels_Click"
                 Grid.Row="3" HorizontalAlignment="Center" Margin="10"/>
+        
+        <Button x:Name="BtnDownloadModel" 
+                Content="Download" 
+                Width="150" Height="30" 
+                Click="BtnDownloadModel_Click"
+                Grid.Row="4" HorizontalAlignment="Center" Margin="10"/>
 
         <!-- ✅ Log Out Button (New) -->
         <Button x:Name="BtnLogout" 
                 Content="Log Out" 
                 Width="200" Height="40" 
                 Click="BtnLogout_Click"
-                Grid.Row="4" HorizontalAlignment="Center" Margin="10"/>
+                Grid.Row="5" HorizontalAlignment="Center" Margin="10"/>
     
     </Grid>
 </Window>
