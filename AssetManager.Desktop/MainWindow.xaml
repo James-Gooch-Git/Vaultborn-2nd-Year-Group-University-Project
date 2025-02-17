@@ -5,17 +5,40 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:AssetManager.Desktop"
         mc:Ignorable="d"
-        Title="MainWindow" Height="100" Width="100">
+        Title="MainWindow" Height="720" Width="1280">
     <Grid>
-        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-            
-            <!-- Upload File Button -->
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="3*"/>
+            <ColumnDefinition Width="13*"/>
+        </Grid.ColumnDefinitions>
+
+        <Grid Grid.ColumnSpan="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="60"/>
+                <RowDefinition/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="200"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+        </Grid>
+
+        <Image Grid.Row="0" Grid.Column="0" Source="C:\Users\c3068607\Downloads\symbol-1.png" Width="60" Height="40" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,10,0,0"/>
+
+        <TextBlock Grid.Row="0" Grid.Column="0" FontSize="16" Foreground="Black" VerticalAlignment="Top" Margin="52,16,48,0" Grid.ColumnSpan="2"> <Run Text="AUTODESK"/> <Bold> <Run Text="ASSETS"/> </Bold></TextBlock>
+
+        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Left" Grid.Column="1" Margin="300,0,0,0">
+
+            <!--Upload File Button-->
+
             <Button x:Name="BtnUploadFile" 
                     Content="Upload File" 
                     Width="200" Height="40" 
                     Click="BtnUploadFile_Click"/>
-            
-            <!-- <Button Content="Download Model" Click="DownloadModelButton_Click" Width="150" Height="40"/> -->
+
+
+            <!--<Button Content="Download Model" Click="DownloadModelButton_Click" Width="150" Height="40"/>-->
+
 
         </StackPanel>
     </Grid>
