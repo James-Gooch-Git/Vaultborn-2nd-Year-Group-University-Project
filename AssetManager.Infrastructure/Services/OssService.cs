@@ -19,45 +19,7 @@ namespace AssetManager.Infrastructure.Services
         private const string OssBaseUrl = "https://developer.api.autodesk.com/oss/v2";
 
         // Create a new bucket
-        public static async Task<string> CreateBucket(string bucketName)
-        {
-            // Get the access token from the AuthService
-            string token = await AuthService.GetAccessToken();
 
-            // Initialize the RestClient
-            var client = new RestClient(OssBaseUrl);
-            var request = new RestRequest("/buckets", Method.Post);
-            request.AddHeader("Authorization", $"Bearer {token}");
-            request.AddHeader("Content-Type", "application/json");
-            bucketName = bucketName.ToLower();
-
-            // Bucket request body
-            var bucketRequestBody = new
-            {
-                bucketKey = bucketName, // You can use the bucket name or any unique identifier as the bucket key
-                policyKey = "transient" // 'transient', 'persistent', or 'temporary'
-            };
-
-            // Add the JSON body
-            request.AddJsonBody(bucketRequestBody);
-
-            // Send the request
-            var response = await client.ExecuteAsync(request);
-
-            if (response.IsSuccessful)
-            {
-                // Deserialize the response to get the bucket key
-                var bucketData = JsonConvert.DeserializeObject<dynamic>(response.Content);
-                string bucketKey = bucketData.bucketKey;
-                return bucketKey;
-            }
-            else
-            {
-                // Handle error
-                Console.WriteLine($"Error: {response.StatusCode} - {response.Content}");
-                return null;
-            }
-        }
 
         // Upload a file to the OSS bucket
         public async Task<string> GetSignedUploadUrlAsync(string bucketKey, string objectName)

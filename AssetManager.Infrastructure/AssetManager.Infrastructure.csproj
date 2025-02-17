@@ -4,18 +4,31 @@
         <TargetFramework>net8.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+        <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.1" />
+      <PackageReference Include="Adsk.Platform.DataManagement" Version="0.1.3" />
+      <PackageReference Include="Autodesk.Authentication" Version="2.0.0" />
+      <PackageReference Include="Autodesk.DataManagement" Version="2.0.1" />
+      <PackageReference Include="Autodesk.Forge" Version="1.9.9" />
+      <PackageReference Include="Autodesk.Oss" Version="2.0.0" />
+      <PackageReference Include="IdentityModel.OidcClient" Version="6.0.0" />
+      <PackageReference Include="MongoDB.Bson" Version="3.1.0" />
+      <PackageReference Include="MongoDB.Driver" Version="3.1.0" />
       <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-      <PackageReference Include="Npgsql" Version="9.0.2" />
-      <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.3" />
       <PackageReference Include="RestSharp" Version="112.1.1-alpha.0.4" />
     </ItemGroup>
     
     <ItemGroup>
         <ProjectReference Include="..\AssetManager.Core\AssetManager.Core.csproj" />
+    </ItemGroup>
+    
+    <ItemGroup>
+      <None Update="appsettings.json">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
 
 </Project>
