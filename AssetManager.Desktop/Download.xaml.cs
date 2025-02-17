@@ -10,15 +10,14 @@ namespace AssetManager.Desktop
 {
     public partial class Download : Window
     {
-        private readonly FileDownloadService _fileDownloadService = new();
-        private readonly TokenService _token = new();
-        
-        private string ClientId = Environment.GetEnvironmentVariable("CLIENT_ID");
-        private const string RedirectUri = "http://localhost:5000/callback";
-        private const string Scope = "data:read";
-        private const string BucketName = "assetbucket19";
-        private const string ItemId = "p1366.glb";
+        //private readonly FileDownloadService _fileDownloadService = new();
+        private string projectId = "Admin Project";
+        private string folderId = "Folder";
+        string accessToken = TokenManager.GetToken();
+        string itemId = "your_file_item_id";
+        string savePath = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..", "..", "..", "Downloads"));
 
+            
         public Download()
         {
             InitializeComponent();
@@ -26,7 +25,8 @@ namespace AssetManager.Desktop
 
         public async void DownloadModelButton_Click(object sender, RoutedEventArgs e)
         {
-            string rootFolder = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.Parent.FullName;
+            string rootFolder = savePath;
+            Console.WriteLine($"dl path: {savePath}");
             string defaultDownloadPath = Path.Combine(rootFolder, "Downloads");
             Console.WriteLine("path: " + defaultDownloadPath);
             Console.WriteLine("rootFolder: " + rootFolder);
@@ -43,10 +43,9 @@ namespace AssetManager.Desktop
 
             string localFilePath = Path.Combine(selectedFolderPath, "DownloadedModel.ext");
 
-            string accessToken = TokenManager.GetToken();
             if (!string.IsNullOrEmpty(accessToken))
             {
-                await FileDownloadService.DownloadFileAsync(accessToken, BucketName, ItemId, localFilePath);
+                await FileDownloadService.DownloadFileAsync(accessToken, projectId, folderId, itemId, savePath);
                 MessageBox.Show($"Download Complete!\nFile saved to: {localFilePath}", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             else

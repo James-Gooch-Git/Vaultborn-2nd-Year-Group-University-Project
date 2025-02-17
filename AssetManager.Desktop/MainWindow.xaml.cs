@@ -9,8 +9,6 @@ namespace AssetManager.Desktop
     public partial class MainWindow : Window
     {
         private readonly ModelUpload _uploadService = new ModelUpload();
-        private string projectId = "Admin Project";
-        private string folderId = "Folder";
 
         public MainWindow(string uId)
         {
@@ -25,6 +23,8 @@ namespace AssetManager.Desktop
 
             Console.WriteLine("Upload Button Clicked");
 
+            string projectId = "";
+            string folderId = "";   
             OpenFileDialog openFileDialog = new OpenFileDialog
             {
                 Title = "Select a Model File",
@@ -34,7 +34,7 @@ namespace AssetManager.Desktop
             if (openFileDialog.ShowDialog() == true)
             {
                 string filePath = openFileDialog.FileName;
-                string accessToken = await GetAccessToken(); // 🔹 Get token
+                string accessToken = TokenManager.GetToken(); // 🔹 Get token
 
                 try
                 {
@@ -54,13 +54,6 @@ namespace AssetManager.Desktop
             this.Hide();
             loginWindow.Show();
             this.Close();
-        }
-        
-        private Task<string> GetAccessToken()
-        {
-            string token = TokenManager.GetToken();
-            Console.WriteLine($"🔹 (mainwindow) Access Token: {token}");
-            return Task.FromResult(token);
         }
     }
 }
