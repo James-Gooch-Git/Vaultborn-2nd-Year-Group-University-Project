@@ -7,12 +7,13 @@
         xmlns:md="clr-namespace:MaterialDesignThemes.Wpf;assembly=MaterialDesignThemes.Wpf"
         xmlns:local="clr-namespace:AssetManager.Desktop"
         mc:Ignorable="d"
+        FontFamily="Helvetica"
         Title="MainWindow" Height="720" Width="1280">
 
     <Grid>
 
         <Grid.RowDefinitions>
-            <RowDefinition Height="47"/>
+            <RowDefinition Height="50"/>
             <RowDefinition/>
         </Grid.RowDefinitions>
 
@@ -24,16 +25,22 @@
         <Border Grid.Row="0" BorderBrush="#797979" BorderThickness="0,0,0,1" Grid.ColumnSpan="2"/>
         <Border Grid.Row="1" BorderBrush="#797979" BorderThickness="0,0,1,0" />
 
-        <Image Grid.Row="0" Grid.Column="0" Source="symbol-1.png" Width="60" Height="40" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,7,0,0"/>
+        <!--<Image Grid.Column="0" Source="symbol-1.png" Width="52" Height="34" VerticalAlignment="Center" HorizontalAlignment="Left"/>-->
 
-        <TextBlock Grid.Column="0" FontSize="16" Foreground="#4B4b4b" VerticalAlignment="Center" Margin="52,0,48,0" Grid.ColumnSpan="2" Height="22"> <Run Text="AUTODESK"/> <Bold> <Run Text="ASSETS"/> </Bold></TextBlock>
+        <TextBlock Grid.Column="0" FontSize="16" Foreground="#4B4b4b" VerticalAlignment="Center" Margin="28,0,72,0" Grid.ColumnSpan="2" Height="22"> <Run Text="AUTODESK"/> <Bold> <Run Text="ASSETS"/> </Bold></TextBlock>
 
-        <TextBlock Grid.Row="1" Grid.Column="0" Text="PROJECTS" FontSize="12" Foreground="#4B4b4b" FontWeight="Bold" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,7,0,0"/>
+        <md:PackIcon Grid.Column="1" Kind="ChevronDown" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,10,0"/>
 
-        <md:PackIcon Grid.Row="1" Grid.Column="0" HorizontalAlignment="Right" VerticalAlignment="Top"  Kind="Magnify" FontSize="4" Margin="0,7,30,0"/>
+        <TextBlock Grid.Row="1" Grid.Column="0" Text="PROJECTS" FontSize="12" Foreground="#4B4b4b" FontWeight="Bold" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,8,0,0" Height="16" Width="57"/>
 
-        <md:PackIcon Grid.Row="1" Grid.Column="0" HorizontalAlignment="Right" VerticalAlignment="Top"  Kind="Cog" FontSize="1" Margin="0,6.5,10,0"/>
-        
+        <TextBlock Grid.Row="1" Grid.Column="0" Text="John Jones" FontSize="12" Foreground="#4B4b4b" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,8,0,0" Height="16" Width="57"/>
+
+        <md:PackIcon Grid.Row="1" Grid.Column="0" HorizontalAlignment="Right" VerticalAlignment="Top" FontWeight="Light"  Kind="Magnify" Height="15" Width="15" Margin="0,7.2,46,0"/>
+
+        <md:PackIcon Grid.Row="1" Grid.Column="0" HorizontalAlignment="Right" VerticalAlignment="Top" FontWeight="Light" Kind="CogOutline" Height="15" Width="15" Margin="0,6.6,25,0"/>
+
+        <md:PackIcon Grid.Row="1" Grid.Column="0" HorizontalAlignment="Right" VerticalAlignment="Top" FontWeight="Light" Kind="Plus" Height="16" Width="16" Margin="0,6,5,0"/>
+
         <StackPanel Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Left" Grid.Column="1" Margin="300,0,0,0" Height="40" Width="200">
 
             <Button x:Name="BtnUploadFile" 
