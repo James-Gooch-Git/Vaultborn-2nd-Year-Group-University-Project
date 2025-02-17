@@ -9,9 +9,9 @@
         Title="LoginWindow" Height="720" Width="1280" ResizeMode="CanResize">
 
     <!-- background image -->
-    <!--<Window.Background>
+    <Window.Background>
         <ImageBrush Stretch="None" ImageSource="orange-wallpaper.jpg" AlignmentY="Top" AlignmentX="Center"/>
-    </Window.Background>-->
+    </Window.Background>
     
     
     <Grid HorizontalAlignment="Center" VerticalAlignment="Center">

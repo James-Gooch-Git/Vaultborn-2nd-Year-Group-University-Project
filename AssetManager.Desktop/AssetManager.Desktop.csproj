@@ -11,6 +11,11 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <None Remove="orange-wallpaper.jpg" />
+      <None Remove="symbol-1.png" />
+    </ItemGroup>
+
+    <ItemGroup>
       <PackageReference Include="MaterialDesignThemes" Version="5.2.1" />
       <PackageReference Include="Microsoft-WindowsAPICodePack-Shell" Version="1.1.5" />
       <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.1" />
@@ -27,6 +32,11 @@
     
     <ItemGroup>
       <Folder Include="Images\" />
+    </ItemGroup>
+    
+    <ItemGroup>
+      <Resource Include="orange-wallpaper.jpg" />
+      <Resource Include="symbol-1.png" />
     </ItemGroup>
 
 </Project>

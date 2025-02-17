@@ -25,11 +25,11 @@
             </Grid.ColumnDefinitions>
         </Grid>
 
+        <Border Grid.Row="0" BorderBrush="Black" BorderThickness="1"/>
+
         <Image Grid.Row="0" Grid.Column="0" Source="symbol-1.png" Width="60" Height="40" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,10,0,0"/>
 
         <TextBlock Grid.Row="0" Grid.Column="0" FontSize="16" Foreground="Black" VerticalAlignment="Top" Margin="52,16,48,0" Grid.ColumnSpan="2"> <Run Text="AUTODESK"/> <Bold> <Run Text="ASSETS"/> </Bold></TextBlock>
-
-        <md:PackIcon Kind="Home" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="48"/>
 
         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Left" Grid.Column="1" Margin="300,0,0,0">
 
