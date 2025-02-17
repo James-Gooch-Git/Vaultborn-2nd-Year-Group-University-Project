@@ -107,7 +107,7 @@ public partial class LoginWindow : Window
         try
         {
             string token = await _tokenService.GetAccessTokenAsync(authCode, _codeVerifier, clientID);
-            MessageBox.Show($"✅ Access Token: {token}");
+            //MessageBox.Show($"✅ Access Token: {token}");
             Infrastructure.Services.TokenManager.SetToken(token);
             Environment.SetEnvironmentVariable("accessToken", token, EnvironmentVariableTarget.User);
             GetUserData(token);
@@ -124,7 +124,7 @@ public partial class LoginWindow : Window
     {
         AuthenticationClient authClient = new AuthenticationClient();
         UserInfo userDataResponse = await authClient.GetUserInfoAsync(accessToken);
-        MessageBox.Show($"Id: {userDataResponse.Sub}, Name: {userDataResponse.Name}, Email: {userDataResponse.Email}");
+       // MessageBox.Show($"Id: {userDataResponse.Sub}, Name: {userDataResponse.Name}, Email: {userDataResponse.Email}");
         Environment.SetEnvironmentVariable("userId", userDataResponse.Sub, EnvironmentVariableTarget.User);
         InsertUserDataDB(userDataResponse);
         MainWindow mainWindow = new MainWindow(userDataResponse.Sub);
