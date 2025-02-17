@@ -1,7 +1,7 @@
 ﻿<Window x:Class="AssetManager.Desktop.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="MainWindow" Height="350" Width="400">
+        Title="MainWindow" Height="500" Width="700">
 
     <Grid>
         <!-- Define Grid Rows -->
@@ -10,7 +10,11 @@
             <RowDefinition Height="Auto"/> <!-- Project Dropdown -->
             <RowDefinition Height="Auto"/> <!-- Model Dropdown -->
             <RowDefinition Height="Auto"/> <!-- Refresh Button -->
-            <RowDefinition Height="Auto"/> <!-- Logout Button (NEW) -->
+            <RowDefinition Height="Auto"/> <!-- View Comments Button -->
+            <RowDefinition Height="Auto"/> <!-- Comment List -->
+            <RowDefinition Height="Auto"/> <!-- Comment Input and Post Button -->
+            <RowDefinition Height="Auto"/> <!-- Logout Button -->  <!-- ✅ ADDED THIS -->
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <!-- Upload File Button -->
@@ -41,13 +45,56 @@
                 Width="150" Height="30" 
                 Click="BtnRefreshModels_Click"
                 Grid.Row="3" HorizontalAlignment="Center" Margin="10"/>
-
-        <!-- ✅ Log Out Button (New) -->
         <Button x:Name="BtnLogout" 
                 Content="Log Out" 
                 Width="200" Height="40" 
                 Click="BtnLogout_Click"
-                Grid.Row="4" HorizontalAlignment="Center" Margin="10"/>
+                Grid.Row="4" HorizontalAlignment="Center" Margin="30"/>
+        <!-- View Comments Button -->
+        <Button x:Name="BtnViewComment" 
+                Content="View Comments" 
+                Width="200" Height="40" 
+                Click="BtnViewComment_Click"
+                Grid.Row="5" HorizontalAlignment="Center" Margin="10"/>
+
+        <!-- Comments List -->
+        <ListBox x:Name="ListComments" Width="450" Height="200" 
+                 Grid.Row="6" HorizontalAlignment="Center" Margin="10"
+                 Visibility="Hidden">
+            <ListBoxItem>Comments</ListBoxItem>
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="20" />
+                            <ColumnDefinition Width="70" />
+                            <ColumnDefinition Width="10" />
+                        </Grid.ColumnDefinitions>
+                        <Label Content="{Binding User}" />
+                        <Label Grid.Column="1" Content="{Binding Content}" />
+                        <Label Grid.Column="2" Content="{Binding CreatedDateTime}" />
+                    </Grid>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+
+        <!-- Comment Input -->
+        <TextBox x:Name="CommentContent" Text="Add a comment"
+                 Width="200" Height="40" Grid.Row="7"
+                 HorizontalAlignment="Center" Margin="10"
+                 Visibility="Hidden"/>
+
+        <!-- Post Comment Button -->
+        <Button x:Name="BtnAddComment" 
+                Content="Post Comment" 
+                Width="200" Height="40"
+                Click="BtnAddComment_Click"
+                Grid.Row="8" HorizontalAlignment="Center" Margin="10"
+                Visibility="Hidden"/>
+
+        <!-- ✅ Log Out Button (Moved to Row 7) -->
+       
     
     </Grid>
 </Window>
