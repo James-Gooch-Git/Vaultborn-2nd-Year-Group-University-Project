@@ -25,15 +25,30 @@
         <Border Grid.Row="0" BorderBrush="#797979" BorderThickness="0,0,0,1" Grid.ColumnSpan="2"/>
         <Border Grid.Row="1" BorderBrush="#797979" BorderThickness="0,0,1,0" />
 
-        <!--<Image Grid.Column="0" Source="symbol-1.png" Width="52" Height="34" VerticalAlignment="Center" HorizontalAlignment="Left"/>-->
+        <Image Grid.Column="0" Source="symbol-1.png" Width="62" Height="45" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="-6,8,0,0" Grid.RowSpan="2"/>
 
-        <TextBlock Grid.Column="0" FontSize="16" Foreground="#4B4b4b" VerticalAlignment="Center" Margin="28,0,72,0" Grid.ColumnSpan="2" Height="22"> <Run Text="AUTODESK"/> <Bold> <Run Text="ASSETS"/> </Bold></TextBlock>
+        <TextBlock Grid.Column="0" FontSize="16" Foreground="#4B4b4b" VerticalAlignment="Center" Margin="49,0,1059,0" Height="18" Grid.ColumnSpan="2"> <Run Text="AUTODESK"/> <Bold> <Run Text="ASSETS"/> </Bold></TextBlock>
 
-        <md:PackIcon Grid.Column="1" Kind="ChevronDown" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,10,0"/>
+        <md:PackIcon Grid.Column="1" Kind="ChevronDown" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,7,0"/>
+
+        <TextBlock Grid.Column="1" Text="John Jones" FontSize="12" Foreground="#4B4b4b" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,25,0"/>
+
+        <md:PackIcon Grid.Column="1" Kind="AccountOutline" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,88,0"/>
+
+        <Rectangle Grid.Column="1" VerticalAlignment="Center" Margin="0,0,113,0" HorizontalAlignment="Right" Fill="#4B4b4b" Height="30" Width="1" RenderTransformOrigin="0.5,0.5">
+            <Rectangle.RenderTransform>
+                <TransformGroup>
+                    <ScaleTransform ScaleX="-1"/>
+                    <SkewTransform/>
+                    <RotateTransform/>
+                    <TranslateTransform/>
+                </TransformGroup>
+            </Rectangle.RenderTransform>
+        </Rectangle>
+
+        <md:PackIcon Grid.Column="1" Kind="BellOutline" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,125,0"/>
 
         <TextBlock Grid.Row="1" Grid.Column="0" Text="PROJECTS" FontSize="12" Foreground="#4B4b4b" FontWeight="Bold" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,8,0,0" Height="16" Width="57"/>
-
-        <TextBlock Grid.Row="1" Grid.Column="0" Text="John Jones" FontSize="12" Foreground="#4B4b4b" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,8,0,0" Height="16" Width="57"/>
 
         <md:PackIcon Grid.Row="1" Grid.Column="0" HorizontalAlignment="Right" VerticalAlignment="Top" FontWeight="Light"  Kind="Magnify" Height="15" Width="15" Margin="0,7.2,46,0"/>
 
@@ -41,16 +56,29 @@
 
         <md:PackIcon Grid.Row="1" Grid.Column="0" HorizontalAlignment="Right" VerticalAlignment="Top" FontWeight="Light" Kind="Plus" Height="16" Width="16" Margin="0,6,5,0"/>
 
-        <StackPanel Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Left" Grid.Column="1" Margin="300,0,0,0" Height="40" Width="200">
+        <TextBlock Grid.Row="1" Grid.Column="1" Text="Asset Library" FontSize="20" Foreground="#4B4b4b" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="20,20,0,0"/>
 
-            <Button x:Name="BtnUploadFile" 
-                    Content="Upload File" 
-                    Width="200" Height="40" 
-                    Click="BtnUploadFile_Click"/>
+        <Border Grid.Column="1" Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Top" BorderBrush="Black" BorderThickness="0,1,0,0" Margin="20,60,20,0"/>
+
+        <Button Grid.Column="1" Grid.Row="1" HorizontalAlignment="Left" BorderThickness="0" Foreground="White" Background="#F25505" VerticalAlignment="Top" x:Name="BtnUploadFile" Width="100" Height="40" Click="BtnUploadFile_Click" Margin="20,76,0,0">
+            <Button.Resources>
+                <Style TargetType="Border">
+                    <Setter Property="CornerRadius" Value="3"/>
+                </Style>
+            </Button.Resources>
+            <StackPanel Orientation="Horizontal">
+                <md:PackIcon Kind="Plus" Width="17" Height="17" VerticalAlignment="Center"/>
+                <TextBlock Text="Import Asset" Margin="1,0,0,0" VerticalAlignment="Center"/>
+            </StackPanel>
+        </Button>
+        <!--<Button x:Name="BtnUploadFile" 
+                Content="Import Asset" 
+                Width="200" Height="40" 
+                Click="BtnUploadFile_Click"/>-->
 
 
-            <!--<Button Content="Download Model" Click="DownloadModelButton_Click" Width="150" Height="40"/>-->
+        <!--<Button Content="Download Model" Click="DownloadModelButton_Click" Width="150" Height="40"/>-->
 
-        </StackPanel>
     </Grid>
+
 </Window>

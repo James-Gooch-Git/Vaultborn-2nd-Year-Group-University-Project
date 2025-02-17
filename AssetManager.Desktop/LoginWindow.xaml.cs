@@ -30,7 +30,7 @@ public partial class LoginWindow : Window
     {
         InitializeComponent();
         userSession = Environment.GetEnvironmentVariable("userId", EnvironmentVariableTarget.User);
-        MessageBox.Show($"Your user session is: {userSession}");
+        //MessageBox.Show($"Your user session is: {userSession}");
         /*if (!string.IsNullOrEmpty(userSession))
         {
             MainWindow mainWindow = new MainWindow(userSession);
