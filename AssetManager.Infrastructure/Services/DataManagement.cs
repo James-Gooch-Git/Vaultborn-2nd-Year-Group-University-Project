@@ -5,6 +5,7 @@ using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using AssetManager.Infrastructure.Services;
 using System.Text;
+using Newtonsoft.Json;
 
 
 namespace AssetManager.Infrastructure.Services
@@ -321,6 +322,36 @@ namespace AssetManager.Infrastructure.Services
             }
         }
 
+        public static async Task<List<(string ItemId, string ItemName)>> GetItemsInFolder(string projectId,
+            string folderId)
+        {
+            using var httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", TokenManager.GetToken());
+
+            string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/folders/{folderId}/contents";
+
+            HttpResponseMessage response = await httpClient.GetAsync(url);
+            if (!response.IsSuccessStatusCode)
+            {
+                Console.WriteLine($"❌ Error fetching items: {response.StatusCode}");
+                return null;
+            }
+
+            var jsonResponse = await response.Content.ReadAsStringAsync();
+            dynamic data = JsonConvert.DeserializeObject(jsonResponse);
+
+            var items = new List<(string ItemId, string ItemName)>();
+
+            foreach (var item in data.data)
+            {
+                string itemId = item.id;
+                string itemName = item.attributes.displayName;
+                items.Add((itemId, itemName));
+            }
+
+            return items;
+        }
 
         //Gets a list of Item IDs, Item Names, and Item Types from a specific folder in a project
         /*public static async Task<List<(string ItemId, string ItemName, string ItemType)>> GetFolderItems(string projectId, string folderId)

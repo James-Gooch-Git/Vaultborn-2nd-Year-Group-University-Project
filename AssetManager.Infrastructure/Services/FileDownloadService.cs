@@ -1,6 +1,12 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
 using AssetManager.Infrastructure.Services;
+using System;
+using System.IO;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text.Json;
+using System.Threading.Tasks;
 
 public class FileDownloadService
 {
@@ -8,9 +14,9 @@ public class FileDownloadService
 
     public async Task DownloadModel(string projectId, string folderId, string itemId)
     {
-        if (string.IsNullOrEmpty(projectId) || string.IsNullOrEmpty(folderId) || string.IsNullOrEmpty(itemId))
+        if (string.IsNullOrEmpty(projectId) || string.IsNullOrEmpty(itemId))
         {
-            Console.WriteLine("❌ Error: Missing project, folder, or item ID.");
+            Console.WriteLine("❌ Error: Missing project or item ID.");
             return;
         }
 
@@ -27,17 +33,17 @@ public class FileDownloadService
                 return;
             }
 
-            // 🔹 Step 2: Get the downloadable URL
-            string downloadUrl = await GetDownloadUrlAsync(projectId, versionId);
-            if (string.IsNullOrEmpty(downloadUrl))
+            // 🔹 Step 2: Get the signed download URL
+            string signedDownloadUrl = await GetSignedDownloadUrl(projectId, versionId);
+            if (string.IsNullOrEmpty(signedDownloadUrl))
             {
-                Console.WriteLine("❌ Error: Could not retrieve download URL.");
+                Console.WriteLine("❌ Error: Could not retrieve signed download URL.");
                 return;
             }
 
             // 🔹 Step 3: Download the file
             string localFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), $"{itemId}.f3d");
-            await DownloadFileAsync(downloadUrl, localFilePath);
+            await DownloadFileAsync(signedDownloadUrl, localFilePath);
         }
         catch (Exception ex)
         {
@@ -61,7 +67,7 @@ public class FileDownloadService
                   .GetString();
     }
 
-    private async Task<string> GetDownloadUrlAsync(string projectId, string versionId)
+    private async Task<string> GetSignedDownloadUrl(string projectId, string versionId)
     {
         string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/versions/{versionId}";
 
@@ -71,15 +77,51 @@ public class FileDownloadService
         string jsonResponse = await response.Content.ReadAsStringAsync();
         using JsonDocument doc = JsonDocument.Parse(jsonResponse);
 
-        return doc.RootElement
-                  .GetProperty("data")
-                  .GetProperty("relationships")
-                  .GetProperty("storage")
-                  .GetProperty("meta")
-                  .GetProperty("link")
-                  .GetProperty("href")
-                  .GetString();
+        // 🔹 Extract Storage ID
+        string storageId = doc.RootElement
+                              .GetProperty("data")
+                              .GetProperty("relationships")
+                              .GetProperty("storage")
+                              .GetProperty("data")
+                              .GetProperty("id")
+                              .GetString();
+
+        if (string.IsNullOrEmpty(storageId))
+        {
+            Console.WriteLine("❌ Error: Storage ID not found.");
+            return null;
+        }
+
+        Console.WriteLine($"📌 Storage ID: {storageId}");
+        Console.WriteLine($"🔍 Full API Response: {jsonResponse}");
+
+        // 🔹 Call Autodesk OSS API to get signed URL
+        return await GetSignedUrlFromStorage(storageId);
     }
+
+    private async Task<string> GetSignedUrlFromStorage(string storageId)
+    {
+        string url = $"https://developer.api.autodesk.com/oss/v2/signedresources/{storageId}";
+
+        // 🔹 POST request instead of GET
+        HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, url);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", TokenManager.GetToken());
+    
+        HttpResponseMessage response = await httpClient.SendAsync(request);
+        string jsonResponse = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            Console.WriteLine($"❌ Error fetching signed URL: {response.StatusCode} - {jsonResponse}");
+            return null;
+        }
+
+        Console.WriteLine($"✅ Signed URL Response: {jsonResponse}");
+
+        using JsonDocument doc = JsonDocument.Parse(jsonResponse);
+        return doc.RootElement.GetProperty("url").GetString();
+    }
+
 
     private async Task DownloadFileAsync(string downloadUrl, string localFilePath)
     {

@@ -15,9 +15,6 @@ using Newtonsoft.Json.Linq;
 using System.Windows.Controls;
 using System.Text.Json;
 
-
-
-
 namespace AssetManager.Desktop
 {
     public partial class MainWindow : Window
@@ -134,6 +131,10 @@ namespace AssetManager.Desktop
 
         private async void BtnDownloadModel_Click(object sender, RoutedEventArgs e)
         {
+            Console.WriteLine($"📌 _selectedProjectId: {_selectedProjectId}");
+            Console.WriteLine($"📌 _selectedItemId: {_selectedItemId}");
+            Console.WriteLine($"📌 _folderId: {_folderId}");
+            
             if (string.IsNullOrEmpty(_selectedProjectId) || string.IsNullOrEmpty(_selectedItemId))
             {
                 MessageBox.Show("❌ Please select a project and model before downloading.");
@@ -201,6 +202,46 @@ namespace AssetManager.Desktop
         }
 
 
+        private async Task RetrieveItemIdAsync()
+        {
+            if (string.IsNullOrEmpty(_selectedProjectId) || string.IsNullOrEmpty(_folderId))
+            {
+                Console.WriteLine("❌ Cannot retrieve items - project or folder is missing.");
+                return;
+            }
+
+            try
+            {
+                Console.WriteLine($"🔍 Fetching items for Folder: {_folderId}");
+
+                // 🔹 Call the function to get items
+                var items = await DataManagement.GetItemsInFolder(_selectedProjectId, _folderId);
+
+                if (items == null || !items.Any())
+                {
+                    Console.WriteLine("❌ No items found in the selected folder.");
+                    return;
+                }
+
+                // 🔹 Populate ModelComboBox
+                ModelComboBox.Items.Clear();
+                foreach (var (itemId, itemName) in items)
+                {
+                    var comboBoxItem = new ComboBoxItem
+                    {
+                        Content = itemName,
+                        Tag = itemId // Store Item ID
+                    };
+                    ModelComboBox.Items.Add(comboBoxItem);
+                }
+
+                Console.WriteLine($"✅ {items.Count} items added to dropdown.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error retrieving items: {ex.Message}");
+            }
+        }
 
 
 
@@ -250,6 +291,7 @@ namespace AssetManager.Desktop
         {
             ListModelsForProject(_selectedProjectId, _folderId);
             Console.WriteLine("🔄 Models refreshed.");
+            //await RetrieveItemIdAsync();
         }
       
         
@@ -365,6 +407,7 @@ namespace AssetManager.Desktop
 
                     // 🔹 List models using the retrieved project and folder IDs
                     await ListModelsForProject(_selectedProjectId, _folderId);
+                    await RetrieveItemIdAsync();
                 }
                 catch (Exception ex)
                 {
@@ -375,14 +418,12 @@ namespace AssetManager.Desktop
 
         private void ModelComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (ModelComboBox.SelectedItem is ComboBoxItem selectedItem)
+            if (ModelComboBox.SelectedItem is ComboBoxItem selectedItem && selectedItem.Tag is string itemId)
             {
-                _selectedItemId = selectedItem.Tag as string;
+                _selectedItemId = itemId;
                 Console.WriteLine($"📌 Selected Item ID: {_selectedItemId}");
             }
         }
-
-
 
         public static async Task<List<string>> GetModelsFromProject(string projectId, string folderId)
         {
