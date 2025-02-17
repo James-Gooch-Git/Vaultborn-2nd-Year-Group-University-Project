@@ -158,7 +158,7 @@ namespace AssetManager.Infrastructure.Services
                 using JsonDocument doc = JsonDocument.Parse(jsonResponse);
                 JsonElement root = doc.RootElement;
 
-                string selectedHubId = null;
+                string selectedHubID = null;
                 string selectedHubType = null;
                 string selectedHubName = null;
 
@@ -166,15 +166,15 @@ namespace AssetManager.Infrastructure.Services
                 {
                     string hubType = hub.GetProperty("attributes").GetProperty("extension").GetProperty("type")
                         .GetString();
-                    string hubId = hub.GetProperty("id").GetString();
+                    string hubID = hub.GetProperty("id").GetString();
                     string hubName = hub.GetProperty("attributes").GetProperty("name").GetString();
 
-                    Console.WriteLine($"🔍 Found hub type: {hubType}, ID: {hubId}, Name: {hubName}");
+                    Console.WriteLine($"🔍 Found hub type: {hubType}, ID: {hubID}, Name: {hubName}");
 
                     // Store the first available hub
-                    if (selectedHubId == null)
+                    if (selectedHubID == null)
                     {
-                        selectedHubId = hubId;
+                        selectedHubID = hubID;
                         selectedHubType = hubType;
                         selectedHubName = hubName;
                     }
@@ -182,15 +182,15 @@ namespace AssetManager.Infrastructure.Services
                     // Prioritize Personal Hub if available
                     if (hubType == "hubs:autodesk.a360:PersonalHub")
                     {
-                        Console.WriteLine($"✅ Selected Personal Hub: {hubId}");
-                        return (hubId, hubName, hubType);
+                        Console.WriteLine($"✅ Selected Personal Hub: {hubID}");
+                        return (hubID, hubName, hubType);
                     }
                 }
 
-                if (selectedHubId != null)
+                if (selectedHubID != null)
                 {
-                    Console.WriteLine($"✅ No Personal Hub found, using {selectedHubType} instead: {selectedHubId}");
-                    return (selectedHubId, selectedHubName, selectedHubType);
+                    Console.WriteLine($"✅ No Personal Hub found, using {selectedHubType} instead: {selectedHubID}");
+                    return (selectedHubID, selectedHubName, selectedHubType);
                 }
 
                 Console.WriteLine("❌ No hubs found.");

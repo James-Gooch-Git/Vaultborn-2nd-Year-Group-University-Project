@@ -267,8 +267,8 @@ namespace AssetManager.Desktop
         private async Task LoadProjectsAsync()
         {
             var results = await DataManagement.GetPersonalHubDetails();
-            var (hubId, hubName, hubType) = results.Value; // Replace this with the actual Hub ID
-            var projects = await DataManagement.GetAllProjectsFromHub(hubId);
+            var (hubID, hubName, hubType) = results.Value; // Replace this with the actual Hub ID
+            var projects = await DataManagement.GetAllProjectsFromHub(hubID);
 
             if (projects != null && projects.Any())
             {
