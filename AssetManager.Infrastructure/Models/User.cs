@@ -1,11 +1,22 @@
+using MongoDB.Bson.Serialization.Attributes;
+
 namespace AssetManager.Infrastructure.Models
 {
     public class User
     {
-        public int Id { get; set; }
+        [BsonElement("_id")]
+        public string Id { get; set; }
+
+        [BsonElement("_username")]
         public string Username { get; set; }
+
+        [BsonElement("_email")]
         public string Email { get; set; }
-        public string PasswordHash { get; set; }
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+
+        [BsonElement("_profilepic")]
+        public string ProfilePic { get; set; } 
+
+        [BsonElement("_datecreated")]
+        public DateTime DateCreated { get; set; } = DateTime.Now;
     }
 }

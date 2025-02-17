@@ -11,6 +11,12 @@ using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Core.Raw;
 using Autodesk.Authentication;
 using Autodesk.Authentication.Model;
+using AssetManager.Infrastructure.Data;
+using AssetManager.Infrastructure.Models;
+using AssetManager.Infrastructure.Services;
+using Microsoft.WindowsAPICodePack.Shell.PropertySystem;
+using MongoDB.Driver;
+
 
 namespace AssetManager.Desktop;
 
@@ -23,10 +29,33 @@ public partial class LoginWindow : Window
     string grantType = "authorization_code";
     public string _codeVerifier;
     private readonly TokenService _tokenService = new TokenService();
+    private readonly string userSession;
+    private readonly string aToken;
     
     public LoginWindow()
     {
         InitializeComponent();
+        userSession = Environment.GetEnvironmentVariable("userId", EnvironmentVariableTarget.User);
+
+        //MessageBox.Show($"Your accessToken is: {aToken}");
+        if (!string.IsNullOrEmpty(userSession))
+        {
+            aToken = Environment.GetEnvironmentVariable("accessToken", EnvironmentVariableTarget.User);
+            Infrastructure.Services.TokenManager.SetToken(aToken);
+            MainWindow mainWindow = new MainWindow(userSession);
+            mainWindow.Show();
+            this.Close();
+        }
+    }
+    
+    public LoginWindow(bool logOut)
+    {
+        InitializeComponent();
+        if (logOut)
+        {
+            Environment.SetEnvironmentVariable("userId", "", EnvironmentVariableTarget.User);
+            Environment.SetEnvironmentVariable("accessToken", "", EnvironmentVariableTarget.User);
+        }
     }
     
     public class TokenManager
@@ -77,10 +106,10 @@ public partial class LoginWindow : Window
     {
         try
         {
-            string clientId = clientID; // Use the client ID from the class variable
-
-            string token = await _tokenService.GetAccessTokenAsync(authCode, _codeVerifier, clientId);
+            string token = await _tokenService.GetAccessTokenAsync(authCode, _codeVerifier, clientID);
             MessageBox.Show($"✅ Access Token: {token}");
+            Infrastructure.Services.TokenManager.SetToken(token);
+            Environment.SetEnvironmentVariable("accessToken", token, EnvironmentVariableTarget.User);
             GetUserData(token);
         }
         catch (Exception ex)
@@ -96,11 +125,31 @@ public partial class LoginWindow : Window
         AuthenticationClient authClient = new AuthenticationClient();
         UserInfo userDataResponse = await authClient.GetUserInfoAsync(accessToken);
         MessageBox.Show($"Id: {userDataResponse.Sub}, Name: {userDataResponse.Name}, Email: {userDataResponse.Email}");
-        MainWindow mainWindow = new MainWindow(userDataResponse);
+        Environment.SetEnvironmentVariable("userId", userDataResponse.Sub, EnvironmentVariableTarget.User);
+        InsertUserDataDB(userDataResponse);
+        MainWindow mainWindow = new MainWindow(userDataResponse.Sub);
         mainWindow.Show();
         this.Close();
     }
+    private async Task<TokenData> RefreshToken(string refreshToken)
+    {
+        using (HttpClient client = new HttpClient())
+        {
+            var tokenContent = new Dictionary<string, string>
+            {
+                { "grant_type", "refresh_token" },
+                { "refresh_token", refreshToken },
+                { "client_id", clientID },
+                {  "scope", "data:read data:write data:create bucket:read bucket:create bucket:update account:read" } ,
+            };
 
+            var tokenParameters = new FormUrlEncodedContent(tokenContent);
+            var tokenResponse = await client.PostAsync(tokenURL, tokenParameters);
+            var tokenResponseContent = await tokenResponse.Content.ReadAsStringAsync();
+            var tokenData = JsonConvert.DeserializeObject<TokenData>(tokenResponseContent);
+            return tokenData;
+        }
+    }
     private async void Redirected(object sender, CoreWebView2NavigationStartingEventArgs args)
     {
         //MessageBox.Show($"Redirect URL: {args.Uri}");
@@ -113,6 +162,25 @@ public partial class LoginWindow : Window
 
             if (!string.IsNullOrEmpty(authCode))
                 GetAccessToken(authCode);
+        }
+    }
+    
+    private async void InsertUserDataDB(UserInfo userInfo)
+    {
+        try
+        {
+            MongoConnection database = new MongoConnection();
+            var findUser = await database.Users.Find(x => x.Id == userInfo.Sub).FirstOrDefaultAsync();
+
+            if (findUser == null)
+            {
+                User newUser = new User { Id = userInfo.Sub, Username = userInfo.PreferredUsername, Email = userInfo.Email, ProfilePic = userInfo.Picture};
+                await database.Users.InsertOneAsync(newUser);
+            }
+        }
+        catch (Exception e)
+        {
+            MessageBox.Show($"Error: {e.Message}");
         }
     }
 

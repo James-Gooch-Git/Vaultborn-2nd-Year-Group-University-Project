@@ -38,8 +38,9 @@ namespace AssetManager.Desktop
         }
 
         // ✅ Constructor accepting UserInfo
-        public MainWindow(UserInfo userData)
+        public MainWindow(string userData)
         {
+            string UserId = userData;
             InitializeComponent();
             _accessToken = TokenManager.GetToken();
             _uploadService = new ModelUpload(_accessToken);  // ✅ Ensure this is correctly initialized
@@ -129,6 +130,13 @@ namespace AssetManager.Desktop
             }
 
            
+        }
+        
+        private async void BtnLogout_Click(object sender, RoutedEventArgs e)
+        {
+            LoginWindow loginWindow = new LoginWindow(true);
+            this.Hide();
+            loginWindow.Show();
         }
         // Button click event to upload file
         private async void BtnUploadFile_Click(object sender, RoutedEventArgs e)

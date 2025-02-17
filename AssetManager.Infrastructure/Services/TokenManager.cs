@@ -4,6 +4,8 @@ public static class TokenManager
 {
     private static string _accessToken;
     private static string _clientId;
+    private static string _refreshToken;
+    
 
     public static void SetToken(string token)
     {
@@ -16,6 +18,9 @@ public static class TokenManager
         Console.WriteLine($"🔹 Debug: Retrieving access token: {_accessToken}");
         return _accessToken;
     }
+    
+    public static void SetRefreshToken(string token) => _refreshToken = token;
+    public static string GetRefreshToken() => _refreshToken;
 
     public static void SetClientId(string clientId)
     {
