@@ -35,7 +35,7 @@
         <!-- Model Dropdown Section -->
         <StackPanel Grid.Row="2" Margin="10">
             <TextBlock Text="Model Selection:" />
-            <ComboBox x:Name="ModelDropdown" 
+            <ComboBox x:Name="ModelComboBox" 
                       Width="300" Height="30" />
         </StackPanel>
 
@@ -51,11 +51,16 @@
                 Click="BtnLogout_Click"
                 Grid.Row="4" HorizontalAlignment="Center" Margin="30"/>
         <!-- View Comments Button -->
-        <Button x:Name="BtnViewComment" 
-                Content="View Comments" 
-                Width="200" Height="40" 
-                Click="BtnViewComment_Click"
-                Grid.Row="5" HorizontalAlignment="Center" Margin="10"/>
+        <Button x:Name="BtnDownloadModel" 
+                Content="Download" 
+                Width="150" Height="30" 
+                Click="BtnDownloadModel_Click"
+                Grid.Row="4" HorizontalAlignment="Center" Margin="10"/>
+        <!-- <Button x:Name="BtnViewComment"  -->
+        <!--         Content="View Comments"  -->
+        <!--         Width="200" Height="40"  -->
+        <!--         Click="BtnViewComment_Click" -->
+        <!--         Grid.Row="5" HorizontalAlignment="Center" Margin="10"/> -->
 
         <!-- Comments List -->
         <ListBox x:Name="ListComments" Width="450" Height="200" 
@@ -86,12 +91,12 @@
                  Visibility="Hidden"/>
 
         <!-- Post Comment Button -->
-        <Button x:Name="BtnAddComment" 
-                Content="Post Comment" 
-                Width="200" Height="40"
-                Click="BtnAddComment_Click"
-                Grid.Row="8" HorizontalAlignment="Center" Margin="10"
-                Visibility="Hidden"/>
+        <!-- <Button x:Name="BtnAddComment"  -->
+        <!--         Content="Post Comment"  -->
+        <!--         Width="200" Height="40" -->
+        <!--         Click="BtnAddComment_Click" -->
+        <!--         Grid.Row="8" HorizontalAlignment="Center" Margin="10" -->
+        <!--         Visibility="Hidden"/> -->
 
         <!-- ✅ Log Out Button (Moved to Row 7) -->
        
