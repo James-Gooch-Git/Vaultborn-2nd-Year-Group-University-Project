@@ -323,7 +323,7 @@ namespace AssetManager.Infrastructure.Services
 
 
         //Gets a list of Item IDs, Item Names, and Item Types from a specific folder in a project
-        public static async Task<List<(string ItemId, string ItemName, string ItemType)>> GetFolderItems(string projectId, string folderId)
+        /*public static async Task<List<(string ItemId, string ItemName, string ItemType)>> GetFolderItems(string projectId, string folderId)
         {
             string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/folders/{folderId}/contents";
             string _accessToken = TokenManager.GetToken(); // Ensure you have a valid token
@@ -380,10 +380,10 @@ namespace AssetManager.Infrastructure.Services
                 Console.WriteLine($"❌ Exception: {ex.Message}");
                 return null;
             }
-        }
+        }*/
 
         //Create New Project. DONT FUCKIN WORK
-        public static async Task<string> CreateProjectAsync(string hubId, string projectName, string projectDescription)
+        /*public static async Task<string> CreateProjectAsync(string hubId, string projectName, string projectDescription)
         {
             string url = $"https://developer.api.autodesk.com/project/v1/hubs/{hubId}/projects";
             string _accessToken = TokenManager.GetToken(); // Ensure you have a valid token
@@ -453,10 +453,10 @@ namespace AssetManager.Infrastructure.Services
                 Console.WriteLine($"❌ Exception: {ex.Message}");
                 return null;
             }
-        }
+        }*/
 
         //Creates new folder in a specified 
-        public static async Task<string> CreateNewFolder(string projectId, string accessToken, string folderName)
+        /*public static async Task<string> CreateNewFolder(string projectId, string accessToken, string folderName)
         {
             try
             {
@@ -532,7 +532,7 @@ namespace AssetManager.Infrastructure.Services
                 Console.WriteLine($"❌ Exception while creating folder: {ex.Message}");
                 return null;
             }
-        }
+        }*/
 
 
     }

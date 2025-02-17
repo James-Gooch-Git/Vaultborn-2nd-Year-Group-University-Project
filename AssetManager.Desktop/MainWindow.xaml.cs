@@ -24,7 +24,8 @@ namespace AssetManager.Desktop
     {
         private string _accessToken;
         private string _projectId;
-        private string _folderId = "urn:adsk.wipprod:fs.folder:co.KVsRYzFtQdi1b6j3eLcjhA";
+       //private string _folderId = "urn:adsk.wipprod:fs.folder:co.KVsRYzFtQdi1b6j3eLcjhA"; 
+       private string _folderId; 
         private string _selectedProjectId;
         private readonly ModelUpload _uploadService;
         
@@ -183,7 +184,7 @@ namespace AssetManager.Desktop
     
 
 
-        private async void InitializeAsync()
+        /*private async void InitializeAsync()
         {
             try
             {
@@ -203,7 +204,7 @@ namespace AssetManager.Desktop
             {
                 Console.WriteLine($"❌ Error during initialization: {ex.Message}");
             }
-        }
+        }*/
 
 
         private void BtnRefreshModels_Click(object sender, RoutedEventArgs e)
@@ -284,7 +285,7 @@ namespace AssetManager.Desktop
         }
 
 // Event handler when the user selects a project
-        private void ProjectComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        /*private void ProjectComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
 
 
@@ -298,6 +299,51 @@ namespace AssetManager.Desktop
                 Console.WriteLine($"Selected Project ID: {_selectedProjectId}");
                 ListModelsForProject(_selectedProjectId, _folderId);
 
+            }
+        }*/
+        private async void ProjectComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            // Ensure that the selection is not null or empty
+            if (ProjectComboBox.SelectedItem is ComboBoxItem selectedItem)
+            {
+                _selectedProjectId = selectedItem.Tag as string; // Store the selected project ID
+                Console.WriteLine($"📌 Selected Project ID: {_selectedProjectId}");
+
+                try
+                {
+                    // 🔹 Get the user's hub details
+                    var results = await DataManagement.GetPersonalHubDetails();
+                    if (results == null)
+                    {
+                        Console.WriteLine("❌ Error: Could not retrieve hub details.");
+                        return;
+                    }
+                    var (hubId, hubName, hubType) = results.Value;
+                    Console.WriteLine($"🏠 Hub ID: {hubId}, Name: {hubName}, Type: {hubType}");
+
+                    // 🔹 Retrieve the top-level folder for the selected project
+                    var topFolderResult = await DataManagement.GetTopLevelFolder(hubId, _selectedProjectId);
+
+                    // Correct null check (tuples cannot be directly checked for null)
+                    if (topFolderResult.FolderId == null)
+                    {
+                        Console.WriteLine("❌ Error: Failed to retrieve the top-level folder.");
+                        _folderId = null;
+                        return;
+                    }
+
+                    // ✅ Deconstruct tuple to get FolderId and FolderName
+                    var (folderId, folderName) = topFolderResult;
+                    _folderId = folderId; // Assign dynamically retrieved folder ID
+                    Console.WriteLine($"📂 Top-Level Folder ID: {_folderId} ({folderName})");
+
+                    // 🔹 List models using the retrieved project and folder IDs
+                    await ListModelsForProject(_selectedProjectId, _folderId);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"❌ Exception occurred: {ex.Message}");
+                }
             }
         }
 
