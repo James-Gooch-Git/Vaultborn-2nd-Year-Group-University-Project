@@ -23,12 +23,23 @@ public partial class LoginWindow : Window
     string grantType = "authorization_code";
     public string _codeVerifier;
     private readonly TokenService _tokenService = new TokenService();
+    private readonly string userSession;
     
     public LoginWindow()
     {
         InitializeComponent();
+        userSession = Environment.GetEnvironmentVariable("userId", EnvironmentVariableTarget.User);
+        MessageBox.Show($"Your user session is: {userSession}");
+        /*if (!string.IsNullOrEmpty(userSession))
+        {
+            MainWindow mainWindow = new MainWindow(userSession);
+            mainWindow.Show();
+            this.Close();
+        }  */  
+       
+        InitializeWebView();
     }
-    
+   
     public class TokenManager
     {
         private static string _accessToken;
@@ -36,11 +47,12 @@ public partial class LoginWindow : Window
         public static string GetToken() => _accessToken;
     }
 
-
-    private async void LoginButton_Click(object sender, RoutedEventArgs e)
+    private async void InitializeWebView()
     {
         try
         {
+            await webView.EnsureCoreWebView2Async(null);
+
             string nonce = GenerateNonce();
             Pkce pkce = GeneratePkce();
             _codeVerifier = pkce.CodeVerifier;
@@ -48,13 +60,12 @@ public partial class LoginWindow : Window
 
             webView.CoreWebView2.NavigationStarting -= Redirected;
             webView.CoreWebView2.NavigationStarting += Redirected;
-            
+
             webView.CoreWebView2.Navigate(loginURL);
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error Logging in: {ex.Message}");
-            throw;
+            MessageBox.Show(ex.Message );
         }
     }
 
