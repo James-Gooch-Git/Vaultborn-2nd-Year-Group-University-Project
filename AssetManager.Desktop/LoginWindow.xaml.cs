@@ -11,6 +11,7 @@ using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Core.Raw;
 using Autodesk.Authentication;
 using Autodesk.Authentication.Model;
+using System.IO;
 
 namespace AssetManager.Desktop;
 

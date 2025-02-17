@@ -11,6 +11,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <PackageReference Include="MaterialDesignThemes" Version="5.2.1" />
       <PackageReference Include="Microsoft-WindowsAPICodePack-Shell" Version="1.1.5" />
       <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.1" />
       <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.1" />
@@ -22,6 +23,10 @@
     <ItemGroup>
         <ProjectReference Include="..\AssetManager.Core\AssetManager.Core.csproj" />
         <ProjectReference Include="..\AssetManager.Infrastructure\AssetManager.Infrastructure.csproj" />
+    </ItemGroup>
+    
+    <ItemGroup>
+      <Folder Include="Images\" />
     </ItemGroup>
 
 </Project>
