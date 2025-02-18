@@ -1,8 +1,5 @@
-﻿using System;
-using System.Threading.Tasks;
-using System.Collections.Generic;
+﻿
 using System.IO;
-using System.Linq;
 using System.Windows;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -10,6 +7,12 @@ using System.Text.Json;
 using System.Windows.Controls;
 using AssetManager.Infrastructure.Services;
 using Microsoft.Win32;
+
+using System.Linq;
+using System;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+
 
 namespace AssetManager.Desktop
 {
@@ -39,6 +42,7 @@ namespace AssetManager.Desktop
             Initialize();
         }
 
+        
         private async void Initialize()
         {
             _accessToken = TokenManager.GetToken();
@@ -56,6 +60,7 @@ namespace AssetManager.Desktop
             await LoadProjectsAsync();
         }
 
+        
         private async Task TestDataManagement()
         {
             var result = await DataManagement.GetPersonalHubDetails();
@@ -75,6 +80,7 @@ namespace AssetManager.Desktop
                 Console.WriteLine($"📌 Project ID: {projectId}, Name: {projectName}");
             }
         }
+        
         
         private async Task LoadProjectsAsync()
         {
@@ -172,7 +178,6 @@ namespace AssetManager.Desktop
         }
 
 
-
         private async void BtnUploadFile_Click(object sender, RoutedEventArgs e)
         {
             string filePath = GetFilePathFromDialog();
@@ -201,102 +206,8 @@ namespace AssetManager.Desktop
             Console.WriteLine("✅ Upload process completed successfully!");
             MessageBox.Show("✅ Upload Successful!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
         }
-
-      /*private async Task<string> GetStorageIdFromItemAsync(string projectId, string itemId)
-    {
-        if (string.IsNullOrEmpty(projectId) || string.IsNullOrEmpty(itemId))
-        {
-            Console.WriteLine("❌ Error: Project ID or Item ID is missing.");
-            return null;
-        }
-
-        string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/items/{itemId}";
-        string accessToken = TokenManager.GetToken();
-
-        using HttpClient httpClient = new HttpClient();
-        httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-
-        try
-        {
-            Console.WriteLine($"🔍 Fetching storage location for Item: {itemId}");
-            HttpResponseMessage response = await httpClient.GetAsync(url);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                Console.WriteLine($"❌ Error retrieving item details. Status Code: {response.StatusCode}");
-                return null;
-            }
-
-            string jsonResponse = await response.Content.ReadAsStringAsync();
-            using JsonDocument doc = JsonDocument.Parse(jsonResponse);
-            JsonElement root = doc.RootElement;
-
-            // ✅ Extract the storage ID from relationships
-            if (!root.TryGetProperty("data", out JsonElement dataElement) ||
-                !dataElement.TryGetProperty("relationships", out JsonElement relationships) ||
-                !relationships.TryGetProperty("tip", out JsonElement tipElement) ||
-                !tipElement.TryGetProperty("data", out JsonElement tipData) ||
-                !tipData.TryGetProperty("id", out JsonElement latestVersionElement))
-            {
-                Console.WriteLine("❌ Error: Could not retrieve latest version ID.");
-                return null;
-            }
-
-            string latestVersionId = latestVersionElement.GetString();
-            Console.WriteLine($"✅ Latest Version ID: {latestVersionId}");
-
-            // 🔹 Now retrieve the storage location from the latest version
-            return await GetStorageIdFromVersion(projectId, latestVersionId);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"❌ Exception while retrieving storage location: {ex.Message}");
-            return null;
-        }
-    }*/
-  
-/*if (versions != null && versions.Any())
-{
-    Console.WriteLine("🔹 Available Versions:");
-    foreach (var (versionId, versionName, storageId) in versions)
-    {
-        Console.WriteLine($"📄 {versionName} - ID: {versionId}, Storage: {storageId}");
-    }
-
-    // ✅ Automatically select the latest version
-    var latestVersion = versions.First();
-    Console.WriteLine($"✅ Using Latest Version: {latestVersion.versionName} - {latestVersion.versionId}");
-
-    string selectedStorageId = latestVersion.storageId;
-    Console.WriteLine($"📦 Storage ID for Download: {selectedStorageId}");
-}*/
-       
-
-        /*private async Task LoadProjectsAsync()
-        {
-            var results = await DataManagement.GetPersonalHubDetails();
-            var (hubID, hubName, hubType) = results.Value;
-            var projects = await DataManagement.GetAllProjectsFromHub(hubID);
-
-            if (projects != null && projects.Any())
-            {
-                ProjectComboBox.Items.Clear();
-                foreach (var (projectId, projectName) in projects)
-                {
-                    ComboBoxItem item = new ComboBoxItem
-                    {
-                        Content = projectName,
-                        Tag = projectId
-                    };
-                    ProjectComboBox.Items.Add(item);
-                }
-            }
-            else
-            {
-                Console.WriteLine("❌ No projects found or failed to load projects.");
-            }
-        }*/
-
+        
+        
         private async void ProjectComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (ProjectComboBox.SelectedItem is ComboBoxItem selectedItem)
@@ -336,7 +247,7 @@ namespace AssetManager.Desktop
         }
        
 
-       private async Task RetrieveItemIdAsync()
+        private async Task RetrieveItemIdAsync()
 {
     if (string.IsNullOrEmpty(_selectedProjectId) || string.IsNullOrEmpty(_folderId))
     {
@@ -407,68 +318,69 @@ namespace AssetManager.Desktop
     }
 }
 
-// 🔹 Fetch all versions of an Item
-private async Task<List<(string versionId, string versionName, string storageId)>> GetVersionsForItemAsync(string projectId, string itemId)
-{
-    if (string.IsNullOrEmpty(projectId) || string.IsNullOrEmpty(itemId))
-    {
-        Console.WriteLine("❌ Error: Project ID or Item ID is missing.");
-        return null;
-    }
-
-    string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/items/{itemId}/versions";
-    string accessToken = TokenManager.GetToken();
-
-    using HttpClient httpClient = new HttpClient();
-    httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-
-    try
-    {
-        Console.WriteLine($"🔍 Fetching versions for Item: {itemId}");
-        HttpResponseMessage response = await httpClient.GetAsync(url);
-
-        if (!response.IsSuccessStatusCode)
+        
+        // 🔹 Fetch all versions of an Item
+        private async Task<List<(string versionId, string versionName, string storageId)>> GetVersionsForItemAsync(string projectId, string itemId)
         {
-            Console.WriteLine($"❌ Error retrieving versions. Status Code: {response.StatusCode}");
-            return null;
-        }
-
-        string jsonResponse = await response.Content.ReadAsStringAsync();
-        using JsonDocument doc = JsonDocument.Parse(jsonResponse);
-        JsonElement root = doc.RootElement;
-
-        List<(string versionId, string versionName, string storageId)> versions = new();
-
-        if (root.TryGetProperty("data", out JsonElement versionsArray))
-        {
-            foreach (JsonElement versionElement in versionsArray.EnumerateArray())
+            if (string.IsNullOrEmpty(projectId) || string.IsNullOrEmpty(itemId))
             {
-                string versionId = versionElement.GetProperty("id").GetString();
-                string versionName = versionElement.GetProperty("attributes").GetProperty("displayName").GetString();
+                Console.WriteLine("❌ Error: Project ID or Item ID is missing.");
+                return null;
+            }
 
-                string storageId = null;
-                if (versionElement.TryGetProperty("relationships", out JsonElement relationships) &&
-                    relationships.TryGetProperty("storage", out JsonElement storage) &&
-                    storage.TryGetProperty("data", out JsonElement storageData) &&
-                    storageData.TryGetProperty("id", out JsonElement storageIdElement))
+            string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/items/{itemId}/versions";
+            string accessToken = TokenManager.GetToken();
+
+            using HttpClient httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+            try
+            {
+                Console.WriteLine($"🔍 Fetching versions for Item: {itemId}");
+                HttpResponseMessage response = await httpClient.GetAsync(url);
+
+                if (!response.IsSuccessStatusCode)
                 {
-                    storageId = storageIdElement.GetString();
+                    Console.WriteLine($"❌ Error retrieving versions. Status Code: {response.StatusCode}");
+                    return null;
                 }
 
-                Console.WriteLine($"📄 Found Version: {versionName} (ID: {versionId}) - Storage ID: {storageId}");
-                versions.Add((versionId, versionName, storageId));
+                string jsonResponse = await response.Content.ReadAsStringAsync();
+                using JsonDocument doc = JsonDocument.Parse(jsonResponse);
+                JsonElement root = doc.RootElement;
+
+                List<(string versionId, string versionName, string storageId)> versions = new();
+
+                if (root.TryGetProperty("data", out JsonElement versionsArray))
+                {
+                    foreach (JsonElement versionElement in versionsArray.EnumerateArray())
+                    {
+                        string versionId = versionElement.GetProperty("id").GetString();
+                        string versionName = versionElement.GetProperty("attributes").GetProperty("displayName").GetString();
+
+                        string storageId = null;
+                        if (versionElement.TryGetProperty("relationships", out JsonElement relationships) &&
+                            relationships.TryGetProperty("storage", out JsonElement storage) &&
+                            storage.TryGetProperty("data", out JsonElement storageData) &&
+                            storageData.TryGetProperty("id", out JsonElement storageIdElement))
+                        {
+                            storageId = storageIdElement.GetString();
+                        }
+
+                        Console.WriteLine($"📄 Found Version: {versionName} (ID: {versionId}) - Storage ID: {storageId}");
+                        versions.Add((versionId, versionName, storageId));
+                    }
+                }
+
+                return versions;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Exception while retrieving versions: {ex.Message}");
+                return null;
             }
         }
-
-        return versions;
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"❌ Exception while retrieving versions: {ex.Message}");
-        return null;
-    }
-}
-// 🔹 Fetch Storage ID from an Item
+        // 🔹 Fetch Storage ID from an Item
 
         
         private async Task<List<string>> GetModelsFromProject(string projectId, string folderId)
@@ -519,7 +431,9 @@ private async Task<List<(string versionId, string versionName, string storageId)
                 return null;
             }
         }
-// ✅ Button Click Event to Refresh Models
+        // ✅ Button Click Event to Refresh Models
+        
+        
         private void BtnRefreshModels_Click(object sender, RoutedEventArgs e)
         {
             Console.WriteLine("🔄 Refreshing models...");
@@ -533,7 +447,7 @@ private async Task<List<(string versionId, string versionName, string storageId)
             }
         }
 
-// ✅ Button Click Event to Log Out
+        // ✅ Button Click Event to Log Out
         private void BtnLogout_Click(object sender, RoutedEventArgs e)
         {
             Console.WriteLine("👤 Logging out...");
@@ -603,9 +517,7 @@ private async Task<List<(string versionId, string versionName, string storageId)
 
             return openFileDialog.ShowDialog() == true ? openFileDialog.FileName : null;
         }
-        
       
-        
        
 
 
