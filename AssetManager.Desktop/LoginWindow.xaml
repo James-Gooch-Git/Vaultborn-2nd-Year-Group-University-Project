@@ -3,6 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        xmlns:md="clr-namespace:MaterialDesignThemes.Wpf;assembly=MaterialDesignThemes.Wpf"
         xmlns:local="clr-namespace:AssetManager.Desktop"
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
         mc:Ignorable="d"
@@ -38,7 +40,10 @@
 
             <!-- button to find out more about autodesk -->
             <Border Width="200" Height="25" BorderBrush="White" BorderThickness="1" Margin="0,145,0,0" HorizontalAlignment="Center" VerticalAlignment="Center">
-                <TextBlock Text="Find out more about Autodesk" HorizontalAlignment="Center" FontSize="12" Foreground="White" VerticalAlignment="Top" Margin="15,3,0,0"></TextBlock>
+                <StackPanel Orientation="Horizontal">
+                    <md:PackIcon Kind="Link" Width="14" Height="14" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="10,0,0,0" Foreground="White"/>
+                    <TextBlock Text="Find out more about Autodesk" HorizontalAlignment="Right" FontSize="12" Foreground="White" VerticalAlignment="Center" Margin="5,0,0,0"/>
+                </StackPanel>
             </Border>
 
         </Grid>

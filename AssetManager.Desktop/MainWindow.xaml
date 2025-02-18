@@ -82,10 +82,21 @@
                 <md:PackIcon Kind="Magnify" Width="14" Height="14" VerticalAlignment="Center"  Margin="-5,0,0,0"/>
                 <TextBlock x:Name="SearchText" Text="Search By Name..." FontSize="10" Margin="3,1,0,0" VerticalAlignment="Center"/>
             </StackPanel>
-            <!--<Button.Content>
-        <md:PackIcon VerticalAlignment="Center" HorizontalAlignment="Left" Kind="Magnify" Width="25" Height="25"/>
-    </Button.Content>-->
         </Button>
+
+        <Rectangle Grid.Column="1" Grid.Row="1" Fill="#A3A3A3" VerticalAlignment="Top" Margin="0,86,145,0" HorizontalAlignment="Right" Height="19" Width="1" RenderTransformOrigin="0.5,0.5">
+            <Rectangle.RenderTransform>
+                <TransformGroup>
+                    <ScaleTransform ScaleX="-1"/>
+                    <SkewTransform/>
+                    <RotateTransform/>
+                    <TranslateTransform/>
+                </TransformGroup>
+            </Rectangle.RenderTransform>
+        </Rectangle>
+
+        <md:PackIcon Grid.Row="1" Grid.Column="1" Kind="FormatListBulleted" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,88,151,0"/>
+
         <!--<Button x:Name="BtnUploadFile" 
         Content="Import Asset" 
         Width="200" Height="40" 
