@@ -1,0 +1,16 @@
+adsk-2.0.12157.dist-info/INSTALLER,sha256=zuuue4knoyJ-UwPPXg8fezS7VCrXJQrAP7zeNuwvFQg,4
+adsk-2.0.12157.dist-info/METADATA,sha256=xUW89oE6YocbPigh9L9zFoBtwv5KZINlyO10x0CeQWw,1019
+adsk-2.0.12157.dist-info/RECORD,,
+adsk-2.0.12157.dist-info/REQUESTED,sha256=47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU,0
+adsk-2.0.12157.dist-info/WHEEL,sha256=In9FTNxeP60KnTkGw7wk6mJPYd_dQSjEZmXdBdMCI-8,91
+adsk-2.0.12157.dist-info/top_level.txt,sha256=LQAA-Lo2zRKmw0D_zhQcwr62tvwVzhb9fcLdUoQRnK8,5
+adsk/__init__.py,sha256=h-kqSnx7vOlnPYRfiFTaGieIwOLY5UgkbLqlakQyd_8,1255
+adsk/__pycache__/__init__.cpython-313.pyc,,
+adsk/__pycache__/cam.cpython-313.pyc,,
+adsk/__pycache__/core.cpython-313.pyc,,
+adsk/__pycache__/drawing.cpython-313.pyc,,
+adsk/__pycache__/fusion.cpython-313.pyc,,
+adsk/cam.py,sha256=J_HJD4T6N33FasnvhCAOjJtX73f9LJDaM63Woj8cYXs,116504
+adsk/core.py,sha256=GDtT3w69okNIKfW7pmLF2P0tFnU4mb9Ry01uKzbmQDE,731332
+adsk/drawing.py,sha256=8RTht8WEtC7TUgFhV44V0fDHjHbok6xodlb20MRL0Y0,6155
+adsk/fusion.py,sha256=4KtkpciNdqZgsXH5vqCC32XQKMwYMQ2t43vEdfvme6o,1524201

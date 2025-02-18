@@ -1,0 +1,7 @@
+module Adsk.Fusion.Commands
+linktarget FusionQml::FQCommands_qml_plugin
+plugin FQCommands_qml_plugin
+classname FQCommands
+typeinfo FQCommands.qmltypes
+prefer :/qt-project.org/imports/Adsk/Fusion/Commands/
+

@@ -216,7 +216,7 @@ namespace AssetManager.Desktop
         {
             try
             {
-                string pythonScriptPath = @"C:\Users\james\Desktop\AssetManagerTom2\AssetManager\AssetManager.Core\Fusion\FusionAddIn.py"; // Adjust to correct script location
+                string pythonScriptPath = @"C:\Users\james\Desktop\AssetManagerTom2\AssetManager\AssetManager.Core\Fusion\FusionAddIn\FusionAddIn.py"; // Adjust to correct script location
 
                 if (!File.Exists(pythonScriptPath))
                 {
