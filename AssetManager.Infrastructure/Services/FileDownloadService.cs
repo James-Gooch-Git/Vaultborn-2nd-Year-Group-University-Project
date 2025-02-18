@@ -20,58 +20,7 @@ public class FileDownloadService
 {
     private static readonly HttpClient httpClient = new HttpClient();
 
-    private async Task<string> GetDirectDownloadUrl(string projectId, string itemId)
-     {
-         if (string.IsNullOrEmpty(projectId) || string.IsNullOrEmpty(itemId))
-         {
-             Console.WriteLine("❌ Error: Project ID or Item ID is missing.");
-             return null;
-         }
- 
-         // ✅ Fetch the latest version of the item
-         string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/items/{itemId}/versions";
-         Console.WriteLine($"🔍 Fetching latest version: {url}");
- 
-         using HttpClient httpClient = new HttpClient();
-         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TokenManager.GetToken());
- 
-         HttpResponseMessage response = await httpClient.GetAsync(url);
-         string jsonResponse = await response.Content.ReadAsStringAsync();
- 
-         Console.WriteLine($"📩 API Response: {jsonResponse}");
- 
-         if (!response.IsSuccessStatusCode)
-         {
-             Console.WriteLine($"❌ Error retrieving version details. Status Code: {response.StatusCode}");
-             return null;
-         }
- 
-         using JsonDocument doc = JsonDocument.Parse(jsonResponse);
-         JsonElement root = doc.RootElement;
- 
-         // ✅ Extract the "storage.meta.link.href" (Direct Download Link)
-         if (!root.TryGetProperty("data", out JsonElement dataArray) || dataArray.GetArrayLength() == 0)
-         {
-             Console.WriteLine("❌ Error: No versions found.");
-             return null;
-         }
- 
-         JsonElement latestVersion = dataArray[0];
- 
-         if (latestVersion.TryGetProperty("relationships", out JsonElement relationships) &&
-             relationships.TryGetProperty("storage", out JsonElement storage) &&
-             storage.TryGetProperty("meta", out JsonElement meta) &&
-             meta.TryGetProperty("link", out JsonElement link) &&
-             link.TryGetProperty("href", out JsonElement href))
-         {
-             string downloadUrl = href.GetString();
-             Console.WriteLine($"✅ Direct Download URL: {downloadUrl}");
-             return downloadUrl;
-         }
- 
-         Console.WriteLine("❌ Error: Could not find the direct download link.");
-         return null;
-     }
+
     
     public async Task<List<(string versionId, string versionName, string storageId)>> GetVersionsForItemAsync(string projectId, string itemId)
     {
@@ -165,53 +114,7 @@ public class FileDownloadService
         return storageId;
     }
  
-   // 🔹 Step 1: Get latest version ID of the item
-    private async Task<(string versionId, string correctedItemId)> GetLatestVersionId(string projectId, string itemId)
-       {
-           string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/items/{itemId}/versions";
-           Console.WriteLine($"🔍 Fetching Versions: {url}");
-   
-           using HttpClient httpClient = new HttpClient();
-           httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TokenManager.GetToken());
-   
-           HttpResponseMessage response = await httpClient.GetAsync(url);
-           string jsonResponse = await response.Content.ReadAsStringAsync();
-   
-           Console.WriteLine($"📩 API Response: {jsonResponse}");
-   
-           if (!response.IsSuccessStatusCode)
-           {
-               Console.WriteLine($"❌ Error retrieving versions. Status Code: {response.StatusCode}");
-               return (null, null);
-           }
-   
-           using JsonDocument doc = JsonDocument.Parse(jsonResponse);
-           JsonElement root = doc.RootElement;
-   
-           if (!root.TryGetProperty("data", out JsonElement dataArray) || dataArray.GetArrayLength() == 0)
-           {
-               Console.WriteLine("❌ Error: No versions found for the selected item.");
-               return (null, null);
-           }
-   
-           // ✅ Extract latest version's ID (fs.file:vf.)
-           JsonElement latestVersion = dataArray[0];
-           string versionId = latestVersion.GetProperty("id").GetString();
-   
-           // ✅ Extract the correct "dm.lineage" item ID
-           string extractedItemId = latestVersion.GetProperty("relationships")
-               .GetProperty("item")
-               .GetProperty("data")
-               .GetProperty("id")
-               .GetString();
-   
-           Console.WriteLine($"✅ Latest Version ID: {versionId}");
-           Console.WriteLine($"✅ Corrected Item ID: {extractedItemId}");
-   
-           return (versionId, extractedItemId);
-       }
 
-    // 🔹 Step 3: Extract bucket and object keys
     public (string bucketKey, string objectKey) ExtractBucketAndObjectKeys(string storageId)
     {
         if (string.IsNullOrEmpty(storageId) || !storageId.StartsWith("urn:adsk.objects:os.object:"))
@@ -265,7 +168,103 @@ public class FileDownloadService
         }
     }
 
-
+    private async Task<string> GetDirectDownloadUrl(string projectId, string itemId)
+     {
+         if (string.IsNullOrEmpty(projectId) || string.IsNullOrEmpty(itemId))
+         {
+             Console.WriteLine("❌ Error: Project ID or Item ID is missing.");
+             return null;
+         }
+ 
+         // ✅ Fetch the latest version of the item
+         string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/items/{itemId}/versions";
+         Console.WriteLine($"🔍 Fetching latest version: {url}");
+ 
+         using HttpClient httpClient = new HttpClient();
+         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TokenManager.GetToken());
+ 
+         HttpResponseMessage response = await httpClient.GetAsync(url);
+         string jsonResponse = await response.Content.ReadAsStringAsync();
+ 
+         Console.WriteLine($"📩 API Response: {jsonResponse}");
+ 
+         if (!response.IsSuccessStatusCode)
+         {
+             Console.WriteLine($"❌ Error retrieving version details. Status Code: {response.StatusCode}");
+             return null;
+         }
+ 
+         using JsonDocument doc = JsonDocument.Parse(jsonResponse);
+         JsonElement root = doc.RootElement;
+ 
+         // ✅ Extract the "storage.meta.link.href" (Direct Download Link)
+         if (!root.TryGetProperty("data", out JsonElement dataArray) || dataArray.GetArrayLength() == 0)
+         {
+             Console.WriteLine("❌ Error: No versions found.");
+             return null;
+         }
+ 
+         JsonElement latestVersion = dataArray[0];
+ 
+         if (latestVersion.TryGetProperty("relationships", out JsonElement relationships) &&
+             relationships.TryGetProperty("storage", out JsonElement storage) &&
+             storage.TryGetProperty("meta", out JsonElement meta) &&
+             meta.TryGetProperty("link", out JsonElement link) &&
+             link.TryGetProperty("href", out JsonElement href))
+         {
+             string downloadUrl = href.GetString();
+             Console.WriteLine($"✅ Direct Download URL: {downloadUrl}");
+             return downloadUrl;
+         }
+ 
+         Console.WriteLine("❌ Error: Could not find the direct download link.");
+         return null;
+     }
+    
+    private async Task<(string versionId, string correctedItemId)> GetLatestVersionId(string projectId, string itemId)
+    {
+        string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/items/{itemId}/versions";
+        Console.WriteLine($"🔍 Fetching Versions: {url}");
+   
+        using HttpClient httpClient = new HttpClient();
+        httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TokenManager.GetToken());
+   
+        HttpResponseMessage response = await httpClient.GetAsync(url);
+        string jsonResponse = await response.Content.ReadAsStringAsync();
+   
+        Console.WriteLine($"📩 API Response: {jsonResponse}");
+   
+        if (!response.IsSuccessStatusCode)
+        {
+            Console.WriteLine($"❌ Error retrieving versions. Status Code: {response.StatusCode}");
+            return (null, null);
+        }
+   
+        using JsonDocument doc = JsonDocument.Parse(jsonResponse);
+        JsonElement root = doc.RootElement;
+   
+        if (!root.TryGetProperty("data", out JsonElement dataArray) || dataArray.GetArrayLength() == 0)
+        {
+            Console.WriteLine("❌ Error: No versions found for the selected item.");
+            return (null, null);
+        }
+   
+        // ✅ Extract latest version's ID (fs.file:vf.)
+        JsonElement latestVersion = dataArray[0];
+        string versionId = latestVersion.GetProperty("id").GetString();
+   
+        // ✅ Extract the correct "dm.lineage" item ID
+        string extractedItemId = latestVersion.GetProperty("relationships")
+            .GetProperty("item")
+            .GetProperty("data")
+            .GetProperty("id")
+            .GetString();
+   
+        Console.WriteLine($"✅ Latest Version ID: {versionId}");
+        Console.WriteLine($"✅ Corrected Item ID: {extractedItemId}");
+   
+        return (versionId, extractedItemId);
+    }
 
    
     

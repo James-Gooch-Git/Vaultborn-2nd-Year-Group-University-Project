@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Windows.Controls;
 using AssetManager.Infrastructure.Services;
 using Microsoft.Win32;
+using System.Diagnostics;
 
 using System.Linq;
 using System;
@@ -24,7 +25,7 @@ namespace AssetManager.Desktop
         private string _folderId;
         private string hubID;
         private readonly ModelUpload _uploadService;
-        
+
 
         // ✅ Constructor
         public MainWindow()
@@ -42,7 +43,7 @@ namespace AssetManager.Desktop
             Initialize();
         }
 
-        
+
         private async void Initialize()
         {
             _accessToken = TokenManager.GetToken();
@@ -60,7 +61,7 @@ namespace AssetManager.Desktop
             await LoadProjectsAsync();
         }
 
-        
+
         private async Task TestDataManagement()
         {
             var result = await DataManagement.GetPersonalHubDetails();
@@ -80,8 +81,8 @@ namespace AssetManager.Desktop
                 Console.WriteLine($"📌 Project ID: {projectId}, Name: {projectName}");
             }
         }
-        
-        
+
+
         private async Task LoadProjectsAsync()
         {
             var results = await DataManagement.GetPersonalHubDetails();
@@ -93,7 +94,7 @@ namespace AssetManager.Desktop
                 return;
             }
 
-            var (hubID, hubName, hubType) = results.Value;  // ✅ Now it's safe to access
+            var (hubID, hubName, hubType) = results.Value; // ✅ Now it's safe to access
 
             Console.WriteLine($"✅ Retrieved Hub ID: {hubID}, Name: {hubName}, Type: {hubType}");
 
@@ -117,8 +118,8 @@ namespace AssetManager.Desktop
             }
         }
 
-
-        private async void BtnDownloadModel_Click(object sender, RoutedEventArgs e)
+//WOerking One
+        /*private async void BtnDownloadModel_Click(object sender, RoutedEventArgs e)
         {
             if (string.IsNullOrEmpty(_selectedProjectId) || string.IsNullOrEmpty(_selectedItemId))
             {
@@ -175,10 +176,95 @@ namespace AssetManager.Desktop
             {
                 MessageBox.Show($"❌ Error downloading model: {ex.Message}", "Download Failed", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }*/
+        /*private async void BtnDownloadModel_Click(object sender, RoutedEventArgs e)
+        {
+            var fileDownloadService = new FileDownloadService2();
+            await fileDownloadService.DownloadModelAsync(_selectedProjectId, _selectedItemId);
+        }*/
+
+        private async void BtnDownloadModel_Click(object sender, RoutedEventArgs e)
+        {
+            if (ModelComboBox.SelectedItem == null)
+            {
+                MessageBox.Show("❌ Please select a model before downloading.", "Error", MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                return;
+            }
+
+            //string selectedModelId = ModelComboBox.SelectedValue.ToString(); // Ensure this is the correct ID
+            var fileDownloadService2 = new FileDownloadService2();
+            await fileDownloadService2.DownloadModelAsync(_selectedProjectId, _selectedItemId);
         }
 
+        private void BtnViewInFusion_Click(object sender, RoutedEventArgs e)
+        {
+            if (ModelComboBox.SelectedItem == null)
+            {
+                MessageBox.Show("❌ Please select a model before viewing in Fusion 360.", "Error", MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                return;
+            }
 
-        private async void BtnUploadFile_Click(object sender, RoutedEventArgs e)
+            string selectedModelId = ModelComboBox.SelectedValue.ToString(); // Correctly retrieve the model ID
+            LaunchFusionWithModel(_selectedProjectId, selectedModelId);
+        }
+
+        private void LaunchFusionWithModel(string projectId, string itemId)
+        {
+            try
+            {
+                string pythonScriptPath = @"C:\Users\james\Desktop\AssetManagerTom2\AssetManager\AssetManager.Core\Fusion\FusionAddIn.py"; // Adjust to correct script location
+
+                if (!File.Exists(pythonScriptPath))
+                {
+                    MessageBox.Show($"❌ Python script not found at: {pythonScriptPath}", "Error", MessageBoxButton.OK,
+                        MessageBoxImage.Error);
+                    return;
+                }
+
+                // Pass projectId and itemId as arguments to the Python script
+                string arguments = $"\"{projectId}\" \"{itemId}\"";
+
+                ProcessStartInfo startInfo = new ProcessStartInfo
+                {
+                    FileName = "python",
+                    Arguments = $"{pythonScriptPath} {arguments}",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+
+                Process process = new Process { StartInfo = startInfo };
+                process.Start();
+                process.WaitForExit(); // Wait for script execution
+
+                string output = process.StandardOutput.ReadToEnd();
+                string errorOutput = process.StandardError.ReadToEnd();
+
+                if (!string.IsNullOrEmpty(errorOutput))
+                {
+                    MessageBox.Show($"❌ Error executing Python script:\n{errorOutput}", "Fusion 360 Error",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                else
+                {
+                    MessageBox.Show($"✅ Model launched successfully in Fusion 360!\n{output}", "Success",
+                        MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"❌ Error launching Fusion 360: {ex.Message}", "Launch Failed", MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+        }
+    
+
+
+
+    private async void BtnUploadFile_Click(object sender, RoutedEventArgs e)
         {
             string filePath = GetFilePathFromDialog();
             if (string.IsNullOrEmpty(filePath))
