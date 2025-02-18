@@ -1,12 +1,23 @@
-import adsk.core, adsk.fusion, adsk.cam, traceback
 import os
+import sys
+print(sys.path)
+
+script_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Define the relative path to the Fusion API modules
+fusion_api_path = os.path.join(script_dir, "..", "..", "..", "..", "..", "PythonEmbedded", "Lib")
+
+if fusion_api_path not in sys.path:
+    sys.path.append(fusion_api_path)
+    
+import adsk.core, adsk.fusion, adsk.cam, traceback
 import requests
 
 # Fusion 360 App Context
 app = adsk.core.Application.get()
 ui = app.userInterface
 
-# API Endpoint of Asset Manager (Modify this to match your C# API server)
+# API Endpoint of Asset Manager (Modify this to match your C# API server)`
 ASSET_MANAGER_API = "http://localhost:5000/api/models"
 
 # Event Handlers
