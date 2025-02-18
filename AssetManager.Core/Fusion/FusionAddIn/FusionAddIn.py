@@ -1,89 +1,94 @@
-import adsk.core, adsk.fusion, adsk.cam, traceback
+import sys
 import os
-import requests
+import time
+from subprocess import Popen
+import subprocess
 
-# Asset Manager API Endpoint
-ASSET_MANAGER_API = "http://localhost:5000/api/models"
+def log_to_file(message):
+    """Log messages to a debug file"""
+    log_path = os.path.join(os.path.dirname(__file__), 'fusion_debug.log')
+    with open(log_path, 'a') as f:
+        f.write(f"{message}\n")
 
-def run(context=None):
-    try:
-        app = adsk.core.Application.get()
-        ui = app.userInterface
+def is_fusion_running():
+    """Check if Fusion 360 is running"""
+    for proc in os.popen('tasklist').readlines():
+        if 'Fusion360.exe' in proc:
+            return True
+    return False
 
-        # Step 1: Fetch Model Info from Asset Manager
-        model_info = get_selected_model()
-        if not model_info:
-            ui.messageBox("❌ No models available in Asset Manager.")
-            return "No models found"
+def launch_fusion():
+    """Launch Fusion 360 and wait for it to start"""
+    fusion_path = r"C:\Users\james\AppData\Local\Autodesk\webdeploy\production\30c9d5533837458c62c42054f4d8a9dcee4200a0\Fusion360.exe"
 
-        model_id = model_info["model_id"]
-        model_name = model_info["model_name"]
-        
-        # Step 2: Download Model File
-        model_path = fetch_model_from_manager(model_id, model_name)
-        if not model_path:
-            ui.messageBox("❌ Failed to download model.")
-            return "Download failed"
+    if not os.path.exists(fusion_path):
+        log_to_file(f"Could not find Fusion 360 at: {fusion_path}")
+        raise Exception("Could not find Fusion 360 executable")
 
-        # Debug: Check the file path
-        ui.messageBox(f"✅ Model downloaded to: {model_path}", "Fusion Debug")
-
-        # Step 3: Open Model in Fusion 360
-        open_fusion_model(model_path)
-
-        return f"Model Opened: {model_name}"
+    log_to_file(f"Launching Fusion 360 from: {fusion_path}")
+    Popen([fusion_path])
     
-    except Exception as e:
-        ui.messageBox(f"❌ Error: {traceback.format_exc()}", "Fusion 360 Error")
-        return str(e)
+    for i in range(60):
+        if is_fusion_running():
+            log_to_file(f"Fusion 360 detected as running after {i} seconds")
+            time.sleep(15)
+            return True
+        time.sleep(1)
+    
+    raise Exception("Timeout waiting for Fusion 360 to start")
 
-def get_selected_model():
-    """Retrieve the latest model ID and name from Asset Manager."""
+def run(context):
+    ui = None
     try:
-        response = requests.get(f"{ASSET_MANAGER_API}/latest")
-        response.raise_for_status()
-        return response.json()
-    except requests.RequestException as e:
-        return None
+        log_to_file("Checking if Fusion 360 is running...")
+        if not is_fusion_running():
+            log_to_file("Launching Fusion 360...")
+            launch_fusion()
+            log_to_file("Fusion 360 launched and initialized")
+        else:
+            log_to_file("Fusion 360 is already running")
 
-def fetch_model_from_manager(model_id, model_name):
-    """Download the model file from Asset Manager API."""
-    try:
-        model_extension = ".f3d"  # Adjust if necessary
-        download_url = f"{ASSET_MANAGER_API}/download/{model_id}"
-        save_path = os.path.join(os.path.expanduser("~/Downloads"), f"{model_name}{model_extension}")
-
-        response = requests.get(download_url, stream=True)
-        response.raise_for_status()
-
-        with open(save_path, "wb") as file:
-            for chunk in response.iter_content(chunk_size=8192):
-                file.write(chunk)
-
-        return save_path
-    except requests.RequestException:
-        return None
-
-def open_fusion_model(file_path):
-    """Opens the downloaded model in Fusion 360."""
-    try:
-        app = adsk.core.Application.get()
-        ui = app.userInterface
-
-        # Check if file exists
-        if not os.path.exists(file_path):
-            ui.messageBox(f"❌ Model file not found: {file_path}", "Fusion Error")
+        if len(sys.argv) < 2:
+            log_to_file("No models directory specified")
             return
 
-        # Debug: Show the file path before opening
-        ui.messageBox(f"Opening model: {file_path}", "Fusion 360 Debug")
+        models_dir = sys.argv[1]
+        log_to_file(f"Looking in directory: {models_dir}")
 
-        # Open the model
-        doc = app.documents.open(file_path)
-        if doc:
-            ui.messageBox(f"✅ Successfully opened model: {file_path}", "Fusion 360")
-        else:
-            ui.messageBox("❌ Fusion 360 failed to open the model.", "Fusion 360 Error")
+        files = [(f, os.path.getmtime(os.path.join(models_dir, f))) 
+                for f in os.listdir(models_dir) 
+                if os.path.isfile(os.path.join(models_dir, f))]
+        
+        if not files:
+            log_to_file("No files found in models directory")
+            return
+
+        latest_file = max(files, key=lambda x: x[1])[0]
+        file_path = os.path.join(models_dir, latest_file)
+        log_to_file(f"File to open: {file_path}")
+
+        # Get Fusion path
+        fusion_exe = r"C:\Users\james\AppData\Local\Autodesk\webdeploy\production\30c9d5533837458c62c42054f4d8a9dcee4200a0\Fusion360.exe"
+
+        # Launch Fusion with the file as argument
+        log_to_file(f"Launching Fusion with file: {file_path}")
+        subprocess.Popen([fusion_exe, "/open", file_path])
+        
+        log_to_file("Launch command sent")
+        
+        # Wait for a few seconds to allow Fusion to process
+        time.sleep(10)
+        
+        log_to_file("Process completed")
 
     except Exception as e:
-        ui.messageBox(f"❌ Error opening model: {traceback.format_exc()}", "Fusion 360 Error")
+        log_to_file(f"Error: {str(e)}")
+        log_to_file(traceback.format_exc())
+
+if __name__ == '__main__':
+    try:
+        log_to_file("\n\n=== Starting new run ===")
+        run(None)
+    except Exception as e:
+        log_to_file(f"Main error: {str(e)}")
+        print(f"Error: {str(e)}")
