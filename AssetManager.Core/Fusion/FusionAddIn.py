@@ -1,15 +1,35 @@
 import os
 import sys
-print(sys.path)
+print("sys.path:", sys.path)
+
+import importlib.util
+print(importlib.util.find_spec("adsk"))  # Should return a path, NOT None
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
-# Define the relative path to the Fusion API modules
-fusion_api_path = os.path.join(script_dir, "..", "..", "..", "..", "..", "PythonEmbedded", "Lib")
+sys.path.insert(0, r"C:\Users\tomgr\source\repos\AssetManager\PythonEmbedded\Lib")
 
-if fusion_api_path not in sys.path:
-    sys.path.append(fusion_api_path)
-    
+import importlib.util
+print(importlib.util.find_spec("adsk"))  # Should now point to `PythonEmbedded`
+
+# Define the relative path to the Fusion API modules
+#embedded_python_path = os.path.join(script_dir, "..", "..", "..", "..", "..", "PythonEmbedded", "Lib")
+embedded_python_path = os.path.abspath(
+    r"C:\Users\tomgr\source\repos\AssetManager\PythonEmbedded"
+)
+lib_path = embedded_python_path
+print ("lib path: ", embedded_python_path)
+
+# Ensure paths are in sys.path
+if embedded_python_path not in sys.path:
+    sys.path.insert(0, embedded_python_path)  # Make sure interpreter path is first
+
+if lib_path not in sys.path:
+    sys.path.insert(1, lib_path)  # Ensure libraries are found
+
+# Debugging: Print sys.path to verify paths are set correctly
+print("sys.path:", sys.path)
+
 import adsk.core, adsk.fusion, adsk.cam, traceback
 import requests
 
