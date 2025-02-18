@@ -71,13 +71,31 @@
                 <TextBlock Text="Import Asset" Margin="1,0,0,0" VerticalAlignment="Center"/>
             </StackPanel>
         </Button>
+
+        <Button x:Name="SearchButton" Cursor="IBeam" Focusable="False"  Grid.Column="1" Grid.Row="1" Width="115" Height="24" Background="Transparent" BorderBrush="#4B4B4B" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,84,20,0">
+            <Button.Resources>
+                <Style TargetType="Border">
+                    <Setter Property="CornerRadius" Value="3"/>
+                </Style>
+            </Button.Resources>
+            <StackPanel Orientation="Horizontal">
+                <md:PackIcon Kind="Magnify" Width="14" Height="14" VerticalAlignment="Center"  Margin="-5,0,0,0"/>
+                <TextBlock x:Name="SearchText" Text="Search By Name..." FontSize="10" Margin="3,1,0,0" VerticalAlignment="Center"/>
+            </StackPanel>
+            <!--<Button.Content>
+        <md:PackIcon VerticalAlignment="Center" HorizontalAlignment="Left" Kind="Magnify" Width="25" Height="25"/>
+    </Button.Content>-->
+        </Button>
         <!--<Button x:Name="BtnUploadFile" 
-                Content="Import Asset" 
-                Width="200" Height="40" 
-                Click="BtnUploadFile_Click"/>-->
+        Content="Import Asset" 
+        Width="200" Height="40" 
+        Click="BtnUploadFile_Click"/>-->
 
 
         <!--<Button Content="Download Model" Click="DownloadModelButton_Click" Width="150" Height="40"/>-->
+
+
+
 
     </Grid>
 
