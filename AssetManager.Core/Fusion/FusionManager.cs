@@ -4,14 +4,13 @@ using System.IO;
 
 namespace AssetManager.Core;
 
-
-public class HelloWorld
+public class FusionManager
 {
-    public static void RunHW()
+    public static readonly string parentPath = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..", "..", ".."));
+
+    public static void InitializePythonEngine()
     {
-        string parentPath = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..", "..", ".."));
-        string pythonPath = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..", "..", "..",
-            "PythonEmbedded"));
+        string pythonPath = Path.GetFullPath(Path.Combine(parentPath, "PythonEmbedded"));
         string pythonDll = Path.Combine(pythonPath, "python311.dll");
 
         Environment.SetEnvironmentVariable("PYTHONHOME", pythonPath);
@@ -50,7 +49,35 @@ public class HelloWorld
         {
             PythonEngine.Shutdown();
         }
+    }
 
+    public void RunViewer()
+    {
+        try
+        {
+            PythonEngine.Initialize();
+            //Console.WriteLine($"Python.NET Initialized! Using Python {PythonEngine.Version}");
 
+            using (Py.GIL())
+            {
+                string scriptDir = parentPath + "\\AssetManager.core\\Fusion";
+                dynamic sys = Py.Import("sys");
+                sys.path.append(scriptDir);
+                //Console.WriteLine($"Added {scriptDir} to sys.path");
+                
+                dynamic pyModule = Py.Import("testscript"); // Import testscript.py
+                dynamic hwFunction = pyModule.hw;
+                string result = hwFunction();
+                Console.WriteLine($"Python script: {result}");
+            }
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"Python Initialisation Failed: {e.Message}");
+        } 
+        finally 
+        {
+            PythonEngine.Shutdown();
+        }
     }
 }
