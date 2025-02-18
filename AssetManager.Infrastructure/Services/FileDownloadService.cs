@@ -1,244 +1,78 @@
+using System.Net.Http.Headers;
+using System.Text.Json;
+using AssetManager.Infrastructure.Services;
+//using Newtonsoft.Json;
+using System.Threading.Tasks;
+using System.Collections.Generic;
 using System;
 using System.IO;
 using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Text.Json;
-using System.Threading.Tasks;
-using System.Collections.Generic;
-using AssetManager.Infrastructure.Services;
+
+
+
+
+
+
+
+
 
 public class FileDownloadService
 {
     private static readonly HttpClient httpClient = new HttpClient();
 
-    public async Task DownloadModel(string projectId, string itemId)
-    {
-        if (string.IsNullOrEmpty(projectId) || string.IsNullOrEmpty(itemId))
-        {
-            Console.WriteLine("❌ Error: Missing project or item ID.");
-            return;
-        }
-
-        try
-        {
-            // ✅ Step 1: Get the direct download URL
-            string downloadUrl = await GetSignedDownloadUrl(projectId, itemId);
-
-            if (string.IsNullOrEmpty(downloadUrl))
-            {
-                Console.WriteLine("❌ Error: Could not retrieve download URL.");
-                return;
-            }
-
-            Console.WriteLine($"✅ Direct Download URL retrieved: {downloadUrl}");
-
-            // ✅ Step 2: Determine local file path
-            string fileName = downloadUrl.Split('/').Last();
-            string localFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), fileName);
-
-            // ✅ Step 3: Download the file
-            await DownloadFileAsync(downloadUrl, localFilePath);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"❌ Exception occurred while downloading: {ex.Message}");
-        }
-    }
+    private async Task<string> GetDirectDownloadUrl(string projectId, string itemId)
+     {
+         if (string.IsNullOrEmpty(projectId) || string.IsNullOrEmpty(itemId))
+         {
+             Console.WriteLine("❌ Error: Project ID or Item ID is missing.");
+             return null;
+         }
+ 
+         // ✅ Fetch the latest version of the item
+         string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/items/{itemId}/versions";
+         Console.WriteLine($"🔍 Fetching latest version: {url}");
+ 
+         using HttpClient httpClient = new HttpClient();
+         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TokenManager.GetToken());
+ 
+         HttpResponseMessage response = await httpClient.GetAsync(url);
+         string jsonResponse = await response.Content.ReadAsStringAsync();
+ 
+         Console.WriteLine($"📩 API Response: {jsonResponse}");
+ 
+         if (!response.IsSuccessStatusCode)
+         {
+             Console.WriteLine($"❌ Error retrieving version details. Status Code: {response.StatusCode}");
+             return null;
+         }
+ 
+         using JsonDocument doc = JsonDocument.Parse(jsonResponse);
+         JsonElement root = doc.RootElement;
+ 
+         // ✅ Extract the "storage.meta.link.href" (Direct Download Link)
+         if (!root.TryGetProperty("data", out JsonElement dataArray) || dataArray.GetArrayLength() == 0)
+         {
+             Console.WriteLine("❌ Error: No versions found.");
+             return null;
+         }
+ 
+         JsonElement latestVersion = dataArray[0];
+ 
+         if (latestVersion.TryGetProperty("relationships", out JsonElement relationships) &&
+             relationships.TryGetProperty("storage", out JsonElement storage) &&
+             storage.TryGetProperty("meta", out JsonElement meta) &&
+             meta.TryGetProperty("link", out JsonElement link) &&
+             link.TryGetProperty("href", out JsonElement href))
+         {
+             string downloadUrl = href.GetString();
+             Console.WriteLine($"✅ Direct Download URL: {downloadUrl}");
+             return downloadUrl;
+         }
+ 
+         Console.WriteLine("❌ Error: Could not find the direct download link.");
+         return null;
+     }
     
-
-    /*private async Task DownloadFileAsync(string downloadUrl, string localFilePath)
-    {
-        Console.WriteLine($"📥 Downloading file to: {localFilePath}");
-
-        try
-        {
-            using HttpClient httpClient = new HttpClient();
-            HttpResponseMessage response = await httpClient.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                Console.WriteLine($"❌ Error downloading file. Status Code: {response.StatusCode}");
-                return;
-            }
-
-            await using FileStream fileStream = new FileStream(localFilePath, FileMode.Create, FileAccess.Write);
-            await response.Content.CopyToAsync(fileStream);
-
-            Console.WriteLine($"✅ File downloaded successfully: {localFilePath}");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"❌ Error during file download: {ex.Message}");
-        }
-    }*/
-
-
-    /*
-    private async Task DownloadFileAsync(string downloadUrl, string localFilePath)
-    {
-        Console.WriteLine($"📥 Downloading file to: {localFilePath}");
-
-        try
-        {
-            using HttpClient httpClient = new HttpClient();
-            HttpResponseMessage response = await httpClient.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                Console.WriteLine($"❌ Error downloading file. Status Code: {response.StatusCode}");
-                return;
-            }
-
-            await using FileStream fileStream = new FileStream(localFilePath, FileMode.Create, FileAccess.Write);
-            await response.Content.CopyToAsync(fileStream);
-
-            Console.WriteLine($"✅ File downloaded successfully: {localFilePath}");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"❌ Error during file download: {ex.Message}");
-        }
-    }
-    */
-
-   
-    /*private async Task DownloadFileAsync(string downloadUrl, string localFilePath)
-    {
-        Console.WriteLine($"📥 Downloading file from: {downloadUrl}");
-
-        HttpResponseMessage response = await httpClient.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead);
-        if (!response.IsSuccessStatusCode)
-        {
-            Console.WriteLine($"❌ Error downloading file: {response.StatusCode}");
-            return;
-        }
-
-        await using FileStream fileStream = new FileStream(localFilePath, FileMode.Create, FileAccess.Write);
-        await response.Content.CopyToAsync(fileStream);
-
-        Console.WriteLine($"✅ File downloaded successfully to: {localFilePath}");
-    }*/
-
-   
-    /*private async Task<string> GetStorageIdFromVersion(string projectId, string versionId)
-    {
-        if (string.IsNullOrEmpty(versionId))
-        {
-            Console.WriteLine("❌ Error: Version ID is missing.");
-            return null;
-        }
-
-        // ✅ Step 1: Remove Query Parameters (`?version=1`)
-        int queryIndex = versionId.IndexOf("?");
-        if (queryIndex != -1)
-        {
-            versionId = versionId.Substring(0, queryIndex);
-        }
-
-        // ✅ Ensure correct `fs.file:vf.` format for version API
-        if (!versionId.StartsWith("urn:adsk.wipprod:fs.file:vf."))
-        {
-            Console.WriteLine("❌ Error: Version ID is not in the correct `fs.file:vf.` format.");
-            return null;
-        }
-
-        Console.WriteLine($"🔍 Cleaned & Formatted Version ID: {versionId}");
-
-        // ✅ Step 3: Fetch Storage ID from Autodesk API
-        string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/versions/{versionId}";
-        Console.WriteLine($"🔍 Fetching Storage ID from Version: {url}");
-
-        using HttpClient httpClient = new HttpClient();
-        httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TokenManager.GetToken());
-
-        HttpResponseMessage response = await httpClient.GetAsync(url);
-        string jsonResponse = await response.Content.ReadAsStringAsync();
-
-        Console.WriteLine($"📩 API Response: {jsonResponse}");
-
-        if (!response.IsSuccessStatusCode)
-        {
-            Console.WriteLine($"❌ Error retrieving version details. Status Code: {response.StatusCode}");
-            return null;
-        }
-
-        using JsonDocument doc = JsonDocument.Parse(jsonResponse);
-        JsonElement root = doc.RootElement;
-
-        // ✅ Step 4: Extract Storage ID from API Response
-        if (!root.TryGetProperty("data", out JsonElement dataElement) ||
-            !dataElement.TryGetProperty("relationships", out JsonElement relationships) ||
-            !relationships.TryGetProperty("storage", out JsonElement storage) ||
-            !storage.TryGetProperty("data", out JsonElement storageData) ||
-            !storageData.TryGetProperty("id", out JsonElement storageIdElement))
-        {
-            Console.WriteLine("❌ Error: Storage ID not found in version details.");
-            return null;
-        }
-
-        string storageId = storageIdElement.GetString();
-        Console.WriteLine($"✅ Successfully Retrieved Storage ID: {storageId}");
-
-        return storageId;
-    }*/
-   private async Task<string> GetDirectDownloadUrl(string projectId, string itemId)
-    {
-        if (string.IsNullOrEmpty(projectId) || string.IsNullOrEmpty(itemId))
-        {
-            Console.WriteLine("❌ Error: Project ID or Item ID is missing.");
-            return null;
-        }
-
-        // ✅ Fetch the latest version of the item
-        string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/items/{itemId}/versions";
-        Console.WriteLine($"🔍 Fetching latest version: {url}");
-
-        using HttpClient httpClient = new HttpClient();
-        httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TokenManager.GetToken());
-
-        HttpResponseMessage response = await httpClient.GetAsync(url);
-        string jsonResponse = await response.Content.ReadAsStringAsync();
-
-        Console.WriteLine($"📩 API Response: {jsonResponse}");
-
-        if (!response.IsSuccessStatusCode)
-        {
-            Console.WriteLine($"❌ Error retrieving version details. Status Code: {response.StatusCode}");
-            return null;
-        }
-
-        using JsonDocument doc = JsonDocument.Parse(jsonResponse);
-        JsonElement root = doc.RootElement;
-
-        // ✅ Extract the "storage.meta.link.href" (Direct Download Link)
-        if (!root.TryGetProperty("data", out JsonElement dataArray) || dataArray.GetArrayLength() == 0)
-        {
-            Console.WriteLine("❌ Error: No versions found.");
-            return null;
-        }
-
-        JsonElement latestVersion = dataArray[0];
-
-        if (latestVersion.TryGetProperty("relationships", out JsonElement relationships) &&
-            relationships.TryGetProperty("storage", out JsonElement storage) &&
-            storage.TryGetProperty("meta", out JsonElement meta) &&
-            meta.TryGetProperty("link", out JsonElement link) &&
-            link.TryGetProperty("href", out JsonElement href))
-        {
-            string downloadUrl = href.GetString();
-            Console.WriteLine($"✅ Direct Download URL: {downloadUrl}");
-            return downloadUrl;
-        }
-
-        Console.WriteLine("❌ Error: Could not find the direct download link.");
-        return null;
-    }
-
-
-
-
-
-
     public async Task<List<(string versionId, string versionName, string storageId)>> GetVersionsForItemAsync(string projectId, string itemId)
     {
         if (string.IsNullOrEmpty(projectId) || string.IsNullOrEmpty(itemId))
@@ -299,167 +133,291 @@ public class FileDownloadService
             return null;
         }
     }
+
     public async Task<string> GetStorageIdFromItem(string projectId, string itemId)
     {
-        if (string.IsNullOrEmpty(projectId) || string.IsNullOrEmpty(itemId))
-        {
-            Console.WriteLine("❌ Error: Project ID or Item ID is missing.");
-            return null;
-        }
-
         string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/items/{itemId}";
-        Console.WriteLine($"🔍 Fetching Storage ID from Item: {url}");
+        Console.WriteLine($"🔍 Fetching Storage ID from: {url}");
 
         using HttpClient httpClient = new HttpClient();
         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TokenManager.GetToken());
 
         HttpResponseMessage response = await httpClient.GetAsync(url);
-        string jsonResponse = await response.Content.ReadAsStringAsync();
-
-        Console.WriteLine($"📩 API Response: {jsonResponse}");
-
         if (!response.IsSuccessStatusCode)
         {
-            Console.WriteLine($"❌ Error retrieving item details. Status Code: {response.StatusCode}");
+            Console.WriteLine($"❌ Error retrieving storage ID. Status Code: {response.StatusCode}");
             return null;
         }
 
-        using JsonDocument doc = JsonDocument.Parse(jsonResponse);
-        JsonElement root = doc.RootElement;
-
-        // ✅ Ensure "storage" relationship exists in the item details
-        if (!root.TryGetProperty("data", out JsonElement dataElement) ||
-            !dataElement.TryGetProperty("relationships", out JsonElement relationships) ||
-            !relationships.TryGetProperty("tip", out JsonElement tip) ||
-            !tip.TryGetProperty("data", out JsonElement tipData) ||
-            !tipData.TryGetProperty("id", out JsonElement versionIdElement))
-        {
-            Console.WriteLine("❌ Error: Could not retrieve latest version ID.");
-            return null;
-        }
-
-        string latestVersionId = versionIdElement.GetString();
-        Console.WriteLine($"✅ Latest Version ID: {latestVersionId}");
-
-        // 🔹 Now retrieve the storage location from the latest version
-        return await GetDirectDownloadUrl(projectId, itemId);
-    }
-
-
-    // 🔹 Step 1: Get latest version ID of the item
-    private async Task<(string versionId, string correctedItemId)> GetLatestVersionId(string projectId, string itemId)
-    {
-        string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/items/{itemId}/versions";
-        Console.WriteLine($"🔍 Fetching Versions: {url}");
-
-        using HttpClient httpClient = new HttpClient();
-        httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TokenManager.GetToken());
-
-        HttpResponseMessage response = await httpClient.GetAsync(url);
         string jsonResponse = await response.Content.ReadAsStringAsync();
-
-        Console.WriteLine($"📩 API Response: {jsonResponse}");
-
-        if (!response.IsSuccessStatusCode)
-        {
-            Console.WriteLine($"❌ Error retrieving versions. Status Code: {response.StatusCode}");
-            return (null, null);
-        }
-
         using JsonDocument doc = JsonDocument.Parse(jsonResponse);
-        JsonElement root = doc.RootElement;
 
-        if (!root.TryGetProperty("data", out JsonElement dataArray) || dataArray.GetArrayLength() == 0)
-        {
-            Console.WriteLine("❌ Error: No versions found for the selected item.");
-            return (null, null);
-        }
-
-        // ✅ Extract latest version's ID (fs.file:vf.)
-        JsonElement latestVersion = dataArray[0];
-        string versionId = latestVersion.GetProperty("id").GetString();
-
-        // ✅ Extract the correct "dm.lineage" item ID
-        string extractedItemId = latestVersion.GetProperty("relationships")
-            .GetProperty("item")
+        // ✅ Extract storage ID
+        string storageId = doc.RootElement
+            .GetProperty("included")[0]
+            .GetProperty("relationships")
+            .GetProperty("storage")
             .GetProperty("data")
             .GetProperty("id")
             .GetString();
 
-        Console.WriteLine($"✅ Latest Version ID: {versionId}");
-        Console.WriteLine($"✅ Corrected Item ID: {extractedItemId}");
-
-        return (versionId, extractedItemId);
+        Console.WriteLine($"📂 Storage ID: {storageId}");
+        return storageId;
     }
-
-
-
-    // 🔹 Step 2: Get storage ID from the item
+ 
+   // 🔹 Step 1: Get latest version ID of the item
+    private async Task<(string versionId, string correctedItemId)> GetLatestVersionId(string projectId, string itemId)
+       {
+           string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/items/{itemId}/versions";
+           Console.WriteLine($"🔍 Fetching Versions: {url}");
    
+           using HttpClient httpClient = new HttpClient();
+           httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TokenManager.GetToken());
+   
+           HttpResponseMessage response = await httpClient.GetAsync(url);
+           string jsonResponse = await response.Content.ReadAsStringAsync();
+   
+           Console.WriteLine($"📩 API Response: {jsonResponse}");
+   
+           if (!response.IsSuccessStatusCode)
+           {
+               Console.WriteLine($"❌ Error retrieving versions. Status Code: {response.StatusCode}");
+               return (null, null);
+           }
+   
+           using JsonDocument doc = JsonDocument.Parse(jsonResponse);
+           JsonElement root = doc.RootElement;
+   
+           if (!root.TryGetProperty("data", out JsonElement dataArray) || dataArray.GetArrayLength() == 0)
+           {
+               Console.WriteLine("❌ Error: No versions found for the selected item.");
+               return (null, null);
+           }
+   
+           // ✅ Extract latest version's ID (fs.file:vf.)
+           JsonElement latestVersion = dataArray[0];
+           string versionId = latestVersion.GetProperty("id").GetString();
+   
+           // ✅ Extract the correct "dm.lineage" item ID
+           string extractedItemId = latestVersion.GetProperty("relationships")
+               .GetProperty("item")
+               .GetProperty("data")
+               .GetProperty("id")
+               .GetString();
+   
+           Console.WriteLine($"✅ Latest Version ID: {versionId}");
+           Console.WriteLine($"✅ Corrected Item ID: {extractedItemId}");
+   
+           return (versionId, extractedItemId);
+       }
 
     // 🔹 Step 3: Extract bucket and object keys
-    private (string bucketKey, string objectKey) ExtractBucketAndObjectKeys(string storageId)
+    public (string bucketKey, string objectKey) ExtractBucketAndObjectKeys(string storageId)
     {
-        if (!storageId.StartsWith("urn:adsk.objects:os.object:"))
+        if (string.IsNullOrEmpty(storageId) || !storageId.StartsWith("urn:adsk.objects:os.object:"))
         {
             Console.WriteLine("❌ Invalid storage ID format.");
             return (null, null);
         }
 
+        // ✅ Remove prefix and split
         string[] parts = storageId.Replace("urn:adsk.objects:os.object:", "").Split('/');
-        string bucketKey = parts[0];
-        string objectKey = string.Join("/", parts.Skip(1)); // Handles nested objects
+        if (parts.Length < 2)
+        {
+            Console.WriteLine("❌ Error: Unable to extract bucket and object key.");
+            return (null, null);
+        }
 
-        Console.WriteLine($"📂 Extracted Bucket Key: {bucketKey}");
-        Console.WriteLine($"📄 Extracted Object Key: {objectKey}");
+        string bucketKey = parts[0];  // First part is the bucket key
+        string objectKey = string.Join("/", parts.Skip(1)); // Remaining is the object key
+
+        Console.WriteLine($"📂 Bucket Key: {bucketKey}");
+        Console.WriteLine($"📄 Object Key: {objectKey}");
 
         return (bucketKey, objectKey);
     }
 
-    // 🔹 Step 4: Get signed download URL
-    private async Task<string> GetSignedDownloadUrl(string bucketKey, string objectKey)
+    public async Task<string> GetSignedDownloadUrl(string bucketKey, string objectKey, string accessToken)
     {
         string url = $"https://developer.api.autodesk.com/oss/v2/buckets/{bucketKey}/objects/{objectKey}/signeds3download";
-        Console.WriteLine($"🔍 Fetching Signed URL: {url}");
+    
+        Console.WriteLine($"🔍 Fetching Signed URL from: {url}");
 
-        HttpResponseMessage response = await httpClient.GetAsync(url);
-        if (!response.IsSuccessStatusCode)
+        using (HttpClient client = new HttpClient())
         {
-            Console.WriteLine($"❌ Error retrieving signed URL. Status Code: {response.StatusCode}");
-            return null;
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+            HttpResponseMessage response = await client.GetAsync(url); // GET request
+
+            if (!response.IsSuccessStatusCode)
+            {
+                Console.WriteLine($"❌ Error retrieving signed URL. Status Code: {response.StatusCode}");
+                Console.WriteLine($"❌ Response: {await response.Content.ReadAsStringAsync()}");
+                return null;
+            }
+
+            string jsonResponse = await response.Content.ReadAsStringAsync();
+            using JsonDocument doc = JsonDocument.Parse(jsonResponse);
+            string signedUrl = doc.RootElement.GetProperty("url").GetString();
+
+            Console.WriteLine($"✅ Signed Download URL retrieved: {signedUrl}");
+            return signedUrl;
+        }
+    }
+
+
+
+   
+    
+
+
+    
+
+
+
+
+
+   
+
+
+  
+
+
+
+
+    
+
+
+
+    public async Task DownloadFileAsync(string signedUrl, string saveDirectory, string fileName)
+    {
+        try
+        {
+            using (HttpClient client = new HttpClient())
+            {
+                HttpResponseMessage response = await client.GetAsync(signedUrl);
+                if (!response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine($"❌ Download failed: {response.StatusCode}");
+                    return;
+                }
+
+                // ✅ Ensure filename is valid
+                fileName = RemoveInvalidFileNameChars(fileName);
+
+                // ✅ Create full file save path
+                string savePath = Path.Combine(saveDirectory, fileName);
+                Console.WriteLine($"📂 Saving to: {savePath}");
+
+                // ✅ Download and save the file
+                byte[] fileBytes = await response.Content.ReadAsByteArrayAsync();
+                await File.WriteAllBytesAsync(savePath, fileBytes);
+
+                Console.WriteLine($"✅ File downloaded successfully: {savePath}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Exception occurred while downloading: {ex.Message}");
+        }
+    }
+
+    /// ✅ Function to Remove Invalid Characters from File Name
+    public string RemoveInvalidFileNameChars(string fileName)
+    {
+        char[] invalidChars = Path.GetInvalidFileNameChars();
+        return string.Concat(fileName.Where(c => !invalidChars.Contains(c)));
+    }
+
+
+    public async Task<string> GetItemFileNameAsync(string projectId, string itemId, string accessToken)
+    {
+        try
+        {
+            string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/items/{itemId}";
+
+            using (HttpClient client = new HttpClient())
+            {
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+                HttpResponseMessage response = await client.GetAsync(url);
+                if (!response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine($"❌ Failed to retrieve item details: {response.StatusCode}");
+                    return "DownloadedModel.obj"; // Default fallback filename
+                }
+
+                string responseBody = await response.Content.ReadAsStringAsync();
+                using (JsonDocument jsonDoc = JsonDocument.Parse(responseBody))
+                {
+                    JsonElement root = jsonDoc.RootElement;
+                
+                    // ✅ Extract the filename (displayName)
+                    if (root.TryGetProperty("data", out JsonElement dataElement) &&
+                        dataElement.TryGetProperty("attributes", out JsonElement attributesElement) &&
+                        attributesElement.TryGetProperty("displayName", out JsonElement displayNameElement))
+                    {
+                        string fileName = displayNameElement.GetString();
+                        return !string.IsNullOrEmpty(fileName) ? fileName : "DownloadedModel.obj";
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Exception retrieving file name: {ex.Message}");
         }
 
-        string jsonResponse = await response.Content.ReadAsStringAsync();
-        using JsonDocument doc = JsonDocument.Parse(jsonResponse);
-        string signedUrl = doc.RootElement.GetProperty("url").GetString();
-
-        Console.WriteLine($"✅ Signed Download URL: {signedUrl}");
-        return signedUrl;
+        return "DownloadedModel.obj"; // Default fallback filename
     }
-    
-    
-    private async Task DownloadFileAsync(string downloadUrl, string localFilePath)
+
+
+
+
+    /*private async Task DownloadModelAsync(string projectId, string itemId)
     {
-        Console.WriteLine($"📥 Downloading file from: {downloadUrl}");
-
-        using HttpClient httpClient = new HttpClient();
-        httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TokenManager.GetToken());
-
-        HttpResponseMessage response = await httpClient.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead);
-
-        if (!response.IsSuccessStatusCode)
+        if (string.IsNullOrEmpty(projectId) || string.IsNullOrEmpty(itemId))
         {
-            Console.WriteLine($"❌ Error downloading file: {response.StatusCode} - {response.ReasonPhrase}");
-            string errorResponse = await response.Content.ReadAsStringAsync();
-            Console.WriteLine($"📩 API Error Response: {errorResponse}");
+            Console.WriteLine("❌ Error: Missing project or item ID.");
             return;
         }
 
-        await using FileStream fileStream = new FileStream(localFilePath, FileMode.Create, FileAccess.Write);
-        await response.Content.CopyToAsync(fileStream);
+        try
+        {
+            FileDownloadService fileDownloadService = new FileDownloadService();
+            string accessToken = TokenManager.GetToken(); // Replace with your actual token retrieval method
 
-        Console.WriteLine($"✅ File downloaded successfully to: {localFilePath}");
-    }
+            // ✅ Step 1: Retrieve Storage ID
+            string storageId = await fileDownloadService.GetStorageIdFromItem(projectId, itemId);
+            if (string.IsNullOrEmpty(storageId))
+            {
+                Console.WriteLine("❌ Error: Could not retrieve storage ID.");
+                return;
+            }
+            var (bucketKey, objectKey) = ExtractBucketAndObjectKeys(storageId);
+            string accessTokens =  TokenManager.GetToken(); 
+            // ✅ Step 2: Get the signed download URL
+            string downloadUrl = await fileDownloadService.GetSignedDownloadUrl(bucketKey, objectKey,accessTokens );
+            if (string.IsNullOrEmpty(downloadUrl))
+            {
+                Console.WriteLine("❌ Error: Could not retrieve signed download URL.");
+                return;
+            }
+
+            // ✅ Step 3: Determine local file path
+            string fileName = downloadUrl.Split('/').Last();
+            string localFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), fileName);
+
+            // ✅ Step 4: Download the file
+            await fileDownloadService.DownloadFileAsync(downloadUrl, localFilePath);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Exception occurred while downloading: {ex.Message}");
+        }
+    }*/
+
+
 
 
     // 🔹 Step 5: Download the file

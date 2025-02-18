@@ -26,6 +26,9 @@ namespace AssetManager.Infrastructure.Services
         /// <summary>
         /// Step 1: Create a storage location for the file in Forge.
         /// </summary>
+        ///
+        /// 
+        
         public async Task<string> CreateStorageLocation(string projectId, string folderId, string fileName)
         {
             Console.WriteLine(
@@ -81,7 +84,7 @@ namespace AssetManager.Infrastructure.Services
 
         public async Task<(string signedUrl, string uploadKey)> GetSignedS3UploadUrl(string storageUrn)
         {
-            var (bucketKey, objectKey) = ExtractBucketAndObjectKey(storageUrn);
+            var (bucketKey, objectKey) = ExtractBucketAndObjectKeys(storageUrn);
             if (string.IsNullOrEmpty(bucketKey) || string.IsNullOrEmpty(objectKey))
             {
                 Console.WriteLine("❌ Failed to extract bucket and object key.");
@@ -169,7 +172,7 @@ namespace AssetManager.Infrastructure.Services
 
         public async Task<bool> CompleteUpload(string storageUrn, string uploadKey)
         {
-            var (bucketKey, objectKey) = ExtractBucketAndObjectKey(storageUrn);
+            var (bucketKey, objectKey) = ExtractBucketAndObjectKeys(storageUrn);
             if (string.IsNullOrEmpty(bucketKey) || string.IsNullOrEmpty(objectKey))
             {
                 Console.WriteLine("❌ Failed to extract bucket and object key.");
@@ -227,40 +230,33 @@ namespace AssetManager.Infrastructure.Services
 
        
 
-        public Tuple<string, string> ExtractBucketAndObjectKey(string storageUrn)
+        private (string bucketKey, string objectKey) ExtractBucketAndObjectKeys(string storageId)
         {
-            if (string.IsNullOrEmpty(storageUrn))
+            if (string.IsNullOrEmpty(storageId) || !storageId.StartsWith("urn:adsk.objects:os.object:"))
             {
-                Console.WriteLine("❌ Invalid storage URN: Null or empty.");
-                return new Tuple<string, string>(null, null);
+                Console.WriteLine("❌ Invalid storage ID format.");
+                return (null, null);
             }
 
-            // Ensure URN starts with "urn:adsk.objects:os.object:"
-            string prefix = "urn:adsk.objects:os.object:";
-            if (!storageUrn.StartsWith(prefix))
+            // ✅ Remove prefix and split by '/'
+            string[] parts = storageId.Replace("urn:adsk.objects:os.object:", "").Split('/');
+
+            if (parts.Length < 2)
             {
-                Console.WriteLine($"❌ Invalid URN format: {storageUrn}");
-                return new Tuple<string, string>(null, null);
+                Console.WriteLine("❌ Error: Unable to extract bucket and object key.");
+                return (null, null);
             }
 
-            // Remove prefix and split by '/'
-            string urnBody = storageUrn.Substring(prefix.Length);
-            string[] urnParts = urnBody.Split('/');
+            string bucketKey = parts[0];  // First part is the bucket key
+            string objectKey = string.Join("/", parts.Skip(1)); // Remaining is the object key
 
-            if (urnParts.Length < 2) // We need at least "bucketKey/objectKey"
-            {
-                Console.WriteLine($"❌ Invalid URN format: {storageUrn}");
-                return new Tuple<string, string>(null, null);
-            }
+            Console.WriteLine($"📂 Extracted Bucket Key: {bucketKey}");
+            Console.WriteLine($"📄 Extracted Object Key: {objectKey}");
 
-            string bucketKey = urnParts[0]; // Extract bucket key
-            string objectKey = urnParts[1]; // Extract object key
-
-            Console.WriteLine($"✅ Debug: Extracted Bucket Key: {bucketKey}");
-            Console.WriteLine($"✅ Debug: Extracted Object Key: {objectKey}");
-
-            return new Tuple<string, string>(bucketKey, objectKey);
+            return (bucketKey, objectKey);
         }
+
+
 
        public async Task<bool> CreateItemAndVersion(string projectId, string folderId, string fileName, string objectUrn)
         {
@@ -367,7 +363,7 @@ namespace AssetManager.Infrastructure.Services
             Console.WriteLine($"✅ File Uploaded Successfully: {filePath}");
 
             // ✅ Step 3: Extract Bucket & Object Key
-            var (bucketKey, objectKey) = ExtractBucketAndObjectKey(storageUrn);
+            var (bucketKey, objectKey) = ExtractBucketAndObjectKeys(storageUrn);
             if (string.IsNullOrEmpty(bucketKey) || string.IsNullOrEmpty(objectKey))
             {
                 Console.WriteLine("❌ Failed to extract bucket & object key.");

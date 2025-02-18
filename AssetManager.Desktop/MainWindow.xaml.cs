@@ -116,29 +116,62 @@ namespace AssetManager.Desktop
         {
             if (string.IsNullOrEmpty(_selectedProjectId) || string.IsNullOrEmpty(_selectedItemId))
             {
-                MessageBox.Show("❌ Please select a project and model before downloading.");
+                MessageBox.Show("❌ Please select a project and model before downloading.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
             try
             {
-                var (topFolderId, _) = await DataManagement.GetTopLevelFolder(hubID, _selectedProjectId);
-                string folderIdToUse = string.IsNullOrEmpty(_folderId) ? topFolderId : _folderId;
+                var fileDownloadService = new FileDownloadService();
 
-                if (string.IsNullOrEmpty(folderIdToUse))
+                // ✅ Step 1: Retrieve Storage ID
+                string storageId = await fileDownloadService.GetStorageIdFromItem(_selectedProjectId, _selectedItemId);
+
+                if (string.IsNullOrEmpty(storageId))
                 {
-                    MessageBox.Show("❌ Could not determine the folder for downloading.");
+                    MessageBox.Show("❌ Could not retrieve storage ID.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
-                var fileDownloadService = new FileDownloadService();
-                await fileDownloadService.DownloadModel(_selectedProjectId, _selectedItemId);
+                // ✅ Step 2: Extract Bucket and Object Keys
+                var (bucketKey, objectKey) = fileDownloadService.ExtractBucketAndObjectKeys(storageId);
+
+                // ✅ Step 3: Retrieve Access Token
+                string accessToken = TokenManager.GetToken();
+
+                // ✅ Step 4: Fetch Signed URL
+                string signedUrl = await fileDownloadService.GetSignedDownloadUrl(bucketKey, objectKey, accessToken);
+
+                if (string.IsNullOrEmpty(signedUrl))
+                {
+                    MessageBox.Show("❌ Failed to retrieve signed URL.", "Download Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                // ✅ Step 5: Retrieve Correct Filename
+                string fileName = await fileDownloadService.GetItemFileNameAsync(_selectedProjectId, _selectedItemId, accessToken);
+                fileName = fileDownloadService.RemoveInvalidFileNameChars(fileName); // Ensure filename is valid
+
+                // ✅ Step 6: Define Save Location
+                string saveDirectory = @"C:\Users\james\Downloads"; // Modify if needed
+
+                if (!Directory.Exists(saveDirectory))
+                {
+                    Directory.CreateDirectory(saveDirectory);
+                }
+
+                // ✅ Step 7: Download the File with Correct Filename
+                await fileDownloadService.DownloadFileAsync(signedUrl, saveDirectory, fileName);
+
+                MessageBox.Show($"✅ File downloaded successfully!\nSaved as: {fileName}", "Download Complete", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"❌ Error downloading model: {ex.Message}");
+                MessageBox.Show($"❌ Error downloading model: {ex.Message}", "Download Failed", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
+
 
         private async void BtnUploadFile_Click(object sender, RoutedEventArgs e)
         {
@@ -301,7 +334,8 @@ namespace AssetManager.Desktop
                 }
             }
         }
-        
+       
+
        private async Task RetrieveItemIdAsync()
 {
     if (string.IsNullOrEmpty(_selectedProjectId) || string.IsNullOrEmpty(_folderId))
