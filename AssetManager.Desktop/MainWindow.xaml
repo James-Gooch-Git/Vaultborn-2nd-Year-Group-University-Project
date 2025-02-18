@@ -36,7 +36,9 @@
         <StackPanel Grid.Row="2" Margin="10">
             <TextBlock Text="Model Selection:" />
             <ComboBox x:Name="ModelComboBox" 
-                      Width="300" Height="30" />
+                      Width="300" Height="30" 
+                      SelectionChanged="ModelComboBox_SelectionChanged"/>
+
         </StackPanel>
 
         <!-- Refresh Models Button -->
