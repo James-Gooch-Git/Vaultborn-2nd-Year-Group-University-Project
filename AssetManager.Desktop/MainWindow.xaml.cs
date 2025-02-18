@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Windows.Controls;
+using AssetManager.Core;
 using AssetManager.Infrastructure.Services;
 using Microsoft.Win32;
 using System.Diagnostics;
@@ -59,6 +60,7 @@ namespace AssetManager.Desktop
             // 🔹 Initialize data
             await TestDataManagement();
             await LoadProjectsAsync();
+            FusionManager.InitializePythonEngine();
         }
 
 

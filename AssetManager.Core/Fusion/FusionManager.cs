@@ -1,5 +1,6 @@
 ﻿using Python.Runtime;
 using System;
+using System.Diagnostics;
 using System.IO;
 
 namespace AssetManager.Core;
@@ -17,11 +18,19 @@ public class FusionManager
         Environment.SetEnvironmentVariable("PYTHONPATH", pythonPath + "\\Lib");
         
         // Console.WriteLine($"parentPath: {parentPath}");
-        // Console.WriteLine("pythonPath: " + pythonPath);
+         Console.WriteLine("pythonPath: " + pythonPath);
         // Console.WriteLine("pythonDll: " + pythonDll);
         // Console.WriteLine("PYTHONPATH: " + pythonPath + "\\Lib");
 
         Runtime.PythonDLL = pythonDll;
+        
+        ProcessStartInfo psi = new ProcessStartInfo();
+        psi.FileName = @"C:\Users\tomgr\source\repos\AssetManager\PythonEmbedded\python.exe";
+        psi.Arguments = "FusionAddIn.py";  // Make sure the script path is correct!
+        psi.UseShellExecute = false;
+        psi.RedirectStandardOutput = true;
+        psi.RedirectStandardError = true;
+        Process p = Process.Start(psi);
 
         try
         {
@@ -35,7 +44,7 @@ public class FusionManager
                 sys.path.append(scriptDir);
                 //Console.WriteLine($"Added {scriptDir} to sys.path");
                 
-                dynamic pyModule = Py.Import("testscript"); // Import testscript.py
+                dynamic pyModule = Py.Import("FusionAddIn"); // Import testscript.py
                 dynamic hwFunction = pyModule.hw;
                 string result = hwFunction();
                 Console.WriteLine($"Python script: {result}");
@@ -65,9 +74,9 @@ public class FusionManager
                 sys.path.append(scriptDir);
                 //Console.WriteLine($"Added {scriptDir} to sys.path");
                 
-                dynamic pyModule = Py.Import("testscript"); // Import testscript.py
-                dynamic hwFunction = pyModule.hw;
-                string result = hwFunction();
+                dynamic pyModule = Py.Import("FusionAddIn"); // Import FusionAddIn.py
+                dynamic runFunction = pyModule.run();
+                string result = runFunction();
                 Console.WriteLine($"Python script: {result}");
             }
         }
