@@ -39,12 +39,12 @@
             <TextBlock Text="Manage and handle all your 3D modelling Assets in one software with ease and simplicity" TextWrapping="Wrap" TextAlignment="Center" HorizontalAlignment="Center" FontSize="15" Foreground="White" VerticalAlignment="Top" Margin="0,185,0,0" />
 
             <!-- button to find out more about autodesk -->
-            <Border Width="200" Height="25" BorderBrush="White" BorderThickness="1" Margin="0,145,0,0" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Button Width="200" Height="25" BorderBrush="White" Background="Transparent" BorderThickness="1" Margin="0,145,0,0" HorizontalAlignment="Center" VerticalAlignment="Center">
                 <StackPanel Orientation="Horizontal">
-                    <md:PackIcon Kind="Link" Width="14" Height="14" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="10,0,0,0" Foreground="White"/>
+                    <md:PackIcon Kind="Link" Width="14" Height="14" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5,0,0,0" Foreground="White"/>
                     <TextBlock Text="Find out more about Autodesk" HorizontalAlignment="Right" FontSize="12" Foreground="White" VerticalAlignment="Center" Margin="5,0,0,0"/>
                 </StackPanel>
-            </Border>
+            </Button>
 
         </Grid>
         

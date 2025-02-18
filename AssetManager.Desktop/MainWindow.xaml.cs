@@ -1,4 +1,5 @@
 ﻿using System.Windows;
+using System.Windows.Controls.Primitives;
 using AssetManager.Infrastructure.Services;
 using Autodesk.Authentication.Model;
 using Microsoft.Win32;
@@ -41,6 +42,16 @@ namespace AssetManager.Desktop
                 {
                     MessageBox.Show($"❌ Upload Failed: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
+            }
+        }
+
+        private void Thumb_DragDelta(object sender, DragDeltaEventArgs e)
+        {
+            double newWidth = Sidebar.Width + e.HorizontalChange;
+
+            if (newWidth > 100)
+            {
+                Sidebar.Width = newWidth;
             }
         }
 
