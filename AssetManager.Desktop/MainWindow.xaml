@@ -33,156 +33,219 @@
 
         <Grid.RowDefinitions>
             <RowDefinition Height="50"/>
-            <RowDefinition/>
+            <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="auto"/>
+            <ColumnDefinition Width="200"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <!-- create sidebar border -->
-        <Border Name="Sidebar" Grid.Row="0" BorderBrush="#797979" BorderThickness="0,0,0,1" Grid.ColumnSpan="2"/>
+        <!--<Border Grid.Row="0" BorderBrush="#797979" BorderThickness="0,0,0,1" Grid.ColumnSpan="2"/>
         <Thumb Grid.Row="1" HorizontalAlignment="Right" DragDelta="Thumb_DragDelta"/>
-        <Border Name="Content" Grid.Row="1" BorderBrush="#797979" BorderThickness="0,0,1,0" Width="200" />
+        <Border Grid.Row="1" BorderBrush="#797979" BorderThickness="0,0,1,0"/>-->
 
-        <Image Grid.Column="0" Source="symbol-1.png" Width="62" Height="45" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="-6,8,0,0" Grid.RowSpan="2"/>
+        <Border Grid.Row="0" Grid.ColumnSpan="2" BorderBrush="#797979" BorderThickness="0,0,0,1">
 
-        <TextBlock Grid.Column="0" FontSize="16" Foreground="#4B4b4b" VerticalAlignment="Center" Margin="49,0,1059,0" Height="18" Grid.ColumnSpan="2"> <Run Text="AUTODESK"/> <Bold> <Run Text="ASSETS"/> </Bold></TextBlock>
+            <Grid>
 
-        <md:PackIcon Grid.Column="1" Kind="ChevronDown" Foreground="#4B4b4b" Cursor="Hand" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,7,0"/>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
 
-        <TextBlock Grid.Column="1" Text="John Jones" Cursor="Hand" FontSize="12" Foreground="#4B4b4b" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,25,0"/>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
 
-        <md:PackIcon Grid.Column="1" Kind="AccountOutline" Foreground="#4B4b4b" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,88,0"/>
+                    <Image Source="symbol-1.png" Width="62" Height="45" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="-5,0,0,0"/>
 
-        <Rectangle Grid.Column="1" VerticalAlignment="Center" Margin="0,0,113,0" HorizontalAlignment="Right" Fill="#4B4b4b" Height="30" Width="1" RenderTransformOrigin="0.5,0.5">
-            <Rectangle.RenderTransform>
-                <TransformGroup>
-                    <ScaleTransform ScaleX="-1"/>
-                    <SkewTransform/>
-                    <RotateTransform/>
-                    <TranslateTransform/>
-                </TransformGroup>
-            </Rectangle.RenderTransform>
-        </Rectangle>
+                    <TextBlock FontSize="16" Foreground="#4B4b4b" VerticalAlignment="Center" Height="18" Margin="-10,0,0,0"> <Run Text="AUTODESK"/> <Bold> <Run Text="ASSETS"/> </Bold></TextBlock>
 
-        <md:PackIcon Grid.Column="1" Kind="BellOutline" Style="{StaticResource IconHover}" Cursor="Hand" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,125,0"/>
+                </StackPanel>
 
-        <TextBlock Grid.Row="1" Grid.Column="0" Text="PROJECTS" FontSize="12" Foreground="#4B4b4b" FontWeight="Bold" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,8,0,0" Height="16" Width="57"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
 
-        <md:PackIcon Grid.Row="1" Grid.Column="0" Cursor="Hand" HorizontalAlignment="Right" VerticalAlignment="Top" FontWeight="Light"  Kind="Magnify" Style="{StaticResource IconHover}" Height="15" Width="15" Margin="0,7,44,0"/>
+                    <md:PackIcon Grid.Column="1" Kind="BellOutline" Style="{StaticResource IconHover}" Cursor="Hand" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,5,0"/>
 
-        <md:PackIcon Grid.Row="1" Grid.Column="0" Cursor="Hand" HorizontalAlignment="Right" VerticalAlignment="Top" FontWeight="Light" Kind="CogOutline" Style="{StaticResource IconHover}" Height="15" Width="15" Margin="0,6.6,25,0"/>
+                    <Rectangle Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right" Fill="#4B4b4b" Height="30" Width="1" RenderTransformOrigin="0.5,0.5" Margin="0,0,5,0">
+                        <Rectangle.RenderTransform>
+                            <TransformGroup>
+                                <ScaleTransform ScaleX="-1"/>
+                                <SkewTransform/>
+                                <RotateTransform/>
+                                <TranslateTransform/>
+                            </TransformGroup>
+                        </Rectangle.RenderTransform>
+                    </Rectangle>
+                    
+                    <md:PackIcon Grid.Column="1" Kind="AccountOutline" Foreground="#4B4b4b" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,5,0"/>
 
-        <md:PackIcon Grid.Row="1" Grid.Column="0" Cursor="Hand" HorizontalAlignment="Right" VerticalAlignment="Top" FontWeight="Light" Kind="Plus" Style="{StaticResource IconHover}" Height="16" Width="16" Margin="0,6,5,0"/>
+                    <TextBlock Grid.Column="1" Text="John Jones" Cursor="Hand" FontSize="12" Foreground="#4B4b4b" VerticalAlignment="Center" HorizontalAlignment="Right"/>
 
-        <TextBlock Grid.Row="1" Grid.Column="1" Text="Asset Library" FontSize="20" Foreground="#4B4b4b" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="20,20,0,0"/>
+                    <md:PackIcon Grid.Column="1" Kind="ChevronDown" Foreground="#4B4b4b" Cursor="Hand" VerticalAlignment="Center" HorizontalAlignment="Right"/>
 
-        <Border Grid.Column="1" Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Top" BorderBrush="#4B4B4B" BorderThickness="0,1,0,0" Margin="20,60,20,0"/>
+                </StackPanel>
+               
+            </Grid>
+        
+        </Border>
 
-        <Button Grid.Column="1" Grid.Row="1" HorizontalAlignment="Left" BorderThickness="0" VerticalAlignment="Top" x:Name="BtnUploadFile" Width="100" Height="40" Click="BtnUploadFile_Click" Cursor="Hand" Margin="20,76,0,0">
+        <Border Grid.Row="1" Grid.Column="0" BorderBrush="#797979" BorderThickness="0,0,1,0">
 
-            <Button.Resources>
-                <Style TargetType="Border">
-                    <Setter Property="CornerRadius" Value="3"/>
-                </Style>
-            </Button.Resources>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="20"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
 
-            <Button.Style>
-                <Style TargetType="{x:Type Button}">
-                    <Setter Property="Background" Value="#F25505"/>
-                    <Setter Property="Foreground" Value="White"/>
-                    <Setter Property="Template">
-                        <Setter.Value>
-                            <ControlTemplate TargetType="{x:Type Button}">
-                                <Border Background="{TemplateBinding Background}" BorderThickness="0">
-                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                </Border>
-                            </ControlTemplate>
-                        </Setter.Value>
-                    </Setter>
-                    <Style.Triggers>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter Property="Background" Value="#D24A06"/>
-                        </Trigger>
-                    </Style.Triggers>
-                </Style>
-            </Button.Style>
+                <Grid>
 
-            <StackPanel Orientation="Horizontal">
-                <md:PackIcon Kind="Plus" Width="17" Height="17" VerticalAlignment="Center"/>
-                <TextBlock Text="Import Asset" Margin="1,0,0,0" VerticalAlignment="Center"/>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
 
-            </StackPanel>
-        </Button>
+                    <TextBlock Text="PROJECTS" FontSize="12" Foreground="#4B4b4b" FontWeight="Bold" VerticalAlignment="Center" HorizontalAlignment="Left" Height="16" Width="57" Margin="5,8,0,0"/>
 
-        <Button x:Name="SearchButton" Cursor="IBeam" Focusable="False"  Grid.Column="1" Grid.Row="1" Width="115" Height="24" Background="Transparent" BorderBrush="#4B4B4B" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,84,20,0">
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
 
-            <Button.Resources>
-                <Style TargetType="Border">
-                    <Setter Property="CornerRadius" Value="3"/>
-                </Style>
-            </Button.Resources>
+                        <md:PackIcon Cursor="Hand" HorizontalAlignment="Right" FontWeight="Light"  Kind="Magnify" Style="{StaticResource IconHover}" Height="15" Width="15" Margin="0,6.5,2,0"/>
 
-            <StackPanel Orientation="Horizontal">
-                <md:PackIcon Kind="Magnify" Width="14" Height="14" VerticalAlignment="Center" Foreground="#4B4B4B" Margin="0,0,0,0"/>
-                <!--<TextBox x:Name="SearchText_Box" VerticalAlignment="Center" VerticalContentAlignment="Center" Width="89" FontSize="10" Height="19" Margin="3,0,0,0"/>-->
-                <TextBlock x:Name="SearchText" Text="Search By Name..." Foreground="#A3A3A3" FontSize="10" Margin="3,0,0,0" VerticalAlignment="Center"/>
-            </StackPanel>
+                        <md:PackIcon Cursor="Hand" HorizontalAlignment="Right" FontWeight="Light" Kind="CogOutline" Style="{StaticResource IconHover}" Height="15" Width="15" Margin="0,6,2,0"/>
 
-        </Button>
+                        <md:PackIcon Cursor="Hand" HorizontalAlignment="Right" FontWeight="Light" Kind="Plus" Style="{StaticResource IconHover}" Height="16" Width="16" Margin="0,5,2,0"/>
 
-        <Rectangle Grid.Column="1" Grid.Row="1" Fill="#A3A3A3" VerticalAlignment="Top" Margin="0,86,145,0" HorizontalAlignment="Right" Height="20" Width="1" RenderTransformOrigin="0.5,0.5">
-            <Rectangle.RenderTransform>
-                <TransformGroup>
-                    <ScaleTransform ScaleX="-1"/>
-                    <SkewTransform/>
-                    <RotateTransform/>
-                    <TranslateTransform/>
-                </TransformGroup>
-            </Rectangle.RenderTransform>
-        </Rectangle>
+                    </StackPanel>
 
-        <md:PackIcon Grid.Row="1" Grid.Column="1" Kind="FormatListBulleted" Cursor="Hand" Style="{StaticResource IconHover}" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,88,155,0"/>
+                </Grid>
 
-        <md:PackIcon Grid.Row="1" Grid.Column="1" Kind="ViewGridOutline" Cursor="Hand" Style="{StaticResource IconHover}" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,88,175,0"/>
+            </Grid>
+            
+        </Border>
 
-        <Rectangle Grid.Column="1" Grid.Row="1" Fill="#A3A3A3" VerticalAlignment="Top" Margin="0,86,198,0" HorizontalAlignment="Right" Height="20" Width="1" RenderTransformOrigin="0.5,0.5">
-            <Rectangle.RenderTransform>
-                <TransformGroup>
-                    <ScaleTransform ScaleX="-1"/>
-                    <SkewTransform/>
-                    <RotateTransform/>
-                    <TranslateTransform/>
-                </TransformGroup>
-            </Rectangle.RenderTransform>
-        </Rectangle>
+        <Border Grid.Row="1" Grid.Column="1">
 
-        <md:PackIcon Grid.Row="1" Grid.Column="1" Kind="FilterOutline" Cursor="Hand" Style="{StaticResource IconHover}" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,89,207,0"/>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="60"/>
+                    <RowDefinition Height="70"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
 
-        <Rectangle Grid.Column="1" Grid.Row="1" Fill="#A3A3A3" VerticalAlignment="Top" Margin="0,86,230,0" HorizontalAlignment="Right" Height="20" Width="1" RenderTransformOrigin="0.5,0.5">
-            <Rectangle.RenderTransform>
-                <TransformGroup>
-                    <ScaleTransform ScaleX="-1"/>
-                    <SkewTransform/>
-                    <RotateTransform/>
-                    <TranslateTransform/>
-                </TransformGroup>
-            </Rectangle.RenderTransform>
-        </Rectangle>
+                <TextBlock Text="Asset Library" FontSize="20" Foreground="#4B4b4b" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="20,0,0,0"/>
 
-        <md:PackIcon Grid.Row="1" Grid.Column="1" Kind="ChevronDown" Cursor="Hand" Foreground="#4B4B4B" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,89,237,0"/>
+                <Border HorizontalAlignment="Stretch" VerticalAlignment="Bottom" BorderBrush="#4B4B4B" BorderThickness="0,1,0,0" Margin="20,0,20,0"/>
 
-        <TextBlock Grid.Row="1" Grid.Column="1" Text="Sort By" Cursor="Hand" FontSize="13" Foreground="#4B4B4B" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="0,89,255,0"/>
-        <!--<Button x:Name="BtnUploadFile" 
-        Content="Import Asset" 
-        Width="200" Height="40" 
-        Click="BtnUploadFile_Click"/>-->
+                <Grid Grid.Row="1">
 
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
 
-        <!--<Button Content="Download Model" Click="DownloadModelButton_Click" Width="150" Height="40"/>-->
+                    <Button HorizontalAlignment="Left" BorderThickness="0" x:Name="BtnUploadFile" Width="100" Height="40" Click="BtnUploadFile_Click" Cursor="Hand" Margin="20,0,0,0">
 
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="3"/>
+                            </Style>
+                        </Button.Resources>
+
+                        <Button.Style>
+                            <Style TargetType="{x:Type Button}">
+                                <Setter Property="Background" Value="#F25505"/>
+                                <Setter Property="Foreground" Value="White"/>
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="{x:Type Button}">
+                                            <Border Background="{TemplateBinding Background}" BorderThickness="0">
+                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="#D24A06"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+
+                        <StackPanel Orientation="Horizontal">
+                            <md:PackIcon Kind="Plus" Width="17" Height="17" VerticalAlignment="Center"/>
+                            <TextBlock Text="Import Asset" Margin="1,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+
+                    </Button>
+
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+
+                        <TextBlock Text="Sort By" Cursor="Hand" FontSize="13" Foreground="#4B4B4B" VerticalAlignment="Center"/>
+
+                        <md:PackIcon Kind="ChevronDown" Cursor="Hand" Foreground="#4B4B4B" VerticalAlignment="Center" Margin="0,0,5,0"/>
+
+                        <Rectangle Fill="#A3A3A3" Height="20" Width="1" RenderTransformOrigin="0.5,0.5" Margin="0,0,5,0">
+                            <Rectangle.RenderTransform>
+                                <TransformGroup>
+                                    <ScaleTransform ScaleX="-1"/>
+                                    <SkewTransform/>
+                                    <RotateTransform/>
+                                    <TranslateTransform/>
+                                </TransformGroup>
+                            </Rectangle.RenderTransform>
+                        </Rectangle>
+
+                        <md:PackIcon Kind="FilterOutline" Cursor="Hand" Style="{StaticResource IconHover}" VerticalAlignment="Center" Margin="0,0,5,0"/>
+
+                        <Rectangle Fill="#A3A3A3" Height="20" Width="1" RenderTransformOrigin="0.5,0.5" Margin="0,0,5,0">
+                            <Rectangle.RenderTransform>
+                                <TransformGroup>
+                                    <ScaleTransform ScaleX="-1"/>
+                                    <SkewTransform/>
+                                    <RotateTransform/>
+                                    <TranslateTransform/>
+                                </TransformGroup>
+                            </Rectangle.RenderTransform>
+                        </Rectangle>
+
+                        <md:PackIcon Kind="ViewGridOutline" Cursor="Hand" Style="{StaticResource IconHover}" VerticalAlignment="Center" Margin="0,0,5,0"/>
+
+                        <md:PackIcon Grid.Row="1" Grid.Column="1" Kind="FormatListBulleted" Cursor="Hand" Style="{StaticResource IconHover}" VerticalAlignment="Center" Margin="0,0,5,0"/>
+
+                        <Rectangle Fill="#A3A3A3" Height="20" Width="1" RenderTransformOrigin="0.5,0.5" Margin="0,0,8,0">
+                            <Rectangle.RenderTransform>
+                                <TransformGroup>
+                                    <ScaleTransform ScaleX="-1"/>
+                                    <SkewTransform/>
+                                    <RotateTransform/>
+                                    <TranslateTransform/>
+                                </TransformGroup>
+                            </Rectangle.RenderTransform>
+                        </Rectangle>
+
+                        <Button x:Name="SearchButton" Cursor="IBeam" Focusable="False"  Width="115" Height="24" Background="Transparent" BorderBrush="#4B4B4B" Margin="0,0,20,0">
+
+                            <Button.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="3"/>
+                                </Style>
+                            </Button.Resources>
+
+                            <StackPanel Orientation="Horizontal">
+                                <md:PackIcon Kind="Magnify" Width="14" Height="14" VerticalAlignment="Center" Foreground="#4B4B4B" Margin="0,0,0,0"/>
+                                <!--<TextBox x:Name="SearchText_Box" VerticalAlignment="Center" VerticalContentAlignment="Center" Width="89" FontSize="10" Height="19" Margin="3,0,0,0"/>-->
+                                <TextBlock x:Name="SearchText" Text="Search By Name..." Foreground="#A3A3A3" FontSize="10" Margin="3,0,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
+
+                        </Button>
+
+                    </StackPanel>
+
+                </Grid>
+
+            </Grid>
+
+        </Border>
 
     </Grid>
 
