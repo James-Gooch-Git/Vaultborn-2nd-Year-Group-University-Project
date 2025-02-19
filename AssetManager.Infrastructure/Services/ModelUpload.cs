@@ -1,469 +1,395 @@
-using Autodesk.Forge;
-using Autodesk.Forge.Model;
-using System.Net.Http;
 using System;
+using System.Collections.Generic;
 using System.IO;
-using System.Text;
-using System.Text.Json;
-using System.Threading.Tasks;
+using System.Net.Http;
 using System.Net.Http.Headers;
-using AssetManager.Infrastructure.Services;
+using System.Text;
+using System.Threading.Tasks;
+using Newtonsoft.Json;
 
-
-
-public class ModelUpload2
+namespace AssetManager.Infrastructure.Services
 {
-    private readonly HttpClient _httpClient = new HttpClient();
-    private readonly string _accessToken; // ✅ Store the token as a class property
-    
-
-    public ModelUpload2(string accessToken)
+    public class ModelUpload
     {
-        if (string.IsNullOrEmpty(accessToken))
+        private readonly string _accessToken;
+        private readonly HttpClient _httpClient;
+        private const string API_BASE_URL = "https://developer.api.autodesk.com";
+        private string _uploadKey;  // ✅ Store the correct upload key at the class level
+        private bool _uploadFinalized = false; 
+
+        public ModelUpload(string accessToken)
         {
-            throw new ArgumentException("❌ Error: Access token cannot be null or empty.", nameof(accessToken));
+            _accessToken = accessToken;
+            _httpClient = new HttpClient();
         }
+
+        /// <summary>
+        /// Step 1: Create a storage location for the file in Forge.
+        /// </summary>
+        ///
+        /// 
         
-        _accessToken = accessToken; // ✅ Set the token when the class is instantiated
-    }
-    /*public async Task<string> UploadModel(string filePath, string projectId, string folderId)
-    {
-        string fileName = Path.GetFileName(filePath);
-        Console.WriteLine($"🔹 Debug: Upload started for {fileName}");
-
-        if (string.IsNullOrEmpty(folderId))
+        public async Task<string> CreateStorageLocation(string projectId, string folderId, string fileName)
         {
-            Console.WriteLine("❌ Error: Folder ID is missing before attempting to upload.");
-            return null;
-        }
+            Console.WriteLine(
+                $"🔍 Debug: Creating Storage Location for {fileName} in Project {projectId}, Folder {folderId}...");
 
-        // Step 1: Get an Upload URL from Autodesk
-        string storageUrn = await CreateStorageLocation(projectId, folderId, fileName);
-    
-        if (string.IsNullOrEmpty(storageUrn))
-        {
-            Console.WriteLine("❌ Error: Failed to create storage location (Missing Storage URN)");
-            return null;
-        }
+            string url = $"{API_BASE_URL}/data/v1/projects/{projectId}/storage";
 
-        Console.WriteLine($"✅ Storage URN retrieved: {storageUrn}");
+            var payload = new
+            {
+                jsonapi = new { version = "1.0" },
+                data = new
+                {
+                    type = "objects",
+                    attributes = new { name = fileName },
+                    relationships = new
+                    {
+                        target = new
+                        {
+                            data = new { type = "folders", id = folderId }
+                        }
+                    }
+                }
+            };
 
-        // Step 2: Upload file to the signed URL
-        bool uploadSuccess = await UploadToAutodesk(storageUrn, filePath);
-    
-        if (!uploadSuccess)
-        {
-            Console.WriteLine("❌ Error: File upload to Autodesk failed");
-            return null;
-        }
+            string jsonPayload = JsonConvert.SerializeObject(payload);
+            Console.WriteLine($"📤 Request JSON: {jsonPayload}");
 
-        Console.WriteLine("✅ File uploaded successfully");
+            using var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+            content.Headers.ContentType = new MediaTypeHeaderValue("application/vnd.api+json");
 
-        // Step 3: Create a new item & version in the project folder
-        string fileUrn = await CreateItemVersion(projectId, folderId, storageUrn, fileName, _accessToken);
+            using var request = new HttpRequestMessage(HttpMethod.Post, url);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
+            request.Content = content;
 
-        if (string.IsNullOrEmpty(fileUrn))
-        {
-            Console.WriteLine("❌ Error: Failed to generate file URN");
-            return null;
-        }
+            HttpResponseMessage response = await _httpClient.SendAsync(request);
+            string responseBody = await response.Content.ReadAsStringAsync();
 
-        Console.WriteLine($"✅ Upload completed successfully. File URN: {fileUrn}");
-        return fileUrn;
-    
-    }*/
-    /*private async Task<string> GetOrCreateFolderAsync(string projectId, string accessToken)
-    {
-        try
-        {
-            Console.WriteLine($"🔹 Debug: Checking for existing folders in project {projectId}");
-
-            string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/folders";
-
-            using var client = new HttpClient();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-
-            HttpResponseMessage response = await client.GetAsync(url);
-            string responseContent = await response.Content.ReadAsStringAsync();
-            Console.WriteLine($"🔹 Debug: Folder API Response: {responseContent}");
+            Console.WriteLine($"📥 Response: {responseBody}");
 
             if (!response.IsSuccessStatusCode)
             {
-                Console.WriteLine($"❌ Error: Failed to retrieve existing folders. Status Code: {response.StatusCode}");
+                Console.WriteLine($"❌ Error creating storage location: {response.StatusCode}");
+                Console.WriteLine($"Error details: {responseBody}");
                 return null;
             }
 
-            using JsonDocument doc = JsonDocument.Parse(responseContent);
+            dynamic responseData = JsonConvert.DeserializeObject(responseBody);
+            string storageUrn = responseData.data.id;
+            Console.WriteLine($"✅ Storage Location Created: {storageUrn}");
 
-            // 🔹 Search for an existing folder called "MyModels"
-            foreach (JsonElement folder in doc.RootElement.GetProperty("data").EnumerateArray())
+            return storageUrn;
+        }
+
+        
+        public async Task<(string signedUrl, string uploadKey)> GetSignedS3UploadUrl(string storageUrn)
+        {
+            var (bucketKey, objectKey) = ExtractBucketAndObjectKeys(storageUrn);
+            if (string.IsNullOrEmpty(bucketKey) || string.IsNullOrEmpty(objectKey))
             {
-                string folderName = folder.GetProperty("attributes").GetProperty("name").GetString();
-                string folderId = folder.GetProperty("id").GetString();
-
-                if (folderName == "MyModels")
-                {
-                    Console.WriteLine($"✅ Found existing folder: {folderName} (ID: {folderId})");
-                    return folderId; // ✅ Return the found folder ID
-                }
+                Console.WriteLine("❌ Failed to extract bucket and object key.");
+                return (null, null);
             }
 
-            // 🔹 If no "MyModels" folder was found, create a new one
-            Console.WriteLine("⚠️ No 'MyModels' folder found. Creating one...");
-            return await CreateNewFolder(projectId, accessToken);
+            string url = $"{API_BASE_URL}/oss/v2/buckets/{bucketKey}/objects/{objectKey}/signeds3upload";
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
+
+            HttpResponseMessage response = await _httpClient.SendAsync(request);
+            string json = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                Console.WriteLine($"❌ Error getting signed S3 upload URL: {response.StatusCode}");
+                Console.WriteLine($"Error details: {json}");
+                return (null, null);
+            }
+
+            // ✅ Parse Response
+            dynamic responseData = JsonConvert.DeserializeObject(json);
+            string signedUrl = responseData.urls[0];
+            string uploadKey = responseData.uploadKey;
+            _uploadKey = responseData.uploadKey;
+
+            Console.WriteLine($"✅ Debug: Signed URL: {signedUrl}");
+            Console.WriteLine($"✅ Debug: Upload Key: {uploadKey}");
+
+            return (signedUrl, uploadKey);
         }
-        catch (Exception ex)
+        
+        
+        public async Task<bool> UploadFileToForge(string filePath, string projectId, string storageUrn)
         {
-            Console.WriteLine($"❌ Exception while retrieving or creating folder: {ex.Message}");
-            return null;
-        }
-    }*/
-    /*private async Task<string> CreateNewFolder(string projectId, string accessToken)
-        {
+            var (signedUrl, uploadKey) = await GetSignedS3UploadUrl(storageUrn);
+            if (string.IsNullOrEmpty(signedUrl) || string.IsNullOrEmpty(uploadKey))
+            {
+                Console.WriteLine("❌ Failed to get signed S3 upload URL.");
+                return false;
+            }
+
             try
             {
-                Console.WriteLine("🔹 Debug: Creating a new folder...");
+                byte[] fileBytes = await File.ReadAllBytesAsync(filePath);
+                using var content = new ByteArrayContent(fileBytes);
+                content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
 
-                string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/folders";
+                HttpResponseMessage response = await _httpClient.PutAsync(signedUrl, content);
 
-                // Retrieve the default storage location or parent folder
-                string parentFolderId = await GetDefaultFolderIdAsync(projectId, accessToken);
-                if (string.IsNullOrEmpty(parentFolderId))
+                if (response.IsSuccessStatusCode)
                 {
-                    Console.WriteLine("❌ Error: No valid parent folder found for folder creation.");
-                    return null;
-                }
+                    Console.WriteLine($"✔️ File uploaded successfully: {filePath}");
 
-                var requestBody = new
-                {
-                    jsonapi = new { version = "1.0" },
-                    data = new
+                    // ✅ Ensure we only finalize once
+                    if (!_uploadFinalized)
                     {
-                        type = "folders",
+                        _uploadFinalized = true;
+                        bool finalized = await CompleteUpload(storageUrn, _uploadKey);
+                        return finalized;
+                    }
+                    else
+                    {
+                        Console.WriteLine("⚠️ Upload finalization already completed. Skipping duplicate call.");
+                        return true;
+                    }
+                }
+                else
+                {
+                    string errorResponse = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"❌ Error uploading file: {response.StatusCode} - {response.ReasonPhrase}");
+                    Console.WriteLine($"Error details: {errorResponse}");
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Exception occurred during file upload: {ex.Message}");
+                return false;
+            }
+        }
+
+        
+        private HashSet<string> finalizedUploads = new HashSet<string>(); // ✅ Track completed uploads
+
+        
+        public async Task<bool> CompleteUpload(string storageUrn, string uploadKey)
+        {
+            var (bucketKey, objectKey) = ExtractBucketAndObjectKeys(storageUrn);
+            if (string.IsNullOrEmpty(bucketKey) || string.IsNullOrEmpty(objectKey))
+            {
+                Console.WriteLine("❌ Failed to extract bucket and object key.");
+                return false;
+            }
+
+            if (string.IsNullOrEmpty(uploadKey))
+            {
+                Console.WriteLine("❌ Upload Key is missing. Cannot finalize upload.");
+                return false;
+            }
+
+            // ✅ Check if this file has already been finalized
+            if (finalizedUploads.Contains(objectKey))
+            {
+                Console.WriteLine($"⚠️ Skipping redundant finalization for {objectKey} (already finalized).");
+                return true;
+            }
+
+            string url = $"{API_BASE_URL}/oss/v2/buckets/{bucketKey}/objects/{objectKey}/signeds3upload";
+            var payload = new { uploadKey = uploadKey };
+            string jsonPayload = JsonConvert.SerializeObject(payload);
+            
+            Console.WriteLine($"🚀 Sending Finalization Request - {jsonPayload}");
+
+            using var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+            using var request = new HttpRequestMessage(HttpMethod.Post, url);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
+            request.Content = content;
+
+            HttpResponseMessage response = await _httpClient.SendAsync(request);
+            string responseBody = await response.Content.ReadAsStringAsync();
+
+            Console.WriteLine($"📥 Forge Finalization Response - {responseBody}");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                Console.WriteLine($"❌ Error finalizing upload: {response.StatusCode}");
+                Console.WriteLine($"Error details: {responseBody}");
+                return false;
+            }
+
+            Console.WriteLine($"✅ Upload Finalized Successfully! File is now accessible.");
+
+            // ✅ Mark this object as finalized to prevent future redundant calls
+            finalizedUploads.Add(objectKey);
+
+            return true;
+        }
+    
+        
+        private (string bucketKey, string objectKey) ExtractBucketAndObjectKeys(string storageId)
+        {
+            if (string.IsNullOrEmpty(storageId) || !storageId.StartsWith("urn:adsk.objects:os.object:"))
+            {
+                Console.WriteLine("❌ Invalid storage ID format.");
+                return (null, null);
+            }
+
+            // ✅ Remove prefix and split by '/'
+            string[] parts = storageId.Replace("urn:adsk.objects:os.object:", "").Split('/');
+
+            if (parts.Length < 2)
+            {
+                Console.WriteLine("❌ Error: Unable to extract bucket and object key.");
+                return (null, null);
+            }
+
+            string bucketKey = parts[0];  // First part is the bucket key
+            string objectKey = string.Join("/", parts.Skip(1)); // Remaining is the object key
+
+            Console.WriteLine($"📂 Extracted Bucket Key: {bucketKey}");
+            Console.WriteLine($"📄 Extracted Object Key: {objectKey}");
+
+            return (bucketKey, objectKey);
+        }
+
+        
+        public async Task<bool> CreateItemAndVersion(string projectId, string folderId, string fileName, string objectUrn)
+        {
+            Console.WriteLine("🔹 Creating Item & Version in Autodesk Forge...");
+
+            string url = $"{API_BASE_URL}/data/v1/projects/{projectId}/items";
+
+            var payload = new
+            {
+                jsonapi = new { version = "1.0" },
+                data = new
+                {
+                    type = "items",
+                    attributes = new
+                    {
+                        displayName = fileName,
+                        extension = new
+                        {
+                            type = "items:autodesk.core:File",
+                            version = "1.0"
+                        }
+                    },
+                    relationships = new
+                    {
+                        tip = new { data = new { type = "versions", id = "1" } },
+                        parent = new { data = new { type = "folders", id = folderId } }
+                    }
+                },
+                included = new[]
+                {
+                    new
+                    {
+                        type = "versions",
+                        id = "1",
                         attributes = new
                         {
-                            name = "MyModels",
+                            name = fileName,
                             extension = new
                             {
-                                type = "folders:autodesk.bim360:Folder",
+                                type = "versions:autodesk.core:File",
                                 version = "1.0"
                             }
                         },
                         relationships = new
                         {
-                            parent = new
-                            {
-                                data = new
-                                {
-                                    type = "folders",
-                                    id = parentFolderId // ✅ Ensure a valid parent ID
-                                }
-                            }
+                            storage = new { data = new { type = "objects", id = objectUrn } }
                         }
                     }
-                };
-
-                string json = JsonSerializer.Serialize(requestBody);
-                using var client = new HttpClient();
-                using var request = new HttpRequestMessage(HttpMethod.Post, url)
-                {
-                    Content = new StringContent(json, Encoding.UTF8, "application/json")
-                };
-
-                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-
-                HttpResponseMessage response = await client.SendAsync(request);
-                string responseContent = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"🔹 Debug: Folder Creation Response: {responseContent}");
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    Console.WriteLine($"❌ Error: Failed to create folder. Status: {response.StatusCode}");
-                    return null;
                 }
+            };
 
-                using JsonDocument doc = JsonDocument.Parse(responseContent);
-                return doc.RootElement.GetProperty("data").GetProperty("id").GetString();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"❌ Exception while creating folder: {ex.Message}");
-                return null;
-            }
-        }*/
-    /*
-    private async Task<string> GetDefaultFolderIdAsync(string projectId, string accessToken)
-    {
-        try
-        {
-            Console.WriteLine($"🔹 Debug: Retrieving top-level folder ID for project {projectId}");
+            string jsonPayload = JsonConvert.SerializeObject(payload, Formatting.Indented);
+            Console.WriteLine($"📤 Request JSON: {jsonPayload}");
 
-            string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/topFolders";
+            using var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+            using var request = new HttpRequestMessage(HttpMethod.Post, url);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
+            request.Content = content;
 
-            using var client = new HttpClient();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+            HttpResponseMessage response = await _httpClient.SendAsync(request);
+            string responseBody = await response.Content.ReadAsStringAsync();
 
-            HttpResponseMessage response = await client.GetAsync(url);
-            string responseContent = await response.Content.ReadAsStringAsync();
-            Console.WriteLine($"🔹 Debug: Folder API Response: {responseContent}");
+            Console.WriteLine($"📥 Response: {responseBody}");
 
             if (!response.IsSuccessStatusCode)
             {
-                Console.WriteLine($"❌ Error: Failed to retrieve Folder ID. Status Code: {response.StatusCode}");
-                return null;
+                Console.WriteLine($"❌ Error creating Item & Version: {response.StatusCode}");
+                Console.WriteLine($"Error details: {responseBody}");
+                return false;
             }
 
-            using JsonDocument doc = JsonDocument.Parse(responseContent);
-            string folderId = doc.RootElement.GetProperty("data")[0].GetProperty("id").GetString();
-
-            Console.WriteLine($"✅ Debug: Retrieved Folder ID: {folderId}");
-            return folderId;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"❌ Exception while retrieving folder ID: {ex.Message}");
-            return null;
-        }
-    }
-    public static async Task<string> GetFolderIdAsync(string projectId, string accessToken)
-    {
-        try
-        {
-            if (string.IsNullOrEmpty(accessToken))
-            {
-                Console.WriteLine("❌ Error: Access token is missing.");
-                return null;
-            }
-
-            string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/topFolders";
-
-            using var client = new HttpClient();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-
-            HttpResponseMessage response = await client.GetAsync(url);
-            string responseContent = await response.Content.ReadAsStringAsync();
-            Console.WriteLine($"🔹 Debug: Folder API Response: {responseContent}");
-
-            if (!response.IsSuccessStatusCode)
-            {
-                Console.WriteLine($"❌ Error: Failed to retrieve Folder ID. Status Code: {response.StatusCode}");
-                return null;
-            }
-
-            using JsonDocument doc = JsonDocument.Parse(responseContent);
-
-            // ✅ Ensure there is data before accessing
-            if (!doc.RootElement.TryGetProperty("data", out JsonElement dataArray) || dataArray.GetArrayLength() == 0)
-            {
-                Console.WriteLine("❌ Error: No folders found in this project.");
-                return null;
-            }
-
-            string folderId = dataArray[0].GetProperty("id").GetString();
-            Console.WriteLine($"✅ Debug: Retrieved Folder ID: {folderId}");
-            return folderId;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"❌ Exception while fetching folder ID: {ex.Message}");
-            return null;
-        }
-    }
-    */
-
-    /*
-    public static async Task<string> CreateFolderAsync(string projectId, string folderName, string accessToken)
-    {
-        string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/folders";
-
-        var requestBody = new
-        {
-            jsonapi = new { version = "1.0" },
-            data = new
-            {
-                type = "folders",
-                attributes = new { name = folderName },
-                relationships = new
-                {
-                    parent = new
-                    {
-                        data = new { type = "folders", id = "wip" } // ✅ Using `wip` as parent folder
-                    }
-                }
-            }
-        };
-
-        string json = JsonSerializer.Serialize(requestBody);
-        using var client = new HttpClient();
-        using var request = new HttpRequestMessage(HttpMethod.Post, url)
-        {
-            Content = new StringContent(json, Encoding.UTF8, "application/json")
-        };
-
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-
-        Console.WriteLine($"🔹 Debug: Creating folder '{folderName}' in project {projectId}");
-        HttpResponseMessage response = await client.SendAsync(request);
-        string responseContent = await response.Content.ReadAsStringAsync();
-        Console.WriteLine($"🔹 Debug: Response from Autodesk: {responseContent}");
-
-        if (!response.IsSuccessStatusCode)
-        {
-            Console.WriteLine($"❌ Error: Failed to create folder. {response.StatusCode}");
-            return null;
-        }
-
-        using JsonDocument doc = JsonDocument.Parse(responseContent);
-        string folderId = doc.RootElement.GetProperty("data").GetProperty("id").GetString();
-
-        Console.WriteLine($"✅ New Folder Created: {folderName} (ID: {folderId})");
-        return folderId;
-    }
-    */
-
-
-
-
-
-
-
-    // 🔹 Step 1: Create a Storage Location
-    /*private async Task<string> CreateStorageLocation(string projectId, string folderId, string fileName)
-    {
-        string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/storage";
-
-        if (string.IsNullOrEmpty(_accessToken))
-        {
-            Console.WriteLine("❌ Error: Access token is missing.");
-            return null;
-        }
-
-        if (string.IsNullOrEmpty(projectId) || string.IsNullOrEmpty(folderId))
-        {
-            Console.WriteLine("❌ Error: Project ID or Folder ID is missing.");
-            return null;
-        }
-
-        var requestBody = new
-        {
-            jsonapi = new { version = "1.0" },
-            data = new
-            {
-                type = "objects",
-                attributes = new { name = fileName },
-                relationships = new
-                {
-                    target = new
-                    {
-                        data = new { type = "folders", id = folderId }
-                    }
-                }
-            }
-        };
-
-        string json = JsonSerializer.Serialize(requestBody);
-        using var client = new HttpClient();
-        using var request = new HttpRequestMessage(HttpMethod.Post, url)
-        {
-            Content = new StringContent(json, Encoding.UTF8, "application/json")
-        };
-
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
-
-        Console.WriteLine($"🔹 Debug: Sending request to {url}");
-        Console.WriteLine($"🔹 Debug: Request Body: {json}");
-
-        HttpResponseMessage response = await client.SendAsync(request);
-        string responseContent = await response.Content.ReadAsStringAsync();
-        Console.WriteLine($"🔹 Debug: Response from Autodesk: {responseContent}");
-
-        if (!response.IsSuccessStatusCode)
-        {
-            Console.WriteLine($"❌ Error: Failed to create storage location. {response.StatusCode}");
-            return null;
-        }
-
-        using JsonDocument doc = JsonDocument.Parse(responseContent);
-        return doc.RootElement.GetProperty("data").GetProperty("id").GetString();
-    }*/
-
-
-
-
-
-    // 🔹 Step 2: Upload the File to Autodesk Storage
-    private async Task<bool> UploadToAutodesk(string storageUrn, string filePath)
-    {
-        string uploadUrl = $"https://developer.api.autodesk.com/oss/v2/buckets/wip.dm.prod/objects/{storageUrn}";
-
-        using FileStream fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-        using var content = new StreamContent(fileStream);
-        content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
-
-        using var request = new HttpRequestMessage(HttpMethod.Put, uploadUrl)
-        {
-            Content = content
-        };
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
-
-        Console.WriteLine($"🔹 Debug: Uploading file to {uploadUrl}");
-
-        HttpResponseMessage response = await _httpClient.SendAsync(request);
-
-        if (response.IsSuccessStatusCode)
-        {
-            Console.WriteLine("✅ File uploaded successfully!");
+            Console.WriteLine($"✅ Item & Version Created Successfully!");
             return true;
         }
 
-        string errorResponse = await response.Content.ReadAsStringAsync();
-        Console.WriteLine($"❌ Upload failed: {response.StatusCode} - {errorResponse}");
-        return false;
-    }
-
-
-
-    // 🔹 Step 3: Create a New Item & Version in the Project Folder
-    private async Task<string> CreateItemVersion(string projectId, string folderId, string storageUrn, string fileName, string _accessToken)
-    {
-        string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/items";
-
-        var requestBody = new
+        
+        public async Task<bool> UploadModel(string projectId, string folderId, string filePath)
         {
-            jsonapi = new { version = "1.0" },
-            data = new
+            string fileName = Path.GetFileName(filePath);
+            Console.WriteLine($"📤 Uploading {fileName} to Autodesk Forge...");
+
+            // ✅ Step 1: Create Storage Location
+            string storageUrn = await CreateStorageLocation(projectId, folderId, fileName);
+            if (string.IsNullOrEmpty(storageUrn))
             {
-                type = "items",
-                attributes = new { name = fileName },
-                relationships = new
-                {
-                    tip = new { data = new { type = "versions", id = storageUrn } },
-                    parent = new { data = new { type = "folders", id = folderId } }
-                }
+                Console.WriteLine("❌ Failed to create storage location.");
+                return false;
             }
-        };
 
-        string json = JsonSerializer.Serialize(requestBody);
-        using var request = new HttpRequestMessage(HttpMethod.Post, url)
-        {
-            Content = new StringContent(json, Encoding.UTF8, "application/json")
-        };
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
+            Console.WriteLine($"✅ Storage Location Created: {storageUrn}");
 
-        Console.WriteLine($"🔹 Debug: Requesting file version creation at {url}");
-        HttpResponseMessage response = await _httpClient.SendAsync(request);
+            // ✅ Step 2: Upload File to Forge
+            bool uploadSuccess = await UploadFileToForge(filePath, projectId, storageUrn);
+            if (!uploadSuccess)
+            {
+                Console.WriteLine("❌ File upload failed.");
+                return false;
+            }
 
-        string responseContent = await response.Content.ReadAsStringAsync();
-        Console.WriteLine($"🔹 Debug: Response from Autodesk: {responseContent}");
+            Console.WriteLine($"✅ File Uploaded Successfully: {filePath}");
 
-        if (!response.IsSuccessStatusCode)
-        {
-            Console.WriteLine($"❌ Error: Failed to create file version. {response.StatusCode}");
-            return null;
+            // ✅ Step 3: Extract Bucket & Object Key
+            var (bucketKey, objectKey) = ExtractBucketAndObjectKeys(storageUrn);
+            if (string.IsNullOrEmpty(bucketKey) || string.IsNullOrEmpty(objectKey))
+            {
+                Console.WriteLine("❌ Failed to extract bucket & object key.");
+                return false;
+            }
+
+            // ✅ Step 4: Finalize Upload using `CompleteUpload()`
+            Console.WriteLine("🔹 Finalizing Upload with Batch Complete...");
+            bool finalizeSuccess = await CompleteUpload(storageUrn, _uploadKey) ; 
+            if (!finalizeSuccess)
+            {
+                Console.WriteLine("❌ Upload finalization failed.");
+                return false;
+            }
+
+            Console.WriteLine($"✅ Upload Finalized Successfully!");
+
+            // ✅ Step 5: Register File in Autodesk Forge (Create Item & Version)
+            Console.WriteLine("🔹 Registering file in Autodesk Forge...");
+            bool itemCreated = await CreateItemAndVersion(projectId, folderId, fileName, storageUrn);
+            if (!itemCreated)
+            {
+                Console.WriteLine("❌ Failed to create Item & Version. File may not appear in Forge.");
+                return false;
+            }
+
+            Console.WriteLine($"✅ Upload process completed, and file is visible in Forge.");
+            return true;
         }
 
-        using JsonDocument doc = JsonDocument.Parse(responseContent);
-        return doc.RootElement.GetProperty("data").GetProperty("id").GetString();
+
+
     }
+
+
+
 
 }
