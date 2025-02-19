@@ -11,12 +11,7 @@ using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Core.Raw;
 using Autodesk.Authentication;
 using Autodesk.Authentication.Model;
-using AssetManager.Infrastructure.Data;
-using AssetManager.Infrastructure.Models;
-using AssetManager.Infrastructure.Services;
-using Microsoft.WindowsAPICodePack.Shell.PropertySystem;
-using MongoDB.Driver;
-
+using System.IO;
 
 namespace AssetManager.Desktop;
 
@@ -30,34 +25,22 @@ public partial class LoginWindow : Window
     public string _codeVerifier;
     private readonly TokenService _tokenService = new TokenService();
     private readonly string userSession;
-    private readonly string aToken;
     
     public LoginWindow()
     {
         InitializeComponent();
         userSession = Environment.GetEnvironmentVariable("userId", EnvironmentVariableTarget.User);
-
-        //MessageBox.Show($"Your accessToken is: {aToken}");
-        if (!string.IsNullOrEmpty(userSession))
+        //MessageBox.Show($"Your user session is: {userSession}");
+        /*if (!string.IsNullOrEmpty(userSession))
         {
-            aToken = Environment.GetEnvironmentVariable("accessToken", EnvironmentVariableTarget.User);
-            Infrastructure.Services.TokenManager.SetToken(aToken);
             MainWindow mainWindow = new MainWindow(userSession);
             mainWindow.Show();
             this.Close();
-        }
+        }  */  
+       
+        InitializeWebView();
     }
-    
-    public LoginWindow(bool logOut)
-    {
-        InitializeComponent();
-        if (logOut)
-        {
-            Environment.SetEnvironmentVariable("userId", "", EnvironmentVariableTarget.User);
-            Environment.SetEnvironmentVariable("accessToken", "", EnvironmentVariableTarget.User);
-        }
-    }
-    
+   
     public class TokenManager
     {
         private static string _accessToken;
@@ -65,40 +48,25 @@ public partial class LoginWindow : Window
         public static string GetToken() => _accessToken;
     }
 
-
-    private async void LoginButton_Click(object sender, RoutedEventArgs e)
+    private async void InitializeWebView()
     {
         try
         {
+            await webView.EnsureCoreWebView2Async(null);
+
             string nonce = GenerateNonce();
             Pkce pkce = GeneratePkce();
             _codeVerifier = pkce.CodeVerifier;
-
-            string loginURL = $"https://developer.api.autodesk.com/authentication/v2/authorize"
-                              + $"?response_type=code"
-                              + $"&client_id={clientID}"
-                              + $"&redirect_uri={redirect}"
-                              + $"&scope=data:read%20data:write%20data:create%20bucket:read%20bucket:create%20bucket:update%20account:write"
-                              + $"&nonce={nonce}"
-                              + $"&prompt=login"
-                              + $"&code_challenge={pkce.CodeChallenge}"
-                              + $"&code_challenge_method=S256";
-
-            if (webView.CoreWebView2 == null)
-            {
-                Console.WriteLine("❌ WebView is not initialized. Initializing...");
-                await webView.EnsureCoreWebView2Async(); // ✅ Ensure initialization
-            }
+            string loginURL = $"https://developer.api.autodesk.com/authentication/v2/authorize?response_type=code&client_id={clientID}&redirect_uri={redirect}&scope=data:read%20user-profile:read&nonce={nonce}&prompt=login&code_challenge={pkce.CodeChallenge}&code_challenge_method=S256";
 
             webView.CoreWebView2.NavigationStarting -= Redirected;
             webView.CoreWebView2.NavigationStarting += Redirected;
 
-            Console.WriteLine($"🔹 Navigating to: {loginURL}");
             webView.CoreWebView2.Navigate(loginURL);
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"❌ Error Logging in: {ex.Message}");
+            MessageBox.Show(ex.Message );
         }
     }
 
@@ -106,10 +74,8 @@ public partial class LoginWindow : Window
     {
         try
         {
-            string token = await _tokenService.GetAccessTokenAsync(authCode, _codeVerifier, clientID);
-            //MessageBox.Show($"✅ Access Token: {token}");
-            Infrastructure.Services.TokenManager.SetToken(token);
-            Environment.SetEnvironmentVariable("accessToken", token, EnvironmentVariableTarget.User);
+            string token = await _tokenService.GetAccessTokenAsync(authCode, _codeVerifier);
+            MessageBox.Show($"✅ Access Token: {token}");
             GetUserData(token);
         }
         catch (Exception ex)
@@ -118,38 +84,16 @@ public partial class LoginWindow : Window
         }
     }
 
-    
-
     private async void GetUserData(string accessToken)
     {
         AuthenticationClient authClient = new AuthenticationClient();
         UserInfo userDataResponse = await authClient.GetUserInfoAsync(accessToken);
-       // MessageBox.Show($"Id: {userDataResponse.Sub}, Name: {userDataResponse.Name}, Email: {userDataResponse.Email}");
-        Environment.SetEnvironmentVariable("userId", userDataResponse.Sub, EnvironmentVariableTarget.User);
-        InsertUserDataDB(userDataResponse);
-        MainWindow mainWindow = new MainWindow(userDataResponse.Sub);
+        MessageBox.Show($"Id: {userDataResponse.Sub}, Name: {userDataResponse.Name}, Email: {userDataResponse.Email}");
+        MainWindow mainWindow = new MainWindow(userDataResponse);
         mainWindow.Show();
         this.Close();
     }
-    private async Task<TokenData> RefreshToken(string refreshToken)
-    {
-        using (HttpClient client = new HttpClient())
-        {
-            var tokenContent = new Dictionary<string, string>
-            {
-                { "grant_type", "refresh_token" },
-                { "refresh_token", refreshToken },
-                { "client_id", clientID },
-                {  "scope", "data:read data:write data:create bucket:read bucket:create bucket:update account:read" } ,
-            };
 
-            var tokenParameters = new FormUrlEncodedContent(tokenContent);
-            var tokenResponse = await client.PostAsync(tokenURL, tokenParameters);
-            var tokenResponseContent = await tokenResponse.Content.ReadAsStringAsync();
-            var tokenData = JsonConvert.DeserializeObject<TokenData>(tokenResponseContent);
-            return tokenData;
-        }
-    }
     private async void Redirected(object sender, CoreWebView2NavigationStartingEventArgs args)
     {
         //MessageBox.Show($"Redirect URL: {args.Uri}");
@@ -164,40 +108,12 @@ public partial class LoginWindow : Window
                 GetAccessToken(authCode);
         }
     }
-    
-    private async void InsertUserDataDB(UserInfo userInfo)
-    {
-        try
-        {
-            MongoConnection database = new MongoConnection();
-            var findUser = await database.Users.Find(x => x.Id == userInfo.Sub).FirstOrDefaultAsync();
-
-            if (findUser == null)
-            {
-                User newUser = new User { Id = userInfo.Sub, Username = userInfo.PreferredUsername, Email = userInfo.Email, ProfilePic = userInfo.Picture};
-                await database.Users.InsertOneAsync(newUser);
-            }
-        }
-        catch (Exception e)
-        {
-            MessageBox.Show($"Error: {e.Message}");
-        }
-    }
 
     public class Pkce
     {
         public string CodeVerifier { get; set; }
         public string CodeChallenge { get; set; }
     }
-
-    public class TokenData
-    {
-        public string access_token { get; set; }
-        public string token_type { get; set; }
-        public int expires_in { get; set; }  // ✅ Fix: Ensure this is an integer
-        public string refresh_token { get; set; }
-    }
-
 
     public class UserData
     {
