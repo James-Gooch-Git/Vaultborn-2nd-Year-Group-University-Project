@@ -78,10 +78,29 @@ namespace AssetManager.Desktop
 
             var projects = await DataManagement.GetAllProjectsFromHub(hubID);
 
+            string projectID = null;
+            
             foreach (var (projectId, projectName) in projects)
             {
                 Console.WriteLine($"📌 Project ID: {projectId}, Name: {projectName}");
+                if (projectName == "Default Project")
+                {
+                    projectID = projectId;
+                    Console.WriteLine("lorem ipsum dolor\n\n\n\n\n\n");
+                }
             }
+
+            var topFolder = await DataManagement.GetTopLevelFolder(hubID, projectID);
+            var folderId = topFolder.Item1;
+            
+            //var
+            
+            var items = await DataManagement.GetFolderItems(projectID, folderId);
+            foreach (var item in items)
+            {
+                
+            }
+
         }
 
 
