@@ -37,15 +37,12 @@
         </Grid.RowDefinitions>
 
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="200"/>
+            <ColumnDefinition x:Name="ResizeSidebar" Width="200"/>
+            <ColumnDefinition Width="5"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <!--<Border Grid.Row="0" BorderBrush="#797979" BorderThickness="0,0,0,1" Grid.ColumnSpan="2"/>
-        <Thumb Grid.Row="1" HorizontalAlignment="Right" DragDelta="Thumb_DragDelta"/>
-        <Border Grid.Row="1" BorderBrush="#797979" BorderThickness="0,0,1,0"/>-->
-
-        <Border Grid.Row="0" Grid.ColumnSpan="2" BorderBrush="#797979" BorderThickness="0,0,0,1">
+        <Border Grid.Row="0" Grid.ColumnSpan="3" BorderBrush="#797979" BorderThickness="0,0,0,1">
 
             <Grid>
 
@@ -118,11 +115,21 @@
 
                 </Grid>
 
+                <TreeView Grid.Row="1" x:Name="ProjectTreeView" BorderThickness="0">
+                    <TreeView.ItemContainerStyle>
+                        <Style TargetType="TreeViewItem">
+                            <EventSetter Event="Expanded" Handler="TreeViewItem_Expanded"/>
+                        </Style>
+                    </TreeView.ItemContainerStyle>
+                </TreeView>
+
             </Grid>
             
         </Border>
 
-        <Border Grid.Row="1" Grid.Column="1">
+        <!--<Thumb Grid.Row="1" Grid.Column="1" Width="5" DragDelta="DragDeltaThumb" Cursor="SizeWE"/>-->
+
+        <Border Grid.Row="1" Grid.Column="2">
 
             <Grid>
                 <Grid.RowDefinitions>

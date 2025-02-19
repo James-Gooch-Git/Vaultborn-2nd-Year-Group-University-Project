@@ -322,6 +322,56 @@ namespace AssetManager.Infrastructure.Services
             }
         }
 
+        public static async Task<List<(string ItemId, string ItemName, bool IsFolder)>> GetProjectItems(string projectId, string folderId)
+        {
+            string accessToken = TokenManager.GetToken();
+            if (string.IsNullOrEmpty(accessToken))
+            {
+                Console.WriteLine("❌ No valid access token.");
+                return new List<(string, string, bool)>(); // ✅ Return an empty list instead of null
+            }
+
+            string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/folders/{folderId}/contents";
+
+            try
+            {
+                using (HttpClient client = new HttpClient())
+                {
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+                    HttpResponseMessage response = await client.GetAsync(url);
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        Console.WriteLine($"❌ Error fetching folder contents: {response.StatusCode} - {response.ReasonPhrase}");
+                        return new List<(string, string, bool)>(); // ✅ Return an empty list instead of null
+                    }
+
+                    string jsonResponse = await response.Content.ReadAsStringAsync();
+                    using JsonDocument doc = JsonDocument.Parse(jsonResponse);
+                    JsonElement root = doc.RootElement;
+
+                    List<(string, string, bool)> projectItems = new List<(string, string, bool)>();
+
+                    foreach (JsonElement item in root.GetProperty("data").EnumerateArray())
+                    {
+                        string itemId = item.GetProperty("id").GetString();
+                        string itemName = item.GetProperty("attributes").GetProperty("displayName").GetString();
+                        bool isFolder = item.GetProperty("type").GetString() == "folders";
+
+                        projectItems.Add((itemId, itemName, isFolder));
+                    }
+
+                    return projectItems;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Exception occurred: {ex.Message}");
+                return new List<(string, string, bool)>(); // ✅ Always return an empty list
+            }
+        }
+
+
         public static async Task<List<(string ItemId, string ItemName)>> GetItemsInFolder(string projectId,
             string folderId)
         {
