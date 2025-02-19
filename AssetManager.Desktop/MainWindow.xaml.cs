@@ -23,9 +23,11 @@ namespace AssetManager.Desktop
         private string _accessToken;
         private string _selectedProjectId;
         private string _selectedItemId;
+        private string _selectedItemName;
         private string _folderId;
         private string hubID;
         private readonly ModelUpload _uploadService;
+        private readonly string ModelStoragePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "DownloadedModels");
 
 
         // ✅ Constructor
@@ -234,15 +236,38 @@ namespace AssetManager.Desktop
                     MessageBoxImage.Error);
                 return;
             }
+            
+            string modelFilePath = FindExistingModelFile(_selectedItemName);
 
+            if (modelFilePath == null)
+            {
+                // No matching file found, so download it
+                var fileDownloadService = new FileDownloadService2();
+                fileDownloadService.DownloadModelAsync(_selectedProjectId, _selectedItemId);
+
+                if (string.IsNullOrEmpty(modelFilePath) || !File.Exists(modelFilePath))
+                {
+                    MessageBox.Show("❌ Failed to download the model.", "Download Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+            }
+            
             try
             {
                 // Download the model first
                 var fileDownloadService = new FileDownloadService2();
                 await fileDownloadService.DownloadModelAsync(_selectedProjectId, _selectedItemId);
+                
+                string saveDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "DownloadedModels", _selectedItemName);
+                Console.WriteLine("Model dir: "+saveDirectory);
+                
+                if (!Directory.Exists(saveDirectory))
+                {
+                    LaunchFusionWithModel(saveDirectory);
+
+                }
 
                 // Now launch Fusion with the downloaded model
-                LaunchFusionWithModel();
             }
             catch (Exception ex)
             {
@@ -251,9 +276,63 @@ namespace AssetManager.Desktop
             }
         }
 
-        private void LaunchFusionWithModel()
+        private void LaunchFusionWithModel(string modelPath)
         {
             string fusion360Uri = "fusion360://command=openCloudModel&itemId=urn:adsk.wipprod:dm.lineage:pwGqGrbgRx6IUlR4Wtskdg";
+            
+            string fusionPath = GetFusion360ExecutablePath();
+
+            if (string.IsNullOrEmpty(fusionPath) || !File.Exists(fusionPath))
+            {
+                MessageBox.Show("⚠️ Fusion 360 is not installed or could not be found.", "Fusion 360 Not Found", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            try
+            {
+                // Start Fusion 360 and open the model
+                Process.Start(fusionPath, $"\"{modelPath}\"");
+                Console.WriteLine($"✅ Launched Fusion 360 with: {modelPath}");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"❌ Failed to launch Fusion 360: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            
+
+        }
+        
+        private string GetFusion360ExecutablePath()
+        {
+            string fusionBasePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Autodesk", "webdeploy", "production");
+            Console.WriteLine("fusion location: " + fusionBasePath);
+            
+            if (Directory.Exists(fusionBasePath))
+            {
+                var fusionExecutables = Directory.GetFiles(fusionBasePath, "Fusion360.exe", SearchOption.AllDirectories);
+                if (fusionExecutables.Length > 0)
+                {
+                    return fusionExecutables[0]; // Return the first valid Fusion 360 path found
+                }
+            }
+
+            return null; // Fusion 360 not found
+        }
+
+        private string FindExistingModelFile(string modelName)
+        {
+            var files = Directory.GetFiles(ModelStoragePath);
+
+            foreach (var file in files)
+            {
+                if (Path.GetFileNameWithoutExtension(file).Equals(modelName, StringComparison.OrdinalIgnoreCase))
+                {
+                    Console.WriteLine("Model found in downloads");
+                    return file; // Return the first matching file found
+                }
+            }
+
+            return null; // No matching file found
         }
 
 
@@ -658,6 +737,7 @@ namespace AssetManager.Desktop
             if (ModelComboBox.SelectedItem is ComboBoxItem selectedItem)
             {
                 _selectedItemId = selectedItem.Tag as string;
+                _selectedItemName = selectedItem.Content as string;
                 Console.WriteLine($"📌 Selected Item ID: {_selectedItemId}");
             }
         }
