@@ -79,7 +79,7 @@ namespace AssetManager.Desktop
             var projects = await DataManagement.GetAllProjectsFromHub(hubID);
 
             string projectID = null;
-            
+
             foreach (var (projectId, projectName) in projects)
             {
                 Console.WriteLine($"📌 Project ID: {projectId}, Name: {projectName}");
@@ -92,15 +92,22 @@ namespace AssetManager.Desktop
 
             var topFolder = await DataManagement.GetTopLevelFolder(hubID, projectID);
             var folderId = topFolder.Item1;
-            
-            //var
-            
+
+            string itemId = null;
+            string itemName = null;
+
             var items = await DataManagement.GetFolderItems(projectID, folderId);
             foreach (var item in items)
             {
-                
+                //Console.WriteLine($"item name: {item.Item2}");
+                if (item.Item2 == "Tourus.obj")
+                {
+                    itemId = item.Item1;
+                    itemName = item.Item2;
+                }
             }
 
+            Console.WriteLine($"Item ID: {itemId}  Name: {itemName}");
         }
 
 
@@ -244,79 +251,85 @@ namespace AssetManager.Desktop
             }
         }
 
-       private void LaunchFusionWithModel()
-{
-    try
-    {
-        string modelPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), 
-            "DownloadedModels"
-        );
-
-        // Define Fusion paths
-        string fusionBasePath = @"C:\Users\james\AppData\Local\Autodesk\webdeploy\production";
-        string versionPath = Path.Combine(fusionBasePath, "30c9d5533837458c62c42054f4d8a9dcee4200a0");
-        string pythonPath = Path.Combine(versionPath, "Python");
-        string apiPath = Path.Combine(versionPath, "Api");
-        string pythonExe = Path.Combine(pythonPath, "python.exe");
-
-        if (!File.Exists(pythonExe))
+        private void LaunchFusionWithModel()
         {
-            MessageBox.Show($"❌ Cannot find Fusion's Python at: {pythonExe}\nPlease verify Fusion 360 is installed correctly.", 
-                "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            return;
+            string fusion360Uri = "fusion360://command=openCloudModel&itemId=urn:adsk.wipprod:dm.lineage:pwGqGrbgRx6IUlR4Wtskdg";
         }
 
-        string pythonScriptPath = @"C:\Users\james\Desktop\AssetManagerTom2\AssetManager\AssetManager.Core\Fusion\FusionAddIn\FusionAddIn.py";
 
-        if (!File.Exists(pythonScriptPath))
-        {
-            MessageBox.Show($"❌ Python script not found at: {pythonScriptPath}", 
-                "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            return;
-        }
-
-        ProcessStartInfo startInfo = new ProcessStartInfo
-        {
-            FileName = pythonExe,
-            Arguments = $"\"{pythonScriptPath}\" \"{modelPath}\"",
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true,
-            WorkingDirectory = Path.GetDirectoryName(pythonScriptPath)
-        };
-
-        // Set up environment variables for Fusion Python
-        startInfo.EnvironmentVariables["PYTHONPATH"] = $"{apiPath};{pythonPath}";
-        startInfo.EnvironmentVariables["PYTHONHOME"] = pythonPath;
-        startInfo.EnvironmentVariables["PATH"] = $"{pythonPath};{apiPath};{Environment.GetEnvironmentVariable("PATH")}";
-
-        using (Process process = new Process { StartInfo = startInfo })
-        {
-            process.Start();
-            string output = process.StandardOutput.ReadToEnd();
-            string error = process.StandardError.ReadToEnd();
-            process.WaitForExit();
-
-            if (!string.IsNullOrEmpty(error))
-            {
-                MessageBox.Show($"❌ Error:\n{error}", "Error", 
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-            if (!string.IsNullOrEmpty(output))
-            {
-                MessageBox.Show($"✅ Output:\n{output}", "Info", 
-                    MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-        }
-    }
-    catch (Exception ex)
-    {
-        MessageBox.Show($"❌ Error launching Fusion script: {ex.Message}\n{ex.StackTrace}", 
-            "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-    }
-}
+//        private void LaunchFusionWithModel()
+// {
+//     try
+//     {
+//         string modelPath = Path.Combine(
+//             Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), 
+//             "DownloadedModels"
+//         );
+//
+//         // Define Fusion paths
+//         string fusionBasePath = @"C:\Users\james\AppData\Local\Autodesk\webdeploy\production";
+//         string versionPath = Path.Combine(fusionBasePath, "30c9d5533837458c62c42054f4d8a9dcee4200a0");
+//         string pythonPath = Path.Combine(versionPath, "Python");
+//         string apiPath = Path.Combine(versionPath, "Api");
+//         string pythonExe = Path.Combine(pythonPath, "python.exe");
+//
+//         if (!File.Exists(pythonExe))
+//         {
+//             MessageBox.Show($"❌ Cannot find Fusion's Python at: {pythonExe}\nPlease verify Fusion 360 is installed correctly.", 
+//                 "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+//             return;
+//         }
+//
+//         string pythonScriptPath = @"C:\Users\james\Desktop\AssetManagerTom2\AssetManager\AssetManager.Core\Fusion\FusionAddIn\FusionAddIn.py";
+//
+//         if (!File.Exists(pythonScriptPath))
+//         {
+//             MessageBox.Show($"❌ Python script not found at: {pythonScriptPath}", 
+//                 "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+//             return;
+//         }
+//
+//         ProcessStartInfo startInfo = new ProcessStartInfo
+//         {
+//             FileName = pythonExe,
+//             Arguments = $"\"{pythonScriptPath}\" \"{modelPath}\"",
+//             RedirectStandardOutput = true,
+//             RedirectStandardError = true,
+//             UseShellExecute = false,
+//             CreateNoWindow = true,
+//             WorkingDirectory = Path.GetDirectoryName(pythonScriptPath)
+//         };
+//
+//         // Set up environment variables for Fusion Python
+//         startInfo.EnvironmentVariables["PYTHONPATH"] = $"{apiPath};{pythonPath}";
+//         startInfo.EnvironmentVariables["PYTHONHOME"] = pythonPath;
+//         startInfo.EnvironmentVariables["PATH"] = $"{pythonPath};{apiPath};{Environment.GetEnvironmentVariable("PATH")}";
+//
+//         using (Process process = new Process { StartInfo = startInfo })
+//         {
+//             process.Start();
+//             string output = process.StandardOutput.ReadToEnd();
+//             string error = process.StandardError.ReadToEnd();
+//             process.WaitForExit();
+//
+//             if (!string.IsNullOrEmpty(error))
+//             {
+//                 MessageBox.Show($"❌ Error:\n{error}", "Error", 
+//                     MessageBoxButton.OK, MessageBoxImage.Error);
+//             }
+//             if (!string.IsNullOrEmpty(output))
+//             {
+//                 MessageBox.Show($"✅ Output:\n{output}", "Info", 
+//                     MessageBoxButton.OK, MessageBoxImage.Information);
+//             }
+//         }
+//     }
+//     catch (Exception ex)
+//     {
+//         MessageBox.Show($"❌ Error launching Fusion script: {ex.Message}\n{ex.StackTrace}", 
+//             "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+//     }
+//    }
 
 
 
