@@ -45,5 +45,57 @@ namespace AssetManager.Core
                 Console.WriteLine($"Python script output: {result}");
             }
         }
+        
+        public static void DeployFusionAddIn()
+        {
+            string addInSource = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..", "..", "..", "AssetManager.Core", "Fusion", "FusionAddIn", "FusionAddIn.py"));
+            Console.WriteLine("SCRIPT: "+addInSource );
+            string fusionAddInsFolder = ("C:\\Users\\tomgr\\AppData\\Roaming\\Autodesk\\Autodesk Fusion 360\\API\\AddIns");
+            Console.WriteLine(fusionAddInsFolder);
+            string addInDestination = Path.Combine(fusionAddInsFolder, "FusionAddIn");
+            
+            try
+            {
+                // Ensure destination exists
+                if (Directory.Exists(addInDestination))
+                {
+                    Directory.Delete(addInDestination, true);
+                }
+        
+                CopyDirectory(addInSource, addInDestination);
+                Console.WriteLine("✅ Add-In successfully deployed!");
+                
+                foreach (string filePath in Directory.GetFiles(addInSource, "*.*", SearchOption.AllDirectories))
+                {
+                    string destPath = Path.Combine(fusionAddInsFolder, Path.GetFileName(filePath));
+
+                    Console.WriteLine($"Copying: {filePath} ➡️ {destPath}");
+                    File.Copy(filePath, destPath, true);
+                }
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Failed to deploy Add-In: {ex.Message}");
+            }
+        }
+        
+        private static void CopyDirectory(string sourceDir, string destinationDir)
+        {
+            Directory.CreateDirectory(destinationDir);
+
+            foreach (string file in Directory.GetFiles(sourceDir))
+            {
+                string destFile = Path.Combine(destinationDir, Path.GetFileName(file));
+                File.Copy(file, destFile, true);
+            }
+
+            foreach (string subDir in Directory.GetDirectories(sourceDir))
+            {
+                string destSubDir = Path.Combine(destinationDir, Path.GetFileName(subDir));
+                CopyDirectory(subDir, destSubDir);
+            }
+        }
+
     }
 }

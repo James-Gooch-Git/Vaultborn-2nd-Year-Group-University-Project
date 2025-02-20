@@ -171,6 +171,29 @@ public class FileDownloadService2
         char[] invalidChars = Path.GetInvalidFileNameChars();
         return string.Concat(fileName.Where(c => !invalidChars.Contains(c)));
     }
+    
+    public async Task DownloadModelAndSaveMetadata(string _selectedProjectId, string _selectedItemId, string _selectedItemName, string _selectedFolderId)
+    {   
+        await DownloadModelAsync(_selectedProjectId, _selectedItemId);
+
+        string saveDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "DownloadedModels");
+        string modelPath = Path.Combine(saveDirectory, _selectedItemName); // Model file path
+
+        string metadataPath = modelPath + ".metadata.json";
+
+        // Write metadata
+        var metadata = new
+        {
+            projectId = _selectedProjectId,
+            folderId = _selectedFolderId,
+            itemId = _selectedItemId,
+            itemName = _selectedItemName
+        };
+        File.WriteAllText(metadataPath, System.Text.Json.JsonSerializer.Serialize(metadata));
+
+        Console.WriteLine($"✅ Model metadata saved: {metadataPath}");
+    }
+
 }
 
 
