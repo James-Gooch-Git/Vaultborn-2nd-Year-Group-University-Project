@@ -1,26 +1,22 @@
 {
   "Version": 1,
-  "WorkspaceRootPath": "C:\\Users\\james\\Documents\\GitHub\\AssetManager\\",
+  "WorkspaceRootPath": "C:\\autdodesk test\\AssetManager\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{88313238-3150-490E-AF08-4F9876851643}|AssetManager.Desktop\\AssetManager.Desktop.csproj|c:\\users\\james\\documents\\github\\assetmanager\\assetmanager.desktop\\mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{88313238-3150-490E-AF08-4F9876851643}|AssetManager.Desktop\\AssetManager.Desktop.csproj|c:\\autdodesk test\\assetmanager\\assetmanager.desktop\\mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{88313238-3150-490E-AF08-4F9876851643}|AssetManager.Desktop\\AssetManager.Desktop.csproj|solutionrelative:assetmanager.desktop\\mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{88313238-3150-490E-AF08-4F9876851643}|AssetManager.Desktop\\AssetManager.Desktop.csproj|c:\\users\\james\\documents\\github\\assetmanager\\assetmanager.desktop\\mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
-      "RelativeMoniker": "D:0:0:{88313238-3150-490E-AF08-4F9876851643}|AssetManager.Desktop\\AssetManager.Desktop.csproj|solutionrelative:assetmanager.desktop\\mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{CFB6BF8A-57C7-4A5D-B0D4-F155CD2FBB68}|AssetManager.Infrastructure\\AssetManager.Infrastructure.csproj|c:\\users\\james\\documents\\github\\assetmanager\\assetmanager.infrastructure\\services\\datamanagement.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{CFB6BF8A-57C7-4A5D-B0D4-F155CD2FBB68}|AssetManager.Infrastructure\\AssetManager.Infrastructure.csproj|solutionrelative:assetmanager.infrastructure\\services\\datamanagement.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{88313238-3150-490E-AF08-4F9876851643}|AssetManager.Desktop\\AssetManager.Desktop.csproj|c:\\users\\james\\documents\\github\\assetmanager\\assetmanager.desktop\\loginwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{88313238-3150-490E-AF08-4F9876851643}|AssetManager.Desktop\\AssetManager.Desktop.csproj|c:\\autdodesk test\\assetmanager\\assetmanager.desktop\\loginwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{88313238-3150-490E-AF08-4F9876851643}|AssetManager.Desktop\\AssetManager.Desktop.csproj|solutionrelative:assetmanager.desktop\\loginwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{88313238-3150-490E-AF08-4F9876851643}|AssetManager.Desktop\\AssetManager.Desktop.csproj|c:\\users\\james\\documents\\github\\assetmanager\\assetmanager.desktop\\loginwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
-      "RelativeMoniker": "D:0:0:{88313238-3150-490E-AF08-4F9876851643}|AssetManager.Desktop\\AssetManager.Desktop.csproj|solutionrelative:assetmanager.desktop\\loginwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
+      "AbsoluteMoniker": "D:0:0:{CFB6BF8A-57C7-4A5D-B0D4-F155CD2FBB68}|AssetManager.Infrastructure\\AssetManager.Infrastructure.csproj|c:\\autdodesk test\\assetmanager\\assetmanager.infrastructure\\services\\datamanagement.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{CFB6BF8A-57C7-4A5D-B0D4-F155CD2FBB68}|AssetManager.Infrastructure\\AssetManager.Infrastructure.csproj|solutionrelative:assetmanager.infrastructure\\services\\datamanagement.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{88313238-3150-490E-AF08-4F9876851643}|AssetManager.Desktop\\AssetManager.Desktop.csproj|c:\\autdodesk test\\assetmanager\\assetmanager.desktop\\mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
+      "RelativeMoniker": "D:0:0:{88313238-3150-490E-AF08-4F9876851643}|AssetManager.Desktop\\AssetManager.Desktop.csproj|solutionrelative:assetmanager.desktop\\mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
     }
   ],
   "DocumentGroupContainers": [
@@ -39,64 +35,52 @@
             {
               "$type": "Document",
               "DocumentIndex": 1,
-              "Title": "MainWindow.xaml",
-              "DocumentMoniker": "C:\\Users\\james\\Documents\\GitHub\\AssetManager\\AssetManager.Desktop\\MainWindow.xaml",
-              "RelativeDocumentMoniker": "AssetManager.Desktop\\MainWindow.xaml",
-              "ToolTip": "C:\\Users\\james\\Documents\\GitHub\\AssetManager\\AssetManager.Desktop\\MainWindow.xaml",
-              "RelativeToolTip": "AssetManager.Desktop\\MainWindow.xaml",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
-              "WhenOpened": "2025-02-19T10:31:39.926Z",
+              "Title": "LoginWindow.xaml.cs",
+              "DocumentMoniker": "C:\\autdodesk test\\AssetManager\\AssetManager.Desktop\\LoginWindow.xaml.cs",
+              "RelativeDocumentMoniker": "AssetManager.Desktop\\LoginWindow.xaml.cs",
+              "ToolTip": "C:\\autdodesk test\\AssetManager\\AssetManager.Desktop\\LoginWindow.xaml.cs",
+              "RelativeToolTip": "AssetManager.Desktop\\LoginWindow.xaml.cs",
+              "ViewState": "AgIAADQAAAAAAAAAAAA5wEwAAAAnAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-20T11:24:10.176Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
               "DocumentIndex": 0,
               "Title": "MainWindow.xaml.cs",
-              "DocumentMoniker": "C:\\Users\\james\\Documents\\GitHub\\AssetManager\\AssetManager.Desktop\\MainWindow.xaml.cs",
+              "DocumentMoniker": "C:\\autdodesk test\\AssetManager\\AssetManager.Desktop\\MainWindow.xaml.cs",
               "RelativeDocumentMoniker": "AssetManager.Desktop\\MainWindow.xaml.cs",
-              "ToolTip": "C:\\Users\\james\\Documents\\GitHub\\AssetManager\\AssetManager.Desktop\\MainWindow.xaml.cs",
+              "ToolTip": "C:\\autdodesk test\\AssetManager\\AssetManager.Desktop\\MainWindow.xaml.cs",
               "RelativeToolTip": "AssetManager.Desktop\\MainWindow.xaml.cs",
-              "ViewState": "AgIAADoAAAAAyMzMzMwiwE8AAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAIMAAAAAAAAAAAAcwJkAAAA1AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-02-19T10:46:21.53Z",
+              "WhenOpened": "2025-02-20T09:36:05.955Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
               "DocumentIndex": 2,
               "Title": "DataManagement.cs",
-              "DocumentMoniker": "C:\\Users\\james\\Documents\\GitHub\\AssetManager\\AssetManager.Infrastructure\\Services\\DataManagement.cs",
+              "DocumentMoniker": "C:\\autdodesk test\\AssetManager\\AssetManager.Infrastructure\\Services\\DataManagement.cs",
               "RelativeDocumentMoniker": "AssetManager.Infrastructure\\Services\\DataManagement.cs",
-              "ToolTip": "C:\\Users\\james\\Documents\\GitHub\\AssetManager\\AssetManager.Infrastructure\\Services\\DataManagement.cs",
+              "ToolTip": "C:\\autdodesk test\\AssetManager\\AssetManager.Infrastructure\\Services\\DataManagement.cs",
               "RelativeToolTip": "AssetManager.Infrastructure\\Services\\DataManagement.cs",
-              "ViewState": "AgIAAFkAAABAAgAAAAAiwNwBAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAEQBAAAAAAAAAAA4wKYCAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-02-20T10:26:25.31Z",
+              "WhenOpened": "2025-02-19T16:17:17.418Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
               "DocumentIndex": 3,
-              "Title": "LoginWindow.xaml.cs",
-              "DocumentMoniker": "C:\\Users\\james\\Documents\\GitHub\\AssetManager\\AssetManager.Desktop\\LoginWindow.xaml.cs",
-              "RelativeDocumentMoniker": "AssetManager.Desktop\\LoginWindow.xaml.cs",
-              "ToolTip": "C:\\Users\\james\\Documents\\GitHub\\AssetManager\\AssetManager.Desktop\\LoginWindow.xaml.cs",
-              "RelativeToolTip": "AssetManager.Desktop\\LoginWindow.xaml.cs",
-              "ViewState": "AgIAACQAAAAAHDMzMzPjvy4AAAAZAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-02-19T15:30:37.232Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 4,
-              "Title": "LoginWindow.xaml",
-              "DocumentMoniker": "C:\\Users\\james\\Documents\\GitHub\\AssetManager\\AssetManager.Desktop\\LoginWindow.xaml",
-              "RelativeDocumentMoniker": "AssetManager.Desktop\\LoginWindow.xaml",
-              "ToolTip": "C:\\Users\\james\\Documents\\GitHub\\AssetManager\\AssetManager.Desktop\\LoginWindow.xaml",
-              "RelativeToolTip": "AssetManager.Desktop\\LoginWindow.xaml",
+              "Title": "MainWindow.xaml",
+              "DocumentMoniker": "C:\\autdodesk test\\AssetManager\\AssetManager.Desktop\\MainWindow.xaml",
+              "RelativeDocumentMoniker": "AssetManager.Desktop\\MainWindow.xaml",
+              "ToolTip": "C:\\autdodesk test\\AssetManager\\AssetManager.Desktop\\MainWindow.xaml",
+              "RelativeToolTip": "AssetManager.Desktop\\MainWindow.xaml",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
-              "WhenOpened": "2025-02-19T13:45:29.407Z",
+              "WhenOpened": "2025-02-20T09:36:07.699Z",
               "EditorCaption": ""
             }
           ]

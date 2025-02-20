@@ -263,7 +263,7 @@ namespace AssetManager.Infrastructure.Services
             }
         }
 
-        //Gets a list of Folder IDs and Folder Names for all Top-level folders from a specific project 
+        //Gets Folder IDs and Folder Names for Top-level folders from a specific project 
         public static async Task<(string FolderId, string FolderName)> GetTopLevelFolder(string hubID, string projectId)
         {
             string url = $"https://developer.api.autodesk.com/project/v1/hubs/{hubID}/projects/{projectId}/topFolders";
@@ -372,8 +372,7 @@ namespace AssetManager.Infrastructure.Services
         }
 
 
-        public static async Task<List<(string ItemId, string ItemName)>> GetItemsInFolder(string projectId,
-            string folderId)
+        public static async Task<List<(string ItemId, string ItemName)>> GetItemsInFolder(string projectId, string folderId)
         {
             using var httpClient = new HttpClient();
             httpClient.DefaultRequestHeaders.Authorization =
@@ -537,26 +536,26 @@ namespace AssetManager.Infrastructure.Services
         }*/
 
         //Creates new folder in a specified 
-        /*public static async Task<string> CreateNewFolder(string projectId, string accessToken, string folderName)
+        public static async Task<bool> CreateNewFolder(string projectId, string parentFolderId, string folderName)
         {
             try
             {
-                Console.WriteLine("🔹 Debug: Creating a new folder...");
+                using var httpClient = new HttpClient();
+                httpClient.DefaultRequestHeaders.Authorization =
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", TokenManager.GetToken());
 
-                string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/folders";
-                string _accessToken = TokenManager.GetToken();
+                // Step 1: Retrieve the necessary data for folder creation
                 var result = await GetPersonalHubDetails();
                 (string hubID, string HubName, string HubType) = result.Value;
 
-                // Retrieve the default storage location or parent folder
-                var (parentFolderId, parentFolderName) = await GetTopLevelFolder(hubID, projectId);
-                
+
                 if (string.IsNullOrEmpty(parentFolderId))
                 {
                     Console.WriteLine("❌ Error: No valid parent folder found for folder creation.");
-                    return null;
+                    return false;
                 }
 
+                // Step 3: Prepare the request body for folder creation
                 var requestBody = new
                 {
                     jsonapi = new { version = "1.0" },
@@ -586,36 +585,107 @@ namespace AssetManager.Infrastructure.Services
                     }
                 };
 
-                string json = JsonSerializer.Serialize(requestBody);
-                using var client = new HttpClient();
-                using var request = new HttpRequestMessage(HttpMethod.Post, url)
-                {
-                    Content = new StringContent(json, Encoding.UTF8, "application/json")
-                };
+                string json = System.Text.Json.JsonSerializer.Serialize(requestBody);
+                string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/folders";
 
-                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-
-                HttpResponseMessage response = await client.SendAsync(request);
+                // Step 4: Send the request
+                var response = await httpClient.PostAsync(url, new StringContent(json, Encoding.UTF8, "application/json"));
                 string responseContent = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"🔹 Debug: Folder Creation Response: {responseContent}");
 
                 if (!response.IsSuccessStatusCode)
                 {
                     Console.WriteLine($"❌ Error: Failed to create folder. Status: {response.StatusCode}");
-                    return null;
+                    return false;
                 }
 
+                // Step 5: Parse the response to get the folder ID
                 using JsonDocument doc = JsonDocument.Parse(responseContent);
-                return doc.RootElement.GetProperty("data").GetProperty("id").GetString();
+                string folderId = doc.RootElement.GetProperty("data").GetProperty("id").GetString();
+                return true;
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"❌ Exception while creating folder: {ex.Message}");
+                return false;
+            }
+        }
+
+        public static async Task<string> GetLatestItemThumbnail(string projectId, string itemId)
+        {
+            string accessToken = TokenManager.GetToken();
+            if (string.IsNullOrEmpty(accessToken))
+            {
+                Console.WriteLine("❌ No valid access token.");
                 return null;
             }
-        }*/
+
+            string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/items/{itemId}/versions";
+
+            try
+            {
+                using (HttpClient client = new HttpClient())
+                {
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+                    HttpResponseMessage response = await client.GetAsync(url);
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        Console.WriteLine($"❌ Error fetching item versions: {response.StatusCode} - {response.ReasonPhrase}");
+                        return null;
+                    }
+
+                    string jsonResponse = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"JSON Response: {jsonResponse}");
+
+                    using JsonDocument doc = JsonDocument.Parse(jsonResponse);
+                    JsonElement root = doc.RootElement;
+
+                    if (root.TryGetProperty("data", out JsonElement data))
+                    {
+                        var latestVersion = data.EnumerateArray()
+                                                .OrderByDescending(version => version.GetProperty("attributes").GetProperty("createTime").GetString())
+                                                .FirstOrDefault();
+
+                        if (latestVersion.ValueKind == JsonValueKind.Undefined)
+                        {
+                            Console.WriteLine("❌ No versions found for this item.");
+                            return null;
+                        }
+
+                        if (latestVersion.TryGetProperty("relationships", out JsonElement relationships) &&
+                            relationships.TryGetProperty("thumbnails", out JsonElement thumbnails) &&
+                            thumbnails.TryGetProperty("meta", out JsonElement meta) &&
+                            meta.TryGetProperty("link", out JsonElement link) &&
+                            link.TryGetProperty("href", out JsonElement href))
+                        {
+                            return href.GetString(); // Correct thumbnail URL
+                        }
+                        else
+                        {
+                            Console.WriteLine("❌ Thumbnail link not found in response.");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("❌ No 'data' property found in the response.");
+                    }
+
+                    return null;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Exception occurred: {ex.Message}");
+                return null;
+            }
+        }
+
+
+
+
+
+
 
 
     }
 }
-
