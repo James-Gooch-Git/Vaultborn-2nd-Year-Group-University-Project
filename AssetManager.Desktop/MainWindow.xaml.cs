@@ -10,18 +10,8 @@ using Microsoft.Win32;
 using System.Diagnostics;
 using MaterialDesignThemes.Wpf;
 using MongoDB.Driver;
-using MongoDB.Bson;
-
-
-using System.Linq;
-using System;
-using System.Threading.Tasks;
-using System.Collections.Generic;
-using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using AssetManager.Infrastructure.Data;
-using System.Globalization;
-using System.Windows.Data;
 using System.Windows.Media.Imaging;
 using System.Net;
 
@@ -33,6 +23,7 @@ namespace AssetManager.Desktop
         private string _accessToken;
         private string _selectedProjectId;
         private string _selectedItemId;
+        private string _selectedItemName;
         private string _folderId;
         private string hubID;
         private readonly ModelUpload _uploadService;
@@ -500,7 +491,11 @@ namespace AssetManager.Desktop
 
                                     string modelName = attributes.GetProperty("displayName").GetString();
                                     string lastModified = attributes.TryGetProperty("lastModifiedTime", out JsonElement modifiedTime) ? modifiedTime.GetString() : "Unknown";
-
+                                    string lastModifiedDate = lastModified.Split('T')[0];
+                                    string lastModifiedTime = (lastModified.Split('T')[1]).Remove(8);
+                                    Console.WriteLine("\n\ntime -- "+lastModifiedTime + "\n\ndate -- "+lastModifiedDate);
+                                    lastModified = lastModifiedDate + " " + lastModifiedTime;
+                                    
                                     allModels.Add(new Dictionary<string, string>
                                     {
                                         { "Name", modelName },
@@ -602,104 +597,99 @@ namespace AssetManager.Desktop
         //}
 
 
-        //private async void BtnViewInFusion_Click(object sender, RoutedEventArgs e)
-        //{
-        //    if (ModelComboBox.SelectedItem == null)
-        //    {
-        //        MessageBox.Show("❌ Please select a model before viewing in Fusion 360.", "Error", MessageBoxButton.OK,
-        //            MessageBoxImage.Error);
-        //        return;
-        //    }
+        // private async void BtnViewInFusion_Click(object sender, RoutedEventArgs e)
+        // {
+        //     if (ModelComboBox.SelectedItem == null)
+        //     {
+        //         MessageBox.Show("❌ Please select a model before viewing in Fusion 360.", "Error", MessageBoxButton.OK,
+        //             MessageBoxImage.Error);
+        //         return;
+        //     }
+        //
+        //     string modelFilePath = FindExistingModelFile(_selectedItemName);
+        //
+        //     if (modelFilePath == null)
+        //     {
+        //         Console.WriteLine("Downloading model");
+        //         // No matching file found, so download it
+        //         var fileDownloadService = new FileDownloadService2();
+        //         fileDownloadService.DownloadModelAsync(_selectedProjectId, _selectedItemId);
+        //
+        //     }
+        //
+        //     try
+        //     {
+        //         // Download the model first
+        //         var fileDownloadService = new FileDownloadService2();
+        //         await fileDownloadService.DownloadModelAsync(_selectedProjectId, _selectedItemId);
+        //
+        //         string saveDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+        //             "DownloadedModels", _selectedItemName);
+        //         Console.WriteLine("Model dir: " + saveDirectory);
+        //
+        //         if (!Directory.Exists(saveDirectory))
+        //         {
+        //             LaunchFusionWithModel(saveDirectory);
+        //         }
+        //     }
+        //     catch(Exception ex)
+        //     {
+        //         MessageBox.Show($"❌ Error launching Fusion script: {ex.Message}\n{ex.StackTrace}",
+        //             "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        //     }
+        // }
 
-        //    try
-        //    {
-        //        // Download the model first
-        //        var fileDownloadService = new FileDownloadService2();
-        //        await fileDownloadService.DownloadModelAsync(_selectedProjectId, _selectedItemId);
-
-        //        // Now launch Fusion with the downloaded model
-        //        LaunchFusionWithModel();
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        MessageBox.Show($"❌ Error preparing model for Fusion 360: {ex.Message}", "Error", MessageBoxButton.OK,
-        //            MessageBoxImage.Error);
-        //    }
-        //}
-
-        private void LaunchFusionWithModel()
+        private void LaunchFusionWithModel(string modelPath)
         {
+            string fusion360Uri = "fusion360://command=openCloudModel&itemId=urn:adsk.wipprod:dm.lineage:pwGqGrbgRx6IUlR4Wtskdg";
+            
+            string tempFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "fusion_model_path.txt");
+            File.WriteAllText(tempFilePath, modelPath);
+            
+            string fusionPath = GetFusion360ExecutablePath();
+            // string fusionApiPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Autodesk\\webdeploy\\production\\ec15d50cfe0119bd0166ce9a1aa68bd8f670e085\\Api");
+            // string pythonScriptPath = Path.Combine(fusionApiPath, "FusionAddIn.py");
+
+            if (string.IsNullOrEmpty(fusionPath) || !File.Exists(fusionPath))
+            {
+                MessageBox.Show("⚠️ Fusion 360 is not installed or could not be found.", "Fusion 360 Not Found", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            
+            FileDownloadService2 fileDownloadService = new FileDownloadService2();
+
             try
             {
-                string modelPath = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-                    "DownloadedModels"
-                );
-
-                // Define Fusion paths
-                string fusionBasePath = @"C:\Users\james\AppData\Local\Autodesk\webdeploy\production";
-                string versionPath = Path.Combine(fusionBasePath, "30c9d5533837458c62c42054f4d8a9dcee4200a0");
-                string pythonPath = Path.Combine(versionPath, "Python");
-                string apiPath = Path.Combine(versionPath, "Api");
-                string pythonExe = Path.Combine(pythonPath, "python.exe");
-
-                if (!File.Exists(pythonExe))
-                {
-                    MessageBox.Show($"❌ Cannot find Fusion's Python at: {pythonExe}\nPlease verify Fusion 360 is installed correctly.",
-                        "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-
-                string pythonScriptPath = @"C:\Users\james\Desktop\AssetManagerTom2\AssetManager\AssetManager.Core\Fusion\FusionAddIn\FusionAddIn.py";
-
-                if (!File.Exists(pythonScriptPath))
-                {
-                    MessageBox.Show($"❌ Python script not found at: {pythonScriptPath}",
-                        "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-
-                ProcessStartInfo startInfo = new ProcessStartInfo
-                {
-                    FileName = pythonExe,
-                    Arguments = $"\"{pythonScriptPath}\" \"{modelPath}\"",
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                    WorkingDirectory = Path.GetDirectoryName(pythonScriptPath)
-                };
-
-                // Set up environment variables for Fusion Python
-                startInfo.EnvironmentVariables["PYTHONPATH"] = $"{apiPath};{pythonPath}";
-                startInfo.EnvironmentVariables["PYTHONHOME"] = pythonPath;
-                startInfo.EnvironmentVariables["PATH"] = $"{pythonPath};{apiPath};{Environment.GetEnvironmentVariable("PATH")}";
-
-                using (Process process = new Process { StartInfo = startInfo })
-                {
-                    process.Start();
-                    string output = process.StandardOutput.ReadToEnd();
-                    string error = process.StandardError.ReadToEnd();
-                    process.WaitForExit();
-
-                    if (!string.IsNullOrEmpty(error))
-                    {
-                        MessageBox.Show($"❌ Error:\n{error}", "Error",
-                            MessageBoxButton.OK, MessageBoxImage.Error);
-                    }
-                    if (!string.IsNullOrEmpty(output))
-                    {
-                        MessageBox.Show($"✅ Output:\n{output}", "Info",
-                            MessageBoxButton.OK, MessageBoxImage.Information);
-                    }
-                }
+                fileDownloadService.DownloadModelAndSaveMetadata(_selectedProjectId, _selectedItemId, _selectedItemName, _folderId);
+                // Start Fusion 360 and open the model  
+                Process.Start(fusionPath, $"--exec \"{modelPath}\"");
+                Console.WriteLine($"✅ Launched Fusion 360 with: {modelPath}");
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"❌ Error launching Fusion script: {ex.Message}\n{ex.StackTrace}",
-                    "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"❌ Failed to launch Fusion 360: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+            
+
         }
+        
+        private string GetFusion360ExecutablePath()
+        {
+            string fusionBasePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Autodesk", "webdeploy", "production");
+            Console.WriteLine("fusion location: " + fusionBasePath);
+            
+            if (Directory.Exists(fusionBasePath))
+            {
+                var fusionExecutables = Directory.GetFiles(fusionBasePath, "Fusion360.exe", SearchOption.AllDirectories);
+                if (fusionExecutables.Length > 0)
+                {
+                    return fusionExecutables[0]; // Return the first valid Fusion 360 path found
+                }
+            }
+
+            return null; // Fusion 360 not found
+        }
+        
 
 
 
@@ -1156,78 +1146,3 @@ namespace AssetManager.Desktop
 }
 
 
-
-
-//using System.Windows;
-//using System.Windows.Controls.Primitives;
-//using AssetManager.Infrastructure.Services;
-//using Autodesk.Authentication.Model;
-//using Microsoft.Win32;
-
-//namespace AssetManager.Desktop
-//{
-//    public partial class MainWindow : Window
-//    {
-//        private readonly ModelUpload _uploadService = new ModelUpload();
-//        private string projectId = "PROJECT_ID";
-//        private string folderId = "FOLDER_ID";
-
-//        public MainWindow(UserInfo userData = null)
-//        {
-//            InitializeComponent();
-//            BtnUploadFile.Click += BtnUploadFile_Click;
-//        }
-
-//        private async void BtnUploadFile_Click(object sender, RoutedEventArgs e)
-//        {
-//            Console.WriteLine("Button Clicked");
-
-//            OpenFileDialog openFileDialog = new OpenFileDialog
-//            {
-//                Title = "Select a Model File",
-//                Filter = "All Files (*.*)|*.*"
-//            };
-
-//            if (openFileDialog.ShowDialog() == true)
-//            {
-//                string filePath = openFileDialog.FileName;
-//                string accessToken = await GetAccessToken(); // 🔹 Get token
-
-//                try
-//                {
-//                    string fileUrn = await _uploadService.UploadModel(filePath, projectId, folderId, accessToken);
-//                    MessageBox.Show($"✅ Upload Successful!\nFile URN: {fileUrn}", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
-//                }
-//                catch (Exception ex)
-//                {
-//                    MessageBox.Show($"❌ Upload Failed: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-//                }
-//            }
-//        }
-
-//        private void Thumb_DragDelta(object sender, DragDeltaEventArgs e)
-//        {
-//            double newWidth = Sidebar.Width + e.HorizontalChange;
-
-//            if (newWidth > 100)
-//            {
-//                Sidebar.Width = newWidth;
-//            }
-//        }
-
-//        private async void BtnSwitchLogin_Click(object sender, RoutedEventArgs e)
-//        {
-//            LoginWindow loginWindow = new LoginWindow();
-//            this.Hide();
-//            loginWindow.Show();
-//        }
-
-//        private Task<string> GetAccessToken()
-//        {
-//            string token = LoginWindow.TokenManager.GetToken();
-//            Console.WriteLine($"🔹 Access Token: {token}");
-//            return Task.FromResult(token);
-//        }
-
-//    }
-//}
