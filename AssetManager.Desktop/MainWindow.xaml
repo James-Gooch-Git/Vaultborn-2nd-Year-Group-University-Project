@@ -146,10 +146,8 @@
                 </TreeView>
 
             </Grid>
-            
-        </Border>
 
-        <!--<Thumb Grid.Row="1" Grid.Column="1" Width="5" DragDelta="DragDeltaThumb" Cursor="SizeWE"/>-->
+        </Border>
 
         <Border Grid.Row="1" Grid.Column="2">
 
