@@ -18,11 +18,16 @@ using System;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Windows.Controls.Primitives;
+<<<<<<< Updated upstream
 using System.Windows.Media;
 using AssetManager.Infrastructure.Data;
 using System.Globalization;
 using System.Windows.Data;
 using System.Windows.Media.Imaging;
+=======
+using System.Windows.Media.Imaging;
+using System.Net;
+>>>>>>> Stashed changes
 
 
 namespace AssetManager.Desktop
@@ -117,7 +122,7 @@ namespace AssetManager.Desktop
         //    }
         //}
 
-
+        
         private async Task TestDataManagement()
         {
             var result = await DataManagement.GetPersonalHubDetails();
@@ -131,31 +136,109 @@ namespace AssetManager.Desktop
             Console.WriteLine($"🏠 Hub ID: {hubID}, Name: {hubName}, Type: {hubType}");
 
             var projects = await DataManagement.GetAllProjectsFromHub(hubID);
+            string projectid = null;
 
             foreach (var (projectId, projectName) in projects)
             {
-                Console.WriteLine($"📌 Project ID: {projectId}, Name: {projectName}");
+                Console.WriteLine($"\n📌 Project ID: {projectId}, Name: {projectName}\n");
+                if (projectName == "Default Project")
+                {
+                    projectid = projectId;
+                }
+            }
+            var topFolder = await DataManagement.GetTopLevelFolder(hubID, projectid);
+            string folderId = topFolder.Item1;
+
+            var items = await DataManagement.GetItemsInFolder(projectid, folderId);
+
+            foreach (var (itemId, itemName) in items)
+            {
+                Console.WriteLine($"\nItem Name: {itemName}\t Item ID: {itemId}\n");
+            }
+
+            string itemid = "urn: adsk.wipprod:dm.lineage:pwGqGrbgRx6IUlR4Wtskdg";
+
+            Console.WriteLine("\n\nShowing example thumbnail\n\n");
+            await ShowThumbnail(projectid, itemid);
+
+
+        }
+
+        public async Task ShowThumbnail(string projectId, string itemId)
+        {
+            string thumbnailUrl = await DataManagement.GetLatestItemThumbnail(projectId, itemId);
+
+            if (string.IsNullOrEmpty(thumbnailUrl))
+            {
+                Console.WriteLine("❌ Thumbnail URL is null or empty.");
+                return;
+            }
+
+            try
+            {
+                using (HttpClient client = new HttpClient())
+                {
+                    // Ensure valid token
+                    string accessToken = TokenManager.GetToken();
+                    
+
+                    // Add Authorization header
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+                    // Debug: Print Thumbnail URL
+                    Console.WriteLine($"📷 Fetching thumbnail from: {thumbnailUrl}");
+
+                    byte[] imageBytes = await client.GetByteArrayAsync(thumbnailUrl);
+
+                    // Create a BitmapImage from the byte array
+                    BitmapImage bitmapImage = new BitmapImage();
+                    using (MemoryStream stream = new MemoryStream(imageBytes))
+                    {
+                        bitmapImage.BeginInit();
+                        bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
+                        bitmapImage.StreamSource = stream;
+                        bitmapImage.EndInit();
+                    }
+
+                    bitmapImage.Freeze(); // Make it usable across threads
+
+                    // Update UI on the main thread
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        ThumbnailImage.Source = bitmapImage;
+                    });
+                }
+            }
+            catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                Console.WriteLine("❌ Unauthorized! Check your access token and permissions.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error loading thumbnail: {ex.Message}");
             }
         }
+
+
+
+
 
 
         private async Task LoadProjectsAsync()
         {
             var results = await DataManagement.GetPersonalHubDetails();
 
-            // ✅ Check if `results` has a value
             if (results == null || !results.HasValue)
             {
                 Console.WriteLine("❌ Error: No personal hub details found.");
                 return;
             }
 
-            var (hubID, hubName, hubType) = results.Value; // ✅ Now it's safe to access
-
+            var (hubID, hubName, hubType) = results.Value;
             Console.WriteLine($"✅ Retrieved Hub ID: {hubID}, Name: {hubName}, Type: {hubType}");
 
             var projects = await DataManagement.GetAllProjectsFromHub(hubID);
-            if (projects == null && !projects.Any())
+            if (projects == null || !projects.Any())
             {
                 Console.WriteLine("❌ No projects found or failed to load projects.");
             }
@@ -170,10 +253,16 @@ namespace AssetManager.Desktop
                 TreeViewItem projectItem = new TreeViewItem
                 {
                     Header = $"📁 {projectName}",
+<<<<<<< Updated upstream
                     Tag = (projectId, folderId, true)
+=======
+                    Tag = (projectId, folderId, true) // Tag stores projectId and folderId
+>>>>>>> Stashed changes
                 };
 
-                projectItem.Items.Add(null);
+                projectItem.Items.Add(null); // Placeholder for expansion
+                projectItem.Expanded += TreeViewItem_Expanded;
+
                 ProjectTreeView.Items.Add(projectItem);
             }
         }
@@ -182,36 +271,39 @@ namespace AssetManager.Desktop
         {
             if (sender is TreeViewItem item && item.Tag is (string projectId, string folderId, bool isFolder))
             {
-                if (item.Items.Count == 1 && item.Items[0] == null)
+                if (item.Items.Count == 1 && item.Items[0] == null) // Check if it needs loading
                 {
                     item.Items.Clear();
 
                     var items = await DataManagement.GetProjectItems(projectId, folderId);
 
-                    if (items == null && !items.Any())
+                    if (items == null || !items.Any())
                     {
                         item.Items.Add(new TreeViewItem { Header = "❌ No items found" });
+                        return;
                     }
 
-                    foreach (var (itemName, itemId, isFolderItem) in items)
+                    foreach (var (itemId, itemName, isFolderItem) in items)
                     {
                         TreeViewItem fileItem = new TreeViewItem
                         {
-                            Header = isFolderItem ? $"📄 {itemName}" : $"📄 {itemName}",
-                            Tag = (projectId, itemId, isFolderItem)
+                            Header = isFolderItem ? $"📁 {itemName}" : $"📄 {itemName}",
+                            Tag = (projectId, itemId, isFolderItem),
+                            ContextMenu = CreateContextMenu(projectId, itemId, isFolderItem) // ✅ Add right-click menu
                         };
 
                         if (isFolderItem)
                         {
-                            fileItem.Items.Add(null);
+                            await LoadSubfoldersAsync(fileItem, projectId, itemId);
                         }
 
-                        item.Items.Add(null);
+                        item.Items.Add(fileItem);
                     }
                 }
             }
         }
 
+<<<<<<< Updated upstream
         private async Task<List<Dictionary<string, string>>> GetAllModels()
         {
             List<Dictionary<string, string>> allModels = new List<Dictionary<string, string>>();
@@ -316,6 +408,134 @@ namespace AssetManager.Desktop
             return allModels;
         }
 
+=======
+        private async Task LoadSubfoldersAsync(TreeViewItem parentFolder, string projectId, string folderId)
+        {
+            var subItems = await DataManagement.GetProjectItems(projectId, folderId);
+
+            if (subItems == null || !subItems.Any())
+            {
+                return; // No subfolders to add
+            }
+
+            foreach (var (subItemId, subItemName, isSubFolder) in subItems)
+            {
+                TreeViewItem subItem = new TreeViewItem
+                {
+                    Header = isSubFolder ? $"📁 {subItemName}" : $"📄 {subItemName}",
+                    Tag = (projectId, subItemId, isSubFolder),
+                    ContextMenu = CreateContextMenu(projectId, subItemId, isSubFolder) // ✅ Add right-click menu
+                };
+
+                if (isSubFolder)
+                {
+                    await LoadSubfoldersAsync(subItem, projectId, subItemId);
+                }
+
+                parentFolder.Items.Add(subItem);
+            }
+        }
+
+        private ContextMenu CreateContextMenu(string projectId, string itemId, bool isFolder)
+        {
+            ContextMenu menu = new ContextMenu();
+
+            // Only show "Create Folder" for items under the top-level project, excluding subfolders
+            //if (!isFolder)
+            {
+                MenuItem createFolderItem = new MenuItem { Header = "📁 Create New Folder" };
+                createFolderItem.Click += async (s, e) => await CreateNewFolder(projectId);
+                menu.Items.Add(createFolderItem);
+            }
+
+            return menu;
+        }
+
+        private async Task CreateNewFolder(string projectId)
+        {
+            string folderName = PromptForFolderName();
+            if (string.IsNullOrWhiteSpace(folderName)) return;
+
+            // Disable menu temporarily
+            ContextMenu currentMenu = ContextMenuService.GetContextMenu(ProjectTreeView);
+            if (currentMenu != null)
+            {
+                currentMenu.IsEnabled = false;
+            }
+
+            // Get the top-level folder for the project
+            var topFolder = await DataManagement.GetTopLevelFolder(projectId, projectId);
+            var parentFolderId = topFolder.Item1;
+
+            bool success = await DataManagement.CreateNewFolder(projectId, parentFolderId, folderName);
+
+            if (currentMenu != null)
+            {
+                currentMenu.IsEnabled = true;
+            }
+
+            if (success)
+            {
+                MessageBox.Show($"✅ Folder '{folderName}' created successfully!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                // Add the new folder to the top-level folder
+                TreeViewItem parentItem = FindTreeViewItem(ProjectTreeView.Items, parentFolderId);
+                if (parentItem != null)
+                {
+                    // Only add the new folder, without loading subfolders from the parent
+                    await AddNewFolderToTreeView(parentItem, projectId, parentFolderId, folderName);
+                }
+            }
+        }
+
+        private async Task AddNewFolderToTreeView(TreeViewItem parentItem, string projectId, string parentFolderId, string folderName)
+        {
+            TreeViewItem newFolderItem = new TreeViewItem
+            {
+                Header = $"📁 {folderName}",
+                Tag = (projectId, parentFolderId, true),
+                ContextMenu = CreateContextMenu(projectId, parentFolderId, true) // Add context menu for folder operations
+            };
+
+            // Add the new folder to the parent folder’s items
+            parentItem.Items.Add(newFolderItem);
+        }
+
+        private string PromptForFolderName()
+        {
+            // Create a simple input dialog
+            string folderName = Microsoft.VisualBasic.Interaction.InputBox(
+                "Enter the name for the new folder:",
+                "Create New Folder",
+                "New Folder"
+            );
+
+            return string.IsNullOrWhiteSpace(folderName) ? null : folderName;
+        }
+
+
+
+        private TreeViewItem FindTreeViewItem(ItemCollection items, string folderId)
+        {
+            if (items == null) return null; // ✅ Prevent null reference
+
+            foreach (TreeViewItem item in items)
+            {
+                if (item?.Tag is (string _, string id, _) && id == folderId) // ✅ Null check
+                {
+                    return item;
+                }
+
+                TreeViewItem found = FindTreeViewItem(item?.Items, folderId);
+                if (found != null) return found;
+            }
+            return null;
+        }
+
+
+
+
+>>>>>>> Stashed changes
         //WOerking One
         /*private async void BtnDownloadModel_Click(object sender, RoutedEventArgs e)
         {
