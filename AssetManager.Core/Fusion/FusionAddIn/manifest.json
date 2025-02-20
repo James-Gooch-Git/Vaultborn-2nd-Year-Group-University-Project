@@ -1,0 +1,12 @@
+{
+  "name": "FusionAddIn",
+  "description": "Automatically loads a model into Fusion 360 on startup.",
+  "author": "TomGrout",
+  "version": "1.0",
+  "minApiVersion": "3.0.0",
+  "appId": "com.yourcompany.fusionaddin",
+  "autodeskProduct": ["Fusion360"],
+  "type": "Python",
+  "supportedOS": ["Windows"],
+  "runOnStartup": true
+}

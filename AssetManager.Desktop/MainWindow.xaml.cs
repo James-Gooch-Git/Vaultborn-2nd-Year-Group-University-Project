@@ -43,6 +43,7 @@ namespace AssetManager.Desktop
             InitializeComponent();
             _accessToken = TokenManager.GetToken();
             _uploadService = new ModelUpload(_accessToken);
+            FusionManager.DeployFusionAddIn();
             Initialize();
         }
 
@@ -276,18 +277,26 @@ namespace AssetManager.Desktop
         {
             string fusion360Uri = "fusion360://command=openCloudModel&itemId=urn:adsk.wipprod:dm.lineage:pwGqGrbgRx6IUlR4Wtskdg";
             
+            string tempFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "fusion_model_path.txt");
+            File.WriteAllText(tempFilePath, modelPath);
+            
             string fusionPath = GetFusion360ExecutablePath();
+            // string fusionApiPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Autodesk\\webdeploy\\production\\ec15d50cfe0119bd0166ce9a1aa68bd8f670e085\\Api");
+            // string pythonScriptPath = Path.Combine(fusionApiPath, "FusionAddIn.py");
 
             if (string.IsNullOrEmpty(fusionPath) || !File.Exists(fusionPath))
             {
                 MessageBox.Show("⚠️ Fusion 360 is not installed or could not be found.", "Fusion 360 Not Found", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
+            
+            FileDownloadService2 fileDownloadService = new FileDownloadService2();
 
             try
             {
-                // Start Fusion 360 and open the model
-                Process.Start(fusionPath, $"\"{modelPath}\"");
+                fileDownloadService.DownloadModelAndSaveMetadata(_selectedProjectId, _selectedItemId, _selectedItemName, _folderId);
+                // Start Fusion 360 and open the model  
+                Process.Start(fusionPath, $"--exec \"{modelPath}\"");
                 Console.WriteLine($"✅ Launched Fusion 360 with: {modelPath}");
             }
             catch (Exception ex)
@@ -523,7 +532,7 @@ namespace AssetManager.Desktop
             {
                 Console.WriteLine($"❌ Error: Could not retrieve storage ID for {itemName}.");
                 continue;
-            }
+            }   
             Console.WriteLine($"📦 Storage ID for {itemName}: {storageId}");
 
             // 🔹 Step 2: Retrieve versions for the selected item
