@@ -23,6 +23,7 @@ using AssetManager.Infrastructure.Data;
 using System.Globalization;
 using System.Windows.Data;
 using System.Windows.Media.Imaging;
+using System.Net;
 
 
 namespace AssetManager.Desktop
