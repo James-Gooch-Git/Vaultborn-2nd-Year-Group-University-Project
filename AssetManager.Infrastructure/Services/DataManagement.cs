@@ -403,7 +403,7 @@ namespace AssetManager.Infrastructure.Services
         }
 
         //Gets a list of Item IDs, Item Names, and Item Types from a specific folder in a project
-        /*public static async Task<List<(string ItemId, string ItemName, string ItemType)>> GetFolderItems(string projectId, string folderId)
+        public static async Task<List<(string ItemId, string ItemName, string ItemType)>> GetFolderItems(string projectId, string folderId)
         {
             string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/folders/{folderId}/contents";
             string _accessToken = TokenManager.GetToken(); // Ensure you have a valid token
@@ -460,81 +460,9 @@ namespace AssetManager.Infrastructure.Services
                 Console.WriteLine($"❌ Exception: {ex.Message}");
                 return null;
             }
-        }*/
+        }
 
-        //Create New Project. DONT FUCKIN WORK
-        /*public static async Task<string> CreateProjectAsync(string hubId, string projectName, string projectDescription)
-        {
-            string url = $"https://developer.api.autodesk.com/project/v1/hubs/{hubId}/projects";
-            string _accessToken = TokenManager.GetToken(); // Ensure you have a valid token
-
-            if (string.IsNullOrEmpty(_accessToken))
-            {
-                Console.WriteLine("❌ Error: Access token is missing or invalid.");
-                return null;
-            }
-
-            try
-            {
-                using (HttpClient client = new HttpClient())
-                {
-                    // Set Authorization Header
-                    client.DefaultRequestHeaders.Clear();
-                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
-                    client.DefaultRequestHeaders.Accept.Add(
-                        new MediaTypeWithQualityHeaderValue("application/vnd.api+json"));
-
-                    // Prepare Request Body
-                    var requestBody = new
-                    {
-                        jsonapi = new { version = "1.0" },
-                        data = new
-                        {
-                            type = "projects",
-                            attributes = new
-                            {
-                                name = projectName,
-                                description = projectDescription,
-                                extension = new
-                                {
-                                    type =
-                                        "hubs:autodesk.core:Hub", 
-                                    version = "1.0"
-                                }
-                            }
-                        }
-                    };
-
-                    string jsonRequest = JsonSerializer.Serialize(requestBody);
-                    StringContent content = new StringContent(jsonRequest, Encoding.UTF8, "application/vnd.api+json");
-
-                    // Make POST Request
-                    HttpResponseMessage response = await client.PostAsync(url, content);
-
-                    if (!response.IsSuccessStatusCode)
-                    {
-                        Console.WriteLine($"❌ Error: {response.StatusCode} - {response.ReasonPhrase}");
-                        return null;
-                    }
-
-                    // Parse JSON Response
-                    string jsonResponse = await response.Content.ReadAsStringAsync();
-                    using JsonDocument doc = JsonDocument.Parse(jsonResponse);
-                    JsonElement root = doc.RootElement;
-
-                    // Extract Project ID
-                    string projectId = root.GetProperty("data").GetProperty("id").GetString();
-                    Console.WriteLine($"✅ Project Created Successfully: ID = {projectId}");
-                    return projectId;
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"❌ Exception: {ex.Message}");
-                return null;
-            }
-        }*/
-
+ 
         //Creates new folder in a specified 
         public static async Task<bool> CreateNewFolder(string projectId, string parentFolderId, string folderName)
         {

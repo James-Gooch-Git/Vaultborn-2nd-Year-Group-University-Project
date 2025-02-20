@@ -1,94 +1,67 @@
-import sys
+import adsk.core, adsk.fusion, adsk.cam, traceback
+import json
 import os
-import time
-from subprocess import Popen
-import subprocess
+from datetime import datetime
 
-def log_to_file(message):
-    """Log messages to a debug file"""
-    log_path = os.path.join(os.path.dirname(__file__), 'fusion_debug.log')
-    with open(log_path, 'a') as f:
-        f.write(f"{message}\n")
+app = adsk.core.Application.get()
+ui = app.userInterface
+handlers = []  # Event handlers must be stored to keep them alive
 
-def is_fusion_running():
-    """Check if Fusion 360 is running"""
-    for proc in os.popen('tasklist').readlines():
-        if 'Fusion360.exe' in proc:
-            return True
-    return False
+def get_metadata(model_path):
+    """ Reads metadata file if available. """
+    metadata_path = model_path + ".metadata.json"
+    if not os.path.exists(metadata_path):
+        return None
 
-def launch_fusion():
-    """Launch Fusion 360 and wait for it to start"""
-    fusion_path = r"C:\Users\james\AppData\Local\Autodesk\webdeploy\production\30c9d5533837458c62c42054f4d8a9dcee4200a0\Fusion360.exe"
+    with open(metadata_path, "r") as f:
+        return json.load(f)
 
-    if not os.path.exists(fusion_path):
-        log_to_file(f"Could not find Fusion 360 at: {fusion_path}")
-        raise Exception("Could not find Fusion 360 executable")
+def save_metadata(model_path, metadata):
+    """ Writes updated metadata back to file. """
+    metadata_path = model_path + ".metadata.json"
+    with open(metadata_path, "w") as f:
+        json.dump(metadata, f, indent=4)
 
-    log_to_file(f"Launching Fusion 360 from: {fusion_path}")
-    Popen([fusion_path])
-    
-    for i in range(60):
-        if is_fusion_running():
-            log_to_file(f"Fusion 360 detected as running after {i} seconds")
-            time.sleep(15)
-            return True
-        time.sleep(1)
-    
-    raise Exception("Timeout waiting for Fusion 360 to start")
+def on_document_saved(event_args):
+    """ Event triggered when a model is saved. Updates metadata with a new version entry. """
+    try:
+        doc = event_args.document
+        model_name = doc.name  # Only gets the filename, no extension
+        save_directory = os.path.join(os.path.expanduser("~"), "Documents", "DownloadedModels")
+        full_model_path = os.path.join(save_directory, model_name)
+
+        metadata = get_metadata(full_model_path)
+        if not metadata:
+            ui.messageBox(f"⚠️ No metadata found for {model_name}. Saving aborted.")
+            return
+
+        # Increment version and add new entry
+        new_version = len(metadata["versions"]) + 1
+        metadata["versions"].append({
+            "version": new_version,
+            "timestamp": datetime.utcnow().isoformat(),
+            "savedBy": app.currentUser.displayName  # Get Fusion 360 user
+        })
+
+        # Save updated metadata
+        save_metadata(full_model_path, metadata)
+        ui.messageBox(f"✅ Model {model_name} saved. Version {new_version} recorded.")
+
+    except Exception as e:
+        ui.messageBox(f"❌ Error updating metadata: {str(e)}")
 
 def run(context):
-    ui = None
     try:
-        log_to_file("Checking if Fusion 360 is running...")
-        if not is_fusion_running():
-            log_to_file("Launching Fusion 360...")
-            launch_fusion()
-            log_to_file("Fusion 360 launched and initialized")
-        else:
-            log_to_file("Fusion 360 is already running")
+        # Listen for document save event
+        app = adsk.core.Application.get()
+        event = app.documentSaving
+        handler = adsk.core.ApplicationCommandEventHandler(on_document_saved)
+        event.add(handler)
+        handlers.append(handler)  # Prevent garbage collection
 
-        if len(sys.argv) < 2:
-            log_to_file("No models directory specified")
-            return
-
-        models_dir = sys.argv[1]
-        log_to_file(f"Looking in directory: {models_dir}")
-
-        files = [(f, os.path.getmtime(os.path.join(models_dir, f))) 
-                for f in os.listdir(models_dir) 
-                if os.path.isfile(os.path.join(models_dir, f))]
-        
-        if not files:
-            log_to_file("No files found in models directory")
-            return
-
-        latest_file = max(files, key=lambda x: x[1])[0]
-        file_path = os.path.join(models_dir, latest_file)
-        log_to_file(f"File to open: {file_path}")
-
-        # Get Fusion path
-        fusion_exe = r"C:\Users\james\AppData\Local\Autodesk\webdeploy\production\30c9d5533837458c62c42054f4d8a9dcee4200a0\Fusion360.exe"
-
-        # Launch Fusion with the file as argument
-        log_to_file(f"Launching Fusion with file: {file_path}")
-        subprocess.Popen([fusion_exe, "/open", file_path])
-        
-        log_to_file("Launch command sent")
-        
-        # Wait for a few seconds to allow Fusion to process
-        time.sleep(10)
-        
-        log_to_file("Process completed")
-
+        ui.messageBox("🔹 Fusion Add-In Loaded: Auto-Versioning Enabled")
     except Exception as e:
-        log_to_file(f"Error: {str(e)}")
-        log_to_file(traceback.format_exc())
+        ui.messageBox(f"❌ Add-In Failed to Start: {str(e)}")
 
-if __name__ == '__main__':
-    try:
-        log_to_file("\n\n=== Starting new run ===")
-        run(None)
-    except Exception as e:
-        log_to_file(f"Main error: {str(e)}")
-        print(f"Error: {str(e)}")
+def stop(context):
+    ui.messageBox("🔹 Fusion Add-In Stopped")
