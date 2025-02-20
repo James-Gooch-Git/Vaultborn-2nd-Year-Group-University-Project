@@ -23,6 +23,7 @@ using AssetManager.Infrastructure.Data;
 using System.Globalization;
 using System.Windows.Data;
 using System.Windows.Media.Imaging;
+using System.Net;
 
 
 namespace AssetManager.Desktop
@@ -68,14 +69,14 @@ namespace AssetManager.Desktop
 
             Console.WriteLine($"✅ Debug: Retrieved Access Token: {_accessToken}");
 
+            Username_TextBlock.Text = await GetUserName(_userId);
+            UserPic_Image.Source = new BitmapImage(new Uri(await GetUserPic(_userId)));
+
             // 🔹 Initialize data
             await TestDataManagement();
             await LoadProjectsAsync();
             LoadAllModels();
             FusionManager.InitializePythonEngine();
-
-            Username_TextBlock.Text = await GetUserName(_userId);
-            UserPic_Image.Source = new BitmapImage(new Uri(await GetUserPic(_userId)));
         }
 
         private async Task<string> GetUserName(string userId)

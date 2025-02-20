@@ -61,10 +61,6 @@
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
 
-                    <Button x:Name="BtnLogout" Click="BtnLogout_Click"></Button>
-
-                    <md:PackIcon Grid.Column="1" Kind="BellOutline" Style="{StaticResource IconHover}" Cursor="Hand" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,5,0"/>
-
                     <Border Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" Cursor="Hand" Margin="0,0,5,0">
                         <md:PackIcon Grid.Column="1" Kind="BellOutline" Style="{StaticResource IconHover}" Cursor="Hand" VerticalAlignment="Center" HorizontalAlignment="Right"/>
                     </Border>
@@ -86,15 +82,13 @@
 
                     <TextBlock Grid.Column="1" x:Name="Username_TextBlock" Cursor="Hand" FontSize="12" Foreground="#4B4b4b" VerticalAlignment="Center" HorizontalAlignment="Right"/>
 
-                    <Border Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" HorizontalAlignment="Center"  Cursor="Hand">
-                        <md:PackIcon Grid.Column="1" Name="ChevronDownClick" Kind="ChevronDown" MouseLeftButtonDown="Chevron_Click" Foreground="#4B4b4b" Cursor="Hand" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,10,0">
-                            <md:PackIcon.ContextMenu>
-                                <ContextMenu Name="LogoutContextMenu" Placement="Bottom" PlacementTarget="{Binding ElementName=ChevronDownClick}">
-                                    <MenuItem Header="Logout" Click="BtnLogout_Click"/>
-                                </ContextMenu>
-                            </md:PackIcon.ContextMenu>
-                        </md:PackIcon>
-                    </Border>
+                    <md:PackIcon Grid.Column="1" Name="ChevronDownClick" Kind="ChevronDown" MouseLeftButtonDown="Chevron_Click" Foreground="#4B4b4b" Cursor="Hand" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,10,0">
+                        <md:PackIcon.ContextMenu>
+                            <ContextMenu Name="LogoutContextMenu" Placement="Bottom" PlacementTarget="{Binding ElementName=ChevronDownClick}">
+                                <MenuItem Header="Logout" Click="BtnLogout_Click"/>
+                            </ContextMenu>
+                        </md:PackIcon.ContextMenu>
+                    </md:PackIcon>
 
                 </StackPanel>
                
@@ -288,17 +282,42 @@
                     </Grid.RowDefinitions>
 
                     <Grid>
-                        
-                        <DataGrid x:Name="ModelsDataGrid" AutoGenerateColumns="False" IsReadOnly="True" Background="Transparent" Margin="20,0,20,0" BorderThickness="0" HorizontalAlignment="Center" SelectionChanged="ModelsDataGrid_SelectionChanged" GridLinesVisibility="None" RowBackground="Transparent" AlternatingRowBackground="Transparent" HeadersVisibility="Column">
+
+                        <DataGrid x:Name="ModelsDataGrid" 
+                                  AutoGenerateColumns="False" 
+                                  IsReadOnly="True" 
+                                  Background="Transparent" 
+                                  Margin="20,0,20,0" 
+                                  BorderThickness="0" 
+                                  HorizontalAlignment="Center" 
+                                  SelectionChanged="ModelsDataGrid_SelectionChanged" 
+                                  GridLinesVisibility="None" 
+                                  RowBackground="Transparent" 
+                                  AlternatingRowBackground="Transparent" 
+                                  HeadersVisibility="Column" 
+                                  ScrollViewer.VerticalScrollBarVisibility="Hidden"
+                                  ScrollViewer.HorizontalScrollBarVisibility="Hidden">
 
                             <DataGrid.Resources>
                                 <Style TargetType="DataGridColumnHeader">
-                                    <Setter Property="Background" Value="#F25505"/>
-                                    <Setter Property="BorderBrush" Value="#F25505"/>
-                                    <Setter Property="Foreground" Value="White"/>
+                                    <Setter Property="Background" Value="Transparent"/>
                                     <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                                    <Setter Property="Padding" Value="5,0,5,0"/>
+                                    <Setter Property="FontSize" Value="16"/>
+                                    <Setter Property="Margin" Value="0,10,0,5"/>
+                                    <Setter Property="OverridesDefaultStyle" Value="True"/>
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="DataGridColumnHeader">
+                                                <Grid Background="Transparent">
+                                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" TextBlock.FontSize="16" TextBlock.FontWeight="Bold"/>
+                                                </Grid>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
                                 </Style>
                             </DataGrid.Resources>
+
 
                             <DataGrid.Columns>
 
@@ -307,12 +326,19 @@
                                         <Style TargetType="TextBlock">
                                             <Setter Property="HorizontalAlignment" Value="Center"/>
                                             <Setter Property="TextAlignment" Value="Center"/>
+                                            <Setter Property="FontSize" Value="15"/>
                                         </Style>
                                     </DataGridTextColumn.ElementStyle>
 
                                     <DataGridTextColumn.HeaderStyle>
                                         <Style TargetType="DataGridColumnHeader">
                                             <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                                            <Setter Property="Background" Value="Transparent"/>
+                                            <Setter Property="BorderBrush" Value="Black"/>
+                                            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                                            <Setter Property="FontSize" Value="16"/>
+                                            <Setter Property="Margin" Value="0,10,0,5"/>
+                                            <Setter Property="Padding" Value="0,0,0,10"/>
                                         </Style>
                                     </DataGridTextColumn.HeaderStyle>
 
@@ -328,12 +354,19 @@
                                         <Style TargetType="TextBlock">
                                             <Setter Property="HorizontalAlignment" Value="Center"/>
                                             <Setter Property="TextAlignment" Value="Center"/>
+                                            <Setter Property="FontSize" Value="15"/>
                                         </Style>
                                     </DataGridTextColumn.ElementStyle>
 
                                     <DataGridTextColumn.HeaderStyle>
                                         <Style TargetType="DataGridColumnHeader">
                                             <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                                            <Setter Property="Background" Value="Transparent"/>
+                                            <Setter Property="BorderBrush" Value="Black"/>
+                                            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                                            <Setter Property="FontSize" Value="16"/>
+                                            <Setter Property="Margin" Value="0,10,0,5"/>
+                                            <Setter Property="Padding" Value="0,0,0,10"/>
                                         </Style>
                                     </DataGridTextColumn.HeaderStyle>
 
@@ -349,12 +382,19 @@
                                         <Style TargetType="TextBlock">
                                             <Setter Property="HorizontalAlignment" Value="Center"/>
                                             <Setter Property="TextAlignment" Value="Center"/>
+                                            <Setter Property="FontSize" Value="15"/>
                                         </Style>
                                     </DataGridTextColumn.ElementStyle>
 
                                     <DataGridTextColumn.HeaderStyle>
                                         <Style TargetType="DataGridColumnHeader">
                                             <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                                            <Setter Property="Background" Value="Transparent"/>
+                                            <Setter Property="BorderBrush" Value="Black"/>
+                                            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                                            <Setter Property="FontSize" Value="16"/>
+                                            <Setter Property="Margin" Value="0,10,0,5"/>
+                                            <Setter Property="Padding" Value="0,0,0,10"/>
                                         </Style>
                                     </DataGridTextColumn.HeaderStyle>
 
@@ -364,6 +404,24 @@
                                         </Style>
                                     </DataGridTextColumn.CellStyle>
                                 </DataGridTextColumn>
+
+                                <DataGridTemplateColumn Width="30">
+                                    <DataGridTemplateColumn.HeaderTemplate>
+                                        <DataTemplate>
+                                            <Border Background="Transparent" BorderBrush="Black" Padding="3,0,0,10" BorderThickness="0,0,0,1" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                <TextBlock Text="Edit" FontSize="16" FontWeight="Normal" Foreground="#4B4B4B" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.HeaderTemplate>
+                                    
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Border Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" HorizontalAlignment="Center" Cursor="Hand">
+                                                <materialDesign:PackIcon Kind="DotsVertical" Width="20" Height="20" Cursor="Hand" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#777777"/>
+                                            </Border>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
 
                             </DataGrid.Columns>
 
