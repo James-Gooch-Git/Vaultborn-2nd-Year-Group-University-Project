@@ -18,16 +18,11 @@ using System;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Windows.Controls.Primitives;
-<<<<<<< Updated upstream
 using System.Windows.Media;
 using AssetManager.Infrastructure.Data;
 using System.Globalization;
 using System.Windows.Data;
 using System.Windows.Media.Imaging;
-=======
-using System.Windows.Media.Imaging;
-using System.Net;
->>>>>>> Stashed changes
 
 
 namespace AssetManager.Desktop
@@ -253,11 +248,7 @@ namespace AssetManager.Desktop
                 TreeViewItem projectItem = new TreeViewItem
                 {
                     Header = $"📁 {projectName}",
-<<<<<<< Updated upstream
                     Tag = (projectId, folderId, true)
-=======
-                    Tag = (projectId, folderId, true) // Tag stores projectId and folderId
->>>>>>> Stashed changes
                 };
 
                 projectItem.Items.Add(null); // Placeholder for expansion
@@ -303,112 +294,6 @@ namespace AssetManager.Desktop
             }
         }
 
-<<<<<<< Updated upstream
-        private async Task<List<Dictionary<string, string>>> GetAllModels()
-        {
-            List<Dictionary<string, string>> allModels = new List<Dictionary<string, string>>();
-
-            string accessToken = TokenManager.GetToken();
-            if (string.IsNullOrEmpty(accessToken))
-            {
-                Console.WriteLine("❌ No valid access token.");
-                return null;
-            }
-
-            string hubsUrl = "https://developer.api.autodesk.com/project/v1/hubs";
-
-            try
-            {
-                using (HttpClient client = new HttpClient())
-                {
-                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-                    HttpResponseMessage hubsResponse = await client.GetAsync(hubsUrl);
-
-                    if (!hubsResponse.IsSuccessStatusCode)
-                    {
-                        Console.WriteLine($"❌ Error fetching hubs: {hubsResponse.StatusCode} - {hubsResponse.ReasonPhrase}");
-                        return null;
-                    }
-
-                    string hubsJson = await hubsResponse.Content.ReadAsStringAsync();
-                    using JsonDocument hubsDoc = JsonDocument.Parse(hubsJson);
-                    JsonElement hubsRoot = hubsDoc.RootElement;
-
-                    foreach (JsonElement hub in hubsRoot.GetProperty("data").EnumerateArray())
-                    {
-                        string hubID = hub.GetProperty("id").GetString();
-
-                        string projectsUrl = $"https://developer.api.autodesk.com/project/v1/hubs/{hubID}/projects";
-                        HttpResponseMessage projectsResponse = await client.GetAsync(projectsUrl);
-
-                        if (!projectsResponse.IsSuccessStatusCode)
-                        {
-                            Console.WriteLine($"❌ Error fetching projects for hub {hubID}: {projectsResponse.StatusCode}");
-                            continue;
-                        }
-
-                        string projectsJson = await projectsResponse.Content.ReadAsStringAsync();
-                        using JsonDocument projectsDoc = JsonDocument.Parse(projectsJson);
-                        JsonElement projectsRoot = projectsDoc.RootElement;
-
-                        foreach (JsonElement project in projectsRoot.GetProperty("data").EnumerateArray())
-                        {
-                            string projectId = project.GetProperty("id").GetString();
-                            string projectName = project.GetProperty("attributes").GetProperty("name").GetString();
-
-                            var topFolder = await DataManagement.GetTopLevelFolder(hubID, projectId);
-                            string folderId = topFolder.Item1;
-
-                            if (string.IsNullOrEmpty(folderId))
-                            {
-                                Console.WriteLine($"❌ No valid top-level folder found for project {projectId}");
-                                continue;
-                            }
-
-                            string modelsUrl = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/folders/{folderId}/contents";
-                            HttpResponseMessage modelsResponse = await client.GetAsync(modelsUrl);
-
-                            if (!modelsResponse.IsSuccessStatusCode)
-                            {
-                                Console.WriteLine($"❌ Error fetching models for folder {folderId}: {modelsResponse.StatusCode}");
-                                continue;
-                            }
-
-                            string modelsJson = await modelsResponse.Content.ReadAsStringAsync();
-                            using JsonDocument modelsDoc = JsonDocument.Parse(modelsJson);
-                            JsonElement modelsRoot = modelsDoc.RootElement;
-
-                            foreach (JsonElement item in modelsRoot.GetProperty("data").EnumerateArray())
-                            {
-                                if (item.GetProperty("type").GetString() == "items")
-                                {
-                                    var attributes = item.GetProperty("attributes");
-
-                                    string modelName = attributes.GetProperty("displayName").GetString();
-                                    string lastModified = attributes.TryGetProperty("lastModifiedTime", out JsonElement modifiedTime) ? modifiedTime.GetString() : "Unknown";
-
-                                    allModels.Add(new Dictionary<string, string>
-                                    {
-                                        { "Name", modelName },
-                                        { "Project", projectName },
-                                        { "LastModified", lastModified }
-                                    });
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"❌ Exception occurred: {ex.Message}");
-                return null;
-            }
-
-            return allModels;
-        }
-
-=======
         private async Task LoadSubfoldersAsync(TreeViewItem parentFolder, string projectId, string folderId)
         {
             var subItems = await DataManagement.GetProjectItems(projectId, folderId);
@@ -532,10 +417,110 @@ namespace AssetManager.Desktop
             return null;
         }
 
+        private async Task<List<Dictionary<string, string>>> GetAllModels()
+        {
+            List<Dictionary<string, string>> allModels = new List<Dictionary<string, string>>();
 
+            string accessToken = TokenManager.GetToken();
+            if (string.IsNullOrEmpty(accessToken))
+            {
+                Console.WriteLine("❌ No valid access token.");
+                return null;
+            }
 
+            string hubsUrl = "https://developer.api.autodesk.com/project/v1/hubs";
 
->>>>>>> Stashed changes
+            try
+            {
+                using (HttpClient client = new HttpClient())
+                {
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+                    HttpResponseMessage hubsResponse = await client.GetAsync(hubsUrl);
+
+                    if (!hubsResponse.IsSuccessStatusCode)
+                    {
+                        Console.WriteLine($"❌ Error fetching hubs: {hubsResponse.StatusCode} - {hubsResponse.ReasonPhrase}");
+                        return null;
+                    }
+
+                    string hubsJson = await hubsResponse.Content.ReadAsStringAsync();
+                    using JsonDocument hubsDoc = JsonDocument.Parse(hubsJson);
+                    JsonElement hubsRoot = hubsDoc.RootElement;
+
+                    foreach (JsonElement hub in hubsRoot.GetProperty("data").EnumerateArray())
+                    {
+                        string hubID = hub.GetProperty("id").GetString();
+
+                        string projectsUrl = $"https://developer.api.autodesk.com/project/v1/hubs/{hubID}/projects";
+                        HttpResponseMessage projectsResponse = await client.GetAsync(projectsUrl);
+
+                        if (!projectsResponse.IsSuccessStatusCode)
+                        {
+                            Console.WriteLine($"❌ Error fetching projects for hub {hubID}: {projectsResponse.StatusCode}");
+                            continue;
+                        }
+
+                        string projectsJson = await projectsResponse.Content.ReadAsStringAsync();
+                        using JsonDocument projectsDoc = JsonDocument.Parse(projectsJson);
+                        JsonElement projectsRoot = projectsDoc.RootElement;
+
+                        foreach (JsonElement project in projectsRoot.GetProperty("data").EnumerateArray())
+                        {
+                            string projectId = project.GetProperty("id").GetString();
+                            string projectName = project.GetProperty("attributes").GetProperty("name").GetString();
+
+                            var topFolder = await DataManagement.GetTopLevelFolder(hubID, projectId);
+                            string folderId = topFolder.Item1;
+
+                            if (string.IsNullOrEmpty(folderId))
+                            {
+                                Console.WriteLine($"❌ No valid top-level folder found for project {projectId}");
+                                continue;
+                            }
+
+                            string modelsUrl = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/folders/{folderId}/contents";
+                            HttpResponseMessage modelsResponse = await client.GetAsync(modelsUrl);
+
+                            if (!modelsResponse.IsSuccessStatusCode)
+                            {
+                                Console.WriteLine($"❌ Error fetching models for folder {folderId}: {modelsResponse.StatusCode}");
+                                continue;
+                            }
+
+                            string modelsJson = await modelsResponse.Content.ReadAsStringAsync();
+                            using JsonDocument modelsDoc = JsonDocument.Parse(modelsJson);
+                            JsonElement modelsRoot = modelsDoc.RootElement;
+
+                            foreach (JsonElement item in modelsRoot.GetProperty("data").EnumerateArray())
+                            {
+                                if (item.GetProperty("type").GetString() == "items")
+                                {
+                                    var attributes = item.GetProperty("attributes");
+
+                                    string modelName = attributes.GetProperty("displayName").GetString();
+                                    string lastModified = attributes.TryGetProperty("lastModifiedTime", out JsonElement modifiedTime) ? modifiedTime.GetString() : "Unknown";
+
+                                    allModels.Add(new Dictionary<string, string>
+                                    {
+                                        { "Name", modelName },
+                                        { "Project", projectName },
+                                        { "LastModified", lastModified }
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Exception occurred: {ex.Message}");
+                return null;
+            }
+
+            return allModels;
+        }
+
         //WOerking One
         /*private async void BtnDownloadModel_Click(object sender, RoutedEventArgs e)
         {
