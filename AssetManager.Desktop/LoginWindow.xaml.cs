@@ -80,7 +80,7 @@ public partial class LoginWindow : Window
                               + $"?response_type=code"
                               + $"&client_id={clientID}"
                               + $"&redirect_uri={redirect}"
-                              + $"&scope=data:read%20data:write%20data:create%20bucket:read%20bucket:create%20bucket:update%20account:write"
+                              + $"&scope=data:read%20data:write%20data:create%20bucket:read%20bucket:create%20bucket:update%20account:write%20viewables:read"
                               + $"&nonce={nonce}"
                               + $"&prompt=login"
                               + $"&code_challenge={pkce.CodeChallenge}"
