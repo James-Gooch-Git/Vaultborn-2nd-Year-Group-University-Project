@@ -38,14 +38,14 @@ public partial class LoginWindow : Window
         userSession = Environment.GetEnvironmentVariable("userId", EnvironmentVariableTarget.User);
 
         //MessageBox.Show($"Your accessToken is: {aToken}");
-        //if (!string.IsNullOrEmpty(userSession))
-        //{
-        //    aToken = Environment.GetEnvironmentVariable("accessToken", EnvironmentVariableTarget.User);
-        //    Infrastructure.Services.TokenManager.SetToken(aToken);
-        //    MainWindow mainWindow = new MainWindow(userSession);
-        //    mainWindow.Show();
-        //    this.Close();
-        //}
+        if (!string.IsNullOrEmpty(userSession))
+        {
+            aToken = Environment.GetEnvironmentVariable("accessToken", EnvironmentVariableTarget.User);
+            Infrastructure.Services.TokenManager.SetToken(aToken);
+            MainWindow mainWindow = new MainWindow(userSession);
+            mainWindow.Show();
+            this.Close();
+        }
 
         InitializeWebView();
     }

@@ -8,12 +8,21 @@ using AssetManager.Core;
 using AssetManager.Infrastructure.Services;
 using Microsoft.Win32;
 using System.Diagnostics;
+using MaterialDesignThemes.Wpf;
+using MongoDB.Driver;
+using MongoDB.Bson;
+
 
 using System.Linq;
 using System;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Windows.Controls.Primitives;
+using System.Windows.Media;
+using AssetManager.Infrastructure.Data;
+using System.Globalization;
+using System.Windows.Data;
+using System.Windows.Media.Imaging;
 
 
 namespace AssetManager.Desktop
@@ -26,6 +35,8 @@ namespace AssetManager.Desktop
         private string _folderId;
         private string hubID;
         private readonly ModelUpload _uploadService;
+        private List<Dictionary<string, string>> Models;
+        private string _userId = Environment.GetEnvironmentVariable("userId", EnvironmentVariableTarget.User);
 
 
         // ✅ Constructor
@@ -60,7 +71,35 @@ namespace AssetManager.Desktop
             // 🔹 Initialize data
             await TestDataManagement();
             await LoadProjectsAsync();
+            LoadAllModels();
             FusionManager.InitializePythonEngine();
+
+            Username_TextBlock.Text = await GetUserName(_userId);
+            UserPic_Image.Source = new BitmapImage(new Uri(await GetUserPic(_userId)));
+        }
+
+        private async Task<string> GetUserName(string userId)
+        {
+            MongoConnection database = new MongoConnection();
+            var userData = await database.Users.Find(x => x.Id == userId).FirstOrDefaultAsync();
+            return userData.Username;
+        }
+
+        private async Task<string> GetUserPic(string userId)
+        {
+            MongoConnection database = new MongoConnection();
+            var userData = await database.Users.Find(x => x.Id == userId).FirstOrDefaultAsync();
+            return userData.ProfilePic;
+        }
+
+        private async void LoadAllModels()
+        {
+            Models = await GetAllModels();
+
+            if (Models != null)
+            {
+                ModelsDataGrid.ItemsSource = Models;
+            }
         }
 
         //private void DragDeltaThumb(object sender, DragDeltaEventArgs e)
@@ -125,10 +164,13 @@ namespace AssetManager.Desktop
 
             foreach (var (projectId, projectName) in projects)
             {
+                var topFolder = await DataManagement.GetTopLevelFolder(hubID, projectId);
+                var folderId = topFolder.Item1;
+
                 TreeViewItem projectItem = new TreeViewItem
                 {
                     Header = $"📁 {projectName}",
-                    Tag = (projectId, "root", true)
+                    Tag = (projectId, folderId, true)
                 };
 
                 projectItem.Items.Add(null);
@@ -168,6 +210,110 @@ namespace AssetManager.Desktop
                     }
                 }
             }
+        }
+
+        private async Task<List<Dictionary<string, string>>> GetAllModels()
+        {
+            List<Dictionary<string, string>> allModels = new List<Dictionary<string, string>>();
+
+            string accessToken = TokenManager.GetToken();
+            if (string.IsNullOrEmpty(accessToken))
+            {
+                Console.WriteLine("❌ No valid access token.");
+                return null;
+            }
+
+            string hubsUrl = "https://developer.api.autodesk.com/project/v1/hubs";
+
+            try
+            {
+                using (HttpClient client = new HttpClient())
+                {
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+                    HttpResponseMessage hubsResponse = await client.GetAsync(hubsUrl);
+
+                    if (!hubsResponse.IsSuccessStatusCode)
+                    {
+                        Console.WriteLine($"❌ Error fetching hubs: {hubsResponse.StatusCode} - {hubsResponse.ReasonPhrase}");
+                        return null;
+                    }
+
+                    string hubsJson = await hubsResponse.Content.ReadAsStringAsync();
+                    using JsonDocument hubsDoc = JsonDocument.Parse(hubsJson);
+                    JsonElement hubsRoot = hubsDoc.RootElement;
+
+                    foreach (JsonElement hub in hubsRoot.GetProperty("data").EnumerateArray())
+                    {
+                        string hubID = hub.GetProperty("id").GetString();
+
+                        string projectsUrl = $"https://developer.api.autodesk.com/project/v1/hubs/{hubID}/projects";
+                        HttpResponseMessage projectsResponse = await client.GetAsync(projectsUrl);
+
+                        if (!projectsResponse.IsSuccessStatusCode)
+                        {
+                            Console.WriteLine($"❌ Error fetching projects for hub {hubID}: {projectsResponse.StatusCode}");
+                            continue;
+                        }
+
+                        string projectsJson = await projectsResponse.Content.ReadAsStringAsync();
+                        using JsonDocument projectsDoc = JsonDocument.Parse(projectsJson);
+                        JsonElement projectsRoot = projectsDoc.RootElement;
+
+                        foreach (JsonElement project in projectsRoot.GetProperty("data").EnumerateArray())
+                        {
+                            string projectId = project.GetProperty("id").GetString();
+                            string projectName = project.GetProperty("attributes").GetProperty("name").GetString();
+
+                            var topFolder = await DataManagement.GetTopLevelFolder(hubID, projectId);
+                            string folderId = topFolder.Item1;
+
+                            if (string.IsNullOrEmpty(folderId))
+                            {
+                                Console.WriteLine($"❌ No valid top-level folder found for project {projectId}");
+                                continue;
+                            }
+
+                            string modelsUrl = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/folders/{folderId}/contents";
+                            HttpResponseMessage modelsResponse = await client.GetAsync(modelsUrl);
+
+                            if (!modelsResponse.IsSuccessStatusCode)
+                            {
+                                Console.WriteLine($"❌ Error fetching models for folder {folderId}: {modelsResponse.StatusCode}");
+                                continue;
+                            }
+
+                            string modelsJson = await modelsResponse.Content.ReadAsStringAsync();
+                            using JsonDocument modelsDoc = JsonDocument.Parse(modelsJson);
+                            JsonElement modelsRoot = modelsDoc.RootElement;
+
+                            foreach (JsonElement item in modelsRoot.GetProperty("data").EnumerateArray())
+                            {
+                                if (item.GetProperty("type").GetString() == "items")
+                                {
+                                    var attributes = item.GetProperty("attributes");
+
+                                    string modelName = attributes.GetProperty("displayName").GetString();
+                                    string lastModified = attributes.TryGetProperty("lastModifiedTime", out JsonElement modifiedTime) ? modifiedTime.GetString() : "Unknown";
+
+                                    allModels.Add(new Dictionary<string, string>
+                                    {
+                                        { "Name", modelName },
+                                        { "Project", projectName },
+                                        { "LastModified", lastModified }
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Exception occurred: {ex.Message}");
+                return null;
+            }
+
+            return allModels;
         }
 
         //WOerking One
@@ -555,7 +701,8 @@ namespace AssetManager.Desktop
         }
         // 🔹 Fetch Storage ID from an Item
 
-        //private async Task<List<(string ItemId, string ItemName, bool IsFolder)>> GetProjectItems(string projectId, string folderId)
+        //James Function
+        //private async Task<List<string>> GetModelsFromProject(string projectId, string folderId)
         //{
         //    string accessToken = TokenManager.GetToken();
         //    if (string.IsNullOrEmpty(accessToken))
@@ -575,7 +722,7 @@ namespace AssetManager.Desktop
 
         //            if (!response.IsSuccessStatusCode)
         //            {
-        //                Console.WriteLine($"❌ Error fetching folder contents: {response.StatusCode} - {response.ReasonPhrase}");
+        //                Console.WriteLine($"❌ Error: {response.StatusCode} - {response.ReasonPhrase}");
         //                return null;
         //            }
 
@@ -583,18 +730,18 @@ namespace AssetManager.Desktop
         //            using JsonDocument doc = JsonDocument.Parse(jsonResponse);
         //            JsonElement root = doc.RootElement;
 
-        //            List<(string, string, bool)> projectItems = new List<(string, string, bool)>();
+        //            List<string> modelNames = new List<string>();
 
         //            foreach (JsonElement item in root.GetProperty("data").EnumerateArray())
         //            {
-        //                string itemId = item.GetProperty("id").GetString();
-        //                string itemName = item.GetProperty("attributes").GetProperty("displayName").GetString();
-        //                bool isFolder = item.GetProperty("type").GetString() == "folders";
-
-        //                projectItems.Add((itemId, itemName, isFolder));
+        //                if (item.GetProperty("type").GetString() == "items")
+        //                {
+        //                    string modelName = item.GetProperty("attributes").GetProperty("displayName").GetString();
+        //                    modelNames.Add(modelName);
+        //                }
         //            }
 
-        //            return projectItems;
+        //            return modelNames;
         //        }
         //    }
         //    catch (Exception ex)
@@ -604,7 +751,7 @@ namespace AssetManager.Desktop
         //    }
         //}
 
-        private async Task<List<string>> GetModelsFromProject(string projectId, string folderId)
+        private async Task<List<Dictionary<string, string>>> GetModelsFromProject(string projectId, string folderId)
         {
             string accessToken = TokenManager.GetToken();
             if (string.IsNullOrEmpty(accessToken))
@@ -632,18 +779,27 @@ namespace AssetManager.Desktop
                     using JsonDocument doc = JsonDocument.Parse(jsonResponse);
                     JsonElement root = doc.RootElement;
 
-                    List<string> modelNames = new List<string>();
+                    List<Dictionary<string, string>> models = new List<Dictionary<string, string>>();
 
                     foreach (JsonElement item in root.GetProperty("data").EnumerateArray())
                     {
                         if (item.GetProperty("type").GetString() == "items")
                         {
-                            string modelName = item.GetProperty("attributes").GetProperty("displayName").GetString();
-                            modelNames.Add(modelName);
+                            var attributes = item.GetProperty("attributes");
+
+                            string modelName = attributes.GetProperty("displayName").GetString();
+                            string lastModified = attributes.TryGetProperty("lastModifiedTime", out JsonElement modifiedTime) ? modifiedTime.GetString() : "Unknown";
+
+                            models.Add(new Dictionary<string, string>
+                            {
+                                { "Name", modelName },
+                                { "ProjectId", projectId },
+                                { "LastModified", lastModified }
+                            });
                         }
                     }
 
-                    return modelNames;
+                    return models;
                 }
             }
             catch (Exception ex)
@@ -652,6 +808,8 @@ namespace AssetManager.Desktop
                 return null;
             }
         }
+
+
         // ✅ Button Click Event to Refresh Models
 
         //private void BtnRefreshModels_Click(object sender, RoutedEventArgs e)
@@ -668,15 +826,15 @@ namespace AssetManager.Desktop
         //}
 
         //// ✅ Button Click Event to Log Out
-        //private void BtnLogout_Click(object sender, RoutedEventArgs e)
-        //{
-        //    Console.WriteLine("👤 Logging out...");
+        private void BtnLogout_Click(object sender, RoutedEventArgs e)
+        {
+            Console.WriteLine("👤 Logging out...");
 
-        //    // Close the current window and show the login screen
-        //    LoginWindow loginWindow = new LoginWindow(true);
-        //    this.Close();
-        //    loginWindow.Show();
-        //}
+            // Close the current window and show the login screen
+            LoginWindow loginWindow = new LoginWindow(true);
+            this.Close();
+            loginWindow.Show();
+        }
 
 
         //private async Task ListModelsForProject(string projectId, string folderId)
@@ -743,6 +901,51 @@ namespace AssetManager.Desktop
         {
             throw new NotImplementedException();
         }
+
+        private void ModelsDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+
+        }
+
+        private void Border_Enter(object sender, System.Windows.Input.MouseEventArgs e)
+        {
+            var border = sender as Border;
+            var icon = border?.Child as PackIcon;
+
+            if (icon != null)
+            {
+                icon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F25505"));
+            }
+        }
+
+        private void Border_Leave(object sender, System.Windows.Input.MouseEventArgs e)
+        {
+            var border = sender as Border;
+            var icon = border?.Child as PackIcon;
+
+            if (icon != null)
+            {
+                icon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+            }
+        }
+
+        private void Chevron_Click(object sender, System.Windows.Input.MouseEventArgs e)
+        {
+            var icon = sender as PackIcon;
+
+            if (icon != null)
+            {
+                icon.Kind = PackIconKind.ChevronUp;
+            }
+
+            var contextMenu = icon.ContextMenu;
+
+            if (contextMenu != null)
+            {
+                contextMenu.IsOpen = true;
+            }
+        }
+
     }
 }
 
