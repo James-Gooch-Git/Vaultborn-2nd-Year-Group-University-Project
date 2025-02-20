@@ -9,7 +9,7 @@
   <component name="ChangeListManager">
     <list default="true" id="29dceaf0-6b38-45af-9473-223a6fd443eb" name="Changes" comment="view in fusion">
       <change beforePath="$PROJECT_DIR$/.idea/.idea.AssetManager/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.AssetManager/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml.cs" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/AssetManager.Core/Fusion/FusionAddIn/FusionAddIn.py" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Core/Fusion/FusionAddIn/FusionAddIn.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -22,7 +22,7 @@
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="master" />
+        <entry key="$PROJECT_DIR$" value="Master-Raheel" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -70,6 +70,7 @@
     "node.js.selected.package.eslint": "(autodetect)",
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable",
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>

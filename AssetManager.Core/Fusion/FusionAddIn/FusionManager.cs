@@ -45,5 +45,25 @@ namespace AssetManager.Core
                 Console.WriteLine($"Python script output: {result}");
             }
         }
+        
+        private void DeployFusionScript()
+        {
+            string scriptSource = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "FusionScripts", "load_metadata.py");
+            string fusionScriptsFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "Autodesk", "Autodesk Fusion 360", "API", "Scripts");
+    
+            string scriptDestination = Path.Combine(fusionScriptsFolder, "load_metadata.py");
+
+            try
+            {
+                File.Copy(scriptSource, scriptDestination, true);
+                Console.WriteLine($"✅ Script deployed to: {scriptDestination}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Failed to deploy script: {ex.Message}");
+            }
+        }
+
     }
 }
