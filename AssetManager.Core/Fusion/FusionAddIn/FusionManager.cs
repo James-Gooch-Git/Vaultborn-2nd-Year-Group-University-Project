@@ -48,7 +48,7 @@ namespace AssetManager.Core
         
         public static void DeployFusionAddIn()
         {
-            string addInSource  = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "/..", "/..", "/..", "/..", "/..", "AssetManager.Core", "Fusion", "FusionAddIn", "FusionAddIn.py");
+            string addInSource = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..", "..", "..", "AssetManager.Core", "Fusion", "FusionAddIn", "FusionAddIn.py"));
             Console.WriteLine("SCRIPT: "+addInSource );
             string fusionAddInsFolder = ("C:\\Users\\tomgr\\AppData\\Roaming\\Autodesk\\Autodesk Fusion 360\\API\\AddIns");
             Console.WriteLine(fusionAddInsFolder);
@@ -64,6 +64,14 @@ namespace AssetManager.Core
         
                 CopyDirectory(addInSource, addInDestination);
                 Console.WriteLine("✅ Add-In successfully deployed!");
+                
+                foreach (string filePath in Directory.GetFiles(addInSource, "*.*", SearchOption.AllDirectories))
+                {
+                    string destPath = Path.Combine(fusionAddInsFolder, Path.GetFileName(filePath));
+
+                    Console.WriteLine($"Copying: {filePath} ➡️ {destPath}");
+                    File.Copy(filePath, destPath, true);
+                }
 
             }
             catch (Exception ex)
