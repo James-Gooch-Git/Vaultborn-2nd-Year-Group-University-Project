@@ -493,7 +493,6 @@ namespace AssetManager.Desktop
                                     string lastModified = attributes.TryGetProperty("lastModifiedTime", out JsonElement modifiedTime) ? modifiedTime.GetString() : "Unknown";
                                     string lastModifiedDate = lastModified.Split('T')[0];
                                     string lastModifiedTime = (lastModified.Split('T')[1]).Remove(8);
-                                    Console.WriteLine("\n\ntime -- "+lastModifiedTime + "\n\ndate -- "+lastModifiedDate);
                                     lastModified = lastModifiedDate + " " + lastModifiedTime;
                                     
                                     allModels.Add(new Dictionary<string, string>
