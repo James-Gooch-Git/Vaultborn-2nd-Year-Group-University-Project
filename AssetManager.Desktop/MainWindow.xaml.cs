@@ -241,15 +241,11 @@ namespace AssetManager.Desktop
 
             if (modelFilePath == null)
             {
+                Console.WriteLine("Downloading model");
                 // No matching file found, so download it
                 var fileDownloadService = new FileDownloadService2();
                 fileDownloadService.DownloadModelAsync(_selectedProjectId, _selectedItemId);
-
-                if (string.IsNullOrEmpty(modelFilePath) || !File.Exists(modelFilePath))
-                {
-                    MessageBox.Show("❌ Failed to download the model.", "Download Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
+                
             }
             
             try
