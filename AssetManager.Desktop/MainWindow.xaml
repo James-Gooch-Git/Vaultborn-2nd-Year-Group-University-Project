@@ -42,16 +42,6 @@
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-<<<<<<< Updated upstream
-=======
-        <!--<Border Grid.Row="0" BorderBrush="#797979" BorderThickness="0,0,0,1" Grid.ColumnSpan="2"/>
-        <Thumb Grid.Row="1" HorizontalAlignment="Right" DragDelta="Thumb_DragDelta"/>
-        <Border Grid.Row="1" BorderBrush="#797979" BorderThickness="0,0,1,0"/>-->
-
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
         <Border Grid.Row="0" Grid.ColumnSpan="3" BorderBrush="#797979" BorderThickness="0,0,0,1">
 
             <Grid>
@@ -154,18 +144,8 @@
                 </TreeView>
 
             </Grid>
-            
-        </Border>
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-        <!--<Thumb Grid.Row="1" Grid.Column="1" Width="5" DragDelta="DragDeltaThumb" Cursor="SizeWE"/>-->
-=======
-        <Thumb Grid.Row="1" Grid.Column="1" Width="5" DragDelta="DragDeltaThumb" Cursor="SizeWE"/>
->>>>>>> Stashed changes
-=======
-        <Thumb Grid.Row="1" Grid.Column="1" Width="5" DragDelta="DragDeltaThumb" Cursor="SizeWE"/>
->>>>>>> Stashed changes
+        </Border>
 
         <Border Grid.Row="1" Grid.Column="2">
 
