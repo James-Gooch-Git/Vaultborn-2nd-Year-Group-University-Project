@@ -14,6 +14,7 @@ using System.Windows.Media;
 using AssetManager.Infrastructure.Data;
 using System.Windows.Media.Imaging;
 using System.Net;
+using System.Windows.Input;
 
 
 namespace AssetManager.Desktop
@@ -899,11 +900,13 @@ namespace AssetManager.Desktop
 
                             string modelName = attributes.GetProperty("displayName").GetString();
                             string lastModified = attributes.TryGetProperty("lastModifiedTime", out JsonElement modifiedTime) ? modifiedTime.GetString() : "Unknown";
+                            string projectName = await GetProjectNameById(projectId);
 
                             models.Add(new Dictionary<string, string>
                             {
                                 { "Name", modelName },
                                 { "ProjectId", projectId },
+                                { "Project", projectName },
                                 { "LastModified", lastModified }
                             });
                         }
@@ -985,16 +988,6 @@ namespace AssetManager.Desktop
         //    }
         //}
 
-
-        //private void ModelComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        //{
-        //    if (ModelComboBox.SelectedItem is ComboBoxItem selectedItem)
-        //    {
-        //        _selectedItemId = selectedItem.Tag as string;
-        //        Console.WriteLine($"📌 Selected Item ID: {_selectedItemId}");
-        //    }
-        //}
-
         private string GetFilePathFromDialog()
         {
             OpenFileDialog openFileDialog = new OpenFileDialog
@@ -1072,6 +1065,65 @@ namespace AssetManager.Desktop
             }
         }
 
+        private void ProjectTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+        {
+            if (e.NewValue is TreeViewItem selectedItem && selectedItem.Tag is ValueTuple<string, string, bool> projectData)
+            {
+                _selectedProjectId = projectData.Item1;
+                _folderId = projectData.Item2;
+                bool isProject = projectData.Item3;
+
+                LoadModelsForSelectedProject();
+
+                Console.WriteLine($"📌 Clicked Project: {selectedItem.Header}, Project ID: {_selectedProjectId}, Folder ID: {_folderId}");
+        
+                // You can now use projectId for further processing
+            }
+        }
+        
+        private void ProjectTreeView_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (ProjectTreeView.SelectedItem is TreeViewItem selectedItem)
+            {
+                string projectName = selectedItem.Header.ToString();
+                Console.WriteLine($"Project double-clicked: {projectName}");
+            }
+        }
+        
+        private async void LoadModelsForSelectedProject()
+        {
+            if (string.IsNullOrEmpty(_selectedProjectId) || string.IsNullOrEmpty(_folderId))
+            {
+                Console.WriteLine("❌ No project selected, cannot load models.");
+                ModelsDataGrid.ItemsSource = null;
+                return;
+            }
+
+            Console.WriteLine($"🔄 Fetching models for Project: {_selectedProjectId}, Folder: {_folderId}");
+
+            var models = await GetModelsFromProject(_selectedProjectId, _folderId);
+
+            if (models == null || !models.Any())
+            {
+                Console.WriteLine("❌ No models found for this project.");
+                ModelsDataGrid.ItemsSource = null;
+                return;
+            }
+
+            // Update DataGrid with models
+            ModelsDataGrid.ItemsSource = models;
+        }
+
+        private void ProjectTreeView_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.OriginalSource is not TreeViewItem)
+            {
+                Console.WriteLine("No project selected, showing all models.");
+                _selectedProjectId = null;
+                _folderId = null;
+                LoadAllModels();
+            }
+        }
     }
 }
 
