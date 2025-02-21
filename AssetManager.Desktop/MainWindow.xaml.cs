@@ -690,7 +690,7 @@ namespace AssetManager.Desktop
 
         private string FindExistingModelFile(string modelName)
         {
-            string ModelStoragePath = "";
+            string ModelStoragePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "DownloadedModels");
                 
             var files = Directory.GetFiles(ModelStoragePath);
 
