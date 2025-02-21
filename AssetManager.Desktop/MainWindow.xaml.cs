@@ -207,11 +207,6 @@ namespace AssetManager.Desktop
             }
         }
 
-
-
-
-
-
         private async Task LoadProjectsAsync()
         {
             var results = await DataManagement.GetPersonalHubDetails();
@@ -600,47 +595,47 @@ namespace AssetManager.Desktop
         //}
 
 
-        // private async void BtnViewInFusion_Click(object sender, RoutedEventArgs e)
-        // {
-        //     if (ModelComboBox.SelectedItem == null)
-        //     {
-        //         MessageBox.Show("❌ Please select a model before viewing in Fusion 360.", "Error", MessageBoxButton.OK,
-        //             MessageBoxImage.Error);
-        //         return;
-        //     }
-        //
-        //     string modelFilePath = FindExistingModelFile(_selectedItemName);
-        //
-        //     if (modelFilePath == null)
-        //     {
-        //         Console.WriteLine("Downloading model");
-        //         // No matching file found, so download it
-        //         var fileDownloadService = new FileDownloadService2();
-        //         fileDownloadService.DownloadModelAsync(_selectedProjectId, _selectedItemId);
-        //
-        //     }
-        //
-        //     try
-        //     {
-        //         // Download the model first
-        //         var fileDownloadService = new FileDownloadService2();
-        //         await fileDownloadService.DownloadModelAsync(_selectedProjectId, _selectedItemId);
-        //
-        //         string saveDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-        //             "DownloadedModels", _selectedItemName);
-        //         Console.WriteLine("Model dir: " + saveDirectory);
-        //
-        //         if (!Directory.Exists(saveDirectory))
-        //         {
-        //             LaunchFusionWithModel(saveDirectory);
-        //         }
-        //     }
-        //     catch(Exception ex)
-        //     {
-        //         MessageBox.Show($"❌ Error launching Fusion script: {ex.Message}\n{ex.StackTrace}",
-        //             "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-        //     }
-        // }
+        private async void BtnViewInFusion_Click(object sender, RoutedEventArgs e)
+        {
+            if (_selectedItemId == null)
+            {
+                MessageBox.Show("❌ Please select a model before viewing in Fusion 360.", "Error", MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                return;
+            }
+        
+            string modelFilePath = FindExistingModelFile(_selectedItemName);
+        
+            if (modelFilePath == null)
+            {
+                Console.WriteLine("Downloading model");
+                // No matching file found, so download it
+                var fileDownloadService = new FileDownloadService2();
+                fileDownloadService.DownloadModelAsync(_selectedProjectId, _selectedItemId);
+        
+            }
+        
+            try
+            {
+                // Download the model first
+                var fileDownloadService = new FileDownloadService2();
+                await fileDownloadService.DownloadModelAsync(_selectedProjectId, _selectedItemId);
+        
+                string saveDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+                    "DownloadedModels", _selectedItemName);
+                Console.WriteLine("Model dir: " + saveDirectory);
+        
+                if (!Directory.Exists(saveDirectory))
+                {
+                    LaunchFusionWithModel(saveDirectory);
+                }
+            }
+            catch(Exception ex)
+            {
+                MessageBox.Show($"❌ Error launching Fusion script: {ex.Message}\n{ex.StackTrace}",
+                    "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
 
    
 
