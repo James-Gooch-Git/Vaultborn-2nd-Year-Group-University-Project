@@ -14,6 +14,8 @@ using System.Windows.Media;
 using AssetManager.Infrastructure.Data;
 using System.Windows.Media.Imaging;
 using System.Net;
+using System.Windows.Input;
+using System.Windows.Media.Effects;
 
 
 namespace AssetManager.Desktop
@@ -94,6 +96,73 @@ namespace AssetManager.Desktop
             }
         }
 
+        private bool isModelLoaded = false;
+        private async void DisplayGridModels()
+        {
+            if (isModelLoaded) return; // Prevent duplicate calls
+            isModelLoaded = true;
+
+            ModelsContainer.Children.Clear(); // Clear existing squares
+            List<Dictionary<string, string>> models = await GetAllModels();
+
+            foreach (var model in models)
+            {
+                Border modelSquare = new Border
+                {
+                    Width = 263,
+                    Height = 273,
+                    CornerRadius = new CornerRadius(5),
+                    Background = Brushes.White,
+                    BorderBrush = Brushes.LightGray,
+                    BorderThickness = new Thickness(1),
+                    Margin = new Thickness(10),
+                    Effect = new DropShadowEffect
+                    {
+                        Color = Colors.Black,
+                        Opacity = 0.1,
+                        BlurRadius = 10,
+                        ShadowDepth = 2
+                    }
+                };
+
+                StackPanel content = new StackPanel
+                {
+                    Orientation = Orientation.Vertical,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    HorizontalAlignment = HorizontalAlignment.Left
+                };
+
+                TextBlock modelName = new TextBlock
+                {
+                    Text = model["Name"],
+                    FontSize = 16,
+                    FontWeight = FontWeights.Normal,
+                    TextAlignment = TextAlignment.Center,
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    TextWrapping = TextWrapping.Wrap,
+                    Margin = new Thickness(5, 2, 5, 2)
+                };
+
+                TextBlock projectName = new TextBlock
+                {
+                    Text = $"Project: {model["Project"]}",
+                    FontSize = 14,
+                    FontWeight = FontWeights.Normal,
+                    Foreground = Brushes.Gray,
+                    TextAlignment = TextAlignment.Left,
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    TextWrapping = TextWrapping.Wrap,
+                    Margin = new Thickness(5, 2, 5, 2)
+                };
+
+                content.Children.Add(modelName);
+                content.Children.Add(projectName);
+                modelSquare.Child = content;
+                ModelsContainer.Children.Add(modelSquare);
+            }
+        }
+
+
         //private void DragDeltaThumb(object sender, DragDeltaEventArgs e)
         //{
         //    if (ResizeSidebar.Width.IsAuto || ResizeSidebar.Width.IsStar)
@@ -109,7 +178,7 @@ namespace AssetManager.Desktop
         //    }
         //}
 
-        
+
         private async Task TestDataManagement()
         {
             var result = await DataManagement.GetPersonalHubDetails();
@@ -1089,6 +1158,43 @@ namespace AssetManager.Desktop
             {
                 contextMenu.IsOpen = true;
             }
+        }
+
+        private async void List_Click(object sender, MouseButtonEventArgs e)
+        {
+            ModelsDataGrid.Visibility = Visibility.Visible; // Show DataGrid
+            Grid_View.Visibility = Visibility.Collapsed;
+            isModelLoaded = false;
+
+            if (Models == null || Models.Count == 0)
+            {
+                Models = await GetAllModels();
+                ModelsDataGrid.ItemsSource = Models;
+            }
+
+            Grid_Border.Background = Brushes.Transparent;
+
+            //Grid_Icon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+
+            List_Border.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
+
+            //List_Icon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F25505"));
+        }
+
+        private async void Grid_Click(object sender, MouseButtonEventArgs e)
+        {
+            ModelsDataGrid.Visibility = Visibility.Collapsed; // Show DataGrid
+            Grid_View.Visibility = Visibility.Visible;
+
+            DisplayGridModels();
+
+            List_Border.Background = Brushes.Transparent;
+
+            //List_Icon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+
+            Grid_Border.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
+
+            //Grid_Icon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F25505"));
         }
 
     }
