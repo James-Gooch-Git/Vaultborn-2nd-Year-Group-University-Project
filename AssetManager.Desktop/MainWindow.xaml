@@ -208,6 +208,35 @@
                         </StackPanel>
 
                     </Button>
+                    
+                    <Button HorizontalAlignment="Left" BorderThickness="0" x:Name="BtnDeleteModel" Width="100" Height="40" Click="BtnDeleteModel_Click" Cursor="Hand" Margin="180,0,0,0">
+                        <Button.Style>
+                            <Style TargetType="{x:Type Button}">
+
+                                <Setter Property="Background" Value="#F00000"/>
+                                <Setter Property="Foreground" Value="White"/>
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="{x:Type Button}">
+                                            <Border Background="{TemplateBinding Background}" BorderThickness="0">
+                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="#D24A06"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+
+                        <StackPanel Orientation="Horizontal">
+                            <md:PackIcon Kind="Minus" Width="17" Height="17" VerticalAlignment="Center"/>
+                            <TextBlock Text="Delete" Margin="1,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
 
                     <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
 

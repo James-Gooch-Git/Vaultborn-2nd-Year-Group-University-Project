@@ -21,6 +21,7 @@ namespace AssetManager.Desktop
     public partial class MainWindow : Window
     {
         private string _accessToken;
+        private Dictionary<string, string> _selectedModel;
         private string _selectedProjectId;
         private string _selectedItemId;
         private string _selectedItemName;
@@ -488,7 +489,8 @@ namespace AssetManager.Desktop
                                 if (item.GetProperty("type").GetString() == "items")
                                 {
                                     var attributes = item.GetProperty("attributes");
-
+                                    
+                                    string modelId = item.GetProperty("id").GetString();
                                     string modelName = attributes.GetProperty("displayName").GetString();
                                     string lastModified = attributes.TryGetProperty("lastModifiedTime", out JsonElement modifiedTime) ? modifiedTime.GetString() : "Unknown";
                                     string lastModifiedDate = lastModified.Split('T')[0];
@@ -497,7 +499,9 @@ namespace AssetManager.Desktop
                                     
                                     allModels.Add(new Dictionary<string, string>
                                     {
+                                        { "Id", modelId },
                                         { "Name", modelName },
+                                        { "ProjectId", projectId },
                                         { "Project", projectName },
                                         { "LastModified", lastModified }
                                     });
@@ -671,117 +675,18 @@ namespace AssetManager.Desktop
             MessageBox.Show("✅ Upload Successful!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
-
-        //private async void ProjectComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        //{
-        //    if (ProjectComboBox.SelectedItem is ComboBoxItem selectedItem)
-        //    {
-        //        _selectedProjectId = selectedItem.Tag as string;
-        //        Console.WriteLine($"📌 Selected Project ID: {_selectedProjectId}");
-
-        //        try
-        //        {
-        //            var results = await DataManagement.GetPersonalHubDetails();
-        //            if (results == null)
-        //            {
-        //                Console.WriteLine("❌ Error: Could not retrieve hub details.");
-        //                return;
-        //            }
-        //            var (hubID, hubName, hubType) = results.Value;
-
-        //            var topFolderResult = await DataManagement.GetTopLevelFolder(hubID, _selectedProjectId);
-        //            if (topFolderResult.FolderId == null)
-        //            {
-        //                Console.WriteLine("❌ Error: Failed to retrieve the top-level folder.");
-        //                _folderId = null;
-        //                return;
-        //            }
-
-        //            _folderId = topFolderResult.FolderId;
-        //            Console.WriteLine($"📂 Top-Level Folder ID: {_folderId}");
-
-        //            await ListModelsForProject(_selectedProjectId, _folderId);
-        //            await RetrieveItemIdAsync();
-        //        }
-        //        catch (Exception ex)
-        //        {
-        //            Console.WriteLine($"❌ Exception occurred: {ex.Message}");
-        //        }
-        //    }
-        //}
-
-
-        //private async Task RetrieveItemIdAsync()
-        //{
-        //    if (string.IsNullOrEmpty(_selectedProjectId) || string.IsNullOrEmpty(_folderId))
-        //    {
-        //        Console.WriteLine("❌ Cannot retrieve items - project or folder is missing.");
-        //        return;
-        //    }
-
-        //    try
-        //    {
-        //        Console.WriteLine($"🔍 Fetching items for Folder: {_folderId}");
-        //        var items = await DataManagement.GetItemsInFolder(_selectedProjectId, _folderId);
-
-        //        if (items == null || !items.Any())
-        //        {
-        //            Console.WriteLine("❌ No items found in the selected folder.");
-        //            return;
-        //        }
-
-        //        Dispatcher.Invoke(() =>
-        //        {
-        //            ModelComboBox.Items.Clear();
-        //            foreach (var (itemId, itemName) in items)
-        //            {
-        //                var comboBoxItem = new ComboBoxItem
-        //                {
-        //                    Content = itemName,
-        //                    Tag = itemId
-        //                };
-        //                ModelComboBox.Items.Add(comboBoxItem);
-        //            }
-        //        });
-
-        //        Console.WriteLine($"✅ {items.Count} items added to dropdown.");
-
-        //        // 🔹 Step 1: Retrieve storage ID for the selected item
-        //        foreach (var (itemId, itemName) in items)
-        //        {
-        //            FileDownloadService fileDownloadService = new FileDownloadService();
-        //            string storageId = await fileDownloadService.GetStorageIdFromItem(_selectedProjectId, itemId);
-
-
-        //            if (string.IsNullOrEmpty(storageId))
-        //            {
-        //                Console.WriteLine($"❌ Error: Could not retrieve storage ID for {itemName}.");
-        //                continue;
-        //            }
-        //            Console.WriteLine($"📦 Storage ID for {itemName}: {storageId}");
-
-        //            // 🔹 Step 2: Retrieve versions for the selected item
-        //            var versions = await fileDownloadService.GetVersionsForItemAsync(_selectedProjectId, itemId);
-
-        //            if (versions == null || !versions.Any())
-        //            {
-        //                Console.WriteLine($"❌ No versions found for {itemName}.");
-        //                continue;
-        //            }
-
-        //            Console.WriteLine($"✅ {versions.Count} versions found for {itemName}.");
-        //            foreach (var (versionId, versionName, versionStorageId) in versions)
-        //            {
-        //                Console.WriteLine($"📄 Version: {versionName}, ID: {versionId}, Storage ID: {versionStorageId}");
-        //            }
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Console.WriteLine($"❌ Error retrieving items: {ex.Message}");
-        //    }
-        //}
-
+        private async void BtnDeleteModel_Click(object sender, RoutedEventArgs e)
+        {
+            string itemId = "urn:adsk.wipprod:dm.item:8IKCVBh3Qg-P8lQuCRewaQ";
+            string projectId = _selectedProjectId;
+            Console.WriteLine("Attempting to delete id: "+itemId+" from project: "+projectId);
+            DeleteModel _delMod = new(); 
+            bool isDeleted = await _delMod.DeleteModelAsync(projectId, itemId);
+            if (!isDeleted)
+            {
+                MessageBox.Show("Failed to delete");
+            }
+        }
 
         // 🔹 Fetch all versions of an Item
         private async Task<List<(string versionId, string versionName, string storageId)>> GetVersionsForItemAsync(string projectId, string itemId)
@@ -1049,7 +954,23 @@ namespace AssetManager.Desktop
 
         private void ModelsDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            if (ModelsDataGrid.SelectedItem is Dictionary<string, string> model)
+            {
+                _selectedModel = model; // Register the selected model
+        
+                // Extract model details from the dictionary
+                string modelId = model.ContainsKey("Id") ? model["Id"] : "Unknown";
+                string modelName = model.ContainsKey("Name") ? model["Name"] : "Unknown";
+                string projectId = model.ContainsKey("ProjectId") ? model["ProjectId"] : "Unknown";
+                string projectName = model.ContainsKey("Project") ? model["Project"] : "Unknown";
+                string lastModified = model.ContainsKey("LastModified") ? model["LastModified"] : "Unknown";
+                
 
+                _selectedItemId = modelId;
+                _selectedItemName = modelName;
+                _selectedProjectId = projectId;
+                Console.WriteLine($"Selected Model: {modelName} -{modelId}- from project {projectName} -{projectId}- (Last Modified: {lastModified})");
+            }
         }
 
         private void Border_Enter(object sender, System.Windows.Input.MouseEventArgs e)
