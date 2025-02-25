@@ -900,7 +900,7 @@ namespace AssetManager.Desktop
 
                             string modelName = attributes.GetProperty("displayName").GetString();
                             string lastModified = attributes.TryGetProperty("lastModifiedTime", out JsonElement modifiedTime) ? modifiedTime.GetString() : "Unknown";
-                            string projectName = await GetProjectNameById(projectId);
+                            string projectName = ""; // await GetProjectNameById(projectId);
 
                             models.Add(new Dictionary<string, string>
                             {
