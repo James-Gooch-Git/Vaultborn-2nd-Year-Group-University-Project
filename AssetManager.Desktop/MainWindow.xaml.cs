@@ -69,9 +69,9 @@ namespace AssetManager.Desktop
             UserPic_Image.Source = new BitmapImage(new Uri(await GetUserPic(_userId)));
 
             // 🔹 Initialize data
-            await TestDataManagement();
-            await LoadProjectsAsync();
+            LoadProjectsAsync();
             LoadAllModels();
+            await TestDataManagement();
             FusionManager.InitializePythonEngine();
 
             Username_TextBlock.Text = await GetUserName(_userId);
@@ -109,9 +109,15 @@ namespace AssetManager.Desktop
             isModelLoaded = true;
 
             ModelsContainer.Children.Clear();
-            List<Dictionary<string, string>> models = await GetAllModels();
 
-            foreach (var model in models)
+            if (Models.Count == 0)
+            {
+                List<Dictionary<string, string>> models = await GetAllModels();
+                Models = models;
+            }
+            //List<Dictionary<string, string>> models = await GetAllModels();
+
+            foreach (var model in Models)
             {
                 Border modelSquare = new Border
                 {
@@ -133,7 +139,7 @@ namespace AssetManager.Desktop
 
                 Grid grid = new Grid();
 
-                grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(160) });
+                grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(170) });
                 grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
 
@@ -348,7 +354,7 @@ namespace AssetManager.Desktop
 
 
 
-        private async Task LoadProjectsAsync()
+        private async void LoadProjectsAsync()
         {
             var results = await DataManagement.GetPersonalHubDetails();
 
@@ -1200,21 +1206,31 @@ namespace AssetManager.Desktop
             }
         }
 
-        private void Chevron_Click(object sender, System.Windows.Input.MouseEventArgs e)
+        private bool isDropdownOpen = false;
+
+        private void Chevron_Click(object sender, MouseButtonEventArgs e)
         {
-            var icon = sender as PackIcon;
+            e.Handled = true;
 
-            if (icon != null)
+            if (ChevronDownClick.ContextMenu != null)
             {
-                icon.Kind = PackIconKind.ChevronUp;
+                if (!isDropdownOpen)
+                {
+                    ChevronDownClick.ContextMenu.PlacementTarget = ChevronDownClick;
+                    ChevronDownClick.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+                    ChevronDownClick.ContextMenu.IsOpen = true;
+                    ChevronDownClick.Kind = PackIconKind.ChevronUp;
+                    isDropdownOpen = true;
+                }
+                else
+                {
+                    ChevronDownClick.ContextMenu.IsOpen = false;
+                    ChevronDownClick.Kind = PackIconKind.ChevronDown;
+                    isDropdownOpen = false;
+                }
             }
 
-            var contextMenu = icon.ContextMenu;
-
-            if (contextMenu != null)
-            {
-                contextMenu.IsOpen = true;
-            }
+            User_Grid.Cursor = Cursors.Hand;
         }
 
         private void ProjectTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)

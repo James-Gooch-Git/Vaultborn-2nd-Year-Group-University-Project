@@ -80,15 +80,26 @@
                         <Image x:Name="UserPic_Image" Width="20" Height="20"/>
                     </Border>
 
-                    <TextBlock Grid.Column="1" x:Name="Username_TextBlock" Cursor="Hand" FontSize="12" Foreground="#4B4b4b" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                    <Grid x:Name="User_Grid" Cursor="Hand" MouseLeftButtonDown="Chevron_Click" HorizontalAlignment="Center" VerticalAlignment="Center">
 
-                    <md:PackIcon Grid.Column="1" Name="ChevronDownClick" Kind="ChevronDown" MouseLeftButtonDown="Chevron_Click" Foreground="#4B4b4b" Cursor="Hand" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,10,0">
-                        <md:PackIcon.ContextMenu>
-                            <ContextMenu Name="LogoutContextMenu" Placement="Bottom" PlacementTarget="{Binding ElementName=ChevronDownClick}">
-                                <MenuItem Header="Logout" Click="BtnLogout_Click"/>
-                            </ContextMenu>
-                        </md:PackIcon.ContextMenu>
-                    </md:PackIcon>
+                        <StackPanel Orientation="Horizontal" MouseLeftButtonDown="Chevron_Click" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <TextBlock Grid.Column="1" MouseLeftButtonDown="Chevron_Click" x:Name="Username_TextBlock" FontSize="12" Foreground="#4B4b4b" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+
+                            <Border Background="Transparent" MouseLeftButtonDown="Chevron_Click" BorderBrush="Transparent" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,0,10,0">
+                                <md:PackIcon Grid.Column="1" Name="ChevronDownClick" Kind="ChevronDown" MouseLeftButtonDown="Chevron_Click" Foreground="#4B4b4b" VerticalAlignment="Center" HorizontalAlignment="Right">
+
+                                    <md:PackIcon.ContextMenu>
+                                        <ContextMenu Name="ChevronContextMenu" Placement="Bottom">
+                                            <MenuItem Header="Logout" Click="BtnLogout_Click" Cursor="Hand"/>
+                                            <Separator/>
+                                            <MenuItem Header="Hubs" Cursor="Hand"/>
+                                        </ContextMenu>
+                                    </md:PackIcon.ContextMenu>
+
+                                </md:PackIcon>
+                            </Border>
+                        </StackPanel>
+                    </Grid>
 
                 </StackPanel>
                
@@ -482,11 +493,12 @@
 
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
-                                            <Border HorizontalAlignment="Center">
-                                                <materialDesign:PackIcon Kind="DotsVertical" Width="20" Height="20" Foreground="#4B4B4B"/>
+                                            <Border Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" Cursor="Hand" Margin="0,5,2,0">
+                                                <md:PackIcon x:Name="Edit_Icon" Cursor="Hand" Kind="DotsVertical" Width="20" Height="20" Style="{StaticResource IconHover}" Foreground="#4B4B4B"/>
                                             </Border>
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
+                                    
                                 </DataGridTemplateColumn>
 
                             </DataGrid.Columns>
