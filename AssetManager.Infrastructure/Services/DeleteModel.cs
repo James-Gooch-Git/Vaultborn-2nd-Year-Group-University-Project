@@ -1,4 +1,5 @@
 using System.Net.Http.Headers;
+using System.Text;
 using AssetManager.Infrastructure.Data;
 using AssetManager.Infrastructure.Models;
 using MongoDB.Driver;
@@ -10,33 +11,76 @@ public class DeleteModel
     static readonly string baseApiUrl = "https://developer.api.autodesk.com";
     MongoConnection database = new MongoConnection();
     static string accessToken = TokenManager.GetToken();
-    
-    //usage
-    //DeleteModel _delMod = new ()
-    //bool isDeleted = await _delMod.DeleteModelAsync("your_project_id", "your_model_item_id");
 
     public async Task<bool> DeleteModelAsync(string projectId, string itemId)
     {
-        string deleteUrl = $"{baseApiUrl}/data/v1/projects/{projectId}/items/{itemId}";
+      if (string.IsNullOrEmpty(projectId) || string.IsNullOrEmpty(itemId) || string.IsNullOrEmpty(accessToken))
+    {
+        Console.WriteLine("❌ Invalid parameters. Project ID, Item ID, and Access Token are required.");
+        return false;
+    }
 
+    string url = $"https://developer.api.autodesk.com/data/v1/projects/{Uri.EscapeDataString(projectId)}/versions";
+    Console.WriteLine($"🔍 Requesting: {url}");  // Debug URL
+
+    string jsonPayload = $@"
+    {{
+        ""jsonapi"": {{ ""version"": ""1.0"" }},
+        ""data"": {{
+            ""type"": ""versions"",
+            ""attributes"": {{
+                ""extension"": {{
+                    ""type"": ""versions:autodesk.core:Deleted"",
+                    ""version"": ""1.0""
+                }}
+            }},
+            ""relationships"": {{
+                ""item"": {{
+                    ""data"": {{
+                        ""type"": ""items"",
+                        ""id"": ""{itemId}""
+                    }}
+                }}
+            }}
+        }}
+    }}";
+
+    try
+    {
         using (HttpClient client = new HttpClient())
         {
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-            
-            HttpResponseMessage response = await client.DeleteAsync(deleteUrl);
+            client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+            client.DefaultRequestHeaders.Add("Accept", "application/vnd.api+json");
+
+            HttpContent content = new StringContent(jsonPayload, Encoding.UTF8, "application/vnd.api+json");
+
+            HttpResponseMessage response = await client.PostAsync(url, content);
+            string responseBody = await response.Content.ReadAsStringAsync();
+
             if (response.IsSuccessStatusCode)
             {
-                Console.WriteLine($"✅ Model {itemId} deleted successfully.");
-                await DeleteModelFromDatabaseAsync(itemId);
+                Console.WriteLine("✅ Model deleted successfully.");
                 return true;
             }
             else
             {
-                Console.WriteLine($"❌ Failed to delete model: {await response.Content.ReadAsStringAsync()}");
+                Console.WriteLine($"❌ Failed to delete model: {responseBody}");
                 return false;
             }
         }
     }
+    catch (HttpRequestException httpEx)
+    {
+        Console.WriteLine($"❌ HTTP Request Error: {httpEx.Message}");
+        return false;
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"❌ Exception occurred: {ex.Message}");
+        return false;
+    }
+    }
+    
     
      public async Task<bool> DeleteModelFromDatabaseAsync(string itemId)
      {

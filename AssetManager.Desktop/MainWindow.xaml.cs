@@ -16,6 +16,7 @@ using System.Windows.Media.Imaging;
 using System.Net;
 using System.Windows.Input;
 using System.Windows.Media.Effects;
+using System.Windows.Input;
 
 
 namespace AssetManager.Desktop
@@ -23,7 +24,9 @@ namespace AssetManager.Desktop
     public partial class MainWindow : Window
     {
         private string _accessToken;
+        private Dictionary<string, string> _selectedModel;
         private string _selectedProjectId;
+        private string _selectedProjectName;
         private string _selectedItemId;
         private string _selectedItemName;
         private string _folderId;
@@ -70,6 +73,9 @@ namespace AssetManager.Desktop
             await LoadProjectsAsync();
             LoadAllModels();
             FusionManager.InitializePythonEngine();
+
+            Username_TextBlock.Text = await GetUserName(_userId);
+            UserPic_Image.Source = new BitmapImage(new Uri(await GetUserPic(_userId)));
         }
 
         private async Task<string> GetUserName(string userId)
@@ -240,7 +246,7 @@ namespace AssetManager.Desktop
         //    }
         //}
 
-
+        
         private async Task TestDataManagement()
         {
             var result = await DataManagement.GetPersonalHubDetails();
@@ -628,7 +634,9 @@ namespace AssetManager.Desktop
                                     
                                     allModels.Add(new Dictionary<string, string>
                                     {
+                                        { "Id", modelId },
                                         { "Name", modelName },
+                                        { "ProjectId", projectId },
                                         { "Project", projectName },
                                         { "LastModified", lastModified }
                                     });
@@ -727,51 +735,114 @@ namespace AssetManager.Desktop
         //}
 
 
-        // private async void BtnViewInFusion_Click(object sender, RoutedEventArgs e)
-        // {
-        //     if (ModelComboBox.SelectedItem == null)
-        //     {
-        //         MessageBox.Show("❌ Please select a model before viewing in Fusion 360.", "Error", MessageBoxButton.OK,
-        //             MessageBoxImage.Error);
-        //         return;
-        //     }
-        //
-        //     string modelFilePath = FindExistingModelFile(_selectedItemName);
-        //
-        //     if (modelFilePath == null)
-        //     {
-        //         Console.WriteLine("Downloading model");
-        //         // No matching file found, so download it
-        //         var fileDownloadService = new FileDownloadService2();
-        //         fileDownloadService.DownloadModelAsync(_selectedProjectId, _selectedItemId);
-        //
-        //     }
-        //
-        //     try
-        //     {
-        //         // Download the model first
-        //         var fileDownloadService = new FileDownloadService2();
-        //         await fileDownloadService.DownloadModelAsync(_selectedProjectId, _selectedItemId);
-        //
-        //         string saveDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-        //             "DownloadedModels", _selectedItemName);
-        //         Console.WriteLine("Model dir: " + saveDirectory);
-        //
-        //         if (!Directory.Exists(saveDirectory))
-        //         {
-        //             LaunchFusionWithModel(saveDirectory);
-        //         }
-        //     }
-        //     catch(Exception ex)
-        //     {
-        //         MessageBox.Show($"❌ Error launching Fusion script: {ex.Message}\n{ex.StackTrace}",
-        //             "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-        //     }
-        // }
+        private async void BtnViewInFusion_Click(object sender, RoutedEventArgs e)
+        {
+            if (_selectedItemId == null)
+            {
+                MessageBox.Show("❌ Please select a model before viewing in Fusion 360.", "Error", MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                return;
+            }
+        
+            string modelFilePath = FindExistingModelFile(_selectedItemName);
+        
+            if (modelFilePath == null)
+            {
+                Console.WriteLine("Downloading model");
+                // No matching file found, so download it
+                var fileDownloadService = new FileDownloadService2();
+                fileDownloadService.DownloadModelAsync(_selectedProjectId, _selectedItemId);
+        
+            }
+        
+            try
+            {
+                // Download the model first
+                var fileDownloadService = new FileDownloadService2();
+                await fileDownloadService.DownloadModelAsync(_selectedProjectId, _selectedItemId);
+        
+                string saveDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+                    "DownloadedModels", _selectedItemName);
+                Console.WriteLine("Model dir: " + saveDirectory);
+        
+                if (!Directory.Exists(saveDirectory))
+                {
+                    LaunchFusionWithModel(saveDirectory);
+                }
+            }
+            catch(Exception ex)
+            {
+                MessageBox.Show($"❌ Error launching Fusion script: {ex.Message}\n{ex.StackTrace}",
+                    "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+        
+                private void LaunchFusionWithModel(string modelPath)
+        {
+            string fusion360Uri = "fusion360://command=openCloudModel&itemId=urn:adsk.wipprod:dm.lineage:pwGqGrbgRx6IUlR4Wtskdg";
+            
+            string tempFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "fusion_model_path.txt");
+            File.WriteAllText(tempFilePath, modelPath);
+            
+            string fusionPath = GetFusion360ExecutablePath();
+            // string fusionApiPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Autodesk\\webdeploy\\production\\ec15d50cfe0119bd0166ce9a1aa68bd8f670e085\\Api");
+            // string pythonScriptPath = Path.Combine(fusionApiPath, "FusionAddIn.py");
 
-   
+            if (string.IsNullOrEmpty(fusionPath) || !File.Exists(fusionPath))
+            {
+                MessageBox.Show("⚠️ Fusion 360 is not installed or could not be found.", "Fusion 360 Not Found", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            
+            FileDownloadService2 fileDownloadService = new FileDownloadService2();
 
+            try
+            {
+                fileDownloadService.DownloadModelAndSaveMetadata(_selectedProjectId, _selectedItemId, _selectedItemName, _folderId);
+                // Start Fusion 360 and open the model  
+                Process.Start(fusionPath, $"--exec \"{modelPath}\"");
+                Console.WriteLine($"✅ Launched Fusion 360 with: {modelPath}");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"❌ Failed to launch Fusion 360: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+        
+        private string GetFusion360ExecutablePath()
+        {
+            string fusionBasePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Autodesk", "webdeploy", "production");
+            Console.WriteLine("fusion location: " + fusionBasePath);
+            
+            if (Directory.Exists(fusionBasePath))
+            {
+                var fusionExecutables = Directory.GetFiles(fusionBasePath, "Fusion360.exe", SearchOption.AllDirectories);
+                if (fusionExecutables.Length > 0)
+                {
+                    return fusionExecutables[0]; // Return the first valid Fusion 360 path found
+                }
+            }
 
+            return null; // Fusion 360 not found
+        }
+
+        private string FindExistingModelFile(string modelName)
+        {
+            string ModelStoragePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "DownloadedModels");
+                
+            var files = Directory.GetFiles(ModelStoragePath);
+
+            foreach (var file in files)
+            {
+                if (Path.GetFileNameWithoutExtension(file).Equals(modelName, StringComparison.OrdinalIgnoreCase))
+                {
+                    Console.WriteLine("Model found in downloads");
+                    return file; // Return the first matching file found
+                }
+            }
+
+            return null; // No matching file found
+        }
 
         private async void BtnUploadFile_Click(object sender, RoutedEventArgs e)
         {
@@ -802,117 +873,18 @@ namespace AssetManager.Desktop
             MessageBox.Show("✅ Upload Successful!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
-
-        //private async void ProjectComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        //{
-        //    if (ProjectComboBox.SelectedItem is ComboBoxItem selectedItem)
-        //    {
-        //        _selectedProjectId = selectedItem.Tag as string;
-        //        Console.WriteLine($"📌 Selected Project ID: {_selectedProjectId}");
-
-        //        try
-        //        {
-        //            var results = await DataManagement.GetPersonalHubDetails();
-        //            if (results == null)
-        //            {
-        //                Console.WriteLine("❌ Error: Could not retrieve hub details.");
-        //                return;
-        //            }
-        //            var (hubID, hubName, hubType) = results.Value;
-
-        //            var topFolderResult = await DataManagement.GetTopLevelFolder(hubID, _selectedProjectId);
-        //            if (topFolderResult.FolderId == null)
-        //            {
-        //                Console.WriteLine("❌ Error: Failed to retrieve the top-level folder.");
-        //                _folderId = null;
-        //                return;
-        //            }
-
-        //            _folderId = topFolderResult.FolderId;
-        //            Console.WriteLine($"📂 Top-Level Folder ID: {_folderId}");
-
-        //            await ListModelsForProject(_selectedProjectId, _folderId);
-        //            await RetrieveItemIdAsync();
-        //        }
-        //        catch (Exception ex)
-        //        {
-        //            Console.WriteLine($"❌ Exception occurred: {ex.Message}");
-        //        }
-        //    }
-        //}
-
-
-        //private async Task RetrieveItemIdAsync()
-        //{
-        //    if (string.IsNullOrEmpty(_selectedProjectId) || string.IsNullOrEmpty(_folderId))
-        //    {
-        //        Console.WriteLine("❌ Cannot retrieve items - project or folder is missing.");
-        //        return;
-        //    }
-
-        //    try
-        //    {
-        //        Console.WriteLine($"🔍 Fetching items for Folder: {_folderId}");
-        //        var items = await DataManagement.GetItemsInFolder(_selectedProjectId, _folderId);
-
-        //        if (items == null || !items.Any())
-        //        {
-        //            Console.WriteLine("❌ No items found in the selected folder.");
-        //            return;
-        //        }
-
-        //        Dispatcher.Invoke(() =>
-        //        {
-        //            ModelComboBox.Items.Clear();
-        //            foreach (var (itemId, itemName) in items)
-        //            {
-        //                var comboBoxItem = new ComboBoxItem
-        //                {
-        //                    Content = itemName,
-        //                    Tag = itemId
-        //                };
-        //                ModelComboBox.Items.Add(comboBoxItem);
-        //            }
-        //        });
-
-        //        Console.WriteLine($"✅ {items.Count} items added to dropdown.");
-
-        //        // 🔹 Step 1: Retrieve storage ID for the selected item
-        //        foreach (var (itemId, itemName) in items)
-        //        {
-        //            FileDownloadService fileDownloadService = new FileDownloadService();
-        //            string storageId = await fileDownloadService.GetStorageIdFromItem(_selectedProjectId, itemId);
-
-
-        //            if (string.IsNullOrEmpty(storageId))
-        //            {
-        //                Console.WriteLine($"❌ Error: Could not retrieve storage ID for {itemName}.");
-        //                continue;
-        //            }
-        //            Console.WriteLine($"📦 Storage ID for {itemName}: {storageId}");
-
-        //            // 🔹 Step 2: Retrieve versions for the selected item
-        //            var versions = await fileDownloadService.GetVersionsForItemAsync(_selectedProjectId, itemId);
-
-        //            if (versions == null || !versions.Any())
-        //            {
-        //                Console.WriteLine($"❌ No versions found for {itemName}.");
-        //                continue;
-        //            }
-
-        //            Console.WriteLine($"✅ {versions.Count} versions found for {itemName}.");
-        //            foreach (var (versionId, versionName, versionStorageId) in versions)
-        //            {
-        //                Console.WriteLine($"📄 Version: {versionName}, ID: {versionId}, Storage ID: {versionStorageId}");
-        //            }
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Console.WriteLine($"❌ Error retrieving items: {ex.Message}");
-        //    }
-        //}
-
+        private async void BtnDeleteModel_Click(object sender, RoutedEventArgs e)
+        {
+            string itemId = "urn:adsk.wipprod:dm.item:8IKCVBh3Qg-P8lQuCRewaQ";
+            string projectId = _selectedProjectId;
+            Console.WriteLine("Attempting to delete id: "+itemId+" from project: "+projectId);
+            DeleteModel _delMod = new(); 
+            bool isDeleted = await _delMod.DeleteModelAsync(projectId, itemId);
+            if (!isDeleted)
+            {
+                MessageBox.Show("Failed to delete");
+            }
+        }
 
         // 🔹 Fetch all versions of an Item
         private async Task<List<(string versionId, string versionName, string storageId)>> GetVersionsForItemAsync(string projectId, string itemId)
@@ -1037,11 +1009,25 @@ namespace AssetManager.Desktop
             }
 
             string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/folders/{folderId}/contents";
+            string hubsUrl = "https://developer.api.autodesk.com/project/v1/hubs";
 
             try
             {
                 using (HttpClient client = new HttpClient())
                 {
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+                    HttpResponseMessage hubsResponse = await client.GetAsync(hubsUrl);
+
+                    if (!hubsResponse.IsSuccessStatusCode)
+                    {
+                        Console.WriteLine($"❌ Error fetching hubs: {hubsResponse.StatusCode} - {hubsResponse.ReasonPhrase}");
+                        return null;
+                    }
+
+                    string hubsJson = await hubsResponse.Content.ReadAsStringAsync();
+                    using JsonDocument hubsDoc = JsonDocument.Parse(hubsJson);
+                    JsonElement hubsRoot = hubsDoc.RootElement;
+                    
                     client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
                     HttpResponseMessage response = await client.GetAsync(url);
 
@@ -1065,11 +1051,13 @@ namespace AssetManager.Desktop
 
                             string modelName = attributes.GetProperty("displayName").GetString();
                             string lastModified = attributes.TryGetProperty("lastModifiedTime", out JsonElement modifiedTime) ? modifiedTime.GetString() : "Unknown";
-
+                            string projectName = _selectedProjectName;
+                            
                             models.Add(new Dictionary<string, string>
                             {
                                 { "Name", modelName },
                                 { "ProjectId", projectId },
+                                { "Project", projectName },
                                 { "LastModified", lastModified }
                             });
                         }
@@ -1151,16 +1139,6 @@ namespace AssetManager.Desktop
         //    }
         //}
 
-
-        //private void ModelComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        //{
-        //    if (ModelComboBox.SelectedItem is ComboBoxItem selectedItem)
-        //    {
-        //        _selectedItemId = selectedItem.Tag as string;
-        //        Console.WriteLine($"📌 Selected Item ID: {_selectedItemId}");
-        //    }
-        //}
-
         private string GetFilePathFromDialog()
         {
             OpenFileDialog openFileDialog = new OpenFileDialog
@@ -1180,7 +1158,23 @@ namespace AssetManager.Desktop
 
         private void ModelsDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            if (ModelsDataGrid.SelectedItem is Dictionary<string, string> model)
+            {
+                _selectedModel = model; // Register the selected model
+        
+                // Extract model details from the dictionary
+                string modelId = model.ContainsKey("Id") ? model["Id"] : "Unknown";
+                string modelName = model.ContainsKey("Name") ? model["Name"] : "Unknown";
+                string projectId = model.ContainsKey("ProjectId") ? model["ProjectId"] : "Unknown";
+                string projectName = model.ContainsKey("Project") ? model["Project"] : "Unknown";
+                string lastModified = model.ContainsKey("LastModified") ? model["LastModified"] : "Unknown";
+                
 
+                _selectedItemId = modelId;
+                _selectedItemName = modelName;
+                _selectedProjectId = projectId;
+                Console.WriteLine($"Selected Model: {modelName} -{modelId}- from project {projectName} -{projectId}- (Last Modified: {lastModified})");
+            }
         }
 
         private void Border_Enter(object sender, System.Windows.Input.MouseEventArgs e)
@@ -1222,6 +1216,64 @@ namespace AssetManager.Desktop
             }
         }
 
+        private void ProjectTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+        {
+            if (e.NewValue is TreeViewItem selectedItem && selectedItem.Tag is ValueTuple<string, string, bool> projectData)
+            {
+                _selectedProjectId = projectData.Item1;
+                _selectedProjectName = selectedItem.Header.ToString();
+                _folderId = projectData.Item2;
+
+                LoadModelsForSelectedProject();
+
+                Console.WriteLine($"📌 Clicked Project: {selectedItem.Header}, Project ID: {_selectedProjectId}, Folder ID: {_folderId}");
+        
+            }
+        }
+        
+        private void ProjectTreeView_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (ProjectTreeView.SelectedItem is TreeViewItem selectedItem)
+            {
+                string projectName = selectedItem.Header.ToString();
+                Console.WriteLine($"Project double-clicked: {projectName}");
+            }
+        }
+        
+        private async void LoadModelsForSelectedProject()
+        {
+            if (string.IsNullOrEmpty(_selectedProjectId) || string.IsNullOrEmpty(_folderId))
+            {
+                Console.WriteLine("❌ No project selected, cannot load models.");
+                ModelsDataGrid.ItemsSource = null;
+                return;
+            }
+
+            Console.WriteLine($"🔄 Fetching models for Project: {_selectedProjectId}, Folder: {_folderId}");
+
+            var models = await GetModelsFromProject(_selectedProjectId, _folderId);
+
+            if (models == null || !models.Any())
+            {
+                Console.WriteLine("❌ No models found for this project.");
+                ModelsDataGrid.ItemsSource = null;
+                return;
+            }
+
+            // Update DataGrid with models
+            ModelsDataGrid.ItemsSource = models;
+        }
+
+        private void ProjectTreeView_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.OriginalSource is not TreeViewItem)
+            {
+                Console.WriteLine("No project selected, showing all models.");
+                _selectedProjectId = null;
+                _folderId = null;
+                LoadAllModels();
+            }
+        }
         private async void List_Click(object sender, MouseButtonEventArgs e)
         {
             ModelsDataGrid.Visibility = Visibility.Visible; // Show DataGrid
