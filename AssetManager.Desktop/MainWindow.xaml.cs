@@ -626,6 +626,7 @@ namespace AssetManager.Desktop
                                 {
                                     var attributes = item.GetProperty("attributes");
 
+                                    string modelId = item.GetProperty("id").GetString();
                                     string modelName = attributes.GetProperty("displayName").GetString();
                                     string lastModified = attributes.TryGetProperty("lastModifiedTime", out JsonElement modifiedTime) ? modifiedTime.GetString() : "Unknown";
                                     string lastModifiedDate = lastModified.Split('T')[0];
