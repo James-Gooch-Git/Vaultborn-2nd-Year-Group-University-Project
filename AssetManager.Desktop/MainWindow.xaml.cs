@@ -24,6 +24,7 @@ namespace AssetManager.Desktop
         private string _accessToken;
         private Dictionary<string, string> _selectedModel;
         private string _selectedProjectId;
+        private string _selectedProjectName;
         private string _selectedItemId;
         private string _selectedItemName;
         private string _folderId;
@@ -668,8 +669,6 @@ namespace AssetManager.Desktop
             {
                 MessageBox.Show($"❌ Failed to launch Fusion 360: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
-            
-
         }
         
         private string GetFusion360ExecutablePath()
@@ -810,57 +809,6 @@ namespace AssetManager.Desktop
                 return null;
             }
         }
-        // 🔹 Fetch Storage ID from an Item
-
-        //James Function
-        //private async Task<List<string>> GetModelsFromProject(string projectId, string folderId)
-        //{
-        //    string accessToken = TokenManager.GetToken();
-        //    if (string.IsNullOrEmpty(accessToken))
-        //    {
-        //        Console.WriteLine("❌ No valid access token.");
-        //        return null;
-        //    }
-
-        //    string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/folders/{folderId}/contents";
-
-        //    try
-        //    {
-        //        using (HttpClient client = new HttpClient())
-        //        {
-        //            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-        //            HttpResponseMessage response = await client.GetAsync(url);
-
-        //            if (!response.IsSuccessStatusCode)
-        //            {
-        //                Console.WriteLine($"❌ Error: {response.StatusCode} - {response.ReasonPhrase}");
-        //                return null;
-        //            }
-
-        //            string jsonResponse = await response.Content.ReadAsStringAsync();
-        //            using JsonDocument doc = JsonDocument.Parse(jsonResponse);
-        //            JsonElement root = doc.RootElement;
-
-        //            List<string> modelNames = new List<string>();
-
-        //            foreach (JsonElement item in root.GetProperty("data").EnumerateArray())
-        //            {
-        //                if (item.GetProperty("type").GetString() == "items")
-        //                {
-        //                    string modelName = item.GetProperty("attributes").GetProperty("displayName").GetString();
-        //                    modelNames.Add(modelName);
-        //                }
-        //            }
-
-        //            return modelNames;
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Console.WriteLine($"❌ Exception occurred: {ex.Message}");
-        //        return null;
-        //    }
-        //}
 
         private async Task<List<Dictionary<string, string>>> GetModelsFromProject(string projectId, string folderId)
         {
@@ -872,11 +820,25 @@ namespace AssetManager.Desktop
             }
 
             string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/folders/{folderId}/contents";
+            string hubsUrl = "https://developer.api.autodesk.com/project/v1/hubs";
 
             try
             {
                 using (HttpClient client = new HttpClient())
                 {
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+                    HttpResponseMessage hubsResponse = await client.GetAsync(hubsUrl);
+
+                    if (!hubsResponse.IsSuccessStatusCode)
+                    {
+                        Console.WriteLine($"❌ Error fetching hubs: {hubsResponse.StatusCode} - {hubsResponse.ReasonPhrase}");
+                        return null;
+                    }
+
+                    string hubsJson = await hubsResponse.Content.ReadAsStringAsync();
+                    using JsonDocument hubsDoc = JsonDocument.Parse(hubsJson);
+                    JsonElement hubsRoot = hubsDoc.RootElement;
+                    
                     client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
                     HttpResponseMessage response = await client.GetAsync(url);
 
@@ -900,8 +862,8 @@ namespace AssetManager.Desktop
 
                             string modelName = attributes.GetProperty("displayName").GetString();
                             string lastModified = attributes.TryGetProperty("lastModifiedTime", out JsonElement modifiedTime) ? modifiedTime.GetString() : "Unknown";
-                            string projectName = ""; // await GetProjectNameById(projectId);
-
+                            string projectName = _selectedProjectName;
+                            
                             models.Add(new Dictionary<string, string>
                             {
                                 { "Name", modelName },
@@ -1070,14 +1032,13 @@ namespace AssetManager.Desktop
             if (e.NewValue is TreeViewItem selectedItem && selectedItem.Tag is ValueTuple<string, string, bool> projectData)
             {
                 _selectedProjectId = projectData.Item1;
+                _selectedProjectName = selectedItem.Header.ToString();
                 _folderId = projectData.Item2;
-                bool isProject = projectData.Item3;
 
                 LoadModelsForSelectedProject();
 
                 Console.WriteLine($"📌 Clicked Project: {selectedItem.Header}, Project ID: {_selectedProjectId}, Folder ID: {_folderId}");
         
-                // You can now use projectId for further processing
             }
         }
         
