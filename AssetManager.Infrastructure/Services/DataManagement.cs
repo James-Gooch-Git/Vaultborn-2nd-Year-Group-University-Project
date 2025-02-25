@@ -48,8 +48,7 @@ namespace AssetManager.Infrastructure.Services
 
                 foreach (JsonElement hub in root.GetProperty("data").EnumerateArray())
                 {
-                    string type = hub.GetProperty("attributes").GetProperty("extension").GetProperty("type")
-                        .GetString();
+                    string type = hub.GetProperty("attributes").GetProperty("extension").GetProperty("type").GetString();
                     string hubID = hub.GetProperty("id").GetString();
                     string hubName = hub.GetProperty("attributes").GetProperty("name").GetString();
 

@@ -409,7 +409,7 @@
                                     </DataGridTextColumn.CellStyle>
                                 </DataGridTextColumn>
 
-                                <DataGridTemplateColumn Header="Edit" Width="70">
+                                <DataGridTemplateColumn Width="70">
                                     <DataGridTemplateColumn.HeaderStyle>
                                         <Style TargetType="DataGridColumnHeader">
                                             <Setter Property="HorizontalContentAlignment" Value="Center"/>

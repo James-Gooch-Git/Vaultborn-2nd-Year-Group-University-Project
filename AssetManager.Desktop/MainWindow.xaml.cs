@@ -110,7 +110,7 @@ namespace AssetManager.Desktop
                 Border modelSquare = new Border
                 {
                     Width = 263,
-                    Height = 273,
+                    Height = 253,
                     CornerRadius = new CornerRadius(5),
                     Background = Brushes.White,
                     BorderBrush = Brushes.LightGray,
