@@ -99,10 +99,10 @@ namespace AssetManager.Desktop
         private bool isModelLoaded = false;
         private async void DisplayGridModels()
         {
-            if (isModelLoaded) return; // Prevent duplicate calls
+            if (isModelLoaded) return;
             isModelLoaded = true;
 
-            ModelsContainer.Children.Clear(); // Clear existing squares
+            ModelsContainer.Children.Clear();
             List<Dictionary<string, string>> models = await GetAllModels();
 
             foreach (var model in models)
@@ -125,11 +125,34 @@ namespace AssetManager.Desktop
                     }
                 };
 
+                Grid grid = new Grid();
+
+                grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(160) });
+                grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+
+                Border headerBackground = new Border
+                {
+                    Background = new SolidColorBrush(Color.FromRgb(230, 230, 230)),
+                    HorizontalAlignment = HorizontalAlignment.Stretch,
+                    Margin = new Thickness(5)
+                };
+
+                Grid.SetRow(headerBackground, 0);
+                grid.Children.Add(headerBackground);
+
+                Grid overlayGrid = new Grid
+                {
+                    HorizontalAlignment = HorizontalAlignment.Stretch,
+                    VerticalAlignment = VerticalAlignment.Stretch
+                };
+
                 StackPanel content = new StackPanel
                 {
                     Orientation = Orientation.Vertical,
                     VerticalAlignment = VerticalAlignment.Center,
-                    HorizontalAlignment = HorizontalAlignment.Left
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    Margin = new Thickness(8, 5, 5, 2)
                 };
 
                 TextBlock modelName = new TextBlock
@@ -137,30 +160,69 @@ namespace AssetManager.Desktop
                     Text = model["Name"],
                     FontSize = 16,
                     FontWeight = FontWeights.Normal,
+                    Foreground = (Brush) new BrushConverter().ConvertFrom("#4B4B4B"),
                     TextAlignment = TextAlignment.Center,
                     HorizontalAlignment = HorizontalAlignment.Left,
-                    TextWrapping = TextWrapping.Wrap,
-                    Margin = new Thickness(5, 2, 5, 2)
+                    TextWrapping = TextWrapping.Wrap
                 };
 
                 TextBlock projectName = new TextBlock
                 {
-                    Text = $"Project: {model["Project"]}",
+                    Text = model["Project"],
                     FontSize = 14,
                     FontWeight = FontWeights.Normal,
                     Foreground = Brushes.Gray,
                     TextAlignment = TextAlignment.Left,
                     HorizontalAlignment = HorizontalAlignment.Left,
-                    TextWrapping = TextWrapping.Wrap,
-                    Margin = new Thickness(5, 2, 5, 2)
+                    TextWrapping = TextWrapping.Wrap
                 };
 
                 content.Children.Add(modelName);
                 content.Children.Add(projectName);
-                modelSquare.Child = content;
+
+                Grid.SetRow(content, 1);
+                grid.Children.Add(content);
+
+                Border iconBorder = new Border
+                {
+                    Background = Brushes.Transparent,
+                    BorderBrush = Brushes.Transparent,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    Cursor = Cursors.Hand,
+                    Margin = new Thickness(0, 6.5, 2, 0)
+                };
+
+                PackIcon icon = new PackIcon
+                {
+                    Kind = PackIconKind.DotsVertical,
+                    Width = 20,
+                    Height = 20,
+                    Foreground = Brushes.Gray,
+                    Cursor = Cursors.Hand
+                };
+
+                iconBorder.Child = icon;
+
+                Border iconContainer = new Border
+                {
+                    Child = iconBorder,
+                    HorizontalAlignment = HorizontalAlignment.Right,
+                    VerticalAlignment = VerticalAlignment.Bottom,
+                    Margin = new Thickness(5)
+                };
+
+                overlayGrid.Children.Add(iconContainer);
+
+                Grid parentGrid = new Grid();
+                parentGrid.Children.Add(grid);
+                parentGrid.Children.Add(overlayGrid);
+
+                modelSquare.Child = parentGrid;
                 ModelsContainer.Children.Add(modelSquare);
             }
         }
+
 
 
         //private void DragDeltaThumb(object sender, DragDeltaEventArgs e)
