@@ -2,35 +2,20 @@ namespace AssetManager.Infrastructure.Services;
 
 public static class TokenManager
 {
-    private static string _accessToken;
-    private static string _clientId;
+    private static string access_token;
     private static string _refreshToken;
-    
+    private static string _2accessToken;
+    private static string ClientId;
 
-    public static void SetToken(string token)
-    {
-        //Console.WriteLine($"🔹 Debug: Storing access token: {token}");
-        _accessToken = token;
-    }
+    public static void SetToken(string token) => access_token = token;
+    public static string GetToken() => access_token;
 
-    public static string GetToken()
-    {
-        //Console.WriteLine($"🔹 Debug: Retrieving access token: {_accessToken}");
-        return _accessToken;
-    }
-    
     public static void SetRefreshToken(string token) => _refreshToken = token;
     public static string GetRefreshToken() => _refreshToken;
 
-    public static void SetClientId(string clientId)
-    {
-        //Console.WriteLine($"🔹 Debug: Storing client ID: {clientId}");
-        _clientId = clientId;
-    }
+    public static void SetTwoLeggedToken(string token) => _2accessToken = token;
+    public static string GetTwoLeggedToken() => _2accessToken;
 
-    public static string GetClientId()
-    {
-        //Console.WriteLine($"🔹 Debug: Retrieving client ID: {_clientId}");
-        return _clientId;
-    }
+    public static void SetClientId(string clientId) => ClientId = clientId;
+    public static string GetClientId() => ClientId;
 }

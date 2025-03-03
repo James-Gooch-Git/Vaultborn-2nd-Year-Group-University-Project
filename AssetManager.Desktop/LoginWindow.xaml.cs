@@ -1,223 +1,560 @@
+using System;
 using System.Diagnostics;
+//using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Web;
-using System.Windows;
-using Newtonsoft.Json;
 using System.Security.Cryptography;
 using System.Text;
-using AssetManager.Infrastructure.Services;
+using System.Threading.Tasks;
+using System.Web;
+using System.Windows;
 using Microsoft.Web.WebView2.Core;
-using Microsoft.Web.WebView2.Core.Raw;
+using Newtonsoft.Json;
+using AssetManager.Infrastructure.Services;
 using Autodesk.Authentication;
 using Autodesk.Authentication.Model;
-using AssetManager.Infrastructure.Data;
-using AssetManager.Infrastructure.Models;
-using AssetManager.Infrastructure.Services;
-using Microsoft.WindowsAPICodePack.Shell.PropertySystem;
 using MongoDB.Driver;
+using System.Text.Json;
+using Newtonsoft.Json.Linq;
 
-
-namespace AssetManager.Desktop;
-
-public partial class LoginWindow : Window
+namespace AssetManager.Desktop
 {
-    //private string loginURL = "https://developer.api.autodesk.com/authentication/v2/authorize";
-    private string tokenURL = "https://developer.api.autodesk.com/authentication/v2/token";
-    string clientID = "ONI3GGJaqwHUKpXUmOJeYUfUMu5UUfNX11oqHSxuuLFr0ELv";
-    private string redirect = "https://localhost/auth/callback";
-    string grantType = "authorization_code";
-    public string _codeVerifier;
-    private readonly TokenService _tokenService = new TokenService();
-    private readonly string userSession;
-    private readonly string aToken;
-
-    public LoginWindow()
+    public partial class LoginWindow : Window
     {
-        InitializeComponent();
-        userSession = Environment.GetEnvironmentVariable("userId", EnvironmentVariableTarget.User);
+        private const string ClientID = "eK6vNFNyFAin4PouWXfN00RfePKGZwSqeh6RTcjKAvHAqyOW";
+        private const string TokenUrl = "https://developer.api.autodesk.com/authentication/v2/token";
+        private const string RedirectUri = "http://localhost:8080/callback";
+        private string loginURL = $"https://developer.api.autodesk.com/authentication/v2/authorize";
+        private string _codeVerifier;
+        private readonly TokenService _tokenService = new TokenService();
+        private readonly HttpClient _httpClient = new HttpClient();
 
-        //MessageBox.Show($"Your accessToken is: {aToken}");
-        if (!string.IsNullOrEmpty(userSession))
+        private readonly string userSession;
+        private readonly string aToken;
+
+        private bool _isLogout;
+
+        public LoginWindow()
         {
-            aToken = Environment.GetEnvironmentVariable("accessToken", EnvironmentVariableTarget.User);
-            Infrastructure.Services.TokenManager.SetToken(aToken);
-            MainWindow mainWindow = new MainWindow(userSession);
-            mainWindow.Show();
-            this.Close();
+            InitializeComponent();
+            userSession = Environment.GetEnvironmentVariable("userId", EnvironmentVariableTarget.User);
+
+            //MessageBox.Show($"Your accessToken is: {aToken}");
+            if (!string.IsNullOrEmpty(userSession))
+            {
+                aToken = Environment.GetEnvironmentVariable("accessToken", EnvironmentVariableTarget.User);
+                Infrastructure.Services.TokenManager.SetToken(aToken);
+                MainWindow mainWindow = new MainWindow(userSession);
+                mainWindow.Show();
+                this.Close();
+            }
+
+            InitializeWebView();
         }
 
-        InitializeWebView();
-    }
+        public LoginWindow(bool isLogout) // Constructor accepting a boolean
+        {
+            InitializeComponent();
+            _isLogout = isLogout;
 
-    public LoginWindow(bool logOut)
-    {
-        InitializeComponent();
-        if (logOut)
+            if (_isLogout)
+            {
+                HandleLogout();
+            }
+        }
+
+        private void HandleLogout()
+        {
+            Console.WriteLine("👤 Logging out...");
+
+            // Clear user session and stored tokens
+            Environment.SetEnvironmentVariable("userId", "", EnvironmentVariableTarget.User);
+            Environment.SetEnvironmentVariable("accessToken", "", EnvironmentVariableTarget.User);
+            Environment.SetEnvironmentVariable("twoLeggedToken", "", EnvironmentVariableTarget.User);
+
+            MessageBox.Show("✅ Successfully logged out.", "Logout", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private async void InitializeWebView()
+        {
+            try
+            {
+                await webView.EnsureCoreWebView2Async(null);
+
+                string nonce = GenerateNonce();
+                Pkce pkce = GeneratePkce();
+                _codeVerifier = pkce.CodeVerifier;
+                string loginURL = $"https://developer.api.autodesk.com/authentication/v2/authorize"
+                                  + $"?response_type=code"
+                                  + $"&client_id={ClientID}"
+                                  + $"&redirect_uri={RedirectUri}"
+                                  + $"&scope=data:read%20data:write%20data:create%20bucket:read%20bucket:create%20bucket:update%20account:write%20viewables:read"
+                                  + $"&nonce={nonce}"
+                                  + $"&prompt=login"
+                                  + $"&code_challenge={pkce.CodeChallenge}"
+                                  + $"&code_challenge_method=S256";
+
+                if (webView.CoreWebView2 == null)
+                {
+                    Console.WriteLine("❌ WebView is not initialized. Initializing...");
+                    await webView.EnsureCoreWebView2Async(); // ✅ Ensure initialization
+                }
+                webView.CoreWebView2.NavigationStarting -= Redirected;
+                webView.CoreWebView2.NavigationStarting += Redirected;
+
+                webView.CoreWebView2.Navigate(loginURL);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+        }
+
+
+        /// <summary>
+        /// Checks if the user has a valid session.
+        /// </summary>
+        private void ValidateUserSession()
+        {
+            string userSession = Environment.GetEnvironmentVariable("userId", EnvironmentVariableTarget.User);
+
+            if (!string.IsNullOrEmpty(userSession))
+            {
+                string storedAccessToken = Environment.GetEnvironmentVariable("accessToken", EnvironmentVariableTarget.User);
+                string storedTwoLeggedToken = Environment.GetEnvironmentVariable("twoLeggedToken", EnvironmentVariableTarget.User);
+
+                if (IsTokenValid(storedAccessToken))
+                {
+                    TokenManager.SetToken(storedAccessToken);
+                    TokenManager.SetTwoLeggedToken(storedTwoLeggedToken);
+
+                    MainWindow mainWindow = new MainWindow(userSession);
+                    mainWindow.Show();
+                    this.Close();
+                }
+                else
+                {
+                    ClearStoredCredentials();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Clears stored credentials if the token is invalid.
+        /// </summary>
+        private void ClearStoredCredentials()
         {
             Environment.SetEnvironmentVariable("userId", "", EnvironmentVariableTarget.User);
             Environment.SetEnvironmentVariable("accessToken", "", EnvironmentVariableTarget.User);
+            Environment.SetEnvironmentVariable("twoLeggedToken", "", EnvironmentVariableTarget.User);
         }
-    }
 
-    public class TokenManager
-    {
-        private static string _accessToken;
-        public static void SetToken(string token) => _accessToken = token;
-        public static string GetToken() => _accessToken;
-    }
-
-    private async void InitializeWebView()
-    {
-        try
+        /// <summary>
+        /// Validates if a JWT token is still valid.
+        /// </summary>
+        private bool IsTokenValid(string token)
         {
-            await webView.EnsureCoreWebView2Async(null);
 
-            string nonce = GenerateNonce();
-            Pkce pkce = GeneratePkce();
-            _codeVerifier = pkce.CodeVerifier;
-            string loginURL = $"https://developer.api.autodesk.com/authentication/v2/authorize"
-                              + $"?response_type=code"
-                              + $"&client_id={clientID}"
-                              + $"&redirect_uri={redirect}"
-                              + $"&scope=data:read%20data:write%20data:create%20bucket:read%20bucket:create%20bucket:update%20account:write%20viewables:read"
-                              + $"&nonce={nonce}"
-                              + $"&prompt=login"
-                              + $"&code_challenge={pkce.CodeChallenge}"
-                              + $"&code_challenge_method=S256";
-
-            if (webView.CoreWebView2 == null)
+            if (string.IsNullOrEmpty(token))
             {
-                Console.WriteLine("❌ WebView is not initialized. Initializing...");
-                await webView.EnsureCoreWebView2Async(); // ✅ Ensure initialization
+                Console.WriteLine("❌ Token is null or empty");
+                return false;
             }
-            webView.CoreWebView2.NavigationStarting -= Redirected;
-            webView.CoreWebView2.NavigationStarting += Redirected;
 
-            webView.CoreWebView2.Navigate(loginURL);
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show(ex.Message);
-        }
-    }
-
-
-    //private async void LoginButton_Click(object sender, RoutedEventArgs e)
-    //{
-    //    try
-    //    {
-    //        string nonce = GenerateNonce();
-    //        Pkce pkce = GeneratePkce();
-    //        _codeVerifier = pkce.CodeVerifier;
-
-    //        string loginURL = $"https://developer.api.autodesk.com/authentication/v2/authorize"
-    //                          + $"?response_type=code"
-    //                          + $"&client_id={clientID}"
-    //                          + $"&redirect_uri={redirect}"
-    //                          + $"&scope=data:read%20data:write%20data:create%20bucket:read%20bucket:create%20bucket:update%20account:write"
-    //                          + $"&nonce={nonce}"
-    //                          + $"&prompt=login"
-    //                          + $"&code_challenge={pkce.CodeChallenge}"
-    //                          + $"&code_challenge_method=S256";
-
-    //        if (webView.CoreWebView2 == null)
-    //        {
-    //            Console.WriteLine("❌ WebView is not initialized. Initializing...");
-    //            await webView.EnsureCoreWebView2Async(); // ✅ Ensure initialization
-    //        }
-
-    //        webView.CoreWebView2.NavigationStarting -= Redirected;
-    //        webView.CoreWebView2.NavigationStarting += Redirected;
-
-    //        Console.WriteLine($"🔹 Navigating to: {loginURL}");
-    //        webView.CoreWebView2.Navigate(loginURL);
-    //    }
-    //    catch (Exception ex)
-    //    {
-    //        Console.WriteLine($"❌ Error Logging in: {ex.Message}");
-    //    }
-    //}
-
-    private async void GetAccessToken(string authCode)
-    {
-        try
-        {
-            string token = await _tokenService.GetAccessTokenAsync(authCode, _codeVerifier, clientID);
-            //MessageBox.Show($"✅ Access Token: {token}");
-            Infrastructure.Services.TokenManager.SetToken(token);
-            Environment.SetEnvironmentVariable("accessToken", token, EnvironmentVariableTarget.User);
-            GetUserData(token);
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show($"❌ Error: {ex.Message}");
-        }
-    }
-
-
-
-    private async void GetUserData(string accessToken)
-    {
-        AuthenticationClient authClient = new AuthenticationClient();
-        UserInfo userDataResponse = await authClient.GetUserInfoAsync(accessToken);
-        // MessageBox.Show($"Id: {userDataResponse.Sub}, Name: {userDataResponse.Name}, Email: {userDataResponse.Email}");
-        Environment.SetEnvironmentVariable("userId", userDataResponse.Sub, EnvironmentVariableTarget.User);
-        InsertUserDataDB(userDataResponse);
-        MainWindow mainWindow = new MainWindow(userDataResponse.Sub);
-        mainWindow.Show();
-        this.Close();
-    }
-    private async Task<TokenData> RefreshToken(string refreshToken)
-    {
-        using (HttpClient client = new HttpClient())
-        {
-            var tokenContent = new Dictionary<string, string>
+            try
             {
-                { "grant_type", "refresh_token" },
-                { "refresh_token", refreshToken },
-                { "client_id", clientID },
-                {  "scope", "data:read data:write data:create bucket:read bucket:create bucket:update account:read" } ,
+                // Check token format
+                string[] tokenParts = token.Split('.');
+                if (tokenParts.Length != 3)
+                {
+                    Console.WriteLine("❌ Token does not have the correct JWT format (3 parts separated by dots)");
+                    return false;
+                }
+
+                // Try to decode the middle part (payload)
+                string base64Payload = tokenParts[1];
+                int padding = 4 - (base64Payload.Length % 4);
+                if (padding < 4)
+                {
+                    base64Payload += new string('=', padding);
+                }
+
+                base64Payload = base64Payload.Replace('-', '+').Replace('_', '/');
+
+                // Try to decode and parse as JSON
+                byte[] payloadBytes = Convert.FromBase64String(base64Payload);
+                string payloadJson = Encoding.UTF8.GetString(payloadBytes);
+
+                using JsonDocument document = JsonDocument.Parse(payloadJson);
+
+                // Check expiration
+                if (document.RootElement.TryGetProperty("exp", out JsonElement expElement))
+                {
+                    long expTimestamp = expElement.GetInt64();
+                    DateTime expDateTime = DateTimeOffset.FromUnixTimeSeconds(expTimestamp).DateTime.ToLocalTime();
+
+                    if (DateTime.Now > expDateTime)
+                    {
+                        Console.WriteLine($"❌ Token expired at {expDateTime}");
+                        return false;
+                    }
+
+                    // Token is valid and not expired
+                    TimeSpan timeLeft = expDateTime - DateTime.Now;
+                    Console.WriteLine($"✅ Token valid for: {timeLeft.Hours}h {timeLeft.Minutes}m {timeLeft.Seconds}s");
+                    return true;
+                }
+
+                // If no expiration found, check for other required properties
+                if (!document.RootElement.TryGetProperty("scope", out _))
+                {
+                    Console.WriteLine("❌ Token is missing scope property");
+                    return false;
+                }
+
+                // If we made it here, the token seems valid
+                Console.WriteLine("✅ Token appears valid but couldn't verify expiration");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Exception validating token: {ex.Message}");
+                return false;
+            }
+        }
+
+        // Method to validate access tokens before making API calls
+        private async Task<bool> VerifyTokenWithApiAsync(string token)
+        {
+            if (string.IsNullOrEmpty(token))
+            {
+                return false;
+            }
+
+            try
+            {
+                // Use a simple API call to check if the token is accepted
+                using HttpClient client = new HttpClient();
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+                // APS user profile endpoint is a good test
+                string testUrl = "https://developer.api.autodesk.com/userprofile/v1/users/@me";
+
+                HttpResponseMessage response = await client.GetAsync(testUrl);
+
+                // If the response is 401 Unauthorized, the token is invalid
+                if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                {
+                    Console.WriteLine("❌ Token rejected by API (401 Unauthorized)");
+                    return false;
+                }
+
+                // Any other successful response means the token is valid
+                if (response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine("✅ Token accepted by API");
+                    return true;
+                }
+
+                // Any other status code may indicate other issues
+                Console.WriteLine($"⚠️ API returned {response.StatusCode} when validating token");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Exception verifying token with API: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Handles the login button click event.
+        /// </summary>
+        private async void LoginButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string nonce = GenerateNonce();
+                Pkce pkce = GeneratePkce();
+                _codeVerifier = pkce.CodeVerifier;
+
+                string loginURL = $"https://developer.api.autodesk.com/authentication/v2/authorize"
+                                  + $"?response_type=code"
+                                  + $"&client_id={ClientID}"
+                                  + $"&redirect_uri={RedirectUri}"
+                                  + $"&scope=data:read data:write data:create bucket:read bucket:create bucket:update account:read account:write"
+                                  + $"&nonce={nonce}"
+                                  + $"&prompt=login"
+                                  + $"&code_challenge={pkce.CodeChallenge}"
+                                  + $"&code_challenge_method=S256";
+
+                webView.CoreWebView2.NavigationStarting -= Redirected;
+                webView.CoreWebView2.NavigationStarting += Redirected;
+                webView.CoreWebView2.Navigate(loginURL);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error Logging in: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Handles redirection after authentication.
+        /// </summary>
+        private async void Redirected(object sender, CoreWebView2NavigationStartingEventArgs args)
+        {
+
+            if (args.Uri.StartsWith(RedirectUri))
+            {
+                args.Cancel = true;
+                Uri uri = new Uri(args.Uri);
+                string authCode = HttpUtility.ParseQueryString(uri.Query).Get("code");
+
+                if (!string.IsNullOrEmpty(authCode))
+                {
+                    Console.WriteLine($"✅ Authorization Code: {authCode}");
+                    await GetAccessToken(authCode);
+                }
+            }
+        }
+
+       /* private async void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // Ensure WebView2 is initialized before navigating
+                await webView.EnsureCoreWebView2Async();
+                Console.WriteLine("✅ WebView2 initialized successfully.");
+
+                // Generate login URL
+            
+                Console.WriteLine($"🔗 Navigating to: {loginURL}");
+
+                // Attach event listener only once
+                webView.CoreWebView2.NavigationStarting -= Redirected;
+                webView.CoreWebView2.NavigationStarting += Redirected;
+
+                // Navigate to the Autodesk login page
+                if (!string.IsNullOrEmpty(loginURL))
+                {
+                    webView.Source = new Uri(loginURL);
+                }
+                else
+                {
+                    Console.WriteLine("❌ Error: loginURL is null or empty.");
+                }
+
+                webView.Source = new Uri(loginURL);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ WebView2 initialization failed: {ex.Message}");
+            }
+        }*/
+
+
+        /// <summary>
+        /// Fetches access tokens using the authorization code.
+        /// </summary>
+        private async Task GetAccessToken(string authCode)
+        {
+            TokenService _tokenService = new TokenService();
+            try
+            {
+                // Debug token status before
+                Console.WriteLine($"Before token request - TokenManager has token: {!string.IsNullOrEmpty(TokenManager.GetToken())}");
+
+                string token = await _tokenService.GetThreeLeggedAccessTokenAsync(authCode, _codeVerifier);
+                Console.WriteLine($"Received 3-legged token: {!string.IsNullOrEmpty(token)}");
+
+                // Define the required scopes for 2-legged authentication
+                string[] scopes = new[] {
+            "data:read",
+            "data:write",
+            "bucket:read",
+            "bucket:create",
+            "viewables:read"
+        };
+
+                // Pass the scopes parameter to Get2LeggedTokenAsync
+                string twoLeggedToken = await _tokenService.Get2LeggedTokenAsync(scopes);
+                Console.WriteLine($"Received 2-legged token: {!string.IsNullOrEmpty(twoLeggedToken)}");
+
+                // Set tokens in TokenManager
+                TokenManager.SetToken(token);
+                TokenManager.SetTwoLeggedToken(twoLeggedToken);
+                Console.WriteLine("✅ Tokens stored in TokenManager");
+
+                // Verify tokens were saved correctly
+                Console.WriteLine($"After storage - TokenManager has token: {!string.IsNullOrEmpty(TokenManager.GetToken())}");
+
+                // Save to environment variables
+                Environment.SetEnvironmentVariable("accessToken", token, EnvironmentVariableTarget.User);
+                Environment.SetEnvironmentVariable("twoLeggedToken", twoLeggedToken, EnvironmentVariableTarget.User);
+                Console.WriteLine("✅ Tokens stored in environment variables");
+
+                // Now get user data with the token we just received
+                GetUserData(token);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"❌ Error: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Retrieves user data from Autodesk.
+        /// </summary>
+        private async void GetUserData(string tokenParam)
+        {
+            try
+            {
+                // Get token, either from parameter or from TokenManager
+                string token = tokenParam;
+
+                // If token is null or empty, try to get it from TokenManager
+                if (string.IsNullOrEmpty(token))
+                {
+                    Console.WriteLine("🔍 Token parameter is empty, trying to get from TokenManager...");
+                    token = TokenManager.GetToken();
+                }
+
+                // Check if we have a valid token
+                if (string.IsNullOrEmpty(token))
+                {
+                    Console.WriteLine("❌ No valid token available");
+                    MessageBox.Show("Authentication token is missing or invalid. Please log in again.",
+                        "Authentication Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                Console.WriteLine("🔍 Getting user data with token...");
+
+                // Safely log part of the token if it exists
+                if (token.Length >= 10)
+                {
+                    Console.WriteLine($"🔑 Token (first 10 chars): {token.Substring(0, 10)}...");
+                }
+                else
+                {
+                    Console.WriteLine($"🔑 Token: {token}");
+                }
+
+                // Use HttpClient directly instead of Autodesk.Authentication lib
+                using HttpClient client = new HttpClient();
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+                // APS v2 user profile endpoint
+                string userProfileUrl = "https://developer.api.autodesk.com/userprofile/v1/users/@me";
+
+                // Make the request
+                HttpResponseMessage response = await client.GetAsync(userProfileUrl);
+                string responseContent = await response.Content.ReadAsStringAsync();
+
+                Console.WriteLine($"🔍 User API Response Status: {response.StatusCode}");
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine($"❌ Failed to get user info: {response.StatusCode}");
+                    Console.WriteLine($"❌ Error details: {responseContent}");
+
+                    if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                    {
+                        // Try to get a new token
+                        string refreshToken = TokenManager.GetRefreshToken();
+                        if (!string.IsNullOrEmpty(refreshToken))
+                        {
+                            Console.WriteLine("🔄 Trying to refresh token...");
+                            // If you have refresh token logic, add it here
+                        }
+
+                        MessageBox.Show("Your authentication session has expired. Please log in again.",
+                            "Authentication Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    }
+                    else
+                    {
+                        MessageBox.Show($"Failed to get user info: {response.StatusCode}\n{responseContent}",
+                            "Authentication Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                    return;
+                }
+
+                // Parse the response
+                using JsonDocument document = JsonDocument.Parse(responseContent);
+
+                // Extract user name
+                string userName = "";
+                if (document.RootElement.TryGetProperty("firstName", out JsonElement firstNameElement))
+                {
+                    userName = firstNameElement.GetString();
+                }
+
+                if (document.RootElement.TryGetProperty("lastName", out JsonElement lastNameElement))
+                {
+                    userName += " " + lastNameElement.GetString();
+                }
+
+                // Extract user ID and email
+                string userId = "";
+                if (document.RootElement.TryGetProperty("userId", out JsonElement userIdElement))
+                {
+                    userId = userIdElement.GetString();
+                }
+
+                string email = "";
+                if (document.RootElement.TryGetProperty("emailId", out JsonElement emailElement))
+                {
+                    email = emailElement.GetString();
+                }
+
+                Console.WriteLine($"✅ User data retrieved: {userName} ({email})");
+
+                // Save user info
+                Environment.SetEnvironmentVariable("userName", userName, EnvironmentVariableTarget.User);
+                Environment.SetEnvironmentVariable("userId", userId, EnvironmentVariableTarget.User);
+
+                // Open the main window
+                Dispatcher.Invoke(() => {
+                    MainWindow mainWindow = new MainWindow(responseContent);
+                    this.Close();
+                    mainWindow.Show();
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Exception in GetUserData: {ex.Message}");
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine($"❌ Inner exception: {ex.InnerException.Message}");
+                }
+                Console.WriteLine($"❌ Stack trace: {ex.StackTrace}");
+                MessageBox.Show($"Error retrieving user data: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Generates a secure nonce.
+        /// </summary>
+        private string GenerateNonce()
+        {
+            return Guid.NewGuid().ToString("N");
+        }
+
+        /// <summary>
+        /// Generates PKCE challenge and verifier.
+        /// </summary>
+        private Pkce GeneratePkce()
+        {
+            var pkce = new Pkce
+            {
+                CodeVerifier = CryptoRandom.CreateUniqueId(32)
             };
-
-            var tokenParameters = new FormUrlEncodedContent(tokenContent);
-            var tokenResponse = await client.PostAsync(tokenURL, tokenParameters);
-            var tokenResponseContent = await tokenResponse.Content.ReadAsStringAsync();
-            var tokenData = JsonConvert.DeserializeObject<TokenData>(tokenResponseContent);
-            return tokenData;
-        }
-    }
-    private async void Redirected(object sender, CoreWebView2NavigationStartingEventArgs args)
-    {
-        //MessageBox.Show($"Redirect URL: {args.Uri}");
-        //string redirectedURL = args.Uri;
-        if (args.Uri.StartsWith("https://localhost/auth/callback"))
-        {
-            args.Cancel = true;
-            Uri uri = new Uri(args.Uri);
-            string authCode = HttpUtility.ParseQueryString(uri.Query).Get("code");
-
-            if (!string.IsNullOrEmpty(authCode))
-                GetAccessToken(authCode);
-        }
-    }
-
-    private async void InsertUserDataDB(UserInfo userInfo)
-    {
-        try
-        {
-            MongoConnection database = new MongoConnection();
-            var findUser = await database.Users.Find(x => x.Id == userInfo.Sub).FirstOrDefaultAsync();
-
-            if (findUser == null)
+            using (var sha256 = SHA256.Create())
             {
-                User newUser = new User { Id = userInfo.Sub, Username = userInfo.PreferredUsername, Email = userInfo.Email, ProfilePic = userInfo.Picture };
-                await database.Users.InsertOneAsync(newUser);
+                var challengeBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(pkce.CodeVerifier));
+                pkce.CodeChallenge = Base64Url.Encode(challengeBytes);
             }
-        }
-        catch (Exception e)
-        {
-            MessageBox.Show($"Error: {e.Message}");
+            return pkce;
         }
     }
 
@@ -231,59 +568,20 @@ public partial class LoginWindow : Window
     {
         public string access_token { get; set; }
         public string token_type { get; set; }
-        public int expires_in { get; set; }  // ✅ Fix: Ensure this is an integer
+        public int expires_in { get; set; }
         public string refresh_token { get; set; }
-    }
-
-
-    public class UserData
-    {
-        public string sub { get; set; } //user id
-        public string name { get; set; } //full name
-        public string given_name { get; set; } //first name
-        public string family_name { get; set; } //last name
-        public string preferred_username { get; set; } //username
-        public string email { get; set; } //email address
-        public string picture { get; set; } // profile pic
-    }
-
-    public string GenerateNonce()
-    {
-        return Guid.NewGuid().ToString("N");
-    }
-
-    public Pkce GeneratePkce()
-    {
-        var pkce = new Pkce
-        {
-            CodeVerifier = CryptoRandom.CreateUniqueId(32)
-        };
-        using (var sha256 = SHA256.Create())
-        {
-            // Here we create a hash of the code verifier
-            var challengeBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(pkce.CodeVerifier));
-
-            // and produce the "Code Challenge" from it by base64Url encoding it.
-            pkce.CodeChallenge = Base64Url.Encode(challengeBytes);
-        }
-        return pkce;
     }
 
     public static class CryptoRandom
     {
-        // This method generates a secure random string of a specified length
         public static string CreateUniqueId(int length)
         {
-            // Create a byte array to hold random data
             byte[] randomBytes = new byte[length];
-
-            // Using RNGCryptoServiceProvider to generate cryptographically secure random data
             using (var rng = new RNGCryptoServiceProvider())
             {
                 rng.GetBytes(randomBytes);
             }
 
-            // Convert the random bytes into a Base64 string and make it URL-safe by removing padding and replacing characters
             return Convert.ToBase64String(randomBytes)
                 .TrimEnd('=')
                 .Replace('+', '-')
@@ -291,209 +589,37 @@ public partial class LoginWindow : Window
         }
     }
 
+/*    private async void Window_Loaded(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            // Ensure WebView2 is initialized
+            await webView.EnsureCoreWebView2Async();
+            Console.WriteLine("✅ WebView2 initialized successfully.");
+
+            // Generate URL dynamically
+            string loginURL = GenerateLoginUrl();
+            Console.WriteLine($"🔗 Navigating to: {loginURL}");
+
+            webView.Source = new Uri(loginURL);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ WebView2 initialization failed: {ex.Message}");
+        }
+    }
+*/
+
     public static class Base64Url
     {
         public static string Encode(byte[] input)
         {
-            string base64 = Convert.ToBase64String(input);
-
-            // Remove padding character '=' from the end
-            base64 = base64.TrimEnd('=');
-
-            // Replace '+' with '-' and '/' with '_'
-            base64 = base64.Replace('+', '-').Replace('/', '_');
+            string base64 = Convert.ToBase64String(input)
+                .TrimEnd('=')
+                .Replace('+', '-')
+                .Replace('/', '_');
 
             return base64;
         }
     }
 }
-
-
-//using System.Diagnostics;
-//using System.Net.Http;
-//using System.Net.Http.Headers;
-//using System.Web;
-//using System.Windows;
-//using Newtonsoft.Json;
-//using System.Security.Cryptography;
-//using System.Text;
-//using AssetManager.Infrastructure.Services;
-//using Microsoft.Web.WebView2.Core;
-//using Microsoft.Web.WebView2.Core.Raw;
-//using Autodesk.Authentication;
-//using Autodesk.Authentication.Model;
-//using System.IO;
-
-//namespace AssetManager.Desktop;
-
-//public partial class LoginWindow : Window
-//{
-//    //private string loginURL = "https://developer.api.autodesk.com/authentication/v2/authorize";
-//    private string tokenURL = "https://developer.api.autodesk.com/authentication/v2/token";
-//    string clientID = "ONI3GGJaqwHUKpXUmOJeYUfUMu5UUfNX11oqHSxuuLFr0ELv";
-//    private string redirect = "https://localhost/auth/callback";
-//    string grantType = "authorization_code";
-//    public string _codeVerifier;
-//    private readonly TokenService _tokenService = new TokenService();
-//    private readonly string userSession;
-
-//    public LoginWindow()
-//    {
-//        InitializeComponent();
-//        userSession = Environment.GetEnvironmentVariable("userId", EnvironmentVariableTarget.User);
-//        //MessageBox.Show($"Your user session is: {userSession}");
-//        /*if (!string.IsNullOrEmpty(userSession))
-//        {
-//            MainWindow mainWindow = new MainWindow(userSession);
-//            mainWindow.Show();
-//            this.Close();
-//        }  */  
-
-//        InitializeWebView();
-//    }
-
-//    public class TokenManager
-//    {
-//        private static string _accessToken;
-//        public static void SetToken(string token) => _accessToken = token;
-//        public static string GetToken() => _accessToken;
-//    }
-
-//    private async void InitializeWebView()
-//    {
-//        try
-//        {
-//            await webView.EnsureCoreWebView2Async(null);
-
-//            string nonce = GenerateNonce();
-//            Pkce pkce = GeneratePkce();
-//            _codeVerifier = pkce.CodeVerifier;
-//            string loginURL = $"https://developer.api.autodesk.com/authentication/v2/authorize?response_type=code&client_id={clientID}&redirect_uri={redirect}&scope=data:read%20user-profile:read&nonce={nonce}&prompt=login&code_challenge={pkce.CodeChallenge}&code_challenge_method=S256";
-
-//            webView.CoreWebView2.NavigationStarting -= Redirected;
-//            webView.CoreWebView2.NavigationStarting += Redirected;
-
-//            webView.CoreWebView2.Navigate(loginURL);
-//        }
-//        catch (Exception ex)
-//        {
-//            MessageBox.Show(ex.Message );
-//        }
-//    }
-
-//    private async void GetAccessToken(string authCode)
-//    {
-//        try
-//        {
-//            string token = await _tokenService.GetAccessTokenAsync(authCode, _codeVerifier);
-//            MessageBox.Show($"✅ Access Token: {token}");
-//            GetUserData(token);
-//        }
-//        catch (Exception ex)
-//        {
-//            MessageBox.Show($"❌ Error: {ex.Message}");
-//        }
-//    }
-
-//    private async void GetUserData(string accessToken)
-//    {
-//        AuthenticationClient authClient = new AuthenticationClient();
-//        UserInfo userDataResponse = await authClient.GetUserInfoAsync(accessToken);
-//        MessageBox.Show($"Id: {userDataResponse.Sub}, Name: {userDataResponse.Name}, Email: {userDataResponse.Email}");
-//        MainWindow mainWindow = new MainWindow(userDataResponse);
-//        mainWindow.Show();
-//        this.Close();
-//    }
-
-//    private async void Redirected(object sender, CoreWebView2NavigationStartingEventArgs args)
-//    {
-//        //MessageBox.Show($"Redirect URL: {args.Uri}");
-//        //string redirectedURL = args.Uri;
-//        if (args.Uri.StartsWith("https://localhost/auth/callback"))
-//        {
-//            args.Cancel = true;
-//            Uri uri = new Uri(args.Uri);
-//            string authCode = HttpUtility.ParseQueryString(uri.Query).Get("code");
-
-//            if (!string.IsNullOrEmpty(authCode))
-//                GetAccessToken(authCode);
-//        }
-//    }
-
-//    public class Pkce
-//    {
-//        public string CodeVerifier { get; set; }
-//        public string CodeChallenge { get; set; }
-//    }
-
-//    public class UserData
-//    {
-//        public string sub { get; set; } //user id
-//        public string name { get; set; } //full name
-//        public string given_name { get; set; } //first name
-//        public string family_name { get; set; } //last name
-//        public string preferred_username { get; set; } //username
-//        public string email { get; set; } //email address
-//        public string picture { get; set; } // profile pic
-//    }
-
-//    public string GenerateNonce()
-//    {
-//        return Guid.NewGuid().ToString("N");
-//    }
-
-//    public Pkce GeneratePkce()
-//    {
-//        var pkce = new Pkce
-//        {
-//            CodeVerifier = CryptoRandom.CreateUniqueId(32)
-//        };
-//        using (var sha256 = SHA256.Create())
-//        {
-//            // Here we create a hash of the code verifier
-//            var challengeBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(pkce.CodeVerifier));
-
-//            // and produce the "Code Challenge" from it by base64Url encoding it.
-//            pkce.CodeChallenge = Base64Url.Encode(challengeBytes);
-//        }
-//        return pkce;
-//    }
-
-//    public static class CryptoRandom
-//    {
-//        // This method generates a secure random string of a specified length
-//        public static string CreateUniqueId(int length)
-//        {
-//            // Create a byte array to hold random data
-//            byte[] randomBytes = new byte[length];
-
-//            // Using RNGCryptoServiceProvider to generate cryptographically secure random data
-//            using (var rng = new RNGCryptoServiceProvider())
-//            {
-//                rng.GetBytes(randomBytes);
-//            }
-
-//            // Convert the random bytes into a Base64 string and make it URL-safe by removing padding and replacing characters
-//            return Convert.ToBase64String(randomBytes)
-//                .TrimEnd('=')
-//                .Replace('+', '-')
-//                .Replace('/', '_');
-//        }
-//    }
-
-//    public static class Base64Url
-//    {
-//        public static string Encode(byte[] input)
-//        {
-//            string base64 = Convert.ToBase64String(input);
-
-//            // Remove padding character '=' from the end
-//            base64 = base64.TrimEnd('=');
-
-//            // Replace '+' with '-' and '/' with '_'
-//            base64 = base64.Replace('+', '-').Replace('/', '_');
-
-//            return base64;
-//        }
-//    }
-//}

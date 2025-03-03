@@ -17,6 +17,8 @@ using System.Net;
 using System.Windows.Input;
 using System.Windows.Media.Effects;
 using System.Windows.Input;
+using MongoDB.Bson;
+using System.Text;
 
 
 namespace AssetManager.Desktop
@@ -31,6 +33,8 @@ namespace AssetManager.Desktop
         private string _selectedItemName;
         private string _folderId;
         private string hubID;
+        private string _objectId;
+
         private readonly ModelUpload _uploadService;
         private List<Dictionary<string, string>> Models;
         private string _userId = Environment.GetEnvironmentVariable("userId", EnvironmentVariableTarget.User);
@@ -40,7 +44,7 @@ namespace AssetManager.Desktop
         public MainWindow()
         {
             InitializeComponent();
-            //ModelComboBox.SelectionChanged += ModelComboBox_SelectionChanged;
+          //  ModelDataGrid.SelectionChanged += ModelDataGrid_SelectionChanged;
             Initialize();
         }
 
@@ -92,32 +96,151 @@ namespace AssetManager.Desktop
             return userData.ProfilePic;
         }
 
-        private async void LoadAllModels()
+        private async Task LoadAllModels()
         {
-            Models = await GetAllModels();
-
-            if (Models != null)
+            if (string.IsNullOrEmpty(_selectedProjectId) || string.IsNullOrEmpty(_folderId))
             {
-                ModelsDataGrid.ItemsSource = Models;
+                Console.WriteLine("❌ Error: No project or folder selected.");
+                return;
+            }
+
+            try
+            {
+                Console.WriteLine($"🔄 Loading models for project: {_selectedProjectId}");
+
+                // Fetch models from Autodesk API
+                var models = await GetModelsFromProject(_selectedProjectId, _folderId);
+
+                if (models != null && models.Any())
+                {
+                    Dispatcher.Invoke(() =>
+                    {
+                        // ✅ FIX: Clear DataGrid BEFORE setting ItemsSource
+                        ModelsDataGrid.ItemsSource = null;
+                        ModelsDataGrid.Items.Clear();
+                        ModelsDataGrid.ItemsSource = models;
+                    });
+
+                    Console.WriteLine($"✅ {models.Count} models loaded successfully.");
+                }
+                else
+                {
+                    Console.WriteLine("❌ No models found for this project.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error loading models: {ex.Message}");
             }
         }
 
-        private bool isModelLoaded = false;
-        private async void DisplayGridModels()
-        {
-            if (isModelLoaded) return;
-            isModelLoaded = true;
 
+        private bool isModelLoaded = false;
+
+        private async void Grid_Click(object sender, MouseButtonEventArgs e)
+        {
+            if (string.IsNullOrEmpty(_selectedProjectId))
+            {
+                MessageBox.Show("❌ Please select a project to view models.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            ModelsDataGrid.Visibility = Visibility.Collapsed; // Hide DataGrid
+            Grid_View.Visibility = Visibility.Visible; // Show Grid View
+
+            // Clear previous grid data
             ModelsContainer.Children.Clear();
 
-            if (Models.Count == 0)
+            try
             {
-                List<Dictionary<string, string>> models = await GetAllModels();
-                Models = models;
-            }
-            //List<Dictionary<string, string>> models = await GetAllModels();
+                // Fetch models for the selected project only
+                List<Dictionary<string, string>> models = await GetModelsFromProject(_selectedProjectId, _folderId);
 
-            foreach (var model in Models)
+                if (models == null || models.Count == 0)
+                {
+                    MessageBox.Show("No models found for this project.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                // Populate grid with models from the selected project
+                foreach (var model in models)
+                {
+                    Border modelSquare = new Border
+                    {
+                        Width = 263,
+                        Height = 253,
+                        CornerRadius = new CornerRadius(5),
+                        Background = Brushes.White,
+                        BorderBrush = Brushes.LightGray,
+                        BorderThickness = new Thickness(1),
+                        Margin = new Thickness(10),
+                        Effect = new DropShadowEffect
+                        {
+                            Color = Colors.Black,
+                            Opacity = 0.1,
+                            BlurRadius = 10,
+                            ShadowDepth = 2
+                        }
+                    };
+
+                    StackPanel content = new StackPanel
+                    {
+                        Orientation = Orientation.Vertical,
+                        VerticalAlignment = VerticalAlignment.Center,
+                        HorizontalAlignment = HorizontalAlignment.Left
+                    };
+
+                    TextBlock modelName = new TextBlock
+                    {
+                        Text = model["Name"],
+                        FontSize = 16,
+                        FontWeight = FontWeights.Normal,
+                        TextAlignment = TextAlignment.Center,
+                        HorizontalAlignment = HorizontalAlignment.Left,
+                        TextWrapping = TextWrapping.Wrap,
+                        Margin = new Thickness(5, 2, 5, 2)
+                    };
+
+                    TextBlock projectName = new TextBlock
+                    {
+                        Text = $"Project: {model["Project"]}",
+                        FontSize = 14,
+                        FontWeight = FontWeights.Normal,
+                        Foreground = Brushes.Gray,
+                        TextAlignment = TextAlignment.Left,
+                        HorizontalAlignment = HorizontalAlignment.Left,
+                        TextWrapping = TextWrapping.Wrap,
+                        Margin = new Thickness(5, 2, 5, 2)
+                    };
+
+                    content.Children.Add(modelName);
+                    content.Children.Add(projectName);
+                    modelSquare.Child = content;
+                    ModelsContainer.Children.Add(modelSquare);
+                }
+
+                Console.WriteLine($"✅ {models.Count} models loaded successfully in grid view.");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"❌ Error loading models: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+
+            // Update UI styles to reflect active view mode
+            List_Border.Background = Brushes.Transparent;
+            Grid_Border.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
+        }
+
+
+        private async void DisplayGridModels()
+        {
+            if (isModelLoaded) return; // Prevent duplicate calls
+            isModelLoaded = true;
+
+            ModelsContainer.Children.Clear(); // Clear existing squares
+            List<Dictionary<string, string>> models = await GetAllModels();
+
+            foreach (var model in models)
             {
                 Border modelSquare = new Border
                 {
@@ -137,34 +260,11 @@ namespace AssetManager.Desktop
                     }
                 };
 
-                Grid grid = new Grid();
-
-                grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(170) });
-                grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-
-
-                Border headerBackground = new Border
-                {
-                    Background = new SolidColorBrush(Color.FromRgb(230, 230, 230)),
-                    HorizontalAlignment = HorizontalAlignment.Stretch,
-                    Margin = new Thickness(5)
-                };
-
-                Grid.SetRow(headerBackground, 0);
-                grid.Children.Add(headerBackground);
-
-                Grid overlayGrid = new Grid
-                {
-                    HorizontalAlignment = HorizontalAlignment.Stretch,
-                    VerticalAlignment = VerticalAlignment.Stretch
-                };
-
                 StackPanel content = new StackPanel
                 {
                     Orientation = Orientation.Vertical,
                     VerticalAlignment = VerticalAlignment.Center,
-                    HorizontalAlignment = HorizontalAlignment.Left,
-                    Margin = new Thickness(8, 5, 5, 2)
+                    HorizontalAlignment = HorizontalAlignment.Left
                 };
 
                 TextBlock modelName = new TextBlock
@@ -172,68 +272,31 @@ namespace AssetManager.Desktop
                     Text = model["Name"],
                     FontSize = 16,
                     FontWeight = FontWeights.Normal,
-                    Foreground = (Brush) new BrushConverter().ConvertFrom("#4B4B4B"),
                     TextAlignment = TextAlignment.Center,
                     HorizontalAlignment = HorizontalAlignment.Left,
-                    TextWrapping = TextWrapping.Wrap
+                    TextWrapping = TextWrapping.Wrap,
+                    Margin = new Thickness(5, 2, 5, 2)
                 };
 
                 TextBlock projectName = new TextBlock
                 {
-                    Text = model["Project"],
+                    Text = $"Project: {model["Project"]}",
                     FontSize = 14,
                     FontWeight = FontWeights.Normal,
                     Foreground = Brushes.Gray,
                     TextAlignment = TextAlignment.Left,
                     HorizontalAlignment = HorizontalAlignment.Left,
-                    TextWrapping = TextWrapping.Wrap
+                    TextWrapping = TextWrapping.Wrap,
+                    Margin = new Thickness(5, 2, 5, 2)
                 };
 
                 content.Children.Add(modelName);
                 content.Children.Add(projectName);
-
-                Grid.SetRow(content, 1);
-                grid.Children.Add(content);
-
-                Border iconBorder = new Border
-                {
-                    Background = Brushes.Transparent,
-                    BorderBrush = Brushes.Transparent,
-                    VerticalAlignment = VerticalAlignment.Center,
-                    HorizontalAlignment = HorizontalAlignment.Center,
-                    Cursor = Cursors.Hand,
-                    Margin = new Thickness(0, 6.5, 2, 0)
-                };
-
-                PackIcon icon = new PackIcon
-                {
-                    Kind = PackIconKind.DotsVertical,
-                    Width = 20,
-                    Height = 20,
-                    Foreground = Brushes.Gray,
-                    Cursor = Cursors.Hand
-                };
-
-                iconBorder.Child = icon;
-
-                Border iconContainer = new Border
-                {
-                    Child = iconBorder,
-                    HorizontalAlignment = HorizontalAlignment.Right,
-                    VerticalAlignment = VerticalAlignment.Bottom,
-                    Margin = new Thickness(5)
-                };
-
-                overlayGrid.Children.Add(iconContainer);
-
-                Grid parentGrid = new Grid();
-                parentGrid.Children.Add(grid);
-                parentGrid.Children.Add(overlayGrid);
-
-                modelSquare.Child = parentGrid;
+                modelSquare.Child = content;
                 ModelsContainer.Children.Add(modelSquare);
             }
         }
+
 
 
 
@@ -252,7 +315,7 @@ namespace AssetManager.Desktop
         //    }
         //}
 
-        
+
         private async Task TestDataManagement()
         {
             var result = await DataManagement.GetPersonalHubDetails();
@@ -742,47 +805,7 @@ namespace AssetManager.Desktop
         //}
 
 
-        private async void BtnViewInFusion_Click(object sender, RoutedEventArgs e)
-        {
-            if (_selectedItemId == null)
-            {
-                MessageBox.Show("❌ Please select a model before viewing in Fusion 360.", "Error", MessageBoxButton.OK,
-                    MessageBoxImage.Error);
-                return;
-            }
-        
-            string modelFilePath = FindExistingModelFile(_selectedItemName);
-        
-            if (modelFilePath == null)
-            {
-                Console.WriteLine("Downloading model");
-                // No matching file found, so download it
-                var fileDownloadService = new FileDownloadService2();
-                fileDownloadService.DownloadModelAsync(_selectedProjectId, _selectedItemId);
-        
-            }
-        
-            try
-            {
-                // Download the model first
-                var fileDownloadService = new FileDownloadService2();
-                await fileDownloadService.DownloadModelAsync(_selectedProjectId, _selectedItemId);
-        
-                string saveDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-                    "DownloadedModels", _selectedItemName);
-                Console.WriteLine("Model dir: " + saveDirectory);
-        
-                if (!Directory.Exists(saveDirectory))
-                {
-                    LaunchFusionWithModel(saveDirectory);
-                }
-            }
-            catch(Exception ex)
-            {
-                MessageBox.Show($"❌ Error launching Fusion script: {ex.Message}\n{ex.StackTrace}",
-                    "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
+  
         
                 private void LaunchFusionWithModel(string modelPath)
         {
@@ -1006,80 +1029,6 @@ namespace AssetManager.Desktop
         //    }
         //}
 
-        private async Task<List<Dictionary<string, string>>> GetModelsFromProject(string projectId, string folderId)
-        {
-            string accessToken = TokenManager.GetToken();
-            if (string.IsNullOrEmpty(accessToken))
-            {
-                Console.WriteLine("❌ No valid access token.");
-                return null;
-            }
-
-            string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/folders/{folderId}/contents";
-            string hubsUrl = "https://developer.api.autodesk.com/project/v1/hubs";
-
-            try
-            {
-                using (HttpClient client = new HttpClient())
-                {
-                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-                    HttpResponseMessage hubsResponse = await client.GetAsync(hubsUrl);
-
-                    if (!hubsResponse.IsSuccessStatusCode)
-                    {
-                        Console.WriteLine($"❌ Error fetching hubs: {hubsResponse.StatusCode} - {hubsResponse.ReasonPhrase}");
-                        return null;
-                    }
-
-                    string hubsJson = await hubsResponse.Content.ReadAsStringAsync();
-                    using JsonDocument hubsDoc = JsonDocument.Parse(hubsJson);
-                    JsonElement hubsRoot = hubsDoc.RootElement;
-                    
-                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-                    HttpResponseMessage response = await client.GetAsync(url);
-
-                    if (!response.IsSuccessStatusCode)
-                    {
-                        Console.WriteLine($"❌ Error: {response.StatusCode} - {response.ReasonPhrase}");
-                        return null;
-                    }
-
-                    string jsonResponse = await response.Content.ReadAsStringAsync();
-                    using JsonDocument doc = JsonDocument.Parse(jsonResponse);
-                    JsonElement root = doc.RootElement;
-
-                    List<Dictionary<string, string>> models = new List<Dictionary<string, string>>();
-
-                    foreach (JsonElement item in root.GetProperty("data").EnumerateArray())
-                    {
-                        if (item.GetProperty("type").GetString() == "items")
-                        {
-                            var attributes = item.GetProperty("attributes");
-
-                            string modelName = attributes.GetProperty("displayName").GetString();
-                            string lastModified = attributes.TryGetProperty("lastModifiedTime", out JsonElement modifiedTime) ? modifiedTime.GetString() : "Unknown";
-                            string projectName = _selectedProjectName;
-                            
-                            models.Add(new Dictionary<string, string>
-                            {
-                                { "Name", modelName },
-                                { "ProjectId", projectId },
-                                { "Project", projectName },
-                                { "LastModified", lastModified }
-                            });
-                        }
-                    }
-
-                    return models;
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"❌ Exception occurred: {ex.Message}");
-                return null;
-            }
-        }
-
 
         // ✅ Button Click Event to Refresh Models
 
@@ -1163,26 +1112,30 @@ namespace AssetManager.Desktop
             throw new NotImplementedException();
         }
 
-        private void ModelsDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+     /*   private void ModelsDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (ModelsDataGrid.SelectedItem is Dictionary<string, string> model)
             {
-                _selectedModel = model; // Register the selected model
-        
-                // Extract model details from the dictionary
-                string modelId = model.ContainsKey("Id") ? model["Id"] : "Unknown";
-                string modelName = model.ContainsKey("Name") ? model["Name"] : "Unknown";
-                string projectId = model.ContainsKey("ProjectId") ? model["ProjectId"] : "Unknown";
-                string projectName = model.ContainsKey("Project") ? model["Project"] : "Unknown";
-                string lastModified = model.ContainsKey("LastModified") ? model["LastModified"] : "Unknown";
-                
+                _selectedModel = model;
 
-                _selectedItemId = modelId;
-                _selectedItemName = modelName;
-                _selectedProjectId = projectId;
-                Console.WriteLine($"Selected Model: {modelName} -{modelId}- from project {projectName} -{projectId}- (Last Modified: {lastModified})");
+                if (model.TryGetValue("Id", out string modelId))
+                {
+                    _selectedItemId = modelId;
+                }
+                else
+                {
+                    _selectedItemId = null;
+                    Console.WriteLine("❌ Model ID missing in selection.");
+                }
+
+                _selectedItemName = model.ContainsKey("Name") ? model["Name"] : "Unknown";
+                _selectedProjectId = model.ContainsKey("ProjectId") ? model["ProjectId"] : null;
+                _selectedProjectName = model.ContainsKey("Project") ? model["Project"] : null;
+
+                Console.WriteLine($"✅ Selected Model: {_selectedItemName} (ID: {_selectedItemId}, selected Project ID: {_selectedProjectId})");
             }
         }
+*/
 
         private void Border_Enter(object sender, System.Windows.Input.MouseEventArgs e)
         {
@@ -1233,21 +1186,88 @@ namespace AssetManager.Desktop
             User_Grid.Cursor = Cursors.Hand;
         }
 
-        private void ProjectTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+     
+        private async Task RetrieveItemIdAsync()
         {
-            if (e.NewValue is TreeViewItem selectedItem && selectedItem.Tag is ValueTuple<string, string, bool> projectData)
+            string accessToken = TokenManager.GetToken();
+            if (string.IsNullOrEmpty(_selectedProjectId) || string.IsNullOrEmpty(_folderId))
             {
-                _selectedProjectId = projectData.Item1;
-                _selectedProjectName = selectedItem.Header.ToString();
-                _folderId = projectData.Item2;
+                Console.WriteLine("❌ Cannot retrieve items - project or folder is missing.");
+                return;
+            }
 
-                LoadModelsForSelectedProject();
+            try
+            {
+                Console.WriteLine($"🔍 Fetching items for Folder: {_folderId}");
+                var items = await DataManagement.GetItemsInFolder(_selectedProjectId, _folderId);
 
-                Console.WriteLine($"📌 Clicked Project: {selectedItem.Header}, Project ID: {_selectedProjectId}, Folder ID: {_folderId}");
-        
+                if (items == null || !items.Any())
+                {
+                    Console.WriteLine("❌ No items found in the selected folder.");
+                    return;
+                }
+
+                List<Dictionary<string, string>> modelsList = new List<Dictionary<string, string>>();
+
+                // 🔹 Step 1: Retrieve storage IDs & versions for each item
+                foreach (var (itemId, itemName) in items)
+                {
+                    FileDownloadService fileDownloadService = new FileDownloadService();
+                    string storageId = await fileDownloadService.GetStorageIdFromItem(_selectedProjectId, itemId);
+
+                    if (string.IsNullOrEmpty(storageId))
+                    {
+                        Console.WriteLine($"❌ Error: Could not retrieve storage ID for {itemName}.");
+                        continue;
+                    }
+
+                    Console.WriteLine($"📦 Storage ID for {itemName}: {storageId}");
+
+                    // 🔹 Step 2: Retrieve versions for the selected item
+                    var versions = await fileDownloadService.GetVersionsForItemAsync(_selectedProjectId, itemId);
+                    string latestVersion = versions?.FirstOrDefault().versionName ?? "N/A";
+
+                    Console.WriteLine($"✅ {versions?.Count ?? 0} versions found for {itemName}.");
+
+                    // 🔹 Step 3: Store item details for data grid
+                    modelsList.Add(new Dictionary<string, string>
+            {
+                { "Id", itemId },
+                { "Name", itemName },
+                { "StorageId", storageId },
+                { "LatestVersion", latestVersion }
+            });
+                }
+
+                // 🔹 Step 4: Update Data Grid on UI thread
+                Dispatcher.Invoke(() =>
+                {
+                    ModelsDataGrid.ItemsSource = null;  // Clear existing items
+                    ModelsDataGrid.ItemsSource = modelsList;
+                });
+
+                Console.WriteLine($"✅ {modelsList.Count} models added to the data grid.");
+
+                // 🔹 Step 5: Auto-select first item if none is selected
+                if (modelsList.Any() && string.IsNullOrEmpty(_selectedItemId))
+                {
+                    var firstModel = modelsList.First();
+                    _selectedItemId = firstModel["Id"];
+                    _selectedItemName = firstModel["Name"];
+
+                    Console.WriteLine($"✅ Auto-selected first model: {_selectedItemName} (ID: {_selectedItemId})");
+
+                    await RetrieveStorageIdForSelectedItem(); // Fetch storage for selected item
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error retrieving items: {ex.Message}");
             }
         }
-        
+
+
+
         private void ProjectTreeView_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
             if (ProjectTreeView.SelectedItem is TreeViewItem selectedItem)
@@ -1256,30 +1276,8 @@ namespace AssetManager.Desktop
                 Console.WriteLine($"Project double-clicked: {projectName}");
             }
         }
-        
-        private async void LoadModelsForSelectedProject()
-        {
-            if (string.IsNullOrEmpty(_selectedProjectId) || string.IsNullOrEmpty(_folderId))
-            {
-                Console.WriteLine("❌ No project selected, cannot load models.");
-                ModelsDataGrid.ItemsSource = null;
-                return;
-            }
 
-            Console.WriteLine($"🔄 Fetching models for Project: {_selectedProjectId}, Folder: {_folderId}");
 
-            var models = await GetModelsFromProject(_selectedProjectId, _folderId);
-
-            if (models == null || !models.Any())
-            {
-                Console.WriteLine("❌ No models found for this project.");
-                ModelsDataGrid.ItemsSource = null;
-                return;
-            }
-
-            // Update DataGrid with models
-            ModelsDataGrid.ItemsSource = models;
-        }
 
         private void ProjectTreeView_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
@@ -1312,23 +1310,600 @@ namespace AssetManager.Desktop
             //List_Icon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F25505"));
         }
 
-        private async void Grid_Click(object sender, MouseButtonEventArgs e)
+ 
+        private void Btn_CloseViewer_Click(object sender, RoutedEventArgs e)
         {
-            ModelsDataGrid.Visibility = Visibility.Collapsed; // Show DataGrid
-            Grid_View.Visibility = Visibility.Visible;
+            EmbeddedViewerContainer.Visibility = Visibility.Collapsed; // Hide the viewer
+        }
+     
 
-            DisplayGridModels();
+        public static string EncodeObjectIdToUrn(string objectId)
+        {
+            if (string.IsNullOrEmpty(objectId))
+            {
+                Console.WriteLine("❌ Error: objectId is null or empty.");
+                return null;
+            }
 
-            List_Border.Background = Brushes.Transparent;
+            // 🔹 Log the object ID before encoding
+            Console.WriteLine($"📦 Encoding Object ID: {objectId}");
 
-            //List_Icon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+            byte[] objectIdBytes = Encoding.UTF8.GetBytes(objectId);
+            string base64Urn = Convert.ToBase64String(objectIdBytes)
+                .TrimEnd('=')  // Remove padding
+                .Replace('+', '-')  // Replace '+' with '-'
+                .Replace('/', '_');  // Replace '/' with '_'
 
-            Grid_Border.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
-
-            //Grid_Icon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F25505"));
+            Console.WriteLine($"✅ Encoded URN: {base64Urn}");
+            return base64Urn;
         }
 
+        private async Task RetrieveStorageIdForSelectedItem()
+        {
+            if (string.IsNullOrEmpty(_selectedProjectId) || string.IsNullOrEmpty(_selectedItemId))
+            {
+                Console.WriteLine("❌ Cannot retrieve storage ID - project or item is missing.");
+                return;
+            }
+
+            try
+            {
+                Console.WriteLine($"🔍 Fetching latest storage ID for Item: {_selectedItemId}");
+                FileDownloadService fileService = new FileDownloadService();
+                string storageId = await fileService.GetStorageIdFromItem(_selectedProjectId, _selectedItemId);
+
+                if (!string.IsNullOrEmpty(storageId))
+                {
+                    _objectId = storageId; // Store the latest storage ID
+                    Console.WriteLine($"✅ Updated Storage ID: {_objectId}");
+                }
+                else
+                {
+                    Console.WriteLine("❌ Error: No valid storage ID found.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error retrieving storage ID: {ex.Message}");
+            }
+        }
+
+        // 1. First, ensure the ModelsDataGrid_SelectionChanged is properly updating the selection variables
+   
+
+        // 2. Update the view button click handler to provide better feedback
+
+
+        // 3. Make sure the LoadModelsForSelectedProject method is correctly populating the ModelsDataGrid
+
+
+        // 4. Update the GetModelsFromProject method to ensure consistent key names
+       
+
+     
+        // 1. Enhanced ModelsDataGrid_SelectionChanged to set all global IDs at once
+        private async void ModelsDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (ModelsDataGrid.SelectedItem is Dictionary<string, string> model)
+            {
+                _selectedModel = model;
+
+                // Debug - print what we're actually selecting
+                Console.WriteLine("Selection changed - Selected item data:");
+                foreach (var kvp in model)
+                {
+                    Console.WriteLine($"Key: {kvp.Key}, Value: {kvp.Value}");
+                }
+
+                // Extract and set all relevant IDs in one place
+                if (model.TryGetValue("Id", out string modelId) || model.TryGetValue("id", out modelId))
+                {
+                    _selectedItemId = modelId;
+                    Console.WriteLine($"✅ Set selected item ID: {_selectedItemId}");
+                }
+                else
+                {
+                    _selectedItemId = null;
+                    Console.WriteLine("❌ Model ID missing in selection.");
+                }
+
+                // Set the name and related project properties
+                _selectedItemName = model.ContainsKey("Name") ? model["Name"] :
+                                   (model.ContainsKey("name") ? model["name"] : "Unknown");
+
+                // Set the project ID - either from the model or use the currently selected one
+                if (model.TryGetValue("ProjectId", out string projectId) || model.TryGetValue("projectId", out projectId))
+                {
+                    _selectedProjectId = projectId;
+                    Console.WriteLine($"✅ Set selected project ID: {_selectedProjectId}");
+                }
+                // Don't reset the project ID if it's not in the model - keep the current value
+
+                _selectedProjectName = model.ContainsKey("Project") ? model["Project"] :
+                                      (model.ContainsKey("project") ? model["project"] : _selectedProjectName);
+
+                Console.WriteLine($"✅ Selected Model: {_selectedItemName} (ID: {_selectedItemId}, Project ID: {_selectedProjectId})");
+
+                // Also immediately fetch and set the storage ID for the selected item
+                await FetchAndSetStorageId();
+            }
+            else if (ModelsDataGrid.SelectedItem != null)
+            {
+                // If it's not a Dictionary<string, string>, log what it actually is
+                Console.WriteLine($"❌ Selected item is not a Dictionary<string, string> but a {ModelsDataGrid.SelectedItem.GetType().Name}");
+            }
+            else
+            {
+                Console.WriteLine("❌ No item selected in DataGrid");
+            }
+        }
+
+        // 2. New method to fetch and set the storage ID in one place
+        private async Task FetchAndSetStorageId()
+        {
+            if (string.IsNullOrEmpty(_selectedProjectId) || string.IsNullOrEmpty(_selectedItemId))
+            {
+                Console.WriteLine("❌ Cannot retrieve storage ID - project or item is missing.");
+                return;
+            }
+
+            try
+            {
+                Console.WriteLine($"🔍 Fetching storage ID for Item: {_selectedItemId} in Project: {_selectedProjectId}");
+                FileDownloadService fileService = new FileDownloadService();
+                string storageId = await fileService.GetStorageIdFromItem(_selectedProjectId, _selectedItemId);
+
+                if (!string.IsNullOrEmpty(storageId))
+                {
+                    _objectId = storageId; // Set the global storage ID
+                    Console.WriteLine($"✅ Set global storage ID: {_objectId}");
+
+                    // Also update the selected model dictionary if it exists
+                    if (_selectedModel != null)
+                    {
+                        _selectedModel["StorageId"] = storageId;
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("❌ Error: No valid storage ID found.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error retrieving storage ID: {ex.Message}");
+            }
+        }
+
+        // 3. Updated BtnViewInApp_Click to use the globally set IDs
+        private async void BtnViewInApp_Click(object sender, RoutedEventArgs e)
+        {
+            Console.WriteLine($"View in App button clicked. Using global IDs:");
+            Console.WriteLine($"- Selected Item ID: {_selectedItemId}");
+            Console.WriteLine($"- Selected Project ID: {_selectedProjectId}");
+            Console.WriteLine($"- Storage ID: {_objectId}");
+
+            if (string.IsNullOrEmpty(_selectedItemId) || string.IsNullOrEmpty(_selectedProjectId))
+            {
+                MessageBox.Show("❌ Please select a model before viewing.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            // If we already have the storage ID, use it directly
+            string objectId = _objectId;
+
+            // If not available, fetch it on demand
+            if (string.IsNullOrEmpty(objectId))
+            {
+                Console.WriteLine("🔍 Storage ID not set globally, fetching now...");
+                FileDownloadService fileService = new FileDownloadService();
+                objectId = await fileService.GetStorageIdFromItem(_selectedProjectId, _selectedItemId);
+                if (string.IsNullOrEmpty(objectId))
+                {
+                    MessageBox.Show("Could not retrieve model information.", "Model Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+                _objectId = objectId; // Update global storage ID
+            }
+
+            // Encode URN
+            string encodedUrn = EncodeObjectIdToUrn(objectId);
+            if (string.IsNullOrEmpty(encodedUrn))
+            {
+                MessageBox.Show("Failed to process model identifier.", "Processing Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            Console.WriteLine($"✅ Encoded URN: {encodedUrn}");
+
+            // Continue with model viewer loading...
+            ModelDerivativeService modelService = new ModelDerivativeService(new HttpClient());
+            bool translationComplete = await modelService.IsTranslationCompletedAsync(encodedUrn, _accessToken);
+            
+            if (!translationComplete)
+            {
+                Console.WriteLine("🔄 Submitting translation job...");
+                bool jobResponse = await modelService.SubmitModelForTranslationAsync(encodedUrn, _accessToken);
+
+                Console.WriteLine($"✅ Translation job submitted: {jobResponse}");
+
+                if (!jobResponse)
+                {
+                    MessageBox.Show("❌ Translation job failed to submit.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+            }
+
+            Console.WriteLine($"🔍 Opening Forge Viewer for Model: {_selectedItemId}");
+
+            // Open Forge Viewer in a new window
+              ForgeViewerWindow forgeViewer = new ForgeViewerWindow(encodedUrn);
+            forgeViewer.Show();
+           // LoadForgeViewer(encodedUrn);
+        }
+        private async void LoadForgeViewer(string encodedUrn)
+        {
+            TokenService tokenService = new TokenService();
+
+            // Retrieve the objectId and encode it to URN format
+            //AutodeskApiService apiService = new AutodeskApiService(tokenService);
+            string accessToken = _accessToken;
+
+            await ForgeWebView.EnsureCoreWebView2Async(); // Ensure WebView2 is initialized
+
+            string htmlContent = $@"
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset='UTF-8'>
+  <meta http-equiv='X-UA-Compatible' content='IE=Edge' />
+  <title>Forge Viewer</title>
+  <script src='https://developer.api.autodesk.com/modelderivative/v2/viewers/7.52/viewer3D.min.js'></script>
+  <link rel='stylesheet' href='https://developer.api.autodesk.com/modelderivative/v2/viewers/7.52/style.min.css' type='text/css'>
+</head>
+<body>
+  <div id='forgeViewer' style='width: 100%; height: 100vh;'></div>
+  <script>
+    var options = {{
+      env: 'AutodeskProduction',
+      getAccessToken: function(onTokenReady) {{
+          onTokenReady('{accessToken}', 3599);
+      }}
+    }};
+    var documentId = 'urn:{encodedUrn}';
+    Autodesk.Viewing.Initializer(options, function() {{
+      var viewerDiv = document.getElementById('forgeViewer');
+      var viewer = new Autodesk.Viewing.GuiViewer3D(viewerDiv);
+      viewer.start();
+      Autodesk.Viewing.Document.load(documentId, function(doc) {{
+        var defaultModel = doc.getRoot().getDefaultGeometry();
+        viewer.loadDocumentNode(doc, defaultModel);
+      }}, function(errorMsg) {{
+        console.error('Error loading document: ' + errorMsg);
+      }});
+    }});
+  </script>
+</body>
+</html>
+";
+
+            ForgeWebView.NavigateToString(htmlContent);
+        }
+
+        public string EncodeStorageIdToUrn(string storageId)
+        {
+            if (string.IsNullOrEmpty(storageId))
+            {
+                Console.WriteLine("❌ Error: Storage ID is null or empty.");
+                return null;
+            }
+
+            // 🔹 Remove the "urn:" prefix
+            if (storageId.StartsWith("urn:"))
+            {
+                storageId = storageId.Substring(4);
+            }
+
+            // 🔹 Convert to Base64
+            string base64Encoded = Convert.ToBase64String(Encoding.UTF8.GetBytes(storageId));
+
+            // 🔹 Autodesk requires URL-safe Base64 encoding
+            string urn = base64Encoded.TrimEnd('=').Replace('+', '-').Replace('/', '_');
+
+            Console.WriteLine($"✅ Encoded URN: {urn}");
+            return urn;
+        }
+
+        // 4. Updated GetModelsFromProject to ensure proper IDs are included
+        private async Task<List<Dictionary<string, string>>> GetModelsFromProject(string projectId, string folderId)
+        {
+            string accessToken = TokenManager.GetToken();
+            if (string.IsNullOrEmpty(accessToken))
+            {
+                Console.WriteLine("❌ No valid access token.");
+                return null;
+            }
+
+            string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/folders/{folderId}/contents";
+
+            try
+            {
+                using (HttpClient client = new HttpClient())
+                {
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+                    HttpResponseMessage response = await client.GetAsync(url);
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        Console.WriteLine($"❌ Error: {response.StatusCode} - {response.ReasonPhrase}");
+                        return null;
+                    }
+
+                    string jsonResponse = await response.Content.ReadAsStringAsync();
+                    using JsonDocument doc = JsonDocument.Parse(jsonResponse);
+                    JsonElement root = doc.RootElement;
+
+                    List<Dictionary<string, string>> models = new List<Dictionary<string, string>>();
+
+                    foreach (JsonElement item in root.GetProperty("data").EnumerateArray())
+                    {
+                        if (item.GetProperty("type").GetString() == "items")
+                        {
+                            var attributes = item.GetProperty("attributes");
+                            string itemId = item.GetProperty("id").GetString();
+                            string modelName = attributes.GetProperty("displayName").GetString();
+
+                            string lastModified = attributes.TryGetProperty("lastModifiedTime", out JsonElement modifiedTime)
+                                ? modifiedTime.GetString()
+                                : "Unknown";
+
+                            string formattedDate = "Unknown";
+                            if (lastModified != "Unknown")
+                            {
+                                string[] dateParts = lastModified.Split('T');
+                                if (dateParts.Length >= 2)
+                                {
+                                    string date = dateParts[0];
+                                    string time = dateParts[1].Substring(0, Math.Min(8, dateParts[1].Length));
+                                    formattedDate = $"{date} {time}";
+                                }
+                            }
+
+                            // Create model dictionary with all necessary IDs
+                            var modelDict = new Dictionary<string, string>
+                    {
+                        { "Id", itemId },
+                        { "Name", modelName },
+                        { "ProjectId", projectId },
+                        { "FolderId", folderId },
+                        { "Project", _selectedProjectName ?? "Unknown Project" },
+                        { "LastModified", formattedDate }
+                    };
+
+                            // Add to models list
+                            models.Add(modelDict);
+
+                            // Pre-fetch storage IDs for each model - but don't block the UI thread
+                            _ = Task.Run(async () => {
+                                try
+                                {
+                                    FileDownloadService fileService = new FileDownloadService();
+                                    string storageId = await fileService.GetStorageIdFromItem(projectId, itemId);
+                                    if (!string.IsNullOrEmpty(storageId))
+                                    {
+                                        // We need to use Dispatcher to safely update the dictionary from a background thread
+                                        Application.Current.Dispatcher.Invoke(() => {
+                                            modelDict["StorageId"] = storageId;
+                                        });
+                                        Console.WriteLine($"✅ Added StorageId for {modelName}: {storageId}");
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    Console.WriteLine($"❌ Failed to fetch storage ID for {modelName}: {ex.Message}");
+                                }
+                            });
+                        }
+                    }
+
+                    return models;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Exception occurred: {ex.Message}");
+                Console.WriteLine(ex.StackTrace);
+                return null;
+            }
+        }
+
+        // 5. Updated View in Fusion method to use global IDs
+        private async void BtnViewInFusion_Click(object sender, RoutedEventArgs e)
+        {
+            Console.WriteLine($"View in Fusion button clicked. Using global IDs:");
+            Console.WriteLine($"- Selected Item ID: {_selectedItemId}");
+            Console.WriteLine($"- Selected Project ID: {_selectedProjectId}");
+            Console.WriteLine($"- Selected Item Name: {_selectedItemName}");
+
+            if (string.IsNullOrEmpty(_selectedItemId) || string.IsNullOrEmpty(_selectedProjectId))
+            {
+                MessageBox.Show("❌ Please select a model before viewing in Fusion 360.", "Error", MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                return;
+            }
+
+            string modelFilePath = FindExistingModelFile(_selectedItemName);
+
+            if (modelFilePath == null)
+            {
+                Console.WriteLine("Downloading model");
+                // No matching file found, so download it
+                var fileDownloadService = new FileDownloadService2();
+                await fileDownloadService.DownloadModelAsync(_selectedProjectId, _selectedItemId);
+            }
+
+            try
+            {
+                string saveDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+                    "DownloadedModels", _selectedItemName);
+                Console.WriteLine("Model dir: " + saveDirectory);
+
+                if (!Directory.Exists(saveDirectory))
+                {
+                    LaunchFusionWithModel(saveDirectory);
+                }
+                else
+                {
+                    // Directory exists, so we can just launch Fusion with the model
+                    LaunchFusionWithModel(saveDirectory);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"❌ Error launching Fusion script: {ex.Message}\n{ex.StackTrace}",
+                    "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        // 6. Updated LoadModelsForSelectedProject to auto-select first item
+        private async void LoadModelsForSelectedProject()
+        {
+            if (string.IsNullOrEmpty(_selectedProjectId) || string.IsNullOrEmpty(_folderId))
+            {
+                Console.WriteLine("❌ No project selected, cannot load models.");
+                Dispatcher.Invoke(() =>
+                {
+                    ModelsDataGrid.ItemsSource = null;
+                    ModelsDataGrid.Items.Clear();
+                });
+                return;
+            }
+
+            Console.WriteLine($"🔄 Fetching models for Project: {_selectedProjectId}, Folder: {_folderId}");
+
+            var models = await GetModelsFromProject(_selectedProjectId, _folderId);
+
+            if (models == null || !models.Any())
+            {
+                Console.WriteLine("❌ No models found for this project.");
+                Dispatcher.Invoke(() =>
+                {
+                    ModelsDataGrid.ItemsSource = null;
+                    ModelsDataGrid.Items.Clear();
+                });
+                return;
+            }
+
+            // Log the models we're loading
+            Console.WriteLine($"Found {models.Count} models for project {_selectedProjectId}:");
+            foreach (var model in models)
+            {
+                Console.WriteLine($"- {model["Name"]} (ID: {model["Id"]})");
+            }
+
+            Dispatcher.Invoke(() =>
+            {
+                ModelsDataGrid.ItemsSource = null;
+                ModelsDataGrid.Items.Clear();
+                ModelsDataGrid.ItemsSource = models;
+
+                // Auto-select the first item if available
+                if (models.Count > 0)
+                {
+                    ModelsDataGrid.SelectedIndex = 0;
+                    Console.WriteLine("✅ Auto-selected first model in grid");
+
+                    // The selection changed event will be triggered automatically,
+                    // which will set all the global IDs
+                }
+            });
+
+            Console.WriteLine($"✅ {models.Count} models loaded successfully.");
+        }
+
+        // 7. Updated ProjectTreeView_SelectedItemChanged to set project info and load models
+        private void ProjectTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+        {
+            if (e.NewValue is TreeViewItem selectedItem && selectedItem.Tag is ValueTuple<string, string, bool> projectData)
+            {
+                _selectedProjectId = projectData.Item1;
+                _folderId = projectData.Item2;
+
+                // Extract the project name from the header (remove the 📁 emoji if present)
+                string header = selectedItem.Header.ToString();
+                _selectedProjectName = header.StartsWith("📁 ") ? header.Substring(3) : header;
+
+                Console.WriteLine($"📌 Selected Project: {_selectedProjectName}, Project ID: {_selectedProjectId}, Folder ID: {_folderId}");
+
+                // Load models for the selected project - this will also trigger auto-selection
+                LoadModelsForSelectedProject();
+            }
+        }
+
+        // 8. Additional helper method to update all global IDs from a given model dictionary
+        private async Task UpdateGlobalIdsFromModel(Dictionary<string, string> model)
+        {
+            if (model == null)
+            {
+                Console.WriteLine("❌ Cannot update global IDs - model is null");
+                return;
+            }
+
+            // Update item ID and name
+            if (model.TryGetValue("Id", out string itemId))
+            {
+                _selectedItemId = itemId;
+                Console.WriteLine($"✅ Updated global item ID: {_selectedItemId}");
+            }
+
+            if (model.TryGetValue("Name", out string name))
+            {
+                _selectedItemName = name;
+                Console.WriteLine($"✅ Updated global item name: {_selectedItemName}");
+            }
+
+            // Update project ID and name
+            if (model.TryGetValue("ProjectId", out string projectId))
+            {
+                _selectedProjectId = projectId;
+                Console.WriteLine($"✅ Updated global project ID: {_selectedProjectId}");
+            }
+
+            if (model.TryGetValue("Project", out string project))
+            {
+                _selectedProjectName = project;
+                Console.WriteLine($"✅ Updated global project name: {_selectedProjectName}");
+            }
+
+            // Update folder ID
+            if (model.TryGetValue("FolderId", out string folderId))
+            {
+                _folderId = folderId;
+                Console.WriteLine($"✅ Updated global folder ID: {_folderId}");
+            }
+
+            // Update storage ID or fetch it if missing
+            if (model.TryGetValue("StorageId", out string storageId) && !string.IsNullOrEmpty(storageId))
+            {
+                _objectId = storageId;
+                Console.WriteLine($"✅ Updated global storage ID: {_objectId}");
+            }
+            else if (!string.IsNullOrEmpty(_selectedItemId) && !string.IsNullOrEmpty(_selectedProjectId))
+            {
+                // Fetch and set the storage ID
+                await FetchAndSetStorageId();
+            }
+
+            // Save the full model reference
+            _selectedModel = model;
+        }
+
+        private void BtnGenerate3D_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
     }
+
 }
 
 

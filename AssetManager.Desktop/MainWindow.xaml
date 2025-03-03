@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         xmlns:md="clr-namespace:MaterialDesignThemes.Wpf;assembly=MaterialDesignThemes.Wpf"
+        xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
         xmlns:local="clr-namespace:AssetManager.Desktop"
         mc:Ignorable="d"
         FontFamily="Helvetica"
@@ -102,9 +103,9 @@
                     </Grid>
 
                 </StackPanel>
-               
+
             </Grid>
-        
+
         </Border>
 
         <Border Grid.Row="1" Grid.Column="0" BorderBrush="#797979" BorderThickness="0,0,1,0" Padding="5,0,5,0">
@@ -140,7 +141,7 @@
                     </StackPanel>
 
                 </Grid>
-                
+
                 <TreeView Grid.Row="1" x:Name="ProjectTreeView" BorderThickness="0" Margin="0,10,0,10"
                           SelectedItemChanged="ProjectTreeView_SelectedItemChanged" MouseDoubleClick="ProjectTreeView_MouseDoubleClick" MouseLeftButtonDown="ProjectTreeView_MouseLeftButtonDown">>
                     <TreeView.ItemContainerStyle>
@@ -213,7 +214,7 @@
                         </StackPanel>
 
                     </Button>
-                    
+
                     <Button HorizontalAlignment="Left" BorderThickness="0" x:Name="BtnDeleteModel" Width="100" Height="40" Click="BtnDeleteModel_Click" Cursor="Hand" Margin="180,0,0,0">
                         <Button.Style>
                             <Style TargetType="{x:Type Button}">
@@ -242,7 +243,49 @@
                             <TextBlock Text="Delete" Margin="1,0,0,0" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
-                    
+
+                    <Button HorizontalAlignment="Left" BorderThickness="0" x:Name="BtnViewInApp" 
+                        Width="100" Height="40" Click="BtnViewInApp_Click" Cursor="Hand" 
+                        Margin="420,0,0,0">
+
+                        <Button.Style>
+                            <Style TargetType="{x:Type Button}">
+                                <Setter Property="Background" Value="#4CAF50"/>
+                                <Setter Property="Foreground" Value="White"/>
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="{x:Type Button}">
+                                            <Border Background="{TemplateBinding Background}" BorderThickness="0">
+                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="#388E3C"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+
+                        <StackPanel Orientation="Horizontal">
+                            <md:PackIcon Kind="Eye" Width="17" Height="17" VerticalAlignment="Center"/>
+                            <TextBlock Text="View in App" Margin="5,0,0,0" VerticalAlignment="Center"/>
+
+                        </StackPanel>
+                    </Button>
+                    <Button x:Name="BtnGenerate3D"
+                        Content="Generate 3D Model"
+                        Width="200" Height="40"
+                        Click="BtnGenerate3D_Click"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Center"
+                        Margin="538,0,0,0"/>
+
+
+
+
                     <Button HorizontalAlignment="Left" BorderThickness="0" x:Name="BtnViewInFusion" Width="100" Height="40" Click="BtnViewInFusion_Click" Cursor="Hand" Margin="300,0,0,0">
                         <Button.Style>
                             <Style TargetType="{x:Type Button}">
@@ -270,6 +313,7 @@
                             <TextBlock Text="Open In Fusion" Margin="1,0,0,0" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
+
 
                     <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
 
@@ -366,6 +410,30 @@
                                   ScrollViewer.VerticalScrollBarVisibility="Hidden"
                                   ScrollViewer.HorizontalScrollBarVisibility="Hidden"
                                   Visibility="Visible">
+
+                            <Grid x:Name="EmbeddedViewerContainer" Grid.Row="2" Visibility="Collapsed">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+
+                                <!-- Close Viewer Button -->
+                                <Border Grid.Row="0" Background="#F0F0F0">
+                                    <StackPanel Orientation="Horizontal" Margin="5">
+                                        <Button x:Name="BtnCloseViewer" Content="× Close" 
+                Background="Transparent" BorderBrush="#CCCCCC"
+                Margin="10,5" Padding="8,3" Click="Btn_CloseViewer_Click"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- ✅ Embedded WebView2 Control -->
+                                <wv2:WebView2 x:Name="ForgeWebView" Grid.Row="1" Height="500" Width="1000"/>
+                            </Grid>
+
+
+                            <!-- WebView2 Model Viewer -->
+
+
 
                             <DataGrid.Resources>
                                 <Style TargetType="DataGridColumnHeader">
@@ -498,7 +566,7 @@
                                             </Border>
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
-                                    
+
                                 </DataGridTemplateColumn>
 
                             </DataGrid.Columns>
@@ -512,9 +580,9 @@
                             </ScrollViewer>
 
                         </Grid>
-                            
+
                     </Grid>
-                    
+
                 </Grid>
 
             </Grid>

@@ -1,26 +1,58 @@
 {
   "Version": 1,
-  "WorkspaceRootPath": "C:\\Users\\rahee\\OneDrive - Sheffield Hallam University\\Professional Software Projects\\AssetManager\\",
+  "WorkspaceRootPath": "C:\\Users\\james\\Desktop\\AssetManagerTom2\\AssetManager\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{88313238-3150-490E-AF08-4F9876851643}|AssetManager.Desktop\\AssetManager.Desktop.csproj|c:\\users\\rahee\\onedrive - sheffield hallam university\\professional software projects\\assetmanager\\assetmanager.desktop\\mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{88313238-3150-490E-AF08-4F9876851643}|AssetManager.Desktop\\AssetManager.Desktop.csproj|solutionrelative:assetmanager.desktop\\mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{88313238-3150-490E-AF08-4F9876851643}|AssetManager.Desktop\\AssetManager.Desktop.csproj|c:\\users\\rahee\\onedrive - sheffield hallam university\\professional software projects\\assetmanager\\assetmanager.desktop\\mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
+      "AbsoluteMoniker": "D:0:0:{88313238-3150-490E-AF08-4F9876851643}|AssetManager.Desktop\\AssetManager.Desktop.csproj|c:\\users\\james\\desktop\\assetmanagertom2\\assetmanager\\assetmanager.desktop\\mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
       "RelativeMoniker": "D:0:0:{88313238-3150-490E-AF08-4F9876851643}|AssetManager.Desktop\\AssetManager.Desktop.csproj|solutionrelative:assetmanager.desktop\\mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{CFB6BF8A-57C7-4A5D-B0D4-F155CD2FBB68}|AssetManager.Infrastructure\\AssetManager.Infrastructure.csproj|c:\\users\\rahee\\onedrive - sheffield hallam university\\professional software projects\\assetmanager\\assetmanager.infrastructure\\services\\datamanagement.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{CFB6BF8A-57C7-4A5D-B0D4-F155CD2FBB68}|AssetManager.Infrastructure\\AssetManager.Infrastructure.csproj|solutionrelative:assetmanager.infrastructure\\services\\datamanagement.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{88313238-3150-490E-AF08-4F9876851643}|AssetManager.Desktop\\AssetManager.Desktop.csproj|c:\\users\\james\\desktop\\assetmanagertom2\\assetmanager\\assetmanager.desktop\\mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{88313238-3150-490E-AF08-4F9876851643}|AssetManager.Desktop\\AssetManager.Desktop.csproj|solutionrelative:assetmanager.desktop\\mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{88313238-3150-490E-AF08-4F9876851643}|AssetManager.Desktop\\AssetManager.Desktop.csproj|c:\\users\\rahee\\onedrive - sheffield hallam university\\professional software projects\\assetmanager\\assetmanager.desktop\\loginwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{88313238-3150-490E-AF08-4F9876851643}|AssetManager.Desktop\\AssetManager.Desktop.csproj|c:\\users\\james\\desktop\\assetmanagertom2\\assetmanager\\assetmanager.desktop\\loginwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
+      "RelativeMoniker": "D:0:0:{88313238-3150-490E-AF08-4F9876851643}|AssetManager.Desktop\\AssetManager.Desktop.csproj|solutionrelative:assetmanager.desktop\\loginwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{88313238-3150-490E-AF08-4F9876851643}|AssetManager.Desktop\\AssetManager.Desktop.csproj|c:\\users\\james\\desktop\\assetmanagertom2\\assetmanager\\assetmanager.desktop\\loginwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{88313238-3150-490E-AF08-4F9876851643}|AssetManager.Desktop\\AssetManager.Desktop.csproj|solutionrelative:assetmanager.desktop\\loginwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{88313238-3150-490E-AF08-4F9876851643}|AssetManager.Desktop\\AssetManager.Desktop.csproj|c:\\users\\rahee\\onedrive - sheffield hallam university\\professional software projects\\assetmanager\\assetmanager.desktop\\loginwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
-      "RelativeMoniker": "D:0:0:{88313238-3150-490E-AF08-4F9876851643}|AssetManager.Desktop\\AssetManager.Desktop.csproj|solutionrelative:assetmanager.desktop\\loginwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
+      "AbsoluteMoniker": "D:0:0:{88313238-3150-490E-AF08-4F9876851643}|AssetManager.Desktop\\AssetManager.Desktop.csproj|c:\\users\\james\\desktop\\assetmanagertom2\\assetmanager\\assetmanager.desktop\\forgeviewer.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{88313238-3150-490E-AF08-4F9876851643}|AssetManager.Desktop\\AssetManager.Desktop.csproj|solutionrelative:assetmanager.desktop\\forgeviewer.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{88313238-3150-490E-AF08-4F9876851643}|AssetManager.Desktop\\AssetManager.Desktop.csproj|c:\\users\\james\\desktop\\assetmanagertom2\\assetmanager\\assetmanager.desktop\\forgeviewer.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
+      "RelativeMoniker": "D:0:0:{88313238-3150-490E-AF08-4F9876851643}|AssetManager.Desktop\\AssetManager.Desktop.csproj|solutionrelative:assetmanager.desktop\\forgeviewer.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{88313238-3150-490E-AF08-4F9876851643}|AssetManager.Desktop\\AssetManager.Desktop.csproj|c:\\users\\james\\desktop\\assetmanagertom2\\assetmanager\\assetmanager.desktop\\app.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
+      "RelativeMoniker": "D:0:0:{88313238-3150-490E-AF08-4F9876851643}|AssetManager.Desktop\\AssetManager.Desktop.csproj|solutionrelative:assetmanager.desktop\\app.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{CFB6BF8A-57C7-4A5D-B0D4-F155CD2FBB68}|AssetManager.Infrastructure\\AssetManager.Infrastructure.csproj|c:\\users\\james\\desktop\\assetmanagertom2\\assetmanager\\assetmanager.infrastructure\\services\\autodeskapiservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{CFB6BF8A-57C7-4A5D-B0D4-F155CD2FBB68}|AssetManager.Infrastructure\\AssetManager.Infrastructure.csproj|solutionrelative:assetmanager.infrastructure\\services\\autodeskapiservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{CFB6BF8A-57C7-4A5D-B0D4-F155CD2FBB68}|AssetManager.Infrastructure\\AssetManager.Infrastructure.csproj|c:\\users\\james\\desktop\\assetmanagertom2\\assetmanager\\assetmanager.infrastructure\\services\\tokenmanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{CFB6BF8A-57C7-4A5D-B0D4-F155CD2FBB68}|AssetManager.Infrastructure\\AssetManager.Infrastructure.csproj|solutionrelative:assetmanager.infrastructure\\services\\tokenmanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{CFB6BF8A-57C7-4A5D-B0D4-F155CD2FBB68}|AssetManager.Infrastructure\\AssetManager.Infrastructure.csproj|c:\\users\\james\\desktop\\assetmanagertom2\\assetmanager\\assetmanager.infrastructure\\services\\tokenservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{CFB6BF8A-57C7-4A5D-B0D4-F155CD2FBB68}|AssetManager.Infrastructure\\AssetManager.Infrastructure.csproj|solutionrelative:assetmanager.infrastructure\\services\\tokenservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{CFB6BF8A-57C7-4A5D-B0D4-F155CD2FBB68}|AssetManager.Infrastructure\\AssetManager.Infrastructure.csproj|c:\\users\\james\\desktop\\assetmanagertom2\\assetmanager\\assetmanager.infrastructure\\data\\modelservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{CFB6BF8A-57C7-4A5D-B0D4-F155CD2FBB68}|AssetManager.Infrastructure\\AssetManager.Infrastructure.csproj|solutionrelative:assetmanager.infrastructure\\data\\modelservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{CFB6BF8A-57C7-4A5D-B0D4-F155CD2FBB68}|AssetManager.Infrastructure\\AssetManager.Infrastructure.csproj|c:\\users\\james\\desktop\\assetmanagertom2\\assetmanager\\assetmanager.infrastructure\\services\\datamanagement.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{CFB6BF8A-57C7-4A5D-B0D4-F155CD2FBB68}|AssetManager.Infrastructure\\AssetManager.Infrastructure.csproj|solutionrelative:assetmanager.infrastructure\\services\\datamanagement.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{CFB6BF8A-57C7-4A5D-B0D4-F155CD2FBB68}|AssetManager.Infrastructure\\AssetManager.Infrastructure.csproj|c:\\users\\james\\desktop\\assetmanagertom2\\assetmanager\\assetmanager.infrastructure\\data\\mongoconnection.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{CFB6BF8A-57C7-4A5D-B0D4-F155CD2FBB68}|AssetManager.Infrastructure\\AssetManager.Infrastructure.csproj|solutionrelative:assetmanager.infrastructure\\data\\mongoconnection.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -30,7 +62,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 2,
+          "SelectedChildIndex": 9,
           "Children": [
             {
               "$type": "Bookmark",
@@ -38,11 +70,113 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 4,
+              "Title": "ForgeViewer.xaml.cs",
+              "DocumentMoniker": "C:\\Users\\james\\Desktop\\AssetManagerTom2\\AssetManager\\AssetManager.Desktop\\ForgeViewer.xaml.cs",
+              "RelativeDocumentMoniker": "AssetManager.Desktop\\ForgeViewer.xaml.cs",
+              "ToolTip": "C:\\Users\\james\\Desktop\\AssetManagerTom2\\AssetManager\\AssetManager.Desktop\\ForgeViewer.xaml.cs",
+              "RelativeToolTip": "AssetManager.Desktop\\ForgeViewer.xaml.cs",
+              "ViewState": "AgIAABsAAAAAAAAAAAAYwBoAAABEAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-03-03T01:21:31.205Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "ForgeViewer.xaml",
+              "DocumentMoniker": "C:\\Users\\james\\Desktop\\AssetManagerTom2\\AssetManager\\AssetManager.Desktop\\ForgeViewer.xaml",
+              "RelativeDocumentMoniker": "AssetManager.Desktop\\ForgeViewer.xaml",
+              "ToolTip": "C:\\Users\\james\\Desktop\\AssetManagerTom2\\AssetManager\\AssetManager.Desktop\\ForgeViewer.xaml",
+              "RelativeToolTip": "AssetManager.Desktop\\ForgeViewer.xaml",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
+              "WhenOpened": "2025-03-03T01:20:57.613Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 10,
+              "Title": "ModelService.cs",
+              "DocumentMoniker": "C:\\Users\\james\\Desktop\\AssetManagerTom2\\AssetManager\\AssetManager.Infrastructure\\Data\\ModelService.cs",
+              "RelativeDocumentMoniker": "AssetManager.Infrastructure\\Data\\ModelService.cs",
+              "ToolTip": "C:\\Users\\james\\Desktop\\AssetManagerTom2\\AssetManager\\AssetManager.Infrastructure\\Data\\ModelService.cs",
+              "RelativeToolTip": "AssetManager.Infrastructure\\Data\\ModelService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-03-03T00:19:14.822Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "TokenManager.cs",
+              "DocumentMoniker": "C:\\Users\\james\\Desktop\\AssetManagerTom2\\AssetManager\\AssetManager.Infrastructure\\Services\\TokenManager.cs",
+              "RelativeDocumentMoniker": "AssetManager.Infrastructure\\Services\\TokenManager.cs",
+              "ToolTip": "C:\\Users\\james\\Desktop\\AssetManagerTom2\\AssetManager\\AssetManager.Infrastructure\\Services\\TokenManager.cs",
+              "RelativeToolTip": "AssetManager.Infrastructure\\Services\\TokenManager.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAwwBUAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-03-03T00:16:36.305Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "TokenService.cs",
+              "DocumentMoniker": "C:\\Users\\james\\Desktop\\AssetManagerTom2\\AssetManager\\AssetManager.Infrastructure\\Services\\TokenService.cs",
+              "RelativeDocumentMoniker": "AssetManager.Infrastructure\\Services\\TokenService.cs",
+              "ToolTip": "C:\\Users\\james\\Desktop\\AssetManagerTom2\\AssetManager\\AssetManager.Infrastructure\\Services\\TokenService.cs",
+              "RelativeToolTip": "AssetManager.Infrastructure\\Services\\TokenService.cs",
+              "ViewState": "AgIAANcAAAAAAAAAAAAiwOcAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-03-03T00:16:42.392Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "AutodeskAPIService.cs",
+              "DocumentMoniker": "C:\\Users\\james\\Desktop\\AssetManagerTom2\\AssetManager\\AssetManager.Infrastructure\\Services\\AutodeskAPIService.cs",
+              "RelativeDocumentMoniker": "AssetManager.Infrastructure\\Services\\AutodeskAPIService.cs",
+              "ToolTip": "C:\\Users\\james\\Desktop\\AssetManagerTom2\\AssetManager\\AssetManager.Infrastructure\\Services\\AutodeskAPIService.cs",
+              "RelativeToolTip": "AssetManager.Infrastructure\\Services\\AutodeskAPIService.cs",
+              "ViewState": "AgIAAIUAAAAAAAAAAAAcwAAAAAANAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-03-03T00:15:16.252Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "App.xaml",
+              "DocumentMoniker": "C:\\Users\\james\\Desktop\\AssetManagerTom2\\AssetManager\\AssetManager.Desktop\\App.xaml",
+              "RelativeDocumentMoniker": "AssetManager.Desktop\\App.xaml",
+              "ToolTip": "C:\\Users\\james\\Desktop\\AssetManagerTom2\\AssetManager\\AssetManager.Desktop\\App.xaml",
+              "RelativeToolTip": "AssetManager.Desktop\\App.xaml",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
+              "WhenOpened": "2025-03-03T00:15:07.714Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 12,
+              "Title": "MongoConnection.cs",
+              "DocumentMoniker": "C:\\Users\\james\\Desktop\\AssetManagerTom2\\AssetManager\\AssetManager.Infrastructure\\Data\\MongoConnection.cs",
+              "RelativeDocumentMoniker": "AssetManager.Infrastructure\\Data\\MongoConnection.cs",
+              "ToolTip": "C:\\Users\\james\\Desktop\\AssetManagerTom2\\AssetManager\\AssetManager.Infrastructure\\Data\\MongoConnection.cs",
+              "RelativeToolTip": "AssetManager.Infrastructure\\Data\\MongoConnection.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA8AAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-03-02T22:58:20.881Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
               "Title": "MainWindow.xaml",
-              "DocumentMoniker": "C:\\Users\\rahee\\OneDrive - Sheffield Hallam University\\Professional Software Projects\\AssetManager\\AssetManager.Desktop\\MainWindow.xaml",
+              "DocumentMoniker": "C:\\Users\\james\\Desktop\\AssetManagerTom2\\AssetManager\\AssetManager.Desktop\\MainWindow.xaml",
               "RelativeDocumentMoniker": "AssetManager.Desktop\\MainWindow.xaml",
-              "ToolTip": "C:\\Users\\rahee\\OneDrive - Sheffield Hallam University\\Professional Software Projects\\AssetManager\\AssetManager.Desktop\\MainWindow.xaml",
+              "ToolTip": "C:\\Users\\james\\Desktop\\AssetManagerTom2\\AssetManager\\AssetManager.Desktop\\MainWindow.xaml",
               "RelativeToolTip": "AssetManager.Desktop\\MainWindow.xaml",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
               "WhenOpened": "2025-02-19T10:31:39.926Z",
@@ -50,51 +184,54 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 1,
               "Title": "MainWindow.xaml.cs",
-              "DocumentMoniker": "C:\\Users\\rahee\\OneDrive - Sheffield Hallam University\\Professional Software Projects\\AssetManager\\AssetManager.Desktop\\MainWindow.xaml.cs",
+              "DocumentMoniker": "C:\\Users\\james\\Desktop\\AssetManagerTom2\\AssetManager\\AssetManager.Desktop\\MainWindow.xaml.cs",
               "RelativeDocumentMoniker": "AssetManager.Desktop\\MainWindow.xaml.cs",
-              "ToolTip": "C:\\Users\\rahee\\OneDrive - Sheffield Hallam University\\Professional Software Projects\\AssetManager\\AssetManager.Desktop\\MainWindow.xaml.cs",
+              "ToolTip": "C:\\Users\\james\\Desktop\\AssetManagerTom2\\AssetManager\\AssetManager.Desktop\\MainWindow.xaml.cs",
               "RelativeToolTip": "AssetManager.Desktop\\MainWindow.xaml.cs",
-              "ViewState": "AgIAAIUAAAAAAAAAAAAAAI0AAABWAAAAAAAAAA==",
+              "ViewState": "AgIAALgGAAAAAAAAAAAIwG4HAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-02-19T10:46:21.53Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 11,
               "Title": "DataManagement.cs",
-              "DocumentMoniker": "C:\\Users\\rahee\\OneDrive - Sheffield Hallam University\\Professional Software Projects\\AssetManager\\AssetManager.Infrastructure\\Services\\DataManagement.cs",
+              "DocumentMoniker": "C:\\Users\\james\\Desktop\\AssetManagerTom2\\AssetManager\\AssetManager.Infrastructure\\Services\\DataManagement.cs",
               "RelativeDocumentMoniker": "AssetManager.Infrastructure\\Services\\DataManagement.cs",
-              "ToolTip": "C:\\Users\\rahee\\OneDrive - Sheffield Hallam University\\Professional Software Projects\\AssetManager\\AssetManager.Infrastructure\\Services\\DataManagement.cs",
+              "ToolTip": "C:\\Users\\james\\Desktop\\AssetManagerTom2\\AssetManager\\AssetManager.Infrastructure\\Services\\DataManagement.cs",
               "RelativeToolTip": "AssetManager.Infrastructure\\Services\\DataManagement.cs",
-              "ViewState": "AgIAAHgAAACAAAAAAAAowDIAAABsAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAADIAAABsAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-02-20T10:26:25.31Z"
+              "WhenOpened": "2025-02-20T10:26:25.31Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
               "DocumentIndex": 3,
               "Title": "LoginWindow.xaml.cs",
-              "DocumentMoniker": "C:\\Users\\rahee\\OneDrive - Sheffield Hallam University\\Professional Software Projects\\AssetManager\\AssetManager.Desktop\\LoginWindow.xaml.cs",
+              "DocumentMoniker": "C:\\Users\\james\\Desktop\\AssetManagerTom2\\AssetManager\\AssetManager.Desktop\\LoginWindow.xaml.cs",
               "RelativeDocumentMoniker": "AssetManager.Desktop\\LoginWindow.xaml.cs",
-              "ToolTip": "C:\\Users\\rahee\\OneDrive - Sheffield Hallam University\\Professional Software Projects\\AssetManager\\AssetManager.Desktop\\LoginWindow.xaml.cs",
+              "ToolTip": "C:\\Users\\james\\Desktop\\AssetManagerTom2\\AssetManager\\AssetManager.Desktop\\LoginWindow.xaml.cs",
               "RelativeToolTip": "AssetManager.Desktop\\LoginWindow.xaml.cs",
-              "ViewState": "AgIAABEAAADg/v////8pwC4AAAAZAAAAAAAAAA==",
+              "ViewState": "AgIAABoAAAAAAAAAAADgvyAAAAAnAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-02-19T15:30:37.232Z"
+              "WhenOpened": "2025-02-19T15:30:37.232Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 2,
               "Title": "LoginWindow.xaml",
-              "DocumentMoniker": "C:\\Users\\rahee\\OneDrive - Sheffield Hallam University\\Professional Software Projects\\AssetManager\\AssetManager.Desktop\\LoginWindow.xaml",
+              "DocumentMoniker": "C:\\Users\\james\\Desktop\\AssetManagerTom2\\AssetManager\\AssetManager.Desktop\\LoginWindow.xaml",
               "RelativeDocumentMoniker": "AssetManager.Desktop\\LoginWindow.xaml",
-              "ToolTip": "C:\\Users\\rahee\\OneDrive - Sheffield Hallam University\\Professional Software Projects\\AssetManager\\AssetManager.Desktop\\LoginWindow.xaml",
+              "ToolTip": "C:\\Users\\james\\Desktop\\AssetManagerTom2\\AssetManager\\AssetManager.Desktop\\LoginWindow.xaml",
               "RelativeToolTip": "AssetManager.Desktop\\LoginWindow.xaml",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
-              "WhenOpened": "2025-02-19T13:45:29.407Z"
+              "WhenOpened": "2025-02-19T13:45:29.407Z",
+              "EditorCaption": ""
             }
           ]
         }

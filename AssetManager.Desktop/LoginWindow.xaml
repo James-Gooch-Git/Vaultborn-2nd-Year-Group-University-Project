@@ -47,8 +47,11 @@
             </Button>
 
         </Grid>
-        
+
         <wv2:WebView2 Name="webView" Source="about:blank" Height="400" Width="300" HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Column="1"/>
-    </Grid> 
+    </Grid>
+
+
+
     
 </Window> 

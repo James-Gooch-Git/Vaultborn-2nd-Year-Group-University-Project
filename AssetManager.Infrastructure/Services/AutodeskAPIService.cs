@@ -12,8 +12,8 @@ namespace ForgeViewerApp
 {
     public class AutodeskApiService
     {
-        string ClientId = Environment.GetEnvironmentVariable("CLIENT_ID");
-        string ClientSecret = Environment.GetEnvironmentVariable("CLIENT_SECRET");
+        string ClientId = "eK6vNFNyFAin4PouWXfN00RfePKGZwSqeh6RTcjKAvHAqyOW";
+        string ClientSecret = "EqBJJlqKczzkLfZSJO2cg3BajCxkZGGTGwHWFhn5jrpGSEledCG1deeBVALq734W";
         private readonly HttpClient _client = new HttpClient();
         private readonly TokenService _tokenService;
 
