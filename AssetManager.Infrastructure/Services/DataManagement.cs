@@ -607,6 +607,53 @@ namespace AssetManager.Infrastructure.Services
             }
         }
 
+        public static async Task<List<(string HubID, string HubName, string HubType)>> GetAllHubs()
+        {
+            string url = "https://developer.api.autodesk.com/project/v1/hubs";
+            string _accessToken = TokenManager.GetToken();
+            var hubList = new List<(string, string, string)>();
+
+            if (string.IsNullOrEmpty(_accessToken))
+            {
+                Console.WriteLine("❌ Error: Access token is missing or invalid.");
+                return hubList;
+            }
+
+            try
+            {
+                client.DefaultRequestHeaders.Clear();
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
+                HttpResponseMessage response = await client.GetAsync(url);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine($"❌ Error: {response.StatusCode} - {response.ReasonPhrase}");
+                    return hubList;
+                }
+
+                string jsonResponse = await response.Content.ReadAsStringAsync();
+                using JsonDocument doc = JsonDocument.Parse(jsonResponse);
+                JsonElement root = doc.RootElement;
+
+                foreach (JsonElement hub in root.GetProperty("data").EnumerateArray())
+                {
+                    string hubType = hub.GetProperty("attributes").GetProperty("extension").GetProperty("type").GetString();
+                    string hubID = hub.GetProperty("id").GetString();
+                    string hubName = hub.GetProperty("attributes").GetProperty("name").GetString();
+
+                    Console.WriteLine($"🔍 Found Hub: Type={hubType}, ID={hubID}, Name={hubName}");
+
+                    hubList.Add((hubID, hubName, hubType));
+                }
+
+                return hubList;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Exception occurred: {ex.Message}");
+                return hubList;
+            }
+        }
 
 
 

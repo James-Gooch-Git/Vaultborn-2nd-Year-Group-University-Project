@@ -19,6 +19,7 @@ using System.Windows.Media.Effects;
 using System.Windows.Input;
 using MongoDB.Bson;
 using System.Text;
+using System.Data;
 
 
 namespace AssetManager.Desktop
@@ -31,13 +32,17 @@ namespace AssetManager.Desktop
         private string _selectedProjectName;
         private string _selectedItemId;
         private string _selectedItemName;
+        private string selectedHubID;
         private string _folderId;
         private string hubID;
         private string _objectId;
+        private List<(string HubID, string HubName, string HubType)> hubs = new List<(string, string, string)>();
 
         private readonly ModelUpload _uploadService;
         private List<Dictionary<string, string>> Models;
         private string _userId = Environment.GetEnvironmentVariable("userId", EnvironmentVariableTarget.User);
+        private static readonly HttpClient client = new HttpClient();
+        private string selectedHubName = "Loading..."; // Default value before hubs load
 
 
         // ✅ Constructor
@@ -73,9 +78,19 @@ namespace AssetManager.Desktop
             UserPic_Image.Source = new BitmapImage(new Uri(await GetUserPic(_userId)));
 
             // 🔹 Initialize data
-            LoadProjectsAsync();
-            LoadAllModels();
+            LoadHubsAsync();
+            await LoadAllModels();
+
+            var hubDetails = await DataManagement.GetPersonalHubDetails();
+
+           
+            var (hubID, hubName, hubType) = hubDetails.Value;
+            Console.WriteLine($"Hub ID: {hubID}, Name: {hubName}, Type: {hubType}");
+
+            LoadProjectsForHub(hubID);
+
             await TestDataManagement();
+
             FusionManager.InitializePythonEngine();
 
             Username_TextBlock.Text = await GetUserName(_userId);
@@ -417,44 +432,43 @@ namespace AssetManager.Desktop
 
 
 
-        private async void LoadProjectsAsync()
+        private async void LoadProjectsForHub(string hubID)
         {
-            var results = await DataManagement.GetPersonalHubDetails();
-
-            if (results == null || !results.HasValue)
+            try
             {
-                Console.WriteLine("❌ Error: No personal hub details found.");
-                return;
-            }
-
-            var (hubID, hubName, hubType) = results.Value;
-            Console.WriteLine($"✅ Retrieved Hub ID: {hubID}, Name: {hubName}, Type: {hubType}");
-
-            var projects = await DataManagement.GetAllProjectsFromHub(hubID);
-            if (projects == null || !projects.Any())
-            {
-                Console.WriteLine("❌ No projects found or failed to load projects.");
-            }
-
-            ProjectTreeView.Items.Clear();
-
-            foreach (var (projectId, projectName) in projects)
-            {
-                var topFolder = await DataManagement.GetTopLevelFolder(hubID, projectId);
-                var folderId = topFolder.Item1;
-
-                TreeViewItem projectItem = new TreeViewItem
+                var projects = await DataManagement.GetAllProjectsFromHub(hubID);
+                if (projects == null || !projects.Any())
                 {
-                    Header = $"📁 {projectName}",
-                    Tag = (projectId, folderId, true)
-                };
+                    Console.WriteLine("❌ No projects found or failed to load projects.");
+                    ProjectTreeView.Items.Clear(); // Clear tree if no projects are found
+                    return;
+                }
 
-                projectItem.Items.Add(null); // Placeholder for expansion
-                projectItem.Expanded += TreeViewItem_Expanded;
+                ProjectTreeView.Items.Clear(); // ✅ Clear previous projects before loading new ones
 
-                ProjectTreeView.Items.Add(projectItem);
+                foreach (var (projectId, projectName) in projects)
+                {
+                    var topFolder = await DataManagement.GetTopLevelFolder(hubID, projectId);
+                    var folderId = topFolder.Item1;
+
+                    TreeViewItem projectItem = new TreeViewItem
+                    {
+                        Header = $"📁 {projectName}",
+                        Tag = (projectId, folderId, true)
+                    };
+
+                    projectItem.Items.Add(null); // Placeholder for lazy loading
+                    projectItem.Expanded += TreeViewItem_Expanded;
+
+                    ProjectTreeView.Items.Add(projectItem);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading projects: {ex.Message}");
             }
         }
+
 
         private async void TreeViewItem_Expanded(object sender, RoutedEventArgs e)
         {
@@ -648,6 +662,7 @@ namespace AssetManager.Desktop
                     foreach (JsonElement hub in hubsRoot.GetProperty("data").EnumerateArray())
                     {
                         string hubID = hub.GetProperty("id").GetString();
+                        hubID = selectedHubID;
 
                         string projectsUrl = $"https://developer.api.autodesk.com/project/v1/hubs/{hubID}/projects";
                         HttpResponseMessage projectsResponse = await client.GetAsync(projectsUrl);
@@ -807,7 +822,7 @@ namespace AssetManager.Desktop
 
   
         
-                private void LaunchFusionWithModel(string modelPath)
+        private void LaunchFusionWithModel(string modelPath)
         {
             string fusion360Uri = "fusion360://command=openCloudModel&itemId=urn:adsk.wipprod:dm.lineage:pwGqGrbgRx6IUlR4Wtskdg";
             
@@ -1298,6 +1313,7 @@ namespace AssetManager.Desktop
             if (Models == null || Models.Count == 0)
             {
                 Models = await GetAllModels();
+                
                 ModelsDataGrid.ItemsSource = Models;
             }
 
@@ -1902,6 +1918,87 @@ namespace AssetManager.Desktop
         {
 
         }
+
+        
+
+        private async void LoadHubsAsync()
+        {
+            try
+            {
+                hubs.Clear(); // Clear previous hubs
+                var hubDetails = await DataManagement.GetAllHubs();
+
+                if (hubDetails != null && hubDetails.Count > 0)
+                {
+                    hubs.AddRange(hubDetails);
+
+                    // Set the first hub as the default selected hub
+                    selectedHubName = hubs[0].HubName;
+                    selectedHubID = hubs[0].HubID;
+
+                    // Update UI
+                    HubsHeaderTextBlock.Text = $"Hubs - {selectedHubName}";
+                }
+                else
+                {
+                    selectedHubName = "No Hubs Found";
+                    HubsHeaderTextBlock.Text = $"Hubs - {selectedHubName}";
+                }
+
+                PopulateHubMenu();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading hubs: {ex.Message}");
+            }
+        }
+
+        private void PopulateHubMenu()
+        {
+            HubsMenuStackPanel.Children.Clear(); // Clear previous entries
+
+            foreach (var hub in hubs)
+            {
+                Button hubButton = new Button
+                {
+                    Content = hub.HubName,
+                    Tag = hub.HubID,
+                    Padding = new Thickness(5),
+                    HorizontalAlignment = HorizontalAlignment.Stretch
+                };
+
+                hubButton.Click += HubButton_Click;
+                HubsMenuStackPanel.Children.Add(hubButton);
+            }
+
+            HubsMenuPopup.StaysOpen = true; // Ensures popup stays open
+        }
+
+        private void HubButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button && button.Tag is string hubID)
+            {
+                selectedHubName = button.Content.ToString();
+                selectedHubID = hubID;
+
+                // Update UI to reflect selected hub
+                HubsHeaderTextBlock.Text = $"Hubs - {selectedHubName}";
+
+                HubsMenuPopup.IsOpen = false; // Close the menu after selecting
+
+                LoadProjectsForHub(selectedHubID);
+                //GetAllModels();
+            }
+        }
+
+        private void ToggleHubsMenu(object sender, MouseButtonEventArgs e)
+        {
+            HubsMenuPopup.IsOpen = !HubsMenuPopup.IsOpen;
+        }
+
+
+
+
     }
 
 }
