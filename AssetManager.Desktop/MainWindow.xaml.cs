@@ -548,115 +548,7 @@ namespace AssetManager.Desktop
             }
         }
 
-        private async void Grid_Click(object sender, MouseButtonEventArgs e)
-        {
-            if (string.IsNullOrEmpty(_selectedProjectId))
-            {
-                MessageBox.Show("❌ Please select a project to view models.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
 
-            ModelsDataGrid.Visibility = Visibility.Collapsed; // Hide DataGrid
-            Grid_View.Visibility = Visibility.Visible; // Show Grid View
-
-            // Clear previous grid data
-            ModelsContainer.Children.Clear();
-
-            try
-            {
-                // Fetch models for the selected project only
-                List<Dictionary<string, string>> models = await GetModelsFromProject(_selectedProjectId, _folderId);
-
-                if (models == null || models.Count == 0)
-                {
-                    MessageBox.Show("No models found for this project.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
-                    return;
-                }
-
-                foreach (var model in models)
-                {
-                    string projectId = _selectedProjectId;
-                    string itemId = model["Id"];
-
-                    // UI Container for Model
-                    Border modelSquare = new Border
-                    {
-                        Width = 263,
-                        Height = 300, // Increased to fit the image
-                        CornerRadius = new CornerRadius(5),
-                        Background = Brushes.White,
-                        BorderBrush = Brushes.LightGray,
-                        BorderThickness = new Thickness(1),
-                        Margin = new Thickness(10),
-                        Effect = new DropShadowEffect
-                        {
-                            Color = Colors.Black,
-                            Opacity = 0.1,
-                            BlurRadius = 10,
-                            ShadowDepth = 2
-                        }
-                    };
-
-                    StackPanel content = new StackPanel
-                    {
-                        Orientation = Orientation.Vertical,
-                        VerticalAlignment = VerticalAlignment.Center,
-                        HorizontalAlignment = HorizontalAlignment.Left
-                    };
-
-                    // Thumbnail Image
-                    Image thumbnailImage = new Image
-                    {
-                        Width = 200,
-                        Height = 200,
-                        Margin = new Thickness(10),
-                        Stretch = Stretch.Uniform
-                    };
-
-                    // Load thumbnail asynchronously
-                    _ = ShowThumbnail(projectId, itemId, thumbnailImage);
-
-                    TextBlock modelName = new TextBlock
-                    {
-                        Text = model["Name"],
-                        FontSize = 16,
-                        FontWeight = FontWeights.Normal,
-                        TextAlignment = TextAlignment.Center,
-                        HorizontalAlignment = HorizontalAlignment.Left,
-                        TextWrapping = TextWrapping.Wrap,
-                        Margin = new Thickness(5, 2, 5, 2)
-                    };
-
-                    TextBlock projectName = new TextBlock
-                    {
-                        Text = $"Project: {model["Project"]}",
-                        FontSize = 14,
-                        FontWeight = FontWeights.Normal,
-                        Foreground = Brushes.Gray,
-                        TextAlignment = TextAlignment.Left,
-                        HorizontalAlignment = HorizontalAlignment.Left,
-                        TextWrapping = TextWrapping.Wrap,
-                        Margin = new Thickness(5, 2, 5, 2)
-                    };
-
-                    content.Children.Add(thumbnailImage);
-                    content.Children.Add(modelName);
-                    content.Children.Add(projectName);
-                    modelSquare.Child = content;
-                    ModelsContainer.Children.Add(modelSquare);
-                }
-
-                Console.WriteLine($"✅ {models.Count} models loaded successfully in grid view.");
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"❌ Error loading models: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-
-            // Update UI styles to reflect active view mode
-            List_Border.Background = Brushes.Transparent;
-            Grid_Border.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
-        }
 
         public async Task ShowThumbnail(string projectId, string itemId, Image targetImage)
         {
@@ -1318,6 +1210,116 @@ namespace AssetManager.Desktop
 
             //List_Icon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F25505"));
         }
+        private async void Grid_Click(object sender, MouseButtonEventArgs e)
+        {
+            if (string.IsNullOrEmpty(_selectedProjectId))
+            {
+                MessageBox.Show("❌ Please select a project to view models.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            ModelsDataGrid.Visibility = Visibility.Collapsed; // Hide DataGrid
+            Grid_View.Visibility = Visibility.Visible; // Show Grid View
+
+            // Clear previous grid data
+            ModelsContainer.Children.Clear();
+
+            try
+            {
+                // Fetch models for the selected project only
+                List<Dictionary<string, string>> models = await GetModelsFromProject(_selectedProjectId, _folderId);
+
+                if (models == null || models.Count == 0)
+                {
+                    MessageBox.Show("No models found for this project.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                foreach (var model in models)
+                {
+                    string projectId = _selectedProjectId;
+                    string itemId = model["Id"];
+
+                    // UI Container for Model
+                    Border modelSquare = new Border
+                    {
+                        Width = 263,
+                        Height = 300, // Increased to fit the image
+                        CornerRadius = new CornerRadius(5),
+                        Background = Brushes.White,
+                        BorderBrush = Brushes.LightGray,
+                        BorderThickness = new Thickness(1),
+                        Margin = new Thickness(10),
+                        Effect = new DropShadowEffect
+                        {
+                            Color = Colors.Black,
+                            Opacity = 0.1,
+                            BlurRadius = 10,
+                            ShadowDepth = 2
+                        }
+                    };
+
+                    StackPanel content = new StackPanel
+                    {
+                        Orientation = Orientation.Vertical,
+                        VerticalAlignment = VerticalAlignment.Center,
+                        HorizontalAlignment = HorizontalAlignment.Left
+                    };
+
+                    // Thumbnail Image
+                    Image thumbnailImage = new Image
+                    {
+                        Width = 200,
+                        Height = 200,
+                        Margin = new Thickness(10),
+                        Stretch = Stretch.Uniform
+                    };
+
+                    // Load thumbnail asynchronously
+                    _ = ShowThumbnail(projectId, itemId, thumbnailImage);
+
+                    TextBlock modelName = new TextBlock
+                    {
+                        Text = model["Name"],
+                        FontSize = 16,
+                        FontWeight = FontWeights.Normal,
+                        TextAlignment = TextAlignment.Center,
+                        HorizontalAlignment = HorizontalAlignment.Left,
+                        TextWrapping = TextWrapping.Wrap,
+                        Margin = new Thickness(5, 2, 5, 2)
+                    };
+
+                    TextBlock projectName = new TextBlock
+                    {
+                        Text = $"Project: {model["Project"]}",
+                        FontSize = 14,
+                        FontWeight = FontWeights.Normal,
+                        Foreground = Brushes.Gray,
+                        TextAlignment = TextAlignment.Left,
+                        HorizontalAlignment = HorizontalAlignment.Left,
+                        TextWrapping = TextWrapping.Wrap,
+                        Margin = new Thickness(5, 2, 5, 2)
+                    };
+
+                    content.Children.Add(thumbnailImage);
+                    content.Children.Add(modelName);
+                    content.Children.Add(projectName);
+                    modelSquare.Child = content;
+                    ModelsContainer.Children.Add(modelSquare);
+                }
+
+                Console.WriteLine($"✅ {models.Count} models loaded successfully in grid view.");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"❌ Error loading models: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+
+            // Update UI styles to reflect active view mode
+            List_Border.Background = Brushes.Transparent;
+            Grid_Border.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
+        }
+
         #endregion 
 
         //NEEDS MIGRATING TO FUSION SERVICES || OPEN WITH FUSION FUNCTIONALITY //
@@ -1507,7 +1509,7 @@ namespace AssetManager.Desktop
         #endregion
 
         //FORGE VIEWER 
-
+        #region Forge Viewer
         private async void BtnViewInApp_Click(object sender, RoutedEventArgs e)
         {
             ModelsDataGrid.Visibility = Visibility.Collapsed;
@@ -1654,7 +1656,7 @@ namespace AssetManager.Desktop
                 Console.WriteLine($"❌ WebView2 initialization failed: {ex.Message}");
             }
         }
-
+        #endregion
 
 
 
@@ -1719,54 +1721,7 @@ namespace AssetManager.Desktop
             _selectedModel = model;
         }
 
-/*        private async void LoadForgeViewer(string encodedUrn)
-        {
-            TokenService tokenService = new TokenService();
 
-            // Retrieve the objectId and encode it to URN format
-            //AutodeskApiService apiService = new AutodeskApiService(tokenService);
-            string accessToken = _accessToken;
-
-            await ForgeWebView.EnsureCoreWebView2Async(); // Ensure WebView2 is initialized
-
-            string htmlContent = $@"
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset='UTF-8'>
-  <meta http-equiv='X-UA-Compatible' content='IE=Edge' />
-  <title>Forge Viewer</title>
-  <script src='https://developer.api.autodesk.com/modelderivative/v2/viewers/7.52/viewer3D.min.js'></script>
-  <link rel='stylesheet' href='https://developer.api.autodesk.com/modelderivative/v2/viewers/7.52/style.min.css' type='text/css'>
-</head>
-<body>
-  <div id='forgeViewer' style='width: 100%; height: 100vh;'></div>
-  <script>
-    var options = {{
-      env: 'AutodeskProduction',
-      getAccessToken: function(onTokenReady) {{
-          onTokenReady('{accessToken}', 3599);
-      }}
-    }};
-    var documentId = 'urn:{encodedUrn}';
-    Autodesk.Viewing.Initializer(options, function() {{
-      var viewerDiv = document.getElementById('forgeViewer');
-      var viewer = new Autodesk.Viewing.GuiViewer3D(viewerDiv);
-      viewer.start();
-      Autodesk.Viewing.Document.load(documentId, function(doc) {{
-        var defaultModel = doc.getRoot().getDefaultGeometry();
-        viewer.loadDocumentNode(doc, defaultModel);
-      }}, function(errorMsg) {{
-        console.error('Error loading document: ' + errorMsg);
-      }});
-    }});
-  </script>
-</body>
-</html>
-";
-
-            ForgeWebView.NavigateToString(htmlContent);
-        }*/
 
         public string EncodeStorageIdToUrn(string storageId)
         {
