@@ -109,6 +109,7 @@ namespace AssetManager.Desktop
 
                 Username_TextBlock.Text = await GetUserName(_userId);
                 UserPic_Image.Source = new BitmapImage(new Uri(await GetUserPic(_userId)));
+                DisplayGridModels();
             }
             catch (Exception ex)
             {
@@ -443,57 +444,7 @@ namespace AssetManager.Desktop
             }
         }
 
-        private async Task LoadThumbnailAsync(string projectId, string itemId, Image thumbnailImage)
-        {
-            string thumbnailUrl = await DataManagement.FetchThumbnailUrl(_objectId, _accessToken);
-
-            if (string.IsNullOrEmpty(thumbnailUrl))
-            {
-                Console.WriteLine($"❌ No thumbnail found for item {itemId}.");
-                return;
-            }
-
-            try
-            {
-                using (HttpClient client = new HttpClient())
-                {
-                    // Ensure valid token
-                    string accessToken = TokenManager.GetToken();
-                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-
-                    Console.WriteLine($"📷 Fetching thumbnail from: {thumbnailUrl}");
-
-                    byte[] imageBytes = await client.GetByteArrayAsync(thumbnailUrl);
-
-                    BitmapImage bitmapImage = new BitmapImage();
-                    using (MemoryStream stream = new MemoryStream(imageBytes))
-                    {
-                        bitmapImage.BeginInit();
-                        bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
-                        bitmapImage.StreamSource = stream;
-                        bitmapImage.EndInit();
-                    }
-
-                    bitmapImage.Freeze();
-
-                    // Update UI on the main thread
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        thumbnailImage.Source = bitmapImage;
-                    });
-                }
-            }
-            catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.Unauthorized)
-            {
-                Console.WriteLine("❌ Unauthorized! Check your access token.");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"❌ Error loading thumbnail: {ex.Message}");
-            }
-        }
-
-
+ 
 
         //private void DragDeltaThumb(object sender, DragDeltaEventArgs e)
         //{
@@ -638,33 +589,38 @@ namespace AssetManager.Desktop
 
                     if (!isReady)
                     {
-                        Console.WriteLine("⏳ Model not ready. Requesting translation...");
-                        bool translationStarted = await modelService.SubmitModelForTranslationAsync(encodedUrn, accessToken);
-                        if (!translationStarted)
+                        bool isCompleted = await modelService.IsTranslationCompletedAsync(encodedUrn, accessToken);
+                        if (!isCompleted)
                         {
-                            Console.WriteLine("❌ Translation failed. Cannot fetch thumbnail.");
-                            return;
-                        }
-
-                        // Wait for translation to complete
-                        int maxRetries = 5;
-                        int delayMs = 5000;
-                        for (int attempt = 1; attempt <= maxRetries; attempt++)
-                        {
-                            Console.WriteLine($"⏳ Waiting for translation... (Attempt {attempt}/{maxRetries})");
-                            await Task.Delay(delayMs);
-
-                            if (await ModelDerivativeService.IsModelDerivativeReady(encodedUrn))
+                            Console.WriteLine("⏳ Model not ready. Requesting translation...");
+                            bool translationStarted = await modelService.SubmitModelForTranslationAsync(encodedUrn, accessToken);
+                            if (!translationStarted)
                             {
-                                Console.WriteLine("✅ Model translation completed!");
-                                break;
-                            }
-
-                            if (attempt == maxRetries)
-                            {
-                                Console.WriteLine("❌ Model translation failed after multiple attempts.");
+                                Console.WriteLine("❌ Translation failed. Cannot fetch thumbnail.");
                                 return;
                             }
+
+                            // Wait for translation to complete
+                            int maxRetries = 5;
+                            int delayMs = 5000;
+                            for (int attempt = 1; attempt <= maxRetries; attempt++)
+                            {
+                                Console.WriteLine($"⏳ Waiting for translation... (Attempt {attempt}/{maxRetries})");
+                                await Task.Delay(delayMs);
+
+                                if (await ModelDerivativeService.IsModelDerivativeReady(encodedUrn))
+                                {
+                                    Console.WriteLine("✅ Model translation completed!");
+                                    break;
+                                }
+
+                                if (attempt == maxRetries)
+                                {
+                                    Console.WriteLine("❌ Model translation failed after multiple attempts.");
+                                    return;
+                                }
+                            }
+                       
                         }
                     }
 
@@ -732,92 +688,10 @@ namespace AssetManager.Desktop
 
     
 
-        private Image FindThumbnailImageControl(string itemId)
-        {
-            foreach (UIElement element in ModelsContainer.Children)
-            {
-                if (element is Border border && border.Child is StackPanel panel)
-                {
-                    foreach (var child in panel.Children)
-                    {
-                        if (child is Image img && img.Tag.ToString() == itemId)
-                        {
-                            return img;
-                        }
-                    }
-                }
-            }
-            return null;
-        }
+       
 
 
-        private async Task<bool> EnsureModelTranslation(string encodedUrn)
-        {
-            ModelDerivativeService modelService = new ModelDerivativeService(client);
 
-            bool isReady = await ModelDerivativeService.IsModelDerivativeReady(encodedUrn);
-            if (!isReady)
-            {
-                Console.WriteLine("🔄 Model is not ready for SVF. Requesting translation...");
-                bool translationStarted = await modelService.SubmitModelForTranslationAsync(encodedUrn, _accessToken);
-
-                if (!translationStarted)
-                {
-                    Console.WriteLine("❌ Translation failed. Cannot fetch thumbnail.");
-                    return false;
-                }
-
-                Console.WriteLine("⏳ Waiting for model translation...");
-                await Task.Delay(10000); // Wait before retrying
-            }
-
-            return true;
-        }
-
-
-        public async Task<BitmapImage> GetThumbnail(string urn)
-        {
-            try
-            {
-                if (!await EnsureModelTranslation(urn))
-                {
-                    Console.WriteLine("❌ Model translation failed, skipping thumbnail retrieval.");
-                    return null;
-                }
-
-                string thumbnailUrl = $"https://developer.api.autodesk.com/modelderivative/v2/designdata/{urn}/thumbnail";
-
-                using (HttpClient client = new HttpClient())
-                {
-                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
-
-                    Console.WriteLine($"📷 Fetching thumbnail from: {thumbnailUrl}");
-
-                    byte[] imageBytes = await client.GetByteArrayAsync(thumbnailUrl);
-                    BitmapImage bitmapImage = new BitmapImage();
-                    using (MemoryStream stream = new MemoryStream(imageBytes))
-                    {
-                        bitmapImage.BeginInit();
-                        bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
-                        bitmapImage.StreamSource = stream;
-                        bitmapImage.EndInit();
-                    }
-
-                    bitmapImage.Freeze(); // Make it usable across threads
-                    return bitmapImage;
-                }
-            }
-            catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
-            {
-                Console.WriteLine("❌ Thumbnail not found. The model might still be processing.");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"❌ Error loading thumbnail: {ex.Message}");
-            }
-
-            return null;
-        }
 
 
         private async void LoadProjectsForHub(string hubID)
@@ -1239,67 +1113,7 @@ namespace AssetManager.Desktop
             }
         }
 
-        // 🔹 Fetch all versions of an Item
-        private async Task<List<(string versionId, string versionName, string storageId)>> GetVersionsForItemAsync(string projectId, string itemId)
-        {
-            if (string.IsNullOrEmpty(projectId) || string.IsNullOrEmpty(itemId))
-            {
-                Console.WriteLine("❌ Error: Project ID or Item ID is missing.");
-                return null;
-            }
 
-            string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/items/{itemId}/versions";
-            string accessToken = TokenManager.GetToken();
-
-            using HttpClient httpClient = new HttpClient();
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-
-            try
-            {
-                Console.WriteLine($"🔍 Fetching versions for Item: {itemId}");
-                HttpResponseMessage response = await httpClient.GetAsync(url);
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    Console.WriteLine($"❌ Error retrieving versions. Status Code: {response.StatusCode}");
-                    return null;
-                }
-
-                string jsonResponse = await response.Content.ReadAsStringAsync();
-                using JsonDocument doc = JsonDocument.Parse(jsonResponse);
-                JsonElement root = doc.RootElement;
-
-                List<(string versionId, string versionName, string storageId)> versions = new();
-
-                if (root.TryGetProperty("data", out JsonElement versionsArray))
-                {
-                    foreach (JsonElement versionElement in versionsArray.EnumerateArray())
-                    {
-                        string versionId = versionElement.GetProperty("id").GetString();
-                        string versionName = versionElement.GetProperty("attributes").GetProperty("displayName").GetString();
-
-                        string storageId = null;
-                        if (versionElement.TryGetProperty("relationships", out JsonElement relationships) &&
-                            relationships.TryGetProperty("storage", out JsonElement storage) &&
-                            storage.TryGetProperty("data", out JsonElement storageData) &&
-                            storageData.TryGetProperty("id", out JsonElement storageIdElement))
-                        {
-                            storageId = storageIdElement.GetString();
-                        }
-
-                        Console.WriteLine($"📄 Found Version: {versionName} (ID: {versionId}) - Storage ID: {storageId}");
-                        versions.Add((versionId, versionName, storageId));
-                    }
-                }
-
-                return versions;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"❌ Exception while retrieving versions: {ex.Message}");
-                return null;
-            }
-        }
 
         private void BtnLogout_Click(object sender, RoutedEventArgs e)
         {
@@ -1401,86 +1215,7 @@ namespace AssetManager.Desktop
         }
 
      
-        private async Task RetrieveItemIdAsync()
-        {
-            string accessToken = TokenManager.GetToken();
-            if (string.IsNullOrEmpty(_selectedProjectId) || string.IsNullOrEmpty(_folderId))
-            {
-                Console.WriteLine("❌ Cannot retrieve items - project or folder is missing.");
-                return;
-            }
-
-            try
-            {
-                Console.WriteLine($"🔍 Fetching items for Folder: {_folderId}");
-                var items = await DataManagement.GetItemsInFolder(_selectedProjectId, _folderId);
-
-                if (items == null || !items.Any())
-                {
-                    Console.WriteLine("❌ No items found in the selected folder.");
-                    return;
-                }
-
-                List<Dictionary<string, string>> modelsList = new List<Dictionary<string, string>>();
-
-                // 🔹 Step 1: Retrieve storage IDs & versions for each item
-                foreach (var (itemId, itemName) in items)
-                {
-                    FileDownloadService fileDownloadService = new FileDownloadService();
-                    string storageId = await fileDownloadService.GetStorageIdFromItem(_selectedProjectId, itemId);
-
-                    if (string.IsNullOrEmpty(storageId))
-                    {
-                        Console.WriteLine($"❌ Error: Could not retrieve storage ID for {itemName}.");
-                        continue;
-                    }
-
-                    Console.WriteLine($"📦 Storage ID for {itemName}: {storageId}");
-
-                    // 🔹 Step 2: Retrieve versions for the selected item
-                    var versions = await fileDownloadService.GetVersionsForItemAsync(_selectedProjectId, itemId);
-                    string latestVersion = versions?.FirstOrDefault().versionName ?? "N/A";
-
-                    Console.WriteLine($"✅ {versions?.Count ?? 0} versions found for {itemName}.");
-
-                    // 🔹 Step 3: Store item details for data grid
-                    modelsList.Add(new Dictionary<string, string>
-            {
-                { "Id", itemId },
-                { "Name", itemName },
-                { "StorageId", storageId },
-                { "LatestVersion", latestVersion }
-            });
-                }
-
-                // 🔹 Step 4: Update Data Grid on UI thread
-                Dispatcher.Invoke(() =>
-                {
-                    ModelsDataGrid.ItemsSource = null;  // Clear existing items
-                    ModelsDataGrid.ItemsSource = modelsList;
-                });
-
-                Console.WriteLine($"✅ {modelsList.Count} models added to the data grid.");
-
-                // 🔹 Step 5: Auto-select first item if none is selected
-                if (modelsList.Any() && string.IsNullOrEmpty(_selectedItemId))
-                {
-                    var firstModel = modelsList.First();
-                    _selectedItemId = firstModel["Id"];
-                    _selectedItemName = firstModel["Name"];
-
-                    Console.WriteLine($"✅ Auto-selected first model: {_selectedItemName} (ID: {_selectedItemId})");
-
-                    await RetrieveStorageIdForSelectedItem(); // Fetch storage for selected item
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"❌ Error retrieving items: {ex.Message}");
-            }
-        }
-
-
+    
 
         private void ProjectTreeView_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
@@ -1741,78 +1476,6 @@ namespace AssetManager.Desktop
               ForgeViewerWindow forgeViewer = new ForgeViewerWindow(encodedUrn);
             forgeViewer.Show();
            // LoadForgeViewer(encodedUrn);
-        }
-        private async void LoadForgeViewer(string encodedUrn)
-        {
-            TokenService tokenService = new TokenService();
-
-            // Retrieve the objectId and encode it to URN format
-            //AutodeskApiService apiService = new AutodeskApiService(tokenService);
-            string accessToken = _accessToken;
-
-            await ForgeWebView.EnsureCoreWebView2Async(); // Ensure WebView2 is initialized
-
-            string htmlContent = $@"
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset='UTF-8'>
-  <meta http-equiv='X-UA-Compatible' content='IE=Edge' />
-  <title>Forge Viewer</title>
-  <script src='https://developer.api.autodesk.com/modelderivative/v2/viewers/7.52/viewer3D.min.js'></script>
-  <link rel='stylesheet' href='https://developer.api.autodesk.com/modelderivative/v2/viewers/7.52/style.min.css' type='text/css'>
-</head>
-<body>
-  <div id='forgeViewer' style='width: 100%; height: 100vh;'></div>
-  <script>
-    var options = {{
-      env: 'AutodeskProduction',
-      getAccessToken: function(onTokenReady) {{
-          onTokenReady('{accessToken}', 3599);
-      }}
-    }};
-    var documentId = 'urn:{encodedUrn}';
-    Autodesk.Viewing.Initializer(options, function() {{
-      var viewerDiv = document.getElementById('forgeViewer');
-      var viewer = new Autodesk.Viewing.GuiViewer3D(viewerDiv);
-      viewer.start();
-      Autodesk.Viewing.Document.load(documentId, function(doc) {{
-        var defaultModel = doc.getRoot().getDefaultGeometry();
-        viewer.loadDocumentNode(doc, defaultModel);
-      }}, function(errorMsg) {{
-        console.error('Error loading document: ' + errorMsg);
-      }});
-    }});
-  </script>
-</body>
-</html>
-";
-
-            ForgeWebView.NavigateToString(htmlContent);
-        }
-
-        public string EncodeStorageIdToUrn(string storageId)
-        {
-            if (string.IsNullOrEmpty(storageId))
-            {
-                Console.WriteLine("❌ Error: Storage ID is null or empty.");
-                return null;
-            }
-
-            // 🔹 Remove the "urn:" prefix
-            if (storageId.StartsWith("urn:"))
-            {
-                storageId = storageId.Substring(4);
-            }
-
-            // 🔹 Convert to Base64
-            string base64Encoded = Convert.ToBase64String(Encoding.UTF8.GetBytes(storageId));
-
-            // 🔹 Autodesk requires URL-safe Base64 encoding
-            string urn = base64Encoded.TrimEnd('=').Replace('+', '-').Replace('/', '_');
-
-            Console.WriteLine($"✅ Encoded URN: {urn}");
-            return urn;
         }
 
 
@@ -2098,11 +1761,6 @@ namespace AssetManager.Desktop
             _selectedModel = model;
         }
 
-        private void BtnGenerate3D_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
-
         
 
         private async void LoadHubsAsync()
@@ -2180,8 +1838,363 @@ namespace AssetManager.Desktop
             HubsMenuPopup.IsOpen = !HubsMenuPopup.IsOpen;
         }
 
+        //////////////////
+        ///ZERO REFERENCES FUNCTIONS
+
+        private async void LoadForgeViewer(string encodedUrn)
+        {
+            TokenService tokenService = new TokenService();
+
+            // Retrieve the objectId and encode it to URN format
+            //AutodeskApiService apiService = new AutodeskApiService(tokenService);
+            string accessToken = _accessToken;
+
+            await ForgeWebView.EnsureCoreWebView2Async(); // Ensure WebView2 is initialized
+
+            string htmlContent = $@"
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset='UTF-8'>
+  <meta http-equiv='X-UA-Compatible' content='IE=Edge' />
+  <title>Forge Viewer</title>
+  <script src='https://developer.api.autodesk.com/modelderivative/v2/viewers/7.52/viewer3D.min.js'></script>
+  <link rel='stylesheet' href='https://developer.api.autodesk.com/modelderivative/v2/viewers/7.52/style.min.css' type='text/css'>
+</head>
+<body>
+  <div id='forgeViewer' style='width: 100%; height: 100vh;'></div>
+  <script>
+    var options = {{
+      env: 'AutodeskProduction',
+      getAccessToken: function(onTokenReady) {{
+          onTokenReady('{accessToken}', 3599);
+      }}
+    }};
+    var documentId = 'urn:{encodedUrn}';
+    Autodesk.Viewing.Initializer(options, function() {{
+      var viewerDiv = document.getElementById('forgeViewer');
+      var viewer = new Autodesk.Viewing.GuiViewer3D(viewerDiv);
+      viewer.start();
+      Autodesk.Viewing.Document.load(documentId, function(doc) {{
+        var defaultModel = doc.getRoot().getDefaultGeometry();
+        viewer.loadDocumentNode(doc, defaultModel);
+      }}, function(errorMsg) {{
+        console.error('Error loading document: ' + errorMsg);
+      }});
+    }});
+  </script>
+</body>
+</html>
+";
+
+            ForgeWebView.NavigateToString(htmlContent);
+        }
+
+        public string EncodeStorageIdToUrn(string storageId)
+        {
+            if (string.IsNullOrEmpty(storageId))
+            {
+                Console.WriteLine("❌ Error: Storage ID is null or empty.");
+                return null;
+            }
+
+            // 🔹 Remove the "urn:" prefix
+            if (storageId.StartsWith("urn:"))
+            {
+                storageId = storageId.Substring(4);
+            }
+
+            // 🔹 Convert to Base64
+            string base64Encoded = Convert.ToBase64String(Encoding.UTF8.GetBytes(storageId));
+
+            // 🔹 Autodesk requires URL-safe Base64 encoding
+            string urn = base64Encoded.TrimEnd('=').Replace('+', '-').Replace('/', '_');
+
+            Console.WriteLine($"✅ Encoded URN: {urn}");
+            return urn;
+        }
+
+        private async Task RetrieveItemIdAsync()
+        {
+            string accessToken = TokenManager.GetToken();
+            if (string.IsNullOrEmpty(_selectedProjectId) || string.IsNullOrEmpty(_folderId))
+            {
+                Console.WriteLine("❌ Cannot retrieve items - project or folder is missing.");
+                return;
+            }
+
+            try
+            {
+                Console.WriteLine($"🔍 Fetching items for Folder: {_folderId}");
+                var items = await DataManagement.GetItemsInFolder(_selectedProjectId, _folderId);
+
+                if (items == null || !items.Any())
+                {
+                    Console.WriteLine("❌ No items found in the selected folder.");
+                    return;
+                }
+
+                List<Dictionary<string, string>> modelsList = new List<Dictionary<string, string>>();
+
+                // 🔹 Step 1: Retrieve storage IDs & versions for each item
+                foreach (var (itemId, itemName) in items)
+                {
+                    FileDownloadService fileDownloadService = new FileDownloadService();
+                    string storageId = await fileDownloadService.GetStorageIdFromItem(_selectedProjectId, itemId);
+
+                    if (string.IsNullOrEmpty(storageId))
+                    {
+                        Console.WriteLine($"❌ Error: Could not retrieve storage ID for {itemName}.");
+                        continue;
+                    }
+
+                    Console.WriteLine($"📦 Storage ID for {itemName}: {storageId}");
+
+                    // 🔹 Step 2: Retrieve versions for the selected item
+                    var versions = await fileDownloadService.GetVersionsForItemAsync(_selectedProjectId, itemId);
+                    string latestVersion = versions?.FirstOrDefault().versionName ?? "N/A";
+
+                    Console.WriteLine($"✅ {versions?.Count ?? 0} versions found for {itemName}.");
+
+                    // 🔹 Step 3: Store item details for data grid
+                    modelsList.Add(new Dictionary<string, string>
+            {
+                { "Id", itemId },
+                { "Name", itemName },
+                { "StorageId", storageId },
+                { "LatestVersion", latestVersion }
+            });
+                }
+
+                // 🔹 Step 4: Update Data Grid on UI thread
+                Dispatcher.Invoke(() =>
+                {
+                    ModelsDataGrid.ItemsSource = null;  // Clear existing items
+                    ModelsDataGrid.ItemsSource = modelsList;
+                });
+
+                Console.WriteLine($"✅ {modelsList.Count} models added to the data grid.");
+
+                // 🔹 Step 5: Auto-select first item if none is selected
+                if (modelsList.Any() && string.IsNullOrEmpty(_selectedItemId))
+                {
+                    var firstModel = modelsList.First();
+                    _selectedItemId = firstModel["Id"];
+                    _selectedItemName = firstModel["Name"];
+
+                    Console.WriteLine($"✅ Auto-selected first model: {_selectedItemName} (ID: {_selectedItemId})");
+
+                    await RetrieveStorageIdForSelectedItem(); // Fetch storage for selected item
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error retrieving items: {ex.Message}");
+            }
+        }
+
+        // 🔹 Fetch all versions of an Item
+        private async Task<List<(string versionId, string versionName, string storageId)>> GetVersionsForItemAsync(string projectId, string itemId)
+        {
+            if (string.IsNullOrEmpty(projectId) || string.IsNullOrEmpty(itemId))
+            {
+                Console.WriteLine("❌ Error: Project ID or Item ID is missing.");
+                return null;
+            }
+
+            string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/items/{itemId}/versions";
+            string accessToken = TokenManager.GetToken();
+
+            using HttpClient httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+            try
+            {
+                Console.WriteLine($"🔍 Fetching versions for Item: {itemId}");
+                HttpResponseMessage response = await httpClient.GetAsync(url);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine($"❌ Error retrieving versions. Status Code: {response.StatusCode}");
+                    return null;
+                }
+
+                string jsonResponse = await response.Content.ReadAsStringAsync();
+                using JsonDocument doc = JsonDocument.Parse(jsonResponse);
+                JsonElement root = doc.RootElement;
+
+                List<(string versionId, string versionName, string storageId)> versions = new();
+
+                if (root.TryGetProperty("data", out JsonElement versionsArray))
+                {
+                    foreach (JsonElement versionElement in versionsArray.EnumerateArray())
+                    {
+                        string versionId = versionElement.GetProperty("id").GetString();
+                        string versionName = versionElement.GetProperty("attributes").GetProperty("displayName").GetString();
+
+                        string storageId = null;
+                        if (versionElement.TryGetProperty("relationships", out JsonElement relationships) &&
+                            relationships.TryGetProperty("storage", out JsonElement storage) &&
+                            storage.TryGetProperty("data", out JsonElement storageData) &&
+                            storageData.TryGetProperty("id", out JsonElement storageIdElement))
+                        {
+                            storageId = storageIdElement.GetString();
+                        }
+
+                        Console.WriteLine($"📄 Found Version: {versionName} (ID: {versionId}) - Storage ID: {storageId}");
+                        versions.Add((versionId, versionName, storageId));
+                    }
+                }
+
+                return versions;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Exception while retrieving versions: {ex.Message}");
+                return null;
+            }
+        }
+        public async Task<BitmapImage> GetThumbnail(string urn)
+        {
+            try
+            {
+                if (!await EnsureModelTranslation(urn))
+                {
+                    Console.WriteLine("❌ Model translation failed, skipping thumbnail retrieval.");
+                    return null;
+                }
+
+                string thumbnailUrl = $"https://developer.api.autodesk.com/modelderivative/v2/designdata/{urn}/thumbnail";
+
+                using (HttpClient client = new HttpClient())
+                {
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
+
+                    Console.WriteLine($"📷 Fetching thumbnail from: {thumbnailUrl}");
+
+                    byte[] imageBytes = await client.GetByteArrayAsync(thumbnailUrl);
+                    BitmapImage bitmapImage = new BitmapImage();
+                    using (MemoryStream stream = new MemoryStream(imageBytes))
+                    {
+                        bitmapImage.BeginInit();
+                        bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
+                        bitmapImage.StreamSource = stream;
+                        bitmapImage.EndInit();
+                    }
+
+                    bitmapImage.Freeze(); // Make it usable across threads
+                    return bitmapImage;
+                }
+            }
+            catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            {
+                Console.WriteLine("❌ Thumbnail not found. The model might still be processing.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error loading thumbnail: {ex.Message}");
+            }
+
+            return null;
+        }
+        private async Task<bool> EnsureModelTranslation(string encodedUrn)
+        {
+            ModelDerivativeService modelService = new ModelDerivativeService(client);
+
+            bool isReady = await ModelDerivativeService.IsModelDerivativeReady(encodedUrn);
+            if (!isReady)
+            {
+                Console.WriteLine("🔄 Model is not ready for SVF. Requesting translation...");
+                bool translationStarted = await modelService.SubmitModelForTranslationAsync(encodedUrn, _accessToken);
+
+                if (!translationStarted)
+                {
+                    Console.WriteLine("❌ Translation failed. Cannot fetch thumbnail.");
+                    return false;
+                }
+
+                Console.WriteLine("⏳ Waiting for model translation...");
+                await Task.Delay(10000); // Wait before retrying
+            }
+
+            return true;
+        }
 
 
+        private Image FindThumbnailImageControl(string itemId)
+        {
+            foreach (UIElement element in ModelsContainer.Children)
+            {
+                if (element is Border border && border.Child is StackPanel panel)
+                {
+                    foreach (var child in panel.Children)
+                    {
+                        if (child is Image img && img.Tag.ToString() == itemId)
+                        {
+                            return img;
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+
+        private async Task LoadThumbnailAsync(string projectId, string itemId, Image thumbnailImage)
+        {
+            string thumbnailUrl = await DataManagement.FetchThumbnailUrl(_objectId, _accessToken);
+
+            if (string.IsNullOrEmpty(thumbnailUrl))
+            {
+                Console.WriteLine($"❌ No thumbnail found for item {itemId}.");
+                return;
+            }
+
+            try
+            {
+                using (HttpClient client = new HttpClient())
+                {
+                    // Ensure valid token
+                    string accessToken = TokenManager.GetToken();
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+                    Console.WriteLine($"📷 Fetching thumbnail from: {thumbnailUrl}");
+
+                    byte[] imageBytes = await client.GetByteArrayAsync(thumbnailUrl);
+
+                    BitmapImage bitmapImage = new BitmapImage();
+                    using (MemoryStream stream = new MemoryStream(imageBytes))
+                    {
+                        bitmapImage.BeginInit();
+                        bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
+                        bitmapImage.StreamSource = stream;
+                        bitmapImage.EndInit();
+                    }
+
+                    bitmapImage.Freeze();
+
+                    // Update UI on the main thread
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        thumbnailImage.Source = bitmapImage;
+                    });
+                }
+            }
+            catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                Console.WriteLine("❌ Unauthorized! Check your access token.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error loading thumbnail: {ex.Message}");
+            }
+        }
+
+        /*
+        private void BtnGenerate3D_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+*/
 
     }
 

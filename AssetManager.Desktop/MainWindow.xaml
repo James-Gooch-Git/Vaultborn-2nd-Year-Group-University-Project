@@ -317,13 +317,13 @@
 
                         </StackPanel>
                     </Button>
-                    <Button x:Name="BtnGenerate3D"
+                    <!-- <Button x:Name="BtnGenerate3D"
                         Content="Generate 3D Model"
                         Width="200" Height="40"
                         Click="BtnGenerate3D_Click"
                         HorizontalAlignment="Left"
                         VerticalAlignment="Center"
-                        Margin="538,0,0,0"/>
+                        Margin="538,0,0,0"/> -->
 
 
 
