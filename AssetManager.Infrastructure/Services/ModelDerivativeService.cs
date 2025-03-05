@@ -20,8 +20,42 @@ namespace AssetManager.Infrastructure.Services
             _httpClient = httpClient;
         }
 
-      
-       
+        public static async Task<bool> IsModelDerivativeReady(string encodedUrn)
+        {
+            string accessToken = TokenManager.GetToken();
+            string url = $"https://developer.api.autodesk.com/modelderivative/v2/designdata/{encodedUrn}/manifest";
+
+            using (HttpClient client = new HttpClient())
+            {
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+                HttpResponseMessage response = await client.GetAsync(url);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine($"❌ Error checking manifest: {response.StatusCode} - {response.ReasonPhrase}");
+                    return false;
+                }
+
+                string jsonResponse = await response.Content.ReadAsStringAsync();
+                using JsonDocument doc = JsonDocument.Parse(jsonResponse);
+                JsonElement root = doc.RootElement;
+
+                if (root.TryGetProperty("status", out JsonElement statusElement))
+                {
+                    string status = statusElement.GetString();
+                    Console.WriteLine($"🔄 Manifest status: {status}");
+
+                    if (status == "success")
+                        return true;
+                    if (status == "pending" || status == "processing")
+                        return false; // Wait for processing
+                }
+
+                return false;
+            }
+        }
+
+
         public async Task<bool> SubmitModelForTranslationAsync(string encodedUrn, string accessToken)
         {
             //TokenService tokenService = new TokenService();

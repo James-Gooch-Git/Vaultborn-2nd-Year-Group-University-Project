@@ -537,7 +537,78 @@ namespace AssetManager.Infrastructure.Services
             }
         }
 
-        public static async Task<string> GetLatestItemThumbnail(string projectId, string itemId)
+
+        /*
+                public static async Task<string> GetLatestItemThumbnail(string projectId, string itemId)
+                {
+                    string accessToken = TokenManager.GetToken();
+                    if (string.IsNullOrEmpty(accessToken))
+                    {
+                        Console.WriteLine("❌ No valid access token.");
+                        return null;
+                    }
+
+                    string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/items/{itemId}/versions";
+
+                    try
+                    {
+                        using (HttpClient client = new HttpClient())
+                        {
+                            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+                            HttpResponseMessage response = await client.GetAsync(url);
+
+                            if (!response.IsSuccessStatusCode)
+                            {
+                                Console.WriteLine($"❌ Error fetching item versions: {response.StatusCode} - {response.ReasonPhrase}");
+                                return null;
+                            }
+
+                            string jsonResponse = await response.Content.ReadAsStringAsync();
+                            Console.WriteLine($"JSON Response: {jsonResponse}");
+
+                            using JsonDocument doc = JsonDocument.Parse(jsonResponse);
+                            JsonElement root = doc.RootElement;
+
+                            if (root.TryGetProperty("data", out JsonElement data))
+                            {
+                                var latestVersion = data.EnumerateArray()
+                                                        .OrderByDescending(version => version.GetProperty("attributes").GetProperty("createTime").GetString())
+                                                        .FirstOrDefault();
+
+                                if (latestVersion.ValueKind == JsonValueKind.Undefined)
+                                {
+                                    Console.WriteLine("❌ No versions found for this item.");
+                                    return null;
+                                }
+
+                                if (latestVersion.TryGetProperty("relationships", out JsonElement relationships) &&
+                                    relationships.TryGetProperty("thumbnails", out JsonElement thumbnails) &&
+                                    thumbnails.TryGetProperty("meta", out JsonElement meta) &&
+                                    meta.TryGetProperty("link", out JsonElement link) &&
+                                    link.TryGetProperty("href", out JsonElement href))
+                                {
+                                    return href.GetString(); // Correct thumbnail URL
+                                }
+                                else
+                                {
+                                    Console.WriteLine("❌ Thumbnail link not found in response.");
+                                }
+                            }
+                            else
+                            {
+                                Console.WriteLine("❌ No 'data' property found in the response.");
+                            }
+
+                            return null;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"❌ Exception occurred: {ex.Message}");
+                        return null;
+                    }
+                }*/
+        public static async Task<string> GetLatestItemThumbnail(string projectId, string itemId, string encodedUrn)
         {
             string accessToken = TokenManager.GetToken();
             if (string.IsNullOrEmpty(accessToken))
@@ -546,14 +617,14 @@ namespace AssetManager.Infrastructure.Services
                 return null;
             }
 
-            string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/items/{itemId}/versions";
-
+            // ✅ Step 1: Fetch the latest version URN
+            string versionsUrl = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/items/{itemId}/versions";
             try
             {
                 using (HttpClient client = new HttpClient())
                 {
                     client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-                    HttpResponseMessage response = await client.GetAsync(url);
+                    HttpResponseMessage response = await client.GetAsync(versionsUrl);
 
                     if (!response.IsSuccessStatusCode)
                     {
@@ -579,33 +650,58 @@ namespace AssetManager.Infrastructure.Services
                             return null;
                         }
 
+                        // ✅ Extract the correct URN (Base64 encoding is required)
                         if (latestVersion.TryGetProperty("relationships", out JsonElement relationships) &&
-                            relationships.TryGetProperty("thumbnails", out JsonElement thumbnails) &&
-                            thumbnails.TryGetProperty("meta", out JsonElement meta) &&
-                            meta.TryGetProperty("link", out JsonElement link) &&
-                            link.TryGetProperty("href", out JsonElement href))
+                            relationships.TryGetProperty("derivatives", out JsonElement derivatives) &&
+                            derivatives.TryGetProperty("data", out JsonElement derivativeData) &&
+                            derivativeData.TryGetProperty("id", out JsonElement urnElement))
                         {
-                            return href.GetString(); // Correct thumbnail URL
+                            string rawUrn = urnElement.GetString();
+                            //string encodedUrn = EncodeObjectIdToUrn(rawUrn);
+
+                            Console.WriteLine($"✅ Encoded URN: {encodedUrn}");
+
+                            return await FetchThumbnailUrl(encodedUrn, accessToken);
                         }
                         else
                         {
-                            Console.WriteLine("❌ Thumbnail link not found in response.");
+                            Console.WriteLine("❌ URN not found in response.");
                         }
                     }
                     else
                     {
                         Console.WriteLine("❌ No 'data' property found in the response.");
                     }
-
-                    return null;
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"❌ Exception occurred: {ex.Message}");
-                return null;
+            }
+
+            return null;
+        }
+
+        public static async Task<string> FetchThumbnailUrl(string encodedUrn, string accessToken)
+        {
+            string thumbnailUrl = $"https://developer.api.autodesk.com/modelderivative/v2/designdata/{encodedUrn}/thumbnail";
+
+            using (HttpClient client = new HttpClient())
+            {
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+                HttpResponseMessage response = await client.GetAsync(thumbnailUrl);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine($"❌ Thumbnail not found or model not translated yet: {response.StatusCode}");
+                    return null;
+                }
+
+                return thumbnailUrl;
             }
         }
+
 
         public static async Task<List<(string HubID, string HubName, string HubType)>> GetAllHubs()
         {

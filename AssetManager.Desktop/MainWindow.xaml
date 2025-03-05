@@ -437,7 +437,12 @@
 
                     <Grid>
 
-                        <Image  Name="ThumbnailImage" Width="300" Height="242" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        <Grid x:Name="Grid_View" Visibility="Collapsed">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <WrapPanel x:Name="ModelsContainer" HorizontalAlignment="Center" VerticalAlignment="Top" />
+                            </ScrollViewer>
+                        </Grid>
+
 
                         <DataGrid x:Name="ModelsDataGrid" 
                                   AutoGenerateColumns="False" 
@@ -617,13 +622,7 @@
 
                         </DataGrid>
 
-                        <Grid x:Name="Grid_View" Visibility="Collapsed">
 
-                            <ScrollViewer HorizontalAlignment="Stretch" VerticalAlignment="Stretch" VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled">
-                                <WrapPanel x:Name="ModelsContainer" Orientation="Horizontal" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="5,0,5,0"/>
-                            </ScrollViewer>
-
-                        </Grid>
 
                     </Grid>
 

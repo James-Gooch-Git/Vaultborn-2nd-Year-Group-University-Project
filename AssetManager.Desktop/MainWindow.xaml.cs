@@ -49,7 +49,7 @@ namespace AssetManager.Desktop
         public MainWindow()
         {
             InitializeComponent();
-          //  ModelDataGrid.SelectionChanged += ModelDataGrid_SelectionChanged;
+            //  ModelDataGrid.SelectionChanged += ModelDataGrid_SelectionChanged;
             Initialize();
         }
 
@@ -64,38 +64,58 @@ namespace AssetManager.Desktop
 
         private async void Initialize()
         {
-            _accessToken = TokenManager.GetToken();
-
-            if (string.IsNullOrEmpty(_accessToken))
+            try
             {
-                Console.WriteLine("❌ Error: Access token is missing.");
-                return;
+                _accessToken = TokenManager.GetToken();
+
+                if (string.IsNullOrEmpty(_accessToken))
+                {
+                    Console.WriteLine("❌ Error: Access token is missing.");
+                    //TokenManager.GetThreeLegged();
+                    TokenManager.GetToken();
+                }
+
+                Console.WriteLine($"✅ Debug: Retrieved Access Token: {_accessToken}");
+
+                Username_TextBlock.Text = await GetUserName(_userId);
+                UserPic_Image.Source = new BitmapImage(new Uri(await GetUserPic(_userId)));
+
+                // 🔹 Initialize data
+                LoadHubsAsync();
+                await LoadAllModels();
+
+                var hubDetails = await DataManagement.GetPersonalHubDetails();
+
+                if (hubDetails == null)
+                {
+                    Console.WriteLine("❌ Error: Unable to retrieve hub details. Checking token...");
+                    TokenManager.GetToken();
+                    hubDetails = await DataManagement.GetPersonalHubDetails();
+
+                    if (hubDetails == null)
+                    {
+                        Console.WriteLine("❌ Failed to retrieve hub details after token refresh.");
+                        return;
+                    }
+                }
+
+                var (hubID, hubName, hubType) = hubDetails.Value;
+                Console.WriteLine($"Hub ID: {hubID}, Name: {hubName}, Type: {hubType}");
+
+                LoadProjectsForHub(hubID);
+                await TestDataManagement();
+
+                FusionManager.InitializePythonEngine();
+
+                Username_TextBlock.Text = await GetUserName(_userId);
+                UserPic_Image.Source = new BitmapImage(new Uri(await GetUserPic(_userId)));
             }
-
-            Console.WriteLine($"✅ Debug: Retrieved Access Token: {_accessToken}");
-
-            Username_TextBlock.Text = await GetUserName(_userId);
-            UserPic_Image.Source = new BitmapImage(new Uri(await GetUserPic(_userId)));
-
-            // 🔹 Initialize data
-            LoadHubsAsync();
-            await LoadAllModels();
-
-            var hubDetails = await DataManagement.GetPersonalHubDetails();
-
-           
-            var (hubID, hubName, hubType) = hubDetails.Value;
-            Console.WriteLine($"Hub ID: {hubID}, Name: {hubName}, Type: {hubType}");
-
-            LoadProjectsForHub(hubID);
-
-            await TestDataManagement();
-
-            FusionManager.InitializePythonEngine();
-
-            Username_TextBlock.Text = await GetUserName(_userId);
-            UserPic_Image.Source = new BitmapImage(new Uri(await GetUserPic(_userId)));
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Initialization error: {ex.Message}");
+            }
         }
+
 
         private async Task<string> GetUserName(string userId)
         {
@@ -151,6 +171,102 @@ namespace AssetManager.Desktop
 
 
         private bool isModelLoaded = false;
+        /*
+                private async void Grid_Click(object sender, MouseButtonEventArgs e)
+                {
+                    if (string.IsNullOrEmpty(_selectedProjectId))
+                    {
+                        MessageBox.Show("❌ Please select a project to view models.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        return;
+                    }
+
+                    ModelsDataGrid.Visibility = Visibility.Collapsed; // Hide DataGrid
+                    Grid_View.Visibility = Visibility.Visible; // Show Grid View
+
+                    // Clear previous grid data
+                    ModelsContainer.Children.Clear();
+
+                    try
+                    {
+                        // Fetch models for the selected project only
+                        List<Dictionary<string, string>> models = await GetModelsFromProject(_selectedProjectId, _folderId);
+
+                        if (models == null || models.Count == 0)
+                        {
+                            MessageBox.Show("No models found for this project.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
+                            return;
+                        }
+
+                        // Populate grid with models from the selected project
+                        foreach (var model in models)
+                        {
+                            Border modelSquare = new Border
+                            {
+                                Width = 263,
+                                Height = 253,
+                                CornerRadius = new CornerRadius(5),
+                                Background = Brushes.White,
+                                BorderBrush = Brushes.LightGray,
+                                BorderThickness = new Thickness(1),
+                                Margin = new Thickness(10),
+                                Effect = new DropShadowEffect
+                                {
+                                    Color = Colors.Black,
+                                    Opacity = 0.1,
+                                    BlurRadius = 10,
+                                    ShadowDepth = 2
+                                }
+                            };
+
+                            StackPanel content = new StackPanel
+                            {
+                                Orientation = Orientation.Vertical,
+                                VerticalAlignment = VerticalAlignment.Center,
+                                HorizontalAlignment = HorizontalAlignment.Left
+                            };
+
+                            TextBlock modelName = new TextBlock
+                            {
+                                Text = model["Name"],
+                                FontSize = 16,
+                                FontWeight = FontWeights.Normal,
+                                TextAlignment = TextAlignment.Center,
+                                HorizontalAlignment = HorizontalAlignment.Left,
+                                TextWrapping = TextWrapping.Wrap,
+                                Margin = new Thickness(5, 2, 5, 2)
+                            };
+
+                            TextBlock projectName = new TextBlock
+                            {
+                                Text = $"Project: {model["Project"]}",
+                                FontSize = 14,
+                                FontWeight = FontWeights.Normal,
+                                Foreground = Brushes.Gray,
+                                TextAlignment = TextAlignment.Left,
+                                HorizontalAlignment = HorizontalAlignment.Left,
+                                TextWrapping = TextWrapping.Wrap,
+                                Margin = new Thickness(5, 2, 5, 2)
+                            };
+
+                            content.Children.Add(modelName);
+                            content.Children.Add(projectName);
+                            modelSquare.Child = content;
+                            ModelsContainer.Children.Add(modelSquare);
+                        }
+
+                        Console.WriteLine($"✅ {models.Count} models loaded successfully in grid view.");
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"❌ Error loading models: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+
+                    // Update UI styles to reflect active view mode
+                    List_Border.Background = Brushes.Transparent;
+                    Grid_Border.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
+                }
+
+        */
 
         private async void Grid_Click(object sender, MouseButtonEventArgs e)
         {
@@ -177,13 +293,16 @@ namespace AssetManager.Desktop
                     return;
                 }
 
-                // Populate grid with models from the selected project
                 foreach (var model in models)
                 {
+                    string projectId = _selectedProjectId;
+                    string itemId = model["Id"];
+
+                    // UI Container for Model
                     Border modelSquare = new Border
                     {
                         Width = 263,
-                        Height = 253,
+                        Height = 300, // Increased to fit the image
                         CornerRadius = new CornerRadius(5),
                         Background = Brushes.White,
                         BorderBrush = Brushes.LightGray,
@@ -204,6 +323,18 @@ namespace AssetManager.Desktop
                         VerticalAlignment = VerticalAlignment.Center,
                         HorizontalAlignment = HorizontalAlignment.Left
                     };
+
+                    // Thumbnail Image
+                    Image thumbnailImage = new Image
+                    {
+                        Width = 200,
+                        Height = 200,
+                        Margin = new Thickness(10),
+                        Stretch = Stretch.Uniform
+                    };
+
+                    // Load thumbnail asynchronously
+                    _ = ShowThumbnail(projectId, itemId, thumbnailImage);
 
                     TextBlock modelName = new TextBlock
                     {
@@ -228,6 +359,7 @@ namespace AssetManager.Desktop
                         Margin = new Thickness(5, 2, 5, 2)
                     };
 
+                    content.Children.Add(thumbnailImage);
                     content.Children.Add(modelName);
                     content.Children.Add(projectName);
                     modelSquare.Child = content;
@@ -245,7 +377,6 @@ namespace AssetManager.Desktop
             List_Border.Background = Brushes.Transparent;
             Grid_Border.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
         }
-
 
         private async void DisplayGridModels()
         {
@@ -312,6 +443,55 @@ namespace AssetManager.Desktop
             }
         }
 
+        private async Task LoadThumbnailAsync(string projectId, string itemId, Image thumbnailImage)
+        {
+            string thumbnailUrl = await DataManagement.FetchThumbnailUrl(_objectId, _accessToken);
+
+            if (string.IsNullOrEmpty(thumbnailUrl))
+            {
+                Console.WriteLine($"❌ No thumbnail found for item {itemId}.");
+                return;
+            }
+
+            try
+            {
+                using (HttpClient client = new HttpClient())
+                {
+                    // Ensure valid token
+                    string accessToken = TokenManager.GetToken();
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+                    Console.WriteLine($"📷 Fetching thumbnail from: {thumbnailUrl}");
+
+                    byte[] imageBytes = await client.GetByteArrayAsync(thumbnailUrl);
+
+                    BitmapImage bitmapImage = new BitmapImage();
+                    using (MemoryStream stream = new MemoryStream(imageBytes))
+                    {
+                        bitmapImage.BeginInit();
+                        bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
+                        bitmapImage.StreamSource = stream;
+                        bitmapImage.EndInit();
+                    }
+
+                    bitmapImage.Freeze();
+
+                    // Update UI on the main thread
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        thumbnailImage.Source = bitmapImage;
+                    });
+                }
+            }
+            catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                Console.WriteLine("❌ Unauthorized! Check your access token.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error loading thumbnail: {ex.Message}");
+            }
+        }
 
 
 
@@ -365,40 +545,255 @@ namespace AssetManager.Desktop
             }
 
             string itemid = "urn: adsk.wipprod:dm.lineage:pwGqGrbgRx6IUlR4Wtskdg";
+            Image tempImage = new Image();
 
             Console.WriteLine("\n\nShowing example thumbnail\n\n");
-            await ShowThumbnail(projectid, itemid);
+            await ShowThumbnail(projectid, itemid, tempImage);
 
 
         }
 
-        public async Task ShowThumbnail(string projectId, string itemId)
+        /*  public async Task ShowThumbnail(string projectId, string itemId)
+          {
+              string thumbnailUrl = await DataManagement.GetLatestItemThumbnail(projectId, itemId);
+
+              if (string.IsNullOrEmpty(thumbnailUrl))
+              {
+                  Console.WriteLine("❌ Thumbnail URL is null or empty.");
+                  return;
+              }
+
+              try
+              {
+                  using (HttpClient client = new HttpClient())
+                  {
+                      // Ensure valid token
+                      string accessToken = TokenManager.GetToken();
+
+
+                      // Add Authorization header
+                      client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+                      // Debug: Print Thumbnail URL
+                      Console.WriteLine($"📷 Fetching thumbnail from: {thumbnailUrl}");
+
+                      byte[] imageBytes = await client.GetByteArrayAsync(thumbnailUrl);
+
+                      // Create a BitmapImage from the byte array
+                      BitmapImage bitmapImage = new BitmapImage();
+                      using (MemoryStream stream = new MemoryStream(imageBytes))
+                      {
+                          bitmapImage.BeginInit();
+                          bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
+                          bitmapImage.StreamSource = stream;
+                          bitmapImage.EndInit();
+                      }
+
+                      bitmapImage.Freeze(); // Make it usable across threads
+
+                      // Update UI on the main thread
+                      Application.Current.Dispatcher.Invoke(() =>
+                      {
+                          //ThumbnailImage.Source = bitmapImage;
+                      });
+                  }
+              }
+              catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.Unauthorized)
+              {
+                  Console.WriteLine("❌ Unauthorized! Check your access token and permissions.");
+              }
+              catch (Exception ex)
+              {
+                  Console.WriteLine($"❌ Error loading thumbnail: {ex.Message}");
+              }
+          }
+
+  */
+        public async Task ShowThumbnail(string projectId, string itemId, Image targetImage)
         {
-            string thumbnailUrl = await DataManagement.GetLatestItemThumbnail(projectId, itemId);
-
-            if (string.IsNullOrEmpty(thumbnailUrl))
-            {
-                Console.WriteLine("❌ Thumbnail URL is null or empty.");
-                return;
-            }
-
             try
             {
                 using (HttpClient client = new HttpClient())
                 {
-                    // Ensure valid token
                     string accessToken = TokenManager.GetToken();
-                    
-
-                    // Add Authorization header
                     client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
-                    // Debug: Print Thumbnail URL
+                    FileDownloadService _fileService = new FileDownloadService();
+                    string objectId = await _fileService.GetStorageIdFromItem(projectId, itemId);
+                    if (string.IsNullOrEmpty(objectId))
+                    {
+                        Console.WriteLine("❌ Could not retrieve object ID.");
+                        return;
+                    }
+
+                    string encodedUrn = EncodeObjectIdToUrn(objectId);
+                    if (string.IsNullOrEmpty(encodedUrn))
+                    {
+                        Console.WriteLine("❌ Failed to encode object ID.");
+                        return;
+                    }
+
+                    ModelDerivativeService modelService = new ModelDerivativeService(client);
+                    bool isReady = await ModelDerivativeService.IsModelDerivativeReady(encodedUrn);
+
+                    if (!isReady)
+                    {
+                        Console.WriteLine("⏳ Model not ready. Requesting translation...");
+                        bool translationStarted = await modelService.SubmitModelForTranslationAsync(encodedUrn, accessToken);
+                        if (!translationStarted)
+                        {
+                            Console.WriteLine("❌ Translation failed. Cannot fetch thumbnail.");
+                            return;
+                        }
+
+                        // Wait for translation to complete
+                        int maxRetries = 5;
+                        int delayMs = 5000;
+                        for (int attempt = 1; attempt <= maxRetries; attempt++)
+                        {
+                            Console.WriteLine($"⏳ Waiting for translation... (Attempt {attempt}/{maxRetries})");
+                            await Task.Delay(delayMs);
+
+                            if (await ModelDerivativeService.IsModelDerivativeReady(encodedUrn))
+                            {
+                                Console.WriteLine("✅ Model translation completed!");
+                                break;
+                            }
+
+                            if (attempt == maxRetries)
+                            {
+                                Console.WriteLine("❌ Model translation failed after multiple attempts.");
+                                return;
+                            }
+                        }
+                    }
+
+                    // ✅ Fetch the thumbnail **AFTER** translation is ready
+                    string thumbnailUrl = await DataManagement.GetLatestItemThumbnail(projectId, itemId, encodedUrn);
+                    if (string.IsNullOrEmpty(thumbnailUrl))
+                    {
+                        Console.WriteLine("❌ Thumbnail URL is null or empty.");
+                        return;
+                    }
+
+                    // 🛠 Retry thumbnail fetching
+                    int thumbnailRetries = 5;
+                    int thumbnailDelayMs = 5000;
+                    BitmapImage bitmapImage = null; // Define before loop
+
+                    for (int attempt = 1; attempt <= thumbnailRetries; attempt++)
+                    {
+                        try
+                        {
+                            Console.WriteLine($"📷 Fetching thumbnail (Attempt {attempt}/{thumbnailRetries}): {thumbnailUrl}");
+
+                            byte[] imageBytes = await client.GetByteArrayAsync(thumbnailUrl);
+                            bitmapImage = new BitmapImage();
+                            using (MemoryStream stream = new MemoryStream(imageBytes))
+                            {
+                                bitmapImage.BeginInit();
+                                bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
+                                bitmapImage.StreamSource = stream;
+                                bitmapImage.EndInit();
+                            }
+                            bitmapImage.Freeze();
+
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                targetImage.Source = bitmapImage;
+                            });
+
+                            Console.WriteLine("✅ Thumbnail loaded successfully!");
+                            return; // ✅ Exit loop once successful
+                        }
+                        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+                        {
+                            Console.WriteLine($"⚠️ Thumbnail not found, retrying in {thumbnailDelayMs / 1000} seconds...");
+                            await Task.Delay(thumbnailDelayMs);
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"❌ Error loading thumbnail: {ex.Message}");
+                            return;
+                        }
+                    }
+
+                    Console.WriteLine("❌ Failed to fetch thumbnail after multiple attempts.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Unexpected error: {ex.Message}");
+            }
+        }
+
+
+
+
+    
+
+        private Image FindThumbnailImageControl(string itemId)
+        {
+            foreach (UIElement element in ModelsContainer.Children)
+            {
+                if (element is Border border && border.Child is StackPanel panel)
+                {
+                    foreach (var child in panel.Children)
+                    {
+                        if (child is Image img && img.Tag.ToString() == itemId)
+                        {
+                            return img;
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+
+
+        private async Task<bool> EnsureModelTranslation(string encodedUrn)
+        {
+            ModelDerivativeService modelService = new ModelDerivativeService(client);
+
+            bool isReady = await ModelDerivativeService.IsModelDerivativeReady(encodedUrn);
+            if (!isReady)
+            {
+                Console.WriteLine("🔄 Model is not ready for SVF. Requesting translation...");
+                bool translationStarted = await modelService.SubmitModelForTranslationAsync(encodedUrn, _accessToken);
+
+                if (!translationStarted)
+                {
+                    Console.WriteLine("❌ Translation failed. Cannot fetch thumbnail.");
+                    return false;
+                }
+
+                Console.WriteLine("⏳ Waiting for model translation...");
+                await Task.Delay(10000); // Wait before retrying
+            }
+
+            return true;
+        }
+
+
+        public async Task<BitmapImage> GetThumbnail(string urn)
+        {
+            try
+            {
+                if (!await EnsureModelTranslation(urn))
+                {
+                    Console.WriteLine("❌ Model translation failed, skipping thumbnail retrieval.");
+                    return null;
+                }
+
+                string thumbnailUrl = $"https://developer.api.autodesk.com/modelderivative/v2/designdata/{urn}/thumbnail";
+
+                using (HttpClient client = new HttpClient())
+                {
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
+
                     Console.WriteLine($"📷 Fetching thumbnail from: {thumbnailUrl}");
 
                     byte[] imageBytes = await client.GetByteArrayAsync(thumbnailUrl);
-
-                    // Create a BitmapImage from the byte array
                     BitmapImage bitmapImage = new BitmapImage();
                     using (MemoryStream stream = new MemoryStream(imageBytes))
                     {
@@ -409,27 +804,20 @@ namespace AssetManager.Desktop
                     }
 
                     bitmapImage.Freeze(); // Make it usable across threads
-
-                    // Update UI on the main thread
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        ThumbnailImage.Source = bitmapImage;
-                    });
+                    return bitmapImage;
                 }
             }
-            catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.Unauthorized)
+            catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
             {
-                Console.WriteLine("❌ Unauthorized! Check your access token and permissions.");
+                Console.WriteLine("❌ Thumbnail not found. The model might still be processing.");
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"❌ Error loading thumbnail: {ex.Message}");
             }
+
+            return null;
         }
-
-
-
-
 
 
         private async void LoadProjectsForHub(string hubID)
@@ -740,86 +1128,6 @@ namespace AssetManager.Desktop
             return allModels;
         }
 
-        //WOerking One
-        /*private async void BtnDownloadModel_Click(object sender, RoutedEventArgs e)
-        {
-            if (string.IsNullOrEmpty(_selectedProjectId) || string.IsNullOrEmpty(_selectedItemId))
-            {
-                MessageBox.Show("❌ Please select a project and model before downloading.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            try
-            {
-                var fileDownloadService = new FileDownloadService();
-
-                // ✅ Step 1: Retrieve Storage ID
-                string storageId = await fileDownloadService.GetStorageIdFromItem(_selectedProjectId, _selectedItemId);
-
-                if (string.IsNullOrEmpty(storageId))
-                {
-                    MessageBox.Show("❌ Could not retrieve storage ID.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-
-                // ✅ Step 2: Extract Bucket and Object Keys
-                var (bucketKey, objectKey) = fileDownloadService.ExtractBucketAndObjectKeys(storageId);
-
-                // ✅ Step 3: Retrieve Access Token
-                string accessToken = TokenManager.GetToken();
-
-                // ✅ Step 4: Fetch Signed URL
-                string signedUrl = await fileDownloadService.GetSignedDownloadUrl(bucketKey, objectKey, accessToken);
-
-                if (string.IsNullOrEmpty(signedUrl))
-                {
-                    MessageBox.Show("❌ Failed to retrieve signed URL.", "Download Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-
-                // ✅ Step 5: Retrieve Correct Filename
-                string fileName = await fileDownloadService.GetItemFileNameAsync(_selectedProjectId, _selectedItemId, accessToken);
-                fileName = fileDownloadService.RemoveInvalidFileNameChars(fileName); // Ensure filename is valid
-
-                // ✅ Step 6: Define Save Location
-                string saveDirectory = @"C:\Users\james\Downloads"; // Modify if needed
-
-                if (!Directory.Exists(saveDirectory))
-                {
-                    Directory.CreateDirectory(saveDirectory);
-                }
-
-                // ✅ Step 7: Download the File with Correct Filename
-                await fileDownloadService.DownloadFileAsync(signedUrl, saveDirectory, fileName);
-
-                MessageBox.Show($"✅ File downloaded successfully!\nSaved as: {fileName}", "Download Complete", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"❌ Error downloading model: {ex.Message}", "Download Failed", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }*/
-        /*private async void BtnDownloadModel_Click(object sender, RoutedEventArgs e)
-        {
-            var fileDownloadService = new FileDownloadService2();
-            await fileDownloadService.DownloadModelAsync(_selectedProjectId, _selectedItemId);
-        }*/
-
-        //private async void BtnDownloadModel_Click(object sender, RoutedEventArgs e)
-        //{
-        //    if (ModelComboBox.SelectedItem == null)
-        //    {
-        //        MessageBox.Show("❌ Please select a model before downloading.", "Error", MessageBoxButton.OK,
-        //            MessageBoxImage.Error);
-        //        return;
-        //    }
-
-        //    //string selectedModelId = ModelComboBox.SelectedValue.ToString(); // Ensure this is the correct ID
-        //    var fileDownloadService2 = new FileDownloadService2();
-        //    await fileDownloadService2.DownloadModelAsync(_selectedProjectId, _selectedItemId);
-        //}
-
-
   
         
         private void LaunchFusionWithModel(string modelPath)
@@ -992,75 +1300,7 @@ namespace AssetManager.Desktop
                 return null;
             }
         }
-        // 🔹 Fetch Storage ID from an Item
 
-        //James Function
-        //private async Task<List<string>> GetModelsFromProject(string projectId, string folderId)
-        //{
-        //    string accessToken = TokenManager.GetToken();
-        //    if (string.IsNullOrEmpty(accessToken))
-        //    {
-        //        Console.WriteLine("❌ No valid access token.");
-        //        return null;
-        //    }
-
-        //    string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/folders/{folderId}/contents";
-
-        //    try
-        //    {
-        //        using (HttpClient client = new HttpClient())
-        //        {
-        //            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-        //            HttpResponseMessage response = await client.GetAsync(url);
-
-        //            if (!response.IsSuccessStatusCode)
-        //            {
-        //                Console.WriteLine($"❌ Error: {response.StatusCode} - {response.ReasonPhrase}");
-        //                return null;
-        //            }
-
-        //            string jsonResponse = await response.Content.ReadAsStringAsync();
-        //            using JsonDocument doc = JsonDocument.Parse(jsonResponse);
-        //            JsonElement root = doc.RootElement;
-
-        //            List<string> modelNames = new List<string>();
-
-        //            foreach (JsonElement item in root.GetProperty("data").EnumerateArray())
-        //            {
-        //                if (item.GetProperty("type").GetString() == "items")
-        //                {
-        //                    string modelName = item.GetProperty("attributes").GetProperty("displayName").GetString();
-        //                    modelNames.Add(modelName);
-        //                }
-        //            }
-
-        //            return modelNames;
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Console.WriteLine($"❌ Exception occurred: {ex.Message}");
-        //        return null;
-        //    }
-        //}
-
-
-        // ✅ Button Click Event to Refresh Models
-
-        //private void BtnRefreshModels_Click(object sender, RoutedEventArgs e)
-        //{
-        //    Console.WriteLine("🔄 Refreshing models...");
-        //    if (!string.IsNullOrEmpty(_selectedProjectId) && !string.IsNullOrEmpty(_folderId))
-        //    {
-        //        ListModelsForProject(_selectedProjectId, _folderId);
-        //    }
-        //    else
-        //    {
-        //        Console.WriteLine("❌ Error: No project or folder selected.");
-        //    }
-        //}
-
-        //// ✅ Button Click Event to Log Out
         private void BtnLogout_Click(object sender, RoutedEventArgs e)
         {
             Console.WriteLine("👤 Logging out...");
@@ -1071,44 +1311,6 @@ namespace AssetManager.Desktop
             loginWindow.Show();
         }
 
-
-        //private async Task ListModelsForProject(string projectId, string folderId)
-        //{
-        //    if (string.IsNullOrEmpty(projectId) || string.IsNullOrEmpty(folderId))
-        //    {
-        //        Console.WriteLine("❌ Error: Project ID or Folder ID is missing.");
-        //        return;
-        //    }
-
-        //    try
-        //    {
-        //        // 🔹 Fetch models from the project folder
-        //        var models = await GetModelsFromProject(projectId, folderId);
-
-        //        if (models != null && models.Any())
-        //        {
-        //            Dispatcher.Invoke(() =>
-        //            {
-        //                ModelComboBox.Items.Clear(); // ✅ Clear existing items in dropdown
-
-        //                foreach (var model in models)
-        //                {
-        //                    ModelComboBox.Items.Add(new ComboBoxItem { Content = model }); // ✅ Add each model name
-        //                }
-        //            });
-
-        //            Console.WriteLine($"✅ {models.Count} models added to dropdown.");
-        //        }
-        //        else
-        //        {
-        //            Console.WriteLine("❌ No models found in the folder.");
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Console.WriteLine($"❌ Error retrieving models: {ex.Message}");
-        //    }
-        //}
 
         private string GetFilePathFromDialog()
         {
@@ -1122,10 +1324,7 @@ namespace AssetManager.Desktop
         }
 
 
-        private void BtnViewinApp_OnClick(object sender, RoutedEventArgs e)
-        {
-            throw new NotImplementedException();
-        }
+
 
      /*   private void ModelsDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -1384,20 +1583,6 @@ namespace AssetManager.Desktop
             }
         }
 
-        // 1. First, ensure the ModelsDataGrid_SelectionChanged is properly updating the selection variables
-   
-
-        // 2. Update the view button click handler to provide better feedback
-
-
-        // 3. Make sure the LoadModelsForSelectedProject method is correctly populating the ModelsDataGrid
-
-
-        // 4. Update the GetModelsFromProject method to ensure consistent key names
-       
-
-     
-        // 1. Enhanced ModelsDataGrid_SelectionChanged to set all global IDs at once
         private async void ModelsDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (ModelsDataGrid.SelectedItem is Dictionary<string, string> model)
@@ -1454,7 +1639,7 @@ namespace AssetManager.Desktop
             }
         }
 
-        // 2. New method to fetch and set the storage ID in one place
+ 
         private async Task FetchAndSetStorageId()
         {
             if (string.IsNullOrEmpty(_selectedProjectId) || string.IsNullOrEmpty(_selectedItemId))
@@ -1491,7 +1676,7 @@ namespace AssetManager.Desktop
             }
         }
 
-        // 3. Updated BtnViewInApp_Click to use the globally set IDs
+
         private async void BtnViewInApp_Click(object sender, RoutedEventArgs e)
         {
             Console.WriteLine($"View in App button clicked. Using global IDs:");
@@ -1630,7 +1815,7 @@ namespace AssetManager.Desktop
             return urn;
         }
 
-        // 4. Updated GetModelsFromProject to ensure proper IDs are included
+
         private async Task<List<Dictionary<string, string>>> GetModelsFromProject(string projectId, string folderId)
         {
             string accessToken = TokenManager.GetToken();
@@ -1733,7 +1918,7 @@ namespace AssetManager.Desktop
             }
         }
 
-        // 5. Updated View in Fusion method to use global IDs
+ 
         private async void BtnViewInFusion_Click(object sender, RoutedEventArgs e)
         {
             Console.WriteLine($"View in Fusion button clicked. Using global IDs:");
@@ -1781,7 +1966,6 @@ namespace AssetManager.Desktop
             }
         }
 
-        // 6. Updated LoadModelsForSelectedProject to auto-select first item
         private async void LoadModelsForSelectedProject()
         {
             if (string.IsNullOrEmpty(_selectedProjectId) || string.IsNullOrEmpty(_folderId))
@@ -1837,7 +2021,7 @@ namespace AssetManager.Desktop
             Console.WriteLine($"✅ {models.Count} models loaded successfully.");
         }
 
-        // 7. Updated ProjectTreeView_SelectedItemChanged to set project info and load models
+
         private void ProjectTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
             if (e.NewValue is TreeViewItem selectedItem && selectedItem.Tag is ValueTuple<string, string, bool> projectData)
@@ -1856,7 +2040,7 @@ namespace AssetManager.Desktop
             }
         }
 
-        // 8. Additional helper method to update all global IDs from a given model dictionary
+
         private async Task UpdateGlobalIdsFromModel(Dictionary<string, string> model)
         {
             if (model == null)
