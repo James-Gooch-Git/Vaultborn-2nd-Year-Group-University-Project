@@ -6,10 +6,13 @@
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         xmlns:md="clr-namespace:MaterialDesignThemes.Wpf;assembly=MaterialDesignThemes.Wpf"
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+
+
         xmlns:local="clr-namespace:AssetManager.Desktop"
         mc:Ignorable="d"
         FontFamily="Helvetica"
         Title="MainWindow" Height="720" Width="1280">
+
 
     <Window.Resources>
 
@@ -442,6 +445,24 @@
                                 <WrapPanel x:Name="ModelsContainer" HorizontalAlignment="Center" VerticalAlignment="Top" />
                             </ScrollViewer>
                         </Grid>
+                        <Grid x:Name="ForgeViewerContainer" Grid.Row="2" Visibility="Collapsed">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- Close Viewer Button -->
+                            <Border Grid.Row="0" Background="#F0F0F0">
+                                <StackPanel Orientation="Horizontal" Margin="5">
+                                    <Button x:Name="BtnCloseViewer" Content="× Close" 
+                    Background="Transparent" BorderBrush="#CCCCCC"
+                    Margin="10,5" Padding="8,3" Click="Btn_CloseViewer_Click"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- ✅ Embedded WebView2 Control (Uncommented) -->
+                            <wv2:WebView2 x:Name="ForgeWebView" Grid.Row="1" Height="500" Width="1000"/>
+                        </Grid>
 
 
                         <DataGrid x:Name="ModelsDataGrid" 
@@ -460,27 +481,7 @@
                                   ScrollViewer.HorizontalScrollBarVisibility="Hidden"
                                   Visibility="Visible">
 
-                            <Grid x:Name="EmbeddedViewerContainer" Grid.Row="2" Visibility="Collapsed">
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="*"/>
-                                </Grid.RowDefinitions>
-
-                                <!-- Close Viewer Button -->
-                                <Border Grid.Row="0" Background="#F0F0F0">
-                                    <StackPanel Orientation="Horizontal" Margin="5">
-                                        <Button x:Name="BtnCloseViewer" Content="× Close" 
-                Background="Transparent" BorderBrush="#CCCCCC"
-                Margin="10,5" Padding="8,3" Click="Btn_CloseViewer_Click"/>
-                                    </StackPanel>
-                                </Border>
-
-                                <!-- ✅ Embedded WebView2 Control -->
-                                <wv2:WebView2 x:Name="ForgeWebView" Grid.Row="1" Height="500" Width="1000"/>
-                            </Grid>
-
-
-                            <!-- WebView2 Model Viewer -->
+                            
 
 
 
