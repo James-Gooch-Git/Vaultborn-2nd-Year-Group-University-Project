@@ -3,4 +3,22 @@ obj/
 /packages/
 riderModule.iml
 /_ReSharper.Caches/
+
+
+# Visual Studio User-Specific Files
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
 .vs/
+# JetBrains Rider settings
+.idea/
+*.DotSettings
+*.DotSettings.user
+
+# MSBuild auto-generated files
+*.csproj.user
+*.suo
+*.user
+
+*.xaml.cache
