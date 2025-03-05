@@ -29,7 +29,7 @@ public class OpenFusion
             return;
         }
         
-        FileDownloadService2 fileDownloadService = new FileDownloadService2();
+         FileDownloadService fileDownloadService = new  FileDownloadService();
 
         try
         {

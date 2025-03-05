@@ -6,12 +6,12 @@ using System.Text.Json;
 
 namespace AssetManager.Infrastructure.Services
 {
-    public class OssService
+    public class AuthService
     {
         private const string BaseUrl = "https://developer.api.autodesk.com";
         private readonly string _accessToken;
 
-        public OssService(string accessToken)
+        public AuthService(string accessToken)
         {
             _accessToken = accessToken;
         }

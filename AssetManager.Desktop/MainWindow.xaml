@@ -328,6 +328,38 @@
                         VerticalAlignment="Center"
                         Margin="538,0,0,0"/> -->
 
+                    <Button HorizontalAlignment="Left" BorderThickness="0" x:Name="BtnDownloadModel"
+                                Width="123" Height="40" Click="BtnDownload_Click" Cursor="Hand" 
+    Margin="538,15,0,15">
+
+                        <Button.Style>
+                            <Style TargetType="{x:Type Button}">
+                                <Setter Property="Background" Value="#3C88E3"/>
+                                <Setter Property="Foreground" Value="White"/>
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="{x:Type Button}">
+                                            <Border Background="{TemplateBinding Background}" BorderThickness="0">
+                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="#3C88E3"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+
+                        <StackPanel Orientation="Horizontal">
+                            <md:PackIcon Kind="Download" Width="17" Height="17" VerticalAlignment="Center"/>
+                            <TextBlock Text="Download Model" Margin="5,0,0,0" VerticalAlignment="Center"/>
+
+                        </StackPanel>
+                    </Button>
+
 
 
 
@@ -481,7 +513,7 @@
                                   ScrollViewer.HorizontalScrollBarVisibility="Hidden"
                                   Visibility="Visible">
 
-                            
+
 
 
 

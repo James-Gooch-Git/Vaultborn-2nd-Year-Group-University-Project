@@ -1341,7 +1341,7 @@ namespace AssetManager.Desktop
                 return;
             }
             
-            FileDownloadService2 fileDownloadService = new FileDownloadService2();
+             FileDownloadService fileDownloadService = new  FileDownloadService();
 
             try
             {
@@ -1458,7 +1458,12 @@ namespace AssetManager.Desktop
             loginWindow.Show();
         }
          
-  
+        private void BtnDownload_Click(object sender, RoutedEventArgs e)
+        {
+            Console.WriteLine("Downloading Model");
+            FileDownloadService fileDownloadService = new FileDownloadService();
+            fileDownloadService.DownloadModelAsync(_selectedProjectId, _selectedItemId);
+        }
 
         private async void BtnViewInFusion_Click(object sender, RoutedEventArgs e)
         {
@@ -1480,7 +1485,7 @@ namespace AssetManager.Desktop
             {
                 Console.WriteLine("Downloading model");
                 // No matching file found, so download it
-                var fileDownloadService = new FileDownloadService2();
+                var fileDownloadService = new  FileDownloadService();
                 await fileDownloadService.DownloadModelAsync(_selectedProjectId, _selectedItemId);
             }
 
