@@ -24,7 +24,16 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
-
+        
+        <Style x:Key="TextHoverStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#4B4B4B"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Foreground" Value="#F25505"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        
         <Style TargetType="Thumb">
             <Setter Property="Width" Value="5"/>
             <Setter Property="Background" Value="Gray"/>
@@ -265,9 +274,10 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <TextBlock Text="PROJECTS" FontSize="12" Foreground="#4B4b4b" FontWeight="Bold" 
-                       VerticalAlignment="Center" HorizontalAlignment="Left" Height="16" 
-                       Width="57" Margin="5,8,0,0"/>
+                    <Border Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" HorizontalAlignment="Left" 
+                            MouseEnter="TextBlockBorder_Enter" MouseLeave="TextBlockBorder_Leave" Cursor="Hand" Margin="5,8,0,0">
+                        <TextBlock MouseLeftButtonDown="ProjectsText_Click" Text="PROJECTS" FontSize="12" Foreground="#4B4B4B" FontWeight="Bold" VerticalAlignment="Center" HorizontalAlignment="Left" Height="16" Width="57"/>
+                    </Border>
 
                     <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                         <Border Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" 

@@ -2811,6 +2811,34 @@ namespace AssetManager.Desktop
         }
         #endregion
         
+        //project text
+        private void TextBlockBorder_Enter(object sender, MouseEventArgs e)
+        {
+            var border = sender as Border;
+            if (border != null && border.Child is TextBlock textBlock)
+            {
+                textBlock.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F25505"));
+            }
+        }
+        
+        private void TextBlockBorder_Leave(object sender, MouseEventArgs e)
+        {
+            var border = sender as Border;
+            if (border != null && border.Child is TextBlock textBlock)
+            {
+                textBlock.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+            }
+        }
+        
+        private async void ProjectsText_Click(object sender, MouseButtonEventArgs e)
+        {
+            ModelsDataGrid.Columns[1].Header = "Project";
+            ModelsDataGrid.Columns[2].Header = "Last Modified";
+            ModelsDataGrid.ItemsSource = null;
+            await LoadAllModels();
+            DisplayGridModels();
+        }
+        
         //models put in db
         private static async Task GetModelData(string modelId, string projectId, string folderName)
         {
