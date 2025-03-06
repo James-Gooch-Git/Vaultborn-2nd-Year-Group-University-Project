@@ -54,13 +54,14 @@ namespace AssetManager.Desktop
 
         public LoginWindow(bool isLogout) // Constructor accepting a boolean
         {
-            InitializeComponent();
+            //InitializeComponent();
             _isLogout = isLogout;
 
             if (_isLogout)
             {
                 HandleLogout();
             }
+            InitializeComponent();
         }
 
         private void HandleLogout()

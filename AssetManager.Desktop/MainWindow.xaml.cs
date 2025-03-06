@@ -21,6 +21,8 @@ using System.Text;
 
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Wpf;
+using System.Windows.Data; // Fix for Binding issue
+using System.Windows.Controls; // Ensure we use WPF DataGrid
 
 
 
@@ -39,13 +41,18 @@ namespace AssetManager.Desktop
         private string hubID;
         private string _objectId;
         private List<(string HubID, string HubName, string HubType)> hubs = new List<(string, string, string)>();
-
+        private CancellationTokenSource _modelLoadCancellationTokenSource = new CancellationTokenSource();
         private readonly ModelUpload _uploadService;
+        private readonly FileDownloadService _filedwnService;
         private List<Dictionary<string, string>> Models;
         private string _userId = Environment.GetEnvironmentVariable("userId", EnvironmentVariableTarget.User);
         private static readonly HttpClient client = new HttpClient();
         private string selectedHubName = "Loading..."; // Default value before hubs load
         private bool isModelLoaded = false;
+
+        private enum ViewType { Grid, List }
+        private ViewType _lastViewType = ViewType.List; // Default to List View
+
 
         // ✅ Constructor
         public MainWindow()
@@ -61,6 +68,7 @@ namespace AssetManager.Desktop
             InitializeComponent();
             _accessToken = TokenManager.GetToken();
             _uploadService = new ModelUpload(_accessToken);
+            _filedwnService = new FileDownloadService();
             Initialize();
         }
 
@@ -112,7 +120,7 @@ namespace AssetManager.Desktop
 
                 Username_TextBlock.Text = await GetUserName(_userId);
                 UserPic_Image.Source = new BitmapImage(new Uri(await GetUserPic(_userId)));
-                DisplayGridModels();
+                //DisplayGridModels();
             }
             catch (Exception ex)
             {
@@ -336,20 +344,102 @@ namespace AssetManager.Desktop
             }
         }
 
+        /*        private async void DisplayGridModels()
+                {
+                    _modelLoadCancellationTokenSource.Cancel();
+                    _modelLoadCancellationTokenSource = new CancellationTokenSource();
+                    CancellationToken token = _modelLoadCancellationTokenSource.Token;
+                    if (isModelLoaded) return; // Prevent duplicate calls
+                    isModelLoaded = true;
+
+                    ModelsContainer.Children.Clear(); // Clear existing squares
+                    List<Dictionary<string, string>> models = await GetAllModels();
+
+                    foreach (var model in models)
+                    {
+                        Border modelSquare = new Border
+                        {
+                            Width = 263,
+                            Height = 253,
+                            CornerRadius = new CornerRadius(5),
+                            Background = Brushes.White,
+                            BorderBrush = Brushes.LightGray,
+                            BorderThickness = new Thickness(1),
+                            Margin = new Thickness(10),
+                            Effect = new DropShadowEffect
+                            {
+                                Color = Colors.Black,
+                                Opacity = 0.1,
+                                BlurRadius = 10,
+                                ShadowDepth = 2
+                            }
+                        };
+
+                        StackPanel content = new StackPanel
+                        {
+                            Orientation = Orientation.Vertical,
+                            VerticalAlignment = VerticalAlignment.Center,
+                            HorizontalAlignment = HorizontalAlignment.Left
+                        };
+
+                        TextBlock modelName = new TextBlock
+                        {
+                            Text = model["Name"],
+                            FontSize = 16,
+                            FontWeight = FontWeights.Normal,
+                            TextAlignment = TextAlignment.Center,
+                            HorizontalAlignment = HorizontalAlignment.Left,
+                            TextWrapping = TextWrapping.Wrap,
+                            Margin = new Thickness(5, 2, 5, 2)
+                        };
+
+                        TextBlock projectName = new TextBlock
+                        {
+                            Text = $"Project: {model["Project"]}",
+                            FontSize = 14,
+                            FontWeight = FontWeights.Normal,
+                            Foreground = Brushes.Gray,
+                            TextAlignment = TextAlignment.Left,
+                            HorizontalAlignment = HorizontalAlignment.Left,
+                            TextWrapping = TextWrapping.Wrap,
+                            Margin = new Thickness(5, 2, 5, 2)
+                        };
+
+                        content.Children.Add(modelName);
+                        content.Children.Add(projectName);
+                        modelSquare.Child = content;
+                       // Stop execution if project changes mid-load
+                        ModelsContainer.Children.Add(modelSquare);
+                       // ModelsContainer.Children.Add(modelSquare);
+                        if (token.IsCancellationRequested) return;
+                    }
+                }*/
         private async void DisplayGridModels()
         {
-            if (isModelLoaded) return; // Prevent duplicate calls
+            _modelLoadCancellationTokenSource.Cancel();
+            _modelLoadCancellationTokenSource = new CancellationTokenSource();
+            CancellationToken token = _modelLoadCancellationTokenSource.Token;
+
+            if (isModelLoaded) return;
             isModelLoaded = true;
 
             ModelsContainer.Children.Clear(); // Clear existing squares
             List<Dictionary<string, string>> models = await GetAllModels();
+            if (token.IsCancellationRequested) return;
 
             foreach (var model in models)
             {
+                if (token.IsCancellationRequested) return;
+
+                string modelId = model["Id"];
+                string modelName = model["Name"];
+                string projectId = _selectedProjectId;
+
+                // Border container
                 Border modelSquare = new Border
                 {
                     Width = 263,
-                    Height = 253,
+                    Height = 300,
                     CornerRadius = new CornerRadius(5),
                     Background = Brushes.White,
                     BorderBrush = Brushes.LightGray,
@@ -371,9 +461,20 @@ namespace AssetManager.Desktop
                     HorizontalAlignment = HorizontalAlignment.Left
                 };
 
-                TextBlock modelName = new TextBlock
+                // Thumbnail Image
+                Image thumbnailImage = new Image
                 {
-                    Text = model["Name"],
+                    Width = 200,
+                    Height = 200,
+                    Margin = new Thickness(10),
+                    Stretch = Stretch.Uniform
+                };
+                _ = ShowThumbnail(projectId, modelId, thumbnailImage);
+
+                // Model Name
+                TextBlock modelNameBlock = new TextBlock
+                {
+                    Text = modelName,
                     FontSize = 16,
                     FontWeight = FontWeights.Normal,
                     TextAlignment = TextAlignment.Center,
@@ -382,20 +483,43 @@ namespace AssetManager.Desktop
                     Margin = new Thickness(5, 2, 5, 2)
                 };
 
-                TextBlock projectName = new TextBlock
+                // Three-dot menu button
+                Button menuButton = new Button
                 {
-                    Text = $"Project: {model["Project"]}",
-                    FontSize = 14,
-                    FontWeight = FontWeights.Normal,
-                    Foreground = Brushes.Gray,
-                    TextAlignment = TextAlignment.Left,
-                    HorizontalAlignment = HorizontalAlignment.Left,
-                    TextWrapping = TextWrapping.Wrap,
-                    Margin = new Thickness(5, 2, 5, 2)
+                    Content = "⋮", // Three-dot icon
+                    FontSize = 18,
+                    Width = 30,
+                    Height = 30,
+                    Background = Brushes.Transparent,
+                    BorderBrush = Brushes.Transparent,
+                    Padding = new Thickness(5),
+                    HorizontalAlignment = HorizontalAlignment.Right,
+                    ToolTip = "More Options"
                 };
 
-                content.Children.Add(modelName);
-                content.Children.Add(projectName);
+                // Create and attach ContextMenu
+                ContextMenu contextMenu = CreateModelContextMenu(modelId, modelName);
+                menuButton.ContextMenu = contextMenu;
+
+                // Ensure the menu opens on button click
+                menuButton.Click += (s, e) =>
+                {
+                    menuButton.ContextMenu.PlacementTarget = menuButton;
+                    menuButton.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+                    menuButton.ContextMenu.IsOpen = true;
+                };
+
+                // Top row container for model name and menu button
+                DockPanel topPanel = new DockPanel();
+                DockPanel.SetDock(modelNameBlock, Dock.Left);
+                DockPanel.SetDock(menuButton, Dock.Right);
+                topPanel.Children.Add(modelNameBlock);
+                topPanel.Children.Add(menuButton);
+
+                // Add elements to content panel
+                content.Children.Add(thumbnailImage);
+                content.Children.Add(topPanel);
+
                 modelSquare.Child = content;
                 ModelsContainer.Children.Add(modelSquare);
             }
@@ -827,6 +951,61 @@ namespace AssetManager.Desktop
             }
         }
 
+        /*       private async void LoadModelsForSelectedProject()
+               {
+                   if (string.IsNullOrEmpty(_selectedProjectId) || string.IsNullOrEmpty(_folderId))
+                   {
+                       Console.WriteLine("❌ No project selected, cannot load models.");
+                       Dispatcher.Invoke(() =>
+                       {
+                           ModelsDataGrid.ItemsSource = null;
+                           ModelsDataGrid.Items.Clear();
+                       });
+                       return;
+                   }
+
+                   Console.WriteLine($"🔄 Fetching models for Project: {_selectedProjectId}, Folder: {_folderId}");
+
+                   var models = await GetModelsFromProject(_selectedProjectId, _folderId);
+
+                   if (models == null || !models.Any())
+                   {
+                       Console.WriteLine("❌ No models found for this project.");
+                       Dispatcher.Invoke(() =>
+                       {
+                           ModelsDataGrid.ItemsSource = null;
+                           ModelsDataGrid.Items.Clear();
+                       });
+                       return;
+                   }
+
+                   // Log the models we're loading
+                   Console.WriteLine($"Found {models.Count} models for project {_selectedProjectId}:");
+                   foreach (var model in models)
+                   {
+                       Console.WriteLine($"- {model["Name"]} (ID: {model["Id"]})");
+                   }
+
+                   Dispatcher.Invoke(() =>
+                   {
+                       ModelsDataGrid.ItemsSource = null;
+                       ModelsDataGrid.Items.Clear();
+                       ModelsDataGrid.ItemsSource = models;
+
+                       // Auto-select the first item if available
+                       if (models.Count > 0)
+                       {
+                           ModelsDataGrid.SelectedIndex = 0;
+                           Console.WriteLine("✅ Auto-selected first model in grid");
+
+                           // The selection changed event will be triggered automatically,
+                           // which will set all the global IDs
+                       }
+                   });
+
+                   Console.WriteLine($"✅ {models.Count} models loaded successfully.");
+               }*/
+
         private async void LoadModelsForSelectedProject()
         {
             if (string.IsNullOrEmpty(_selectedProjectId) || string.IsNullOrEmpty(_folderId))
@@ -868,19 +1047,60 @@ namespace AssetManager.Desktop
                 ModelsDataGrid.Items.Clear();
                 ModelsDataGrid.ItemsSource = models;
 
-                // Auto-select the first item if available
-                if (models.Count > 0)
-                {
-                    ModelsDataGrid.SelectedIndex = 0;
-                    Console.WriteLine("✅ Auto-selected first model in grid");
+                // Clear existing columns
+                ModelsDataGrid.Columns.Clear();
 
-                    // The selection changed event will be triggered automatically,
-                    // which will set all the global IDs
-                }
+                // Normal Data Columns
+                ModelsDataGrid.Columns.Add(new System.Windows.Controls.DataGridTextColumn
+                {
+                    Header = "Name",
+                    Binding = new Binding("Name")
+                });
+                ModelsDataGrid.Columns.Add(new System.Windows.Controls.DataGridTextColumn
+                {
+                    Header = "Project",
+                    Binding = new Binding("Project")
+                });
+                ModelsDataGrid.Columns.Add(new System.Windows.Controls.DataGridTextColumn
+                {
+                    Header = "Last Modified",
+                    Binding = new Binding("LastModified")
+                });
+
+                // ✅ Add Three-Dot Menu Column
+                DataGridTemplateColumn menuColumn = new DataGridTemplateColumn { Header = "Poo", Width = 50 };
+                FrameworkElementFactory menuButtonFactory = new FrameworkElementFactory(typeof(Button));
+                menuButtonFactory.SetValue(Button.ContentProperty, "⋮");
+                menuButtonFactory.SetValue(Button.WidthProperty, 30.0);
+                menuButtonFactory.SetValue(Button.HeightProperty, 30.0);
+                menuButtonFactory.SetValue(Button.ToolTipProperty, "More Options");
+                menuButtonFactory.SetValue(Button.BackgroundProperty, Brushes.Transparent);
+                menuButtonFactory.SetValue(Button.BorderBrushProperty, Brushes.Transparent);
+
+                // Attach event handler to open context menu
+                menuButtonFactory.AddHandler(Button.ClickEvent, new RoutedEventHandler((s, e) =>
+                {
+                    Button button = s as Button;
+                    if (button?.DataContext is Dictionary<string, string> model)
+                    {
+                        ContextMenu contextMenu = CreateModelContextMenu(model["Id"], model["Name"]);
+                        contextMenu.PlacementTarget = button;
+                        contextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+                        contextMenu.IsOpen = true;
+                    }
+                }));
+
+                DataTemplate menuTemplate = new DataTemplate { VisualTree = menuButtonFactory };
+                menuColumn.CellTemplate = menuTemplate;
+                ModelsDataGrid.Columns.Add(menuColumn);
             });
 
             Console.WriteLine($"✅ {models.Count} models loaded successfully.");
         }
+
+
+
+
         #endregion
 
         //NEEDS MIGRATING TO UI SERVICES || UI FUNCTIONALITY//
@@ -1058,10 +1278,27 @@ namespace AssetManager.Desktop
 
                 Console.WriteLine($"📌 Selected Project: {_selectedProjectName}, Project ID: {_selectedProjectId}, Folder ID: {_folderId}");
 
-                // Load models for the selected project - this will also trigger auto-selection
-                LoadModelsForSelectedProject();
+                // Reset model loading flag and clear UI before loading new models
+                isModelLoaded = false;
+                ModelsContainer.Children.Clear();
+
+                // Automatically refresh the grid view if it's currently visible
+                if (Grid_View.Visibility == Visibility.Visible)
+                {
+                    Grid_Click(null, null);  // Refresh grid view with the new project
+                }
+                else if (ModelsDataGrid.Visibility == Visibility.Visible)
+                {
+                    List_Click(null, null);  // Refresh List View
+                }
+                else
+                {
+                    // Otherwise, load models normally
+                    LoadModelsForSelectedProject();
+                }
             }
         }
+
 
 
         private async void ModelsDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -1189,27 +1426,121 @@ namespace AssetManager.Desktop
             }
         }
 
+        private ContextMenu CreateModelContextMenu(string modelId, string modelName)
+        {
+            ContextMenu menu = new ContextMenu();
+
+            MenuItem openInFusionItem = new MenuItem { Header = "🔷 Open in Fusion 360" };
+            openInFusionItem.Click += (s, e) =>
+            {
+                if ((s as MenuItem)?.DataContext is Dictionary<string, string> model)
+                {
+                    BtnViewInFusion_Click(model["Id"]);
+                }
+            };
+
+            MenuItem viewInAppItem = new MenuItem { Header = "🖥️ View in App" };
+            viewInAppItem.Click += (s, e) =>
+            {
+                if ((s as MenuItem)?.DataContext is Dictionary<string, string> model)
+                {
+                    BtnViewInApp_Click(model["Id"]);
+                }
+            };
+
+            MenuItem downloadItem = new MenuItem { Header = "📥 Download" };
+            downloadItem.Click += (s, e) =>
+            {
+                if ((s as MenuItem)?.DataContext is Dictionary<string, string> model)
+                {
+                    BtnDownload_Click(model["Id"]);
+                }
+            };
+
+            MenuItem deleteItem = new MenuItem { Header = "🗑️ Delete" };
+            deleteItem.Click += (s, e) =>
+            {
+                if ((s as MenuItem)?.DataContext is Dictionary<string, string> model)
+                {
+                    BtnDeleteModel_Click(model["Id"]);
+                }
+            };
+
+            menu.Items.Add(openInFusionItem);
+            menu.Items.Add(viewInAppItem);
+            menu.Items.Add(downloadItem);
+            menu.Items.Add(deleteItem);
+
+            return menu;
+        }
         private async void List_Click(object sender, MouseButtonEventArgs e)
         {
             ModelsDataGrid.Visibility = Visibility.Visible; // Show DataGrid
             Grid_View.Visibility = Visibility.Collapsed;
             isModelLoaded = false;
 
-            if (Models == null || Models.Count == 0)
+            try
             {
-                Models = await GetAllModels();
+                ModelsDataGrid.ItemsSource = null; // Clear previous data
 
-                ModelsDataGrid.ItemsSource = Models;
+                // Fetch models for the selected project
+                List<Dictionary<string, string>> models = await GetModelsFromProject(_selectedProjectId, _folderId);
+
+                if (models == null || models.Count == 0)
+                {
+                    Console.WriteLine("🔄 No models found, clearing grid.");
+                    ModelsDataGrid.ItemsSource = null;
+                    return;
+                }
+
+                ModelsDataGrid.ItemsSource = models;
+                Console.WriteLine($"✅ Loaded {models.Count} models.");
+
+                // ✅ Ensure "Actions" column exists only once
+                if (!ModelsDataGrid.Columns.Any(col => col.Header?.ToString() == "Actions"))
+                {
+                    var actionsColumn = new DataGridTemplateColumn
+                    {
+                        Header = "Actions",
+                        Width = new DataGridLength(50)
+                    };
+
+                    var cellTemplate = new DataTemplate();
+                    var buttonFactory = new FrameworkElementFactory(typeof(Button));
+
+                    buttonFactory.SetValue(Button.ContentProperty, "⋮"); // Three-dot menu
+                    buttonFactory.SetValue(Button.CursorProperty, Cursors.Hand);
+                    buttonFactory.SetValue(Button.ToolTipProperty, "Click for options");
+
+                    // ✅ Open ContextMenu when button is clicked
+                    buttonFactory.AddHandler(Button.ClickEvent, new RoutedEventHandler((s, ev) =>
+                    {
+                        if (s is Button btn && btn.DataContext is Dictionary<string, string> selectedModel)
+                        {
+                            ContextMenu dynamicContextMenu = CreateModelContextMenu(selectedModel["Id"], selectedModel["Name"]);
+                            dynamicContextMenu.PlacementTarget = btn;
+                            dynamicContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+                            dynamicContextMenu.IsOpen = true;
+                        }
+                    }));
+
+                    cellTemplate.VisualTree = buttonFactory;
+                    actionsColumn.CellTemplate = cellTemplate;
+
+                    ModelsDataGrid.Columns.Add(actionsColumn);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"❌ Error loading models: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
 
             Grid_Border.Background = Brushes.Transparent;
-
-            //Grid_Icon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
-
             List_Border.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
-
-            //List_Icon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F25505"));
         }
+
+
+
         private async void Grid_Click(object sender, MouseButtonEventArgs e)
         {
             if (string.IsNullOrEmpty(_selectedProjectId))
@@ -1289,21 +1620,50 @@ namespace AssetManager.Desktop
                         Margin = new Thickness(5, 2, 5, 2)
                     };
 
-                    TextBlock projectName = new TextBlock
+                    // ✅ Three-dot menu button
+                    Button menuButton = new Button
                     {
-                        Text = $"Project: {model["Project"]}",
-                        FontSize = 14,
-                        FontWeight = FontWeights.Normal,
-                        Foreground = Brushes.Gray,
-                        TextAlignment = TextAlignment.Left,
-                        HorizontalAlignment = HorizontalAlignment.Left,
-                        TextWrapping = TextWrapping.Wrap,
-                        Margin = new Thickness(5, 2, 5, 2)
+                        Content = "⋮", // Three-dot icon
+                        FontSize = 18,
+                        Width = 30,
+                        Height = 30,
+                        Background = Brushes.Transparent,
+                        BorderBrush = Brushes.Transparent,
+                        Padding = new Thickness(5),
+                        HorizontalAlignment = HorizontalAlignment.Right,
+                        ToolTip = "More Options"
                     };
 
+                    // ✅ Ensure the menu button has the correct model assigned
+                    menuButton.DataContext = model;
+
+                    // ✅ Create and attach ContextMenu
+                    ContextMenu contextMenu = CreateModelContextMenu(model["Id"], model["Name"]);
+                    menuButton.ContextMenu = contextMenu;
+
+                    // ✅ Ensure the menu opens on button click
+                    menuButton.Click += (s, e) =>
+                    {
+                        if (s is Button btn && btn.DataContext is Dictionary<string, string> selectedModel)
+                        {
+                            ContextMenu dynamicContextMenu = CreateModelContextMenu(selectedModel["Id"], selectedModel["Name"]);
+                            dynamicContextMenu.PlacementTarget = btn;
+                            dynamicContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+                            dynamicContextMenu.IsOpen = true;
+                        }
+                    };
+
+                    // Container for Model Name + Menu Button
+                    DockPanel topPanel = new DockPanel();
+                    DockPanel.SetDock(modelName, Dock.Left);
+                    DockPanel.SetDock(menuButton, Dock.Right);
+                    topPanel.Children.Add(modelName);
+                    topPanel.Children.Add(menuButton);
+
+                    // Add elements to content panel
                     content.Children.Add(thumbnailImage);
-                    content.Children.Add(modelName);
-                    content.Children.Add(projectName);
+                    content.Children.Add(topPanel);
+
                     modelSquare.Child = content;
                     ModelsContainer.Children.Add(modelSquare);
                 }
@@ -1320,42 +1680,138 @@ namespace AssetManager.Desktop
             Grid_Border.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
         }
 
-        #endregion 
+/*
+        private void SetupDataGrid()
+        {
+            if (ModelsDataGrid.Columns.Count > 0)
+            {
+                Console.WriteLine("🔄 DataGrid already set up, skipping redundant setup.");
+                return;
+            }
+
+            Console.WriteLine("🛠️ Setting up DataGrid...");
+
+            ModelsDataGrid.Columns.Clear(); // Clear previous setup
+            ModelsDataGrid.AutoGenerateColumns = false;
+
+            ModelsDataGrid.Columns.Add(new System.Windows.Controls.DataGridTextColumn
+            {
+                Header = "Name",
+                Binding = new Binding("Name"),
+                Width = new DataGridLength(1, DataGridLengthUnitType.Star)
+            });
+
+            ModelsDataGrid.Columns.Add(new System.Windows.Controls.DataGridTextColumn
+            {
+                Header = "Project",
+                Binding = new Binding("Project"),
+                Width = new DataGridLength(1, DataGridLengthUnitType.Star)
+            });
+
+            ModelsDataGrid.Columns.Add(new System.Windows.Controls.DataGridTextColumn
+            {
+                Header = "Last Modified",
+                Binding = new Binding("LastModified"),
+                Width = new DataGridLength(1, DataGridLengthUnitType.Star)
+            });
+
+            // Ensure Actions Column is only added once
+            if (!ModelsDataGrid.Columns.Any(col => col.Header?.ToString() == "Actions"))
+            {
+                var actionsColumn = new DataGridTemplateColumn
+                {
+                    Header = "Actions",
+                    Width = new DataGridLength(50)
+                };
+
+                var cellTemplate = new DataTemplate();
+                var buttonFactory = new FrameworkElementFactory(typeof(Button));
+
+                buttonFactory.SetValue(Button.ContentProperty, "⋮"); // Three dots
+                buttonFactory.SetValue(Button.CursorProperty, Cursors.Hand);
+                buttonFactory.SetValue(Button.ToolTipProperty, "Click for options");
+
+                // Make sure the button opens the ContextMenu dynamically
+                buttonFactory.AddHandler(Button.ClickEvent, new RoutedEventHandler((s, e) =>
+                {
+                    if (s is Button btn && btn.DataContext is Dictionary<string, string> model)
+                    {
+                        ContextMenu dynamicContextMenu = CreateModelContextMenu(model["Id"], model["Name"]);
+                        dynamicContextMenu.PlacementTarget = btn;
+                        dynamicContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+                        dynamicContextMenu.IsOpen = true;
+                    }
+                }));
+
+                cellTemplate.VisualTree = buttonFactory;
+                actionsColumn.CellTemplate = cellTemplate;
+
+                ModelsDataGrid.Columns.Add(actionsColumn);
+            }
+
+            // ✅ Attach ContextMenu to **entire DataGridRow**
+            ModelsDataGrid.RowStyle = new Style(typeof(DataGridRow))
+            {
+                Setters =
+        {
+            new EventSetter(DataGridRow.LoadedEvent, new RoutedEventHandler((s, e) =>
+            {
+                if (s is DataGridRow row && row.DataContext is Dictionary<string, string> model)
+                {
+                    // Ensure each row gets the correct menu dynamically
+                    row.ContextMenu = CreateModelContextMenu(model["Id"], model["Name"]);
+                }
+            }))
+        }
+            };
+
+            Console.WriteLine("✅ DataGrid setup complete.");
+        }
+
+*/
+
+        #endregion
 
         //NEEDS MIGRATING TO FUSION SERVICES || OPEN WITH FUSION FUNCTIONALITY //
         #region Fusion Functionality
-        private void LaunchFusionWithModel(string modelPath)
+        private async void LaunchFusionWithModel()
         {
-            string fusion360Uri = "fusion360://command=openCloudModel&itemId=urn:adsk.wipprod:dm.lineage:pwGqGrbgRx6IUlR4Wtskdg";
-            
-            string tempFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "fusion_model_path.txt");
-            File.WriteAllText(tempFilePath, modelPath);
-            
-            string fusionPath = GetFusion360ExecutablePath();
-            // string fusionApiPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Autodesk\\webdeploy\\production\\ec15d50cfe0119bd0166ce9a1aa68bd8f670e085\\Api");
-            // string pythonScriptPath = Path.Combine(fusionApiPath, "FusionAddIn.py");
-
-            if (string.IsNullOrEmpty(fusionPath) || !File.Exists(fusionPath))
+            if (string.IsNullOrEmpty(_selectedProjectId) || string.IsNullOrEmpty(_selectedItemId))
             {
-                MessageBox.Show("⚠️ Fusion 360 is not installed or could not be found.", "Fusion 360 Not Found", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show("❌ No model selected.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
-            
-             FileDownloadService fileDownloadService = new  FileDownloadService();
 
             try
             {
-                fileDownloadService.DownloadModelAndSaveMetadata(_selectedProjectId, _selectedItemId, _selectedItemName, _folderId);
-                // Start Fusion 360 and open the model  
-                Process.Start(fusionPath, $"--exec \"{modelPath}\"");
-                Console.WriteLine($"✅ Launched Fusion 360 with: {modelPath}");
+                // Fetch the latest storage ID to ensure we open the correct cloud version
+                string storageId = await _filedwnService.GetStorageIdFromItem(_selectedProjectId, _selectedItemId);
+
+                if (string.IsNullOrEmpty(storageId))
+                {
+                    MessageBox.Show("❌ Could not retrieve storage ID for the model.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                // Construct the Fusion 360 command URL
+                string fusionUri = $"fusion360://command=openCloudModel&projectId={_selectedProjectId}&itemId={_selectedItemId}&storage={storageId}";
+
+                Console.WriteLine($"✅ Launching Fusion 360 with model: {fusionUri}");
+
+                // Open Fusion 360 with the correct model reference
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = fusionUri,
+                    UseShellExecute = true
+                });
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"❌ Failed to launch Fusion 360: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-        
+
+
         private string GetFusion360ExecutablePath()
         {
             string fusionBasePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Autodesk", "webdeploy", "production");
@@ -1439,8 +1895,21 @@ namespace AssetManager.Desktop
         {
             string itemId = "urn:adsk.wipprod:dm.item:8IKCVBh3Qg-P8lQuCRewaQ";
             string projectId = _selectedProjectId;
-            Console.WriteLine("Attempting to delete id: "+itemId+" from project: "+projectId);
-            DeleteModel _delMod = new(); 
+            Console.WriteLine("Attempting to delete id: " + itemId + " from project: " + projectId);
+            DeleteModel _delMod = new();
+            bool isDeleted = await _delMod.DeleteModelAsync(projectId, itemId);
+            if (!isDeleted)
+            {
+                MessageBox.Show("Failed to delete");
+            }
+        }
+
+        private async void BtnDeleteModel_Click(string selectedItemId)
+        {
+            string itemId = "urn:adsk.wipprod:dm.item:8IKCVBh3Qg-P8lQuCRewaQ";
+            string projectId = _selectedProjectId;
+            Console.WriteLine("Attempting to delete id: " + itemId + " from project: " + projectId);
+            DeleteModel _delMod = new();
             bool isDeleted = await _delMod.DeleteModelAsync(projectId, itemId);
             if (!isDeleted)
             {
@@ -1457,14 +1926,19 @@ namespace AssetManager.Desktop
             this.Close();
             loginWindow.Show();
         }
-         
+
         private void BtnDownload_Click(object sender, RoutedEventArgs e)
         {
             Console.WriteLine("Downloading Model");
             FileDownloadService fileDownloadService = new FileDownloadService();
             fileDownloadService.DownloadModelAsync(_selectedProjectId, _selectedItemId);
         }
-
+        private void BtnDownload_Click(string selectedItemId)
+        {
+            Console.WriteLine("Downloading Model");
+            FileDownloadService fileDownloadService = new FileDownloadService();
+            fileDownloadService.DownloadModelAsync(_selectedProjectId, _selectedItemId);
+        }
         private async void BtnViewInFusion_Click(object sender, RoutedEventArgs e)
         {
             Console.WriteLine($"View in Fusion button clicked. Using global IDs:");
@@ -1485,7 +1959,7 @@ namespace AssetManager.Desktop
             {
                 Console.WriteLine("Downloading model");
                 // No matching file found, so download it
-                var fileDownloadService = new  FileDownloadService();
+                var fileDownloadService = new FileDownloadService();
                 await fileDownloadService.DownloadModelAsync(_selectedProjectId, _selectedItemId);
             }
 
@@ -1497,12 +1971,12 @@ namespace AssetManager.Desktop
 
                 if (!Directory.Exists(saveDirectory))
                 {
-                    LaunchFusionWithModel(saveDirectory);
+                   // LaunchFusionWithModel(saveDirectory);
                 }
                 else
                 {
                     // Directory exists, so we can just launch Fusion with the model
-                    LaunchFusionWithModel(saveDirectory);
+                    //LaunchFusionWithModel(saveDirectory);
                 }
             }
             catch (Exception ex)
@@ -1511,6 +1985,49 @@ namespace AssetManager.Desktop
                     "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+        private async void BtnViewInFusion_Click(string selectedItemId)
+        {
+            Console.WriteLine($"View in Fusion button clicked. Using global IDs:");
+            Console.WriteLine($"- Selected Item ID: {_selectedItemId}");
+            Console.WriteLine($"- Selected Project ID: {_selectedProjectId}");
+            Console.WriteLine($"- Selected Item Name: {_selectedItemName}");
+
+            if (string.IsNullOrEmpty(_selectedItemId) || string.IsNullOrEmpty(_selectedProjectId))
+            {
+                MessageBox.Show("❌ Please select a model before viewing in Fusion 360.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            try
+            {
+                // Fetch the latest storage ID from Autodesk API
+
+                string storageId = await _filedwnService.GetStorageIdFromItem(_selectedProjectId, _selectedItemId);
+
+                if (string.IsNullOrEmpty(storageId))
+                {
+                    MessageBox.Show("❌ Could not retrieve storage ID for the model.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                // Construct the Fusion 360 command URI
+                string fusionUri = $"fusion360://command=openCloudModel&projectId={_selectedProjectId}&itemId={_selectedItemId}&storage={storageId}";
+
+                Console.WriteLine($"✅ Launching Fusion 360 with model: {fusionUri}");
+
+                // Open Fusion 360 with the correct model reference
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = fusionUri,
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"❌ Error launching Fusion 360: {ex.Message}\n{ex.StackTrace}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
         #endregion
 
         //FORGE VIEWER 
@@ -1584,7 +2101,100 @@ namespace AssetManager.Desktop
 
             // Open Forge Viewer in a new window
             //ForgeViewerWindow forgeViewer = new ForgeViewerWindow(encodedUrn);
-           // forgeViewer.Show();
+            // forgeViewer.Show();
+            LoadForgeViewer(encodedUrn);
+        }
+
+        private async void BtnViewInApp_Click(string selectedItemId)
+        {
+            // ✅ Track the last active view
+            if (ModelsDataGrid.Visibility == Visibility.Visible)
+            {
+                _lastViewType = ViewType.List;
+            }
+            else if (Grid_View.Visibility == Visibility.Visible)
+            {
+                _lastViewType = ViewType.Grid;
+            }
+
+            // Hide both views
+            ModelsDataGrid.Visibility = Visibility.Collapsed;
+            Grid_View.Visibility = Visibility.Collapsed;
+
+            // Show the Forge Viewer
+            ForgeViewerContainer.Visibility = Visibility.Visible;
+            ForgeWebView.Visibility = Visibility.Visible;
+
+            Console.WriteLine($"View in App button clicked. Returning to: {_lastViewType} view after closing.");
+
+            ModelsDataGrid.Visibility = Visibility.Collapsed;
+            Grid_View.Visibility = Visibility.Collapsed;
+
+            // Show Forge Viewer
+            ForgeViewerContainer.Visibility = Visibility.Visible;
+            ForgeWebView.Visibility = Visibility.Visible;
+
+            Console.WriteLine($"View in App button clicked. Using global IDs:");
+            Console.WriteLine($"- Selected Item ID: {_selectedItemId}");
+            Console.WriteLine($"- Selected Project ID: {_selectedProjectId}");
+            Console.WriteLine($"- Storage ID: {_objectId}");
+
+            if (string.IsNullOrEmpty(_selectedItemId) || string.IsNullOrEmpty(_selectedProjectId))
+            {
+                MessageBox.Show("❌ Please select a model before viewing.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            // If we already have the storage ID, use it directly
+            string objectId = _objectId;
+
+            // If not available, fetch it on demand
+            if (string.IsNullOrEmpty(objectId))
+            {
+                Console.WriteLine("🔍 Storage ID not set globally, fetching now...");
+                FileDownloadService fileService = new FileDownloadService();
+                objectId = await fileService.GetStorageIdFromItem(_selectedProjectId, _selectedItemId);
+                if (string.IsNullOrEmpty(objectId))
+                {
+                    MessageBox.Show("Could not retrieve model information.", "Model Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+                _objectId = objectId; // Update global storage ID
+            }
+
+            // Encode URN
+            string encodedUrn = EncodeObjectIdToUrn(objectId);
+            if (string.IsNullOrEmpty(encodedUrn))
+            {
+                MessageBox.Show("Failed to process model identifier.", "Processing Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            Console.WriteLine($"✅ Encoded URN: {encodedUrn}");
+
+            // Continue with model viewer loading...
+            ModelDerivativeService modelService = new ModelDerivativeService(new HttpClient());
+            bool translationComplete = await modelService.IsTranslationCompletedAsync(encodedUrn, _accessToken);
+
+            if (!translationComplete)
+            {
+                Console.WriteLine("🔄 Submitting translation job...");
+                bool jobResponse = await modelService.SubmitModelForTranslationAsync(encodedUrn, _accessToken);
+
+                Console.WriteLine($"✅ Translation job submitted: {jobResponse}");
+
+                if (!jobResponse)
+                {
+                    MessageBox.Show("❌ Translation job failed to submit.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+            }
+
+            Console.WriteLine($"🔍 Opening Forge Viewer for Model: {_selectedItemId}");
+
+            // Open Forge Viewer in a new window
+            //ForgeViewerWindow forgeViewer = new ForgeViewerWindow(encodedUrn);
+            // forgeViewer.Show();
             LoadForgeViewer(encodedUrn);
         }
 
@@ -1592,10 +2202,23 @@ namespace AssetManager.Desktop
         {
             // Hide the Forge Viewer
             ForgeViewerContainer.Visibility = Visibility.Collapsed;
+            ForgeWebView.Visibility = Visibility.Collapsed;
 
-            // Show the Model Grid again
-            ModelsDataGrid.Visibility = Visibility.Visible;
+            // ✅ Restore the last active view
+            if (_lastViewType == ViewType.Grid)
+            {
+                ModelsDataGrid.Visibility = Visibility.Collapsed;
+                Grid_View.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                ModelsDataGrid.Visibility = Visibility.Visible;
+                Grid_View.Visibility = Visibility.Collapsed;
+            }
+
+            Console.WriteLine($"🔄 Returning to {_lastViewType} view.");
         }
+
 
         private async void LoadForgeViewer(string encodedUrn)
         {

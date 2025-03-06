@@ -259,7 +259,7 @@
                         </StackPanel>
 
                     </Button>
-
+                    <!--
                     <Button HorizontalAlignment="Left" BorderThickness="0" x:Name="BtnDeleteModel" Width="100" Height="40" Click="BtnDeleteModel_Click" Cursor="Hand" Margin="180,0,0,0">
                         <Button.Style>
                             <Style TargetType="{x:Type Button}">
@@ -319,15 +319,16 @@
                             <TextBlock Text="View in App" Margin="5,0,0,0" VerticalAlignment="Center"/>
 
                         </StackPanel>
-                    </Button>
+                    </Button>-->
                     <!-- <Button x:Name="BtnGenerate3D"
                         Content="Generate 3D Model"
                         Width="200" Height="40"
                         Click="BtnGenerate3D_Click"
                         HorizontalAlignment="Left"
                         VerticalAlignment="Center"
-                        Margin="538,0,0,0"/> -->
-
+                        Margin="538,0,0,0"/> 
+                    -->
+                    <!--
                     <Button HorizontalAlignment="Left" BorderThickness="0" x:Name="BtnDownloadModel"
                                 Width="123" Height="40" Click="BtnDownload_Click" Cursor="Hand" 
     Margin="538,15,0,15">
@@ -389,8 +390,7 @@
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="Open In Fusion" Margin="1,0,0,0" VerticalAlignment="Center"/>
                         </StackPanel>
-                    </Button>
-
+                    </Button>-->
 
                     <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
 
@@ -626,7 +626,7 @@
                                         </Style>
                                     </DataGridTextColumn.CellStyle>
                                 </DataGridTextColumn>
-
+                                <!--
                                 <DataGridTemplateColumn Width="70">
                                     <DataGridTemplateColumn.HeaderStyle>
                                         <Style TargetType="DataGridColumnHeader">
@@ -649,7 +649,7 @@
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
 
-                                </DataGridTemplateColumn>
+                                </DataGridTemplateColumn>-->
 
                             </DataGrid.Columns>
 
