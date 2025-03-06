@@ -1598,10 +1598,9 @@ namespace AssetManager.Desktop
             {
                 MessageBox.Show("❌ Please select a project to view models.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
                 
-                foreach (var model in Models)
-                {
-                    MessageBox.Show($"model: {model["Name"]}");
-                }
+                CreateGridView(Models);
+                ModelsDataGrid.Visibility = Visibility.Collapsed; // Hide DataGrid
+                Grid_View.Visibility = Visibility.Visible; // Show Grid View
                 return;
             }
 
@@ -1776,7 +1775,7 @@ namespace AssetManager.Desktop
                     };
 
                     // Load thumbnail asynchronously
-                    _ = ShowThumbnail(model["b"], model["Id"], thumbnailImage);
+                    _ = ShowThumbnail(model["ProjectId"], model["Id"], thumbnailImage);
 
                     TextBlock modelName = new TextBlock
                     {
@@ -2577,12 +2576,12 @@ namespace AssetManager.Desktop
 
                     // 🔹 Step 3: Store item details for data grid
                     modelsList.Add(new Dictionary<string, string>
-            {
-                { "Id", itemId },
-                { "Name", itemName },
-                { "StorageId", storageId },
-                { "LatestVersion", latestVersion }
-            });
+                    {
+                        { "Id", itemId },
+                        { "Name", itemName },
+                        { "StorageId", storageId },
+                        { "LatestVersion", latestVersion }
+                    });
                 }
 
                 // 🔹 Step 4: Update Data Grid on UI thread
@@ -2809,7 +2808,9 @@ namespace AssetManager.Desktop
             }
         }
         #endregion
-
+        
+        //models put in db
+        
         //Fuzzy search
         private async void SearchText_Box_OnKeyDown(object sender, KeyEventArgs e)
         {
@@ -2833,7 +2834,7 @@ namespace AssetManager.Desktop
                         modelsArray[index, 5] = modelData.ModifiedDate;
                         modelsArray[index, 6] = modelData.ModifiedBy;
                         modelsArray[index, 7] = modelData.FileSize.ToString();
-                        modelsArray[index, 8] = modelData.PublicPrivate;
+                        modelsArray[index, 8] = modelData.FolderId;
                         index++;
                     }
             
@@ -2855,7 +2856,8 @@ namespace AssetManager.Desktop
                                     { "Name", modelsArray[i, 1] },
                                     { "Project", name },
                                     { "LastModified", match.Score.ToString() },
-                                    { "Id", modelsArray[i, 0] }
+                                    { "Id", modelsArray[i, 0] },
+                                    { "ProjectId" , modelsArray[i, 8]}
                                 });
                                 break;
                             }
@@ -2964,7 +2966,8 @@ namespace AssetManager.Desktop
                             { "Name", result.Name },
                             { "Project", result.Foldername },
                             { "LastModified", result.ModifiedDate },
-                            { "Id", id }
+                            { "Id", id },
+                            { "ProjectId", result.FolderId}
                         });
                     }
                 }

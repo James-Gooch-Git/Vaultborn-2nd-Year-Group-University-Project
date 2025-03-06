@@ -8,10 +8,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="29dceaf0-6b38-45af-9473-223a6fd443eb" name="Changes" comment="">
+    <list default="true" id="29dceaf0-6b38-45af-9473-223a6fd443eb" name="Changes" comment="added proj id to db for models">
       <change beforePath="$PROJECT_DIR$/.idea/.idea.AssetManager/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.AssetManager/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml.cs" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/AssetManager.Infrastructure/Models/ModelData.cs" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Infrastructure/Models/ModelData.cs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
