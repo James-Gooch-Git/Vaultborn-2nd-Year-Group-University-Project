@@ -24,7 +24,8 @@ using Microsoft.Web.WebView2.Wpf;
 using System.Windows.Data; // Fix for Binding issue
 using System.Windows.Controls; // Ensure we use WPF DataGrid
 
-
+using MongoDB.Bson;
+using AssetManager.Infrastructure.Models;
 
 namespace AssetManager.Desktop
 {
@@ -246,6 +247,10 @@ namespace AssetManager.Desktop
         {
             MongoConnection database = new MongoConnection();
             var userData = await database.Users.Find(x => x.Id == userId).FirstOrDefaultAsync();
+            if (userData != null)
+            {
+                return "Unknown User";
+            }
             return userData.Username;
         }
 
@@ -2652,6 +2657,76 @@ namespace AssetManager.Desktop
         }
         #endregion
 
+        //Fuzzy search
+        private async void SearchText_Box_OnKeyDown(object sender, KeyEventArgs e)
+        {
+            try
+            {
+                List<Dictionary<string, string>> searchResults = new List<Dictionary<string, string>>();
+                if (e.Key == Key.Enter)
+                {
+                    MongoConnection database = new MongoConnection();
+                    List<ModelData> result = await database.ModelData.Find(x => x.PublicPrivate == "Public" || x.HubId == hubID).ToListAsync();
+            
+                    string[,] modelsArray = new string[result.Count, 9];
+                    int index = 0;
+                    foreach (ModelData modelData in result)
+                    {
+                        modelsArray[index, 0] = modelData.Id;
+                        modelsArray[index, 1] = modelData.Name;
+                        modelsArray[index, 2] = modelData.HubId;
+                        modelsArray[index, 3] = modelData.CreatedBy;
+                        modelsArray[index, 4] = modelData.CreatedDate;
+                        modelsArray[index, 5] = modelData.ModifiedDate;
+                        modelsArray[index, 6] = modelData.ModifiedBy;
+                        modelsArray[index, 7] = modelData.FileSize.ToString();
+                        modelsArray[index, 8] = modelData.PublicPrivate;
+                        index++;
+                    }
+            
+                    var modelNames = result.Select(x => x.Name).ToList();
+                    var topResults = FuzzySharp.Process.ExtractTop(SearchText_Box.Text, modelNames, limit: 3);
+                
+                    foreach (var match in topResults)
+                    {
+                        for (int i = 0; i < modelNames.Count; i++)
+                        {
+                            Console.WriteLine($"{match.Value}: {modelsArray[i, 1]}");
+                            if (match.Value == modelsArray[i, 1])
+                            {
+                                Console.WriteLine($"Found Match: {match.Value}");
+                                string name = await GetUserName(modelsArray[i,3]);
+                                //MessageBox.Show($"Result: {match.Value}, Score: {match.Score}");
+                                searchResults.Add(new Dictionary<string, string>
+                                {
+                                    { "Name", modelsArray[i, 1] },
+                                    { "Project", name },
+                                    { "LastModified", match.Score.ToString() },
+                                    { "Id", modelsArray[i, 0] }
+                                });
+                                break;
+                            }
+                        }
+                    }
+                }
+                DisplaySearchResults(searchResults);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error searching text box: {ex.Message}");
+            }
+        }
+
+        private void DisplaySearchResults(List<Dictionary<string, string>> searchResults)
+        {
+            ModelsDataGrid.Columns[1].Header = "Created By";
+            ModelsDataGrid.Columns[2].Header = "Score";
+            ModelsDataGrid.ItemsSource = searchResults;
+            //originalResults = searchResults;
+            Models = searchResults;
+            DisplayGridModels();
+        }
+        
         //COMMENTED OUT FUNCTIONS//
 
         /* private void BtnGenerate3D_Click(object sender, RoutedEventArgs e)
