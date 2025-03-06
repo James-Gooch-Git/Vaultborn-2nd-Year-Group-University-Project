@@ -26,6 +26,7 @@ using System.Windows.Controls; // Ensure we use WPF DataGrid
 
 using MongoDB.Bson;
 using AssetManager.Infrastructure.Models;
+using Newtonsoft.Json;
 
 namespace AssetManager.Desktop
 {
@@ -39,7 +40,7 @@ namespace AssetManager.Desktop
         private string _selectedItemName;
         private string selectedHubID;
         private string _folderId;
-        private string hubID;
+        private static string hubID;
         private string _objectId;
         private List<(string HubID, string HubName, string HubType)> hubs = new List<(string, string, string)>();
         private CancellationTokenSource _modelLoadCancellationTokenSource = new CancellationTokenSource();
@@ -631,6 +632,7 @@ namespace AssetManager.Desktop
                                         { "Project", projectName },
                                         { "LastModified", lastModified }
                                     });
+                                    await GetModelData(modelId, projectId, projectName);
                                 }
                             }
                         }
@@ -2810,6 +2812,57 @@ namespace AssetManager.Desktop
         #endregion
         
         //models put in db
+        private static async Task GetModelData(string modelId, string projectId, string folderName)
+        {
+            try
+            {
+                //MessageBox.Show($"{DateTime.Now}");
+                string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/items/{modelId}";
+                using (HttpClient client = new HttpClient())
+                {
+                    client.DefaultRequestHeaders.Clear();
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TokenManager.GetToken());
+                    var response = await client.GetAsync(url);
+                    string responseString = await response.Content.ReadAsStringAsync();
+                    var JsonResponse = JsonConvert.DeserializeObject<dynamic>(responseString);
+                    
+                    //MessageBox.Show("Item: " + responseString);
+                    ModelData data = new ModelData
+                    {
+                        Id = modelId,
+                        Name = JsonResponse.data.attributes.displayName,
+                        HubId = hubID,
+                        CreatedBy = JsonResponse.data.attributes.createUserId,
+                        CreatedDate = JsonResponse.data.attributes.createTime,
+                        ModifiedDate = JsonResponse.data.attributes.lastModifiedTime,
+                        ModifiedBy = JsonResponse.data.attributes.lastModifiedUserId,
+                        FileSize = (int)JsonResponse["included"][0]["attributes"]["storageSize"],
+                        PublicPrivate = "Private",
+                        Foldername = folderName,
+                        FolderId = projectId,
+                        UpvoteCount = 0
+                    };
+                    
+                    InsertModelDB(data);
+                }
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show($"Error getting model data: {e.Message}");
+                throw;
+            }
+        } 
+        
+        private async static void InsertModelDB(ModelData modelData)
+        {
+            MongoConnection database = new MongoConnection();
+            var findModel = await database.ModelData.Find(x => x.Id == modelData.Id).FirstOrDefaultAsync();
+
+            if (findModel == null)
+            {
+                await database.ModelData.InsertOneAsync(modelData);
+            }
+        }
         
         //Fuzzy search
         private async void SearchText_Box_OnKeyDown(object sender, KeyEventArgs e)
