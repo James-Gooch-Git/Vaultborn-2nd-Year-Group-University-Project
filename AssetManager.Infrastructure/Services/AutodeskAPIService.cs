@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using System.IO;
 using AssetManager.Infrastructure.Services;
+using Autodesk.Forge;
 
 namespace ForgeViewerApp
 {
@@ -32,6 +33,36 @@ namespace ForgeViewerApp
             public string urlExpiration { get; set; }
             public List<string> urls { get; set; }
         }
+
+        public async Task<string> GetItemUrn(string projectId, string itemId)
+        {
+            try
+            {
+                // Authenticate with Autodesk Forge (APS)
+                TwoLeggedApi oauth2 = new TwoLeggedApi();
+                dynamic bearer = await oauth2.AuthenticateAsync(
+                    ClientId, ClientSecret,
+                    "client_credentials", new Scope[] { Scope.DataRead });
+
+                ItemsApi itemsApi = new ItemsApi();
+                itemsApi.Configuration.AccessToken = bearer.access_token;
+
+                // Get item details
+                dynamic itemDetails = await itemsApi.GetItemAsync(projectId, itemId);
+
+                // Extract the URN from the tip version
+                string urn = itemDetails.data.relationships.tip.data.id;
+
+                Console.WriteLine($"✅ Retrieved Model URN: {urn}");
+                return urn;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error fetching URN: {ex.Message}");
+                return null;
+            }
+        }
+
 
         /// <summary>
         /// 2. Requests a signed URL for uploading a file.

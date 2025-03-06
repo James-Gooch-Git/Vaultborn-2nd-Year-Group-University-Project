@@ -22,7 +22,8 @@ using System.Text;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Wpf;
 using System.Windows.Data; // Fix for Binding issue
-using System.Windows.Controls; // Ensure we use WPF DataGrid
+using System.Windows.Controls;
+using ForgeViewerApp; // Ensure we use WPF DataGrid
 
 
 
@@ -1068,7 +1069,7 @@ namespace AssetManager.Desktop
                 });
 
                 // ✅ Add Three-Dot Menu Column
-                DataGridTemplateColumn menuColumn = new DataGridTemplateColumn { Header = "Poo", Width = 50 };
+               // DataGridTemplateColumn menuColumn = new DataGridTemplateColumn { Header = "Poo", Width = 50 };
                 FrameworkElementFactory menuButtonFactory = new FrameworkElementFactory(typeof(Button));
                 menuButtonFactory.SetValue(Button.ContentProperty, "⋮");
                 menuButtonFactory.SetValue(Button.WidthProperty, 30.0);
@@ -1774,7 +1775,9 @@ namespace AssetManager.Desktop
 
         //NEEDS MIGRATING TO FUSION SERVICES || OPEN WITH FUSION FUNCTIONALITY //
         #region Fusion Functionality
-        private async void LaunchFusionWithModel()
+
+        //Fusion with Hubs
+        /*private async void LaunchFusionWithModel()
         {
             if (string.IsNullOrEmpty(_selectedProjectId) || string.IsNullOrEmpty(_selectedItemId))
             {
@@ -1809,10 +1812,39 @@ namespace AssetManager.Desktop
             {
                 MessageBox.Show($"❌ Failed to launch Fusion 360: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }*/
+    private void LaunchFusionWithModel(string modelPath)
+    {
+        string fusion360Uri = "fusion360://command=openCloudModel&itemId=urn:adsk.wipprod:dm.lineage:pwGqGrbgRx6IUlR4Wtskdg";
+
+        string tempFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "fusion_model_path.txt");
+        File.WriteAllText(tempFilePath, modelPath);
+
+        string fusionPath = GetFusion360ExecutablePath();
+
+        if (string.IsNullOrEmpty(fusionPath) || !File.Exists(fusionPath))
+        {
+            MessageBox.Show("⚠️ Fusion 360 is not installed or could not be found.", "Fusion 360 Not Found", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
         }
 
+        FileDownloadService fileDownloadService = new FileDownloadService();
 
-        private string GetFusion360ExecutablePath()
+        try
+        {
+            fileDownloadService.DownloadModelAndSaveMetadata(_selectedProjectId, _selectedItemId, _selectedItemName, _folderId);
+            // Start Fusion 360 and open the model  
+            Process.Start(fusionPath, $"--exec \"{modelPath}\"");
+            Console.WriteLine($"✅ Launched Fusion 360 with: {modelPath}");
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"❌ Failed to launch Fusion 360: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+
+    private string GetFusion360ExecutablePath()
         {
             string fusionBasePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Autodesk", "webdeploy", "production");
             Console.WriteLine("fusion location: " + fusionBasePath);
@@ -1971,7 +2003,53 @@ namespace AssetManager.Desktop
 
                 if (!Directory.Exists(saveDirectory))
                 {
-                   // LaunchFusionWithModel(saveDirectory);
+                   LaunchFusionWithModel(saveDirectory);
+                }
+                else
+                {
+                    // Directory exists, so we can just launch Fusion with the model
+                    LaunchFusionWithModel(saveDirectory);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"❌ Error launching Fusion script: {ex.Message}\n{ex.StackTrace}",
+                    "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+        private async void BtnViewInFusion_Click(string _selectedItemId)
+        {
+            Console.WriteLine($"View in Fusion button clicked. Using global IDs:");
+            Console.WriteLine($"- Selected Item ID: {_selectedItemId}");
+            Console.WriteLine($"- Selected Project ID: {_selectedProjectId}");
+            Console.WriteLine($"- Selected Item Name: {_selectedItemName}");
+
+            if (string.IsNullOrEmpty(_selectedItemId) || string.IsNullOrEmpty(_selectedProjectId))
+            {
+                MessageBox.Show("❌ Please select a model before viewing in Fusion 360.", "Error", MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                return;
+            }
+
+            string modelFilePath = FindExistingModelFile(_selectedItemName);
+
+            if (modelFilePath == null)
+            {
+                Console.WriteLine("Downloading model");
+                // No matching file found, so download it
+                var fileDownloadService = new FileDownloadService();
+                await fileDownloadService.DownloadModelAsync(_selectedProjectId, _selectedItemId);
+            }
+
+            try
+            {
+                string saveDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+                    "DownloadedModels", _selectedItemName);
+                Console.WriteLine("Model dir: " + saveDirectory);
+
+                if (!Directory.Exists(saveDirectory))
+                {
+                    // LaunchFusionWithModel(saveDirectory);
                 }
                 else
                 {
@@ -1985,48 +2063,43 @@ namespace AssetManager.Desktop
                     "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-        private async void BtnViewInFusion_Click(string selectedItemId)
-        {
-            Console.WriteLine($"View in Fusion button clicked. Using global IDs:");
-            Console.WriteLine($"- Selected Item ID: {_selectedItemId}");
-            Console.WriteLine($"- Selected Project ID: {_selectedProjectId}");
-            Console.WriteLine($"- Selected Item Name: {_selectedItemName}");
+        //Fusion using Hub 
 
-            if (string.IsNullOrEmpty(_selectedItemId) || string.IsNullOrEmpty(_selectedProjectId))
+        /*    private async void BtnViewInFusion_Click(string selectedItemId)
             {
-                MessageBox.Show("❌ Please select a model before viewing in Fusion 360.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
+                Console.WriteLine($"View in Fusion button clicked. Using global IDs:");
+                Console.WriteLine($"- Selected Item ID: {_selectedItemId}");
+                Console.WriteLine($"- Selected Project ID: {_selectedProjectId}");
+                Console.WriteLine($"- Selected Item Name: {_selectedItemName}");
 
-            try
-            {
-                // Fetch the latest storage ID from Autodesk API
-
-                string storageId = await _filedwnService.GetStorageIdFromItem(_selectedProjectId, _selectedItemId);
-
-                if (string.IsNullOrEmpty(storageId))
+                if (string.IsNullOrEmpty(_selectedItemId) || string.IsNullOrEmpty(_selectedProjectId))
                 {
-                    MessageBox.Show("❌ Could not retrieve storage ID for the model.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show("❌ Please select a model before viewing in Fusion 360.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
-                // Construct the Fusion 360 command URI
-                string fusionUri = $"fusion360://command=openCloudModel&projectId={_selectedProjectId}&itemId={_selectedItemId}&storage={storageId}";
-
-                Console.WriteLine($"✅ Launching Fusion 360 with model: {fusionUri}");
-
-                // Open Fusion 360 with the correct model reference
-                Process.Start(new ProcessStartInfo
+                try
                 {
-                    FileName = fusionUri,
-                    UseShellExecute = true
-                });
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"❌ Error launching Fusion 360: {ex.Message}\n{ex.StackTrace}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
+                    // ✅ Construct the correct Fusion 360 command URI
+                    string fusionUri = $"fusion360://command=CreateFusionDesign&projectId={_selectedProjectId}&itemId={_selectedItemId}";
+
+                    Console.WriteLine($"✅ Launching Fusion 360 with model: {fusionUri}");
+
+                    // ✅ Open Fusion 360 with the correct model reference
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = fusionUri,
+                        UseShellExecute = true
+                    });
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"❌ Error launching Fusion 360: {ex.Message}\n{ex.StackTrace}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }*/
+
+
+
 
         #endregion
 
@@ -2511,6 +2584,39 @@ namespace AssetManager.Desktop
             catch (Exception ex)
             {
                 Console.WriteLine($"❌ Exception while retrieving versions: {ex.Message}");
+                return null;
+            }
+        }
+        public async Task<string> GetItemUrn(string projectId, string itemId)
+        {
+            try
+            {
+                // ✅ Fetch all versions for the item
+                var versions = await GetVersionsForItemAsync(projectId, itemId);
+
+                if (versions == null || versions.Count == 0)
+                {
+                    Console.WriteLine("❌ No versions found for this item.");
+                    return null;
+                }
+
+                // ✅ Get the latest version (first in the list)
+                var latestVersion = versions[0];
+
+                if (string.IsNullOrEmpty(latestVersion.storageId))
+                {
+                    Console.WriteLine($"❌ Latest version ({latestVersion.versionId}) has no storage ID.");
+                    return null;
+                }
+
+                Console.WriteLine($"✅ Latest Version ID: {latestVersion.versionId}, Storage URN: {latestVersion.storageId}");
+
+                // ✅ Return the correct URN (storage URN)
+                return latestVersion.storageId;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error fetching URN: {ex.Message}");
                 return null;
             }
         }
