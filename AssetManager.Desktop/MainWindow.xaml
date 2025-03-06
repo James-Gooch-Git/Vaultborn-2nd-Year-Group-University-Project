@@ -626,6 +626,9 @@
                                         </Style>
                                     </DataGridTextColumn.CellStyle>
                                 </DataGridTextColumn>
+                                
+                                <DataGridTextColumn Header="Id" Binding="{Binding [Id]}" Width="*" Visibility="Collapsed"/>
+                                
                                 <!--
                                 <DataGridTemplateColumn Width="70">
                                     <DataGridTemplateColumn.HeaderStyle>

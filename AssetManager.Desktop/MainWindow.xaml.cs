@@ -247,7 +247,7 @@ namespace AssetManager.Desktop
         {
             MongoConnection database = new MongoConnection();
             var userData = await database.Users.Find(x => x.Id == userId).FirstOrDefaultAsync();
-            if (userData != null)
+            if (userData == null)
             {
                 return "Unknown User";
             }
@@ -910,14 +910,14 @@ namespace AssetManager.Desktop
 
                             // Create model dictionary with all necessary IDs
                             var modelDict = new Dictionary<string, string>
-                    {
-                        { "Id", itemId },
-                        { "Name", modelName },
-                        { "ProjectId", projectId },
-                        { "FolderId", folderId },
-                        { "Project", _selectedProjectName ?? "Unknown Project" },
-                        { "LastModified", formattedDate }
-                    };
+                            {
+                                { "Id", itemId },
+                                { "Name", modelName },
+                                { "ProjectId", projectId },
+                                { "FolderId", folderId },
+                                { "Project", _selectedProjectName ?? "Unknown Project" },
+                                { "LastModified", formattedDate }
+                            };
 
                             // Add to models list
                             models.Add(modelDict);
@@ -2723,8 +2723,8 @@ namespace AssetManager.Desktop
             ModelsDataGrid.Columns[2].Header = "Score";
             ModelsDataGrid.ItemsSource = searchResults;
             //originalResults = searchResults;
-            Models = searchResults;
-            DisplayGridModels();
+            //Models = searchResults;
+            //DisplayGridModels();
         }
         
         //COMMENTED OUT FUNCTIONS//
