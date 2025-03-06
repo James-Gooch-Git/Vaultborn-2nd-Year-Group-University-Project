@@ -1069,7 +1069,7 @@ namespace AssetManager.Desktop
                 });
 
                 // ✅ Add Three-Dot Menu Column
-               // DataGridTemplateColumn menuColumn = new DataGridTemplateColumn { Header = "Poo", Width = 50 };
+               DataGridTemplateColumn menuColumn = new DataGridTemplateColumn { Header = "Poo", Width = 50 };
                 FrameworkElementFactory menuButtonFactory = new FrameworkElementFactory(typeof(Button));
                 menuButtonFactory.SetValue(Button.ContentProperty, "⋮");
                 menuButtonFactory.SetValue(Button.WidthProperty, 30.0);
