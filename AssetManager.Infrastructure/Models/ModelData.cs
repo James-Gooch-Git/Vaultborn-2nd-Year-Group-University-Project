@@ -37,6 +37,9 @@ namespace AssetManager.Infrastructure.Models
 
         [BsonElement("_foldername")]
         public string Foldername { get; set; }
+        
+        [BsonElement("_folderid")]
+        public string FolderId { get; set; }
 
         [BsonElement("_upvotes")]
         public int UpvoteCount { get; set; }

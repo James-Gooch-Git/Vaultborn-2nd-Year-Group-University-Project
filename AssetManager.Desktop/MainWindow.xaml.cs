@@ -317,15 +317,17 @@ namespace AssetManager.Desktop
         {
             if (string.IsNullOrEmpty(_selectedProjectId) || string.IsNullOrEmpty(_folderId))
             {
-                Console.WriteLine("❌ Error: No project or folder selected. Loading all models instead.");
-                return;
+                Console.WriteLine("❌ Error: No project or folder selected.");
+                //return;
             }
-            
+
             try
             {
+                Console.WriteLine($"🔄 Loading models for project: {_selectedProjectId}");
+
                 // Fetch models from Autodesk API
                 var models = await GetAllModels();//await GetModelsFromProject(_selectedProjectId, _folderId);
-                
+
                 if (models != null && models.Any())
                 {
                     Dispatcher.Invoke(() =>
@@ -335,6 +337,7 @@ namespace AssetManager.Desktop
                         ModelsDataGrid.Items.Clear();
                         ModelsDataGrid.ItemsSource = models;
                         originalResults = models;
+                        Models = models;
                     });
 
                     Console.WriteLine($"✅ {models.Count} models loaded successfully.");
@@ -343,10 +346,6 @@ namespace AssetManager.Desktop
                 {
                     Console.WriteLine("❌ No models found for this project.");
                 }
-                
-                Console.WriteLine($"🔄 Loading models for project: {_selectedProjectId}");
-
-                
             }
             catch (Exception ex)
             {
@@ -1598,6 +1597,11 @@ namespace AssetManager.Desktop
             if (string.IsNullOrEmpty(_selectedProjectId))
             {
                 MessageBox.Show("❌ Please select a project to view models.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                
+                foreach (var model in Models)
+                {
+                    MessageBox.Show($"model: {model["Name"]}");
+                }
                 return;
             }
 
@@ -1730,6 +1734,108 @@ namespace AssetManager.Desktop
             // Update UI styles to reflect active view mode
             List_Border.Background = Brushes.Transparent;
             Grid_Border.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
+        }
+
+        private void CreateGridView(List<Dictionary<string, string>> models)
+        {
+            foreach (var model in models)
+            {
+                // UI Container for Model
+                    Border modelSquare = new Border
+                    {
+                        Width = 263,
+                        Height = 300, // Increased to fit the image
+                        CornerRadius = new CornerRadius(5),
+                        Background = Brushes.White,
+                        BorderBrush = Brushes.LightGray,
+                        BorderThickness = new Thickness(1),
+                        Margin = new Thickness(10),
+                        Effect = new DropShadowEffect
+                        {
+                            Color = Colors.Black,
+                            Opacity = 0.1,
+                            BlurRadius = 10,
+                            ShadowDepth = 2
+                        }
+                    };
+
+                    StackPanel content = new StackPanel
+                    {
+                        Orientation = Orientation.Vertical,
+                        VerticalAlignment = VerticalAlignment.Center,
+                        HorizontalAlignment = HorizontalAlignment.Left
+                    };
+
+                    // Thumbnail Image
+                    Image thumbnailImage = new Image
+                    {
+                        Width = 200,
+                        Height = 200,
+                        Margin = new Thickness(10),
+                        Stretch = Stretch.Uniform
+                    };
+
+                    // Load thumbnail asynchronously
+                    _ = ShowThumbnail(model["b"], model["Id"], thumbnailImage);
+
+                    TextBlock modelName = new TextBlock
+                    {
+                        Text = model["Name"],
+                        FontSize = 16,
+                        FontWeight = FontWeights.Normal,
+                        TextAlignment = TextAlignment.Center,
+                        HorizontalAlignment = HorizontalAlignment.Left,
+                        TextWrapping = TextWrapping.Wrap,
+                        Margin = new Thickness(5, 2, 5, 2)
+                    };
+
+                    // ✅ Three-dot menu button
+                    Button menuButton = new Button
+                    {
+                        Content = "⋮", // Three-dot icon
+                        FontSize = 18,
+                        Width = 30,
+                        Height = 30,
+                        Background = Brushes.Transparent,
+                        BorderBrush = Brushes.Transparent,
+                        Padding = new Thickness(5),
+                        HorizontalAlignment = HorizontalAlignment.Right,
+                        ToolTip = "More Options"
+                    };
+
+                    // ✅ Ensure the menu button has the correct model assigned
+                    menuButton.DataContext = model;
+
+                    // ✅ Create and attach ContextMenu
+                    ContextMenu contextMenu = CreateModelContextMenu(model["Id"], model["Name"]);
+                    menuButton.ContextMenu = contextMenu;
+
+                    // ✅ Ensure the menu opens on button click
+                    menuButton.Click += (s, e) =>
+                    {
+                        if (s is Button btn && btn.DataContext is Dictionary<string, string> selectedModel)
+                        {
+                            ContextMenu dynamicContextMenu = CreateModelContextMenu(selectedModel["Id"], selectedModel["Name"]);
+                            dynamicContextMenu.PlacementTarget = btn;
+                            dynamicContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+                            dynamicContextMenu.IsOpen = true;
+                        }
+                    };
+
+                    // Container for Model Name + Menu Button
+                    DockPanel topPanel = new DockPanel();
+                    DockPanel.SetDock(modelName, Dock.Left);
+                    DockPanel.SetDock(menuButton, Dock.Right);
+                    topPanel.Children.Add(modelName);
+                    topPanel.Children.Add(menuButton);
+
+                    // Add elements to content panel
+                    content.Children.Add(thumbnailImage);
+                    content.Children.Add(topPanel);
+
+                    modelSquare.Child = content;
+                    ModelsContainer.Children.Add(modelSquare);
+            }
         }
 
 /*
@@ -2770,27 +2876,29 @@ namespace AssetManager.Desktop
             ModelsDataGrid.Columns[2].Header = "Score";
             ModelsDataGrid.ItemsSource = searchResults;
             originalResults = searchResults;
-            //Models = searchResults;
-            //DisplayGridModels();
+            Models = searchResults;
+            DisplayGridModels();
         }
         
         //Filter tags
         private void Filter_Click(object sender, MouseButtonEventArgs e)
         {
-            var icon = sender as Border;
-            if (icon != null)
+            try
             {
-                ContextMenu filterMenu =  this.FindResource("FilterContextMenu") as ContextMenu;
-                if (filterMenu != null)
+                var icon = sender as Border;
+                if (icon != null)
                 {
-                    filterMenu.PlacementTarget = icon;
-                    filterMenu.IsOpen = true;
+                    ContextMenu filterMenu =  this.FindResource("FilterContextMenu") as ContextMenu;
+                    if (filterMenu != null)
+                    {
+                        filterMenu.PlacementTarget = icon;
+                        filterMenu.IsOpen = true;
+                    }
                 }
             }
-
-            foreach (var model in originalResults)
+            catch (Exception exception)
             {
-                MessageBox.Show($"Model: {model["Name"]}");
+                Console.WriteLine($"Error filtering: {exception.Message}");
             }
         }
 
@@ -2862,8 +2970,8 @@ namespace AssetManager.Desktop
                 }
                 
                 ModelsDataGrid.ItemsSource = models;
-                //Models = models;
-                //DisplayGridModels();
+                Models = models;
+                DisplayGridModels();
             }
             catch (Exception exception)
             {
