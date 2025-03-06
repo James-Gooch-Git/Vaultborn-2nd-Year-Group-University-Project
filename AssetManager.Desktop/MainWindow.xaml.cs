@@ -50,6 +50,8 @@ namespace AssetManager.Desktop
         private static readonly HttpClient client = new HttpClient();
         private string selectedHubName = "Loading..."; // Default value before hubs load
         private bool isModelLoaded = false;
+        
+        private List<Dictionary<string, string>> originalResults;
 
         private enum ViewType { Grid, List }
         private ViewType _lastViewType = ViewType.List; // Default to List View
@@ -315,17 +317,15 @@ namespace AssetManager.Desktop
         {
             if (string.IsNullOrEmpty(_selectedProjectId) || string.IsNullOrEmpty(_folderId))
             {
-                Console.WriteLine("❌ Error: No project or folder selected.");
+                Console.WriteLine("❌ Error: No project or folder selected. Loading all models instead.");
                 return;
             }
-
+            
             try
             {
-                Console.WriteLine($"🔄 Loading models for project: {_selectedProjectId}");
-
                 // Fetch models from Autodesk API
-                var models = await GetModelsFromProject(_selectedProjectId, _folderId);
-
+                var models = await GetAllModels();//await GetModelsFromProject(_selectedProjectId, _folderId);
+                
                 if (models != null && models.Any())
                 {
                     Dispatcher.Invoke(() =>
@@ -334,6 +334,7 @@ namespace AssetManager.Desktop
                         ModelsDataGrid.ItemsSource = null;
                         ModelsDataGrid.Items.Clear();
                         ModelsDataGrid.ItemsSource = models;
+                        originalResults = models;
                     });
 
                     Console.WriteLine($"✅ {models.Count} models loaded successfully.");
@@ -342,6 +343,10 @@ namespace AssetManager.Desktop
                 {
                     Console.WriteLine("❌ No models found for this project.");
                 }
+                
+                Console.WriteLine($"🔄 Loading models for project: {_selectedProjectId}");
+
+                
             }
             catch (Exception ex)
             {
@@ -552,6 +557,7 @@ namespace AssetManager.Desktop
 
                     if (!hubsResponse.IsSuccessStatusCode)
                     {
+                        MessageBox.Show($"error with hub: {hubsResponse.StatusCode} - {hubsResponse.ReasonPhrase}");
                         Console.WriteLine($"❌ Error fetching hubs: {hubsResponse.StatusCode} - {hubsResponse.ReasonPhrase}");
                         return null;
                     }
@@ -1051,6 +1057,7 @@ namespace AssetManager.Desktop
                 ModelsDataGrid.ItemsSource = null;
                 ModelsDataGrid.Items.Clear();
                 ModelsDataGrid.ItemsSource = models;
+                originalResults = models;
 
                 // Clear existing columns
                 ModelsDataGrid.Columns.Clear();
@@ -1350,6 +1357,38 @@ namespace AssetManager.Desktop
 
                 // Also immediately fetch and set the storage ID for the selected item
                 await FetchAndSetStorageId();
+                
+                //display upvotes
+                int upvotes = await GetModelUpvoteCount(model["Id"]);
+                        
+                await SetUserModelVote(_selectedItemId, _userId);
+                int vote = await GetUserModelVote(_selectedItemId, _userId);
+                if (vote == 1)
+                {
+                    UpArrow.Kind = PackIconKind.ArrowTopBold;
+                    UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#11d137"));
+                    DownArrow.Kind = PackIconKind.ArrowDownBoldOutline;
+                    DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+                }
+                else if (vote == -1)
+                {
+                    DownArrow.Kind = PackIconKind.ArrowDownBold;
+                    DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d11111"));
+                    UpArrow.Kind = PackIconKind.ArrowTopBoldOutline;
+                    UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+                }
+                else
+                {
+                    UpArrow.Kind = PackIconKind.ArrowTopBoldOutline;
+                    UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+                    DownArrow.Kind = PackIconKind.ArrowDownBoldOutline;
+                    DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+                }
+                        
+                UpvoteTextBlock.Text = upvotes.ToString();
+                UpArrowBorder.Visibility = Visibility.Visible;
+                UpvoteTextBlock.Visibility = Visibility.Visible;
+                DownArrowBorder.Visibility = Visibility.Visible;
             }
             else if (ModelsDataGrid.SelectedItem != null)
             {
@@ -1367,7 +1406,15 @@ namespace AssetManager.Desktop
             var border = sender as Border;
             var icon = border?.Child as PackIcon;
 
-            if (icon != null)
+            if (icon.Kind.ToString() == "ArrowTopBoldOutline")
+            {
+                icon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#11d137"));
+            }
+            else if (icon.Kind.ToString() == "ArrowDownBoldOutline")
+            {
+                icon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d11111"));
+            }
+            else if (icon != null && icon.Kind != PackIconKind.ArrowTopBold && icon.Kind != PackIconKind.ArrowDownBold)
             {
                 icon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F25505"));
             }
@@ -1378,7 +1425,7 @@ namespace AssetManager.Desktop
             var border = sender as Border;
             var icon = border?.Child as PackIcon;
 
-            if (icon != null)
+            if (icon != null && icon.Kind != PackIconKind.ArrowTopBold && icon.Kind != PackIconKind.ArrowDownBold)
             {
                 icon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
             }
@@ -2722,9 +2769,222 @@ namespace AssetManager.Desktop
             ModelsDataGrid.Columns[1].Header = "Created By";
             ModelsDataGrid.Columns[2].Header = "Score";
             ModelsDataGrid.ItemsSource = searchResults;
-            //originalResults = searchResults;
+            originalResults = searchResults;
             //Models = searchResults;
             //DisplayGridModels();
+        }
+        
+        //Filter tags
+        private void Filter_Click(object sender, MouseButtonEventArgs e)
+        {
+            var icon = sender as Border;
+            if (icon != null)
+            {
+                ContextMenu filterMenu =  this.FindResource("FilterContextMenu") as ContextMenu;
+                if (filterMenu != null)
+                {
+                    filterMenu.PlacementTarget = icon;
+                    filterMenu.IsOpen = true;
+                }
+            }
+
+            foreach (var model in originalResults)
+            {
+                MessageBox.Show($"Model: {model["Name"]}");
+            }
+        }
+
+        private async void BtnClearFilters_Click(object sender, RoutedEventArgs e)
+        {
+            ContextMenu filterMenu = FindResource("FilterContextMenu") as ContextMenu;
+            foreach (var item in filterMenu.Items)
+            {
+                if (item is CheckBox checkBox)
+                    checkBox.IsChecked = false;
+            }
+
+            ModelsDataGrid.ItemsSource = originalResults;
+            Models = originalResults;
+            DisplayGridModels();
+        }
+
+        private async void BtnSearchFilters_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                ModelsDataGrid.ItemsSource = originalResults;
+                List<Dictionary<string, string>> models = new List<Dictionary<string, string>>();
+                List<string> selectedTags = new List<string>();
+                List<string> IDs = new List<string>();
+            
+                MongoConnection database = new MongoConnection();
+                
+                ContextMenu filterMenu = FindResource("FilterContextMenu") as ContextMenu;
+                foreach (var item in filterMenu.Items)
+                {
+                    if (item != null && item is CheckBox checkBox)
+                    {
+                        if (checkBox.IsChecked == true)
+                        {
+                            selectedTags.Add(checkBox.Content.ToString());
+                        }
+                    }
+                }
+                
+                foreach (var item in ModelsDataGrid.Items)
+                {
+                    if (item is Dictionary<string, string> modelData && modelData.ContainsKey("Id"))
+                    {
+                        string Id = modelData["Id"];
+                        IDs.Add(Id);
+                    }
+                }
+                
+                ModelsDataGrid.ItemsSource = null;
+                
+                foreach (var id in IDs)
+                {
+                    var filter = Builders<ModelData>.Filter.And(Builders<ModelData>.Filter.Eq("Id", id),
+                        Builders<ModelData>.Filter.In("Tags", selectedTags));
+                
+                    var result = await database.ModelData.Find(filter).FirstOrDefaultAsync();
+
+                    if (result != null)
+                    {
+                        models.Add(new Dictionary<string, string>
+                        {
+                            { "Name", result.Name },
+                            { "Project", result.Foldername },
+                            { "LastModified", result.ModifiedDate },
+                            { "Id", id }
+                        });
+                    }
+                }
+                
+                ModelsDataGrid.ItemsSource = models;
+                //Models = models;
+                //DisplayGridModels();
+            }
+            catch (Exception exception)
+            {
+                MessageBox.Show($"Error filtering: {exception.Message}");
+            }
+        }
+
+        //Upvote system
+        private async void UpArrow_Click(object sender, RoutedEventArgs e)
+        {
+            if (UpArrow.Kind == PackIconKind.ArrowTopBoldOutline)
+            {
+                if (DownArrow.Kind == PackIconKind.ArrowDownBold)
+                {
+                    DownArrow.Kind = PackIconKind.ArrowDownBoldOutline;
+                    DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+                    await UpdateModelUpvoteCount(2, _selectedItemId); //remove downvote and add upvote
+                }
+                else
+                {
+                    await UpdateModelUpvoteCount(1, _selectedItemId); //add upvote
+                }
+                UpArrow.Kind = PackIconKind.ArrowTopBold;
+                UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#11d137"));
+                await UpdateUserModelVote(_selectedItemId, _userId, 1);
+            }
+            else
+            {
+                UpArrow.Kind = PackIconKind.ArrowTopBoldOutline;
+                UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#11d137"));
+                await UpdateModelUpvoteCount(-1, _selectedItemId); //remove upvote
+                await UpdateUserModelVote(_selectedItemId, _userId, 0);
+            }
+        }
+
+        private async void DownArrow_Click(object sender, RoutedEventArgs e)
+        {
+            if (DownArrow.Kind == PackIconKind.ArrowDownBoldOutline)
+            {
+                if (UpArrow.Kind == PackIconKind.ArrowTopBold)
+                {
+                    UpArrow.Kind = PackIconKind.ArrowTopBoldOutline;
+                    UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+                    await UpdateModelUpvoteCount(-2, _selectedItemId); //remove upvote and add downvote
+                }
+                else
+                {
+                    await UpdateModelUpvoteCount(-1, _selectedItemId); //add downvote
+                }
+                DownArrow.Kind = PackIconKind.ArrowDownBold;
+                DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d11111"));
+                await UpdateUserModelVote(_selectedItemId, _userId, -1);
+            }
+            else
+            {
+                DownArrow.Kind = PackIconKind.ArrowDownBoldOutline;
+                DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d11111"));
+                await UpdateModelUpvoteCount(1, _selectedItemId); //remove downvote
+                await UpdateUserModelVote(_selectedItemId, _userId, 0);
+            }
+        }
+        
+        private async Task<int> GetModelUpvoteCount(string id)
+        {
+            MongoConnection database = new MongoConnection();
+            var userData = await database.ModelData.Find(x => x.Id == id).FirstOrDefaultAsync();
+            if (userData == null)
+            {
+                return 0;
+            }
+            return userData.UpvoteCount;
+        }
+
+        private async Task UpdateModelUpvoteCount(int num, string id)
+        {
+            MongoConnection database = new MongoConnection();
+            var filter = Builders<ModelData>.Filter.Eq("Id", id);
+            var update = Builders<ModelData>.Update.Inc("UpvoteCount", num);
+            await database.ModelData.UpdateOneAsync(filter, update);
+            int upvoteCount = await GetModelUpvoteCount(id);
+            UpvoteTextBlock.Text = upvoteCount.ToString();
+        }
+
+        private async Task SetUserModelVote(string modelId, string userId)
+        {
+            MongoConnection database = new MongoConnection();
+            var findVote = await database.Upvotes.Find(x => x.ModelId == modelId && x.UserId == userId).FirstOrDefaultAsync();
+
+            if (findVote == null)
+            {
+                Upvotes upvote = new Upvotes()
+                {
+                    Id = new ObjectId(), ModelId = modelId, UserId = userId, Vote = 0
+                };
+                await database.Upvotes.InsertOneAsync(upvote);
+            }
+            
+        }
+
+        private async Task UpdateUserModelVote(string modelId, string userId, int vote)
+        {
+            MongoConnection database = new MongoConnection();
+            var filter = Builders<Upvotes>.Filter.And(
+                Builders<Upvotes>.Filter.Eq("ModelId", modelId),
+                            Builders<Upvotes>.Filter.Eq("UserId", userId));
+            var update = Builders<Upvotes>.Update.Set("Vote", vote);
+            await database.Upvotes.UpdateOneAsync(filter, update);
+        }
+        
+        private async Task<int> GetUserModelVote(string modelId, string userId)
+        {
+            MongoConnection database = new MongoConnection();
+            var result = await database.Upvotes.Find(x => x.ModelId == modelId && x.UserId == userId).FirstOrDefaultAsync();
+            if (result == null)
+            {
+                return 0;
+            }
+            else
+            {
+                return result.Vote;
+            }
         }
         
         //COMMENTED OUT FUNCTIONS//
