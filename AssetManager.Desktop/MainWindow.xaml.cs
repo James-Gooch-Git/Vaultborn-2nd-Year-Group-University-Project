@@ -569,11 +569,13 @@ namespace AssetManager.Desktop
                     foreach (JsonElement hub in hubsRoot.GetProperty("data").EnumerateArray())
                     {
                         string hubID = hub.GetProperty("id").GetString();
-                        hubID = selectedHubID;
+                        //hubID = selectedHubID;
 
                         string projectsUrl = $"https://developer.api.autodesk.com/project/v1/hubs/{hubID}/projects";
+                        await Task.Delay(500);
                         HttpResponseMessage projectsResponse = await client.GetAsync(projectsUrl);
-
+                        Console.WriteLine($"Hub Id: {(hubID ?? "Unknown Hub")}");
+                        Console.WriteLine($"Selected Hub Id: {(selectedHubID ?? "Unknown Hub")}");
                         if (!projectsResponse.IsSuccessStatusCode)
                         {
                             Console.WriteLine($"❌ Error fetching projects for hub {hubID}: {projectsResponse.StatusCode}");
@@ -1547,18 +1549,28 @@ namespace AssetManager.Desktop
             {
                 ModelsDataGrid.ItemsSource = null; // Clear previous data
 
-                // Fetch models for the selected project
-                List<Dictionary<string, string>> models = await GetModelsFromProject(_selectedProjectId, _folderId);
-
-                if (models == null || models.Count == 0)
+                if (string.IsNullOrEmpty(_selectedProjectId))
                 {
-                    Console.WriteLine("🔄 No models found, clearing grid.");
-                    ModelsDataGrid.ItemsSource = null;
-                    return;
+                    if (Models != null)
+                    {
+                        ModelsDataGrid.ItemsSource = Models;
+                    }
                 }
+                else
+                {
+                    // Fetch models for the selected project
+                    List<Dictionary<string, string>> models = await GetModelsFromProject(_selectedProjectId, _folderId);
 
-                ModelsDataGrid.ItemsSource = models;
-                Console.WriteLine($"✅ Loaded {models.Count} models.");
+                    if (models == null || models.Count == 0)
+                    {
+                        Console.WriteLine("🔄 No models found, clearing grid.");
+                        ModelsDataGrid.ItemsSource = null;
+                        return;
+                    }
+
+                    ModelsDataGrid.ItemsSource = models;
+                    Console.WriteLine($"✅ Loaded {models.Count} models.");
+                }
 
                 // ✅ Ensure "Actions" column exists only once
                 if (!ModelsDataGrid.Columns.Any(col => col.Header?.ToString() == "Actions"))
@@ -1607,6 +1619,9 @@ namespace AssetManager.Desktop
 
         private async void Grid_Click(object sender, MouseButtonEventArgs e)
         {
+            // Clear previous grid data
+            ModelsContainer.Children.Clear();
+            
             if (string.IsNullOrEmpty(_selectedProjectId))
             {
                 MessageBox.Show("❌ Please select a project to view models.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -1614,14 +1629,13 @@ namespace AssetManager.Desktop
                 CreateGridView(Models);
                 ModelsDataGrid.Visibility = Visibility.Collapsed; // Hide DataGrid
                 Grid_View.Visibility = Visibility.Visible; // Show Grid View
+                List_Border.Background = Brushes.Transparent;
+                Grid_Border.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
                 return;
             }
 
             ModelsDataGrid.Visibility = Visibility.Collapsed; // Hide DataGrid
             Grid_View.Visibility = Visibility.Visible; // Show Grid View
-
-            // Clear previous grid data
-            ModelsContainer.Children.Clear();
 
             try
             {
