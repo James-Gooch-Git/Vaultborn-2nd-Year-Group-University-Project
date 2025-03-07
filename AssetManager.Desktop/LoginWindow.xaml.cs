@@ -38,19 +38,19 @@ namespace AssetManager.Desktop
         {
             InitializeComponent();
             userSession = Environment.GetEnvironmentVariable("userId", EnvironmentVariableTarget.User);
+            aToken = Environment.GetEnvironmentVariable("accessToken", EnvironmentVariableTarget.User);
 
-            //MessageBox.Show($"Your accessToken is: {aToken}");
-            if (!string.IsNullOrEmpty(userSession))
+            if (!string.IsNullOrEmpty(userSession) && !string.IsNullOrEmpty(aToken))
             {
-                aToken = Environment.GetEnvironmentVariable("accessToken", EnvironmentVariableTarget.User);
-                Infrastructure.Services.TokenManager.SetToken(aToken);
-                MainWindow mainWindow = new MainWindow(userSession);
-                mainWindow.Show();
-                this.Close();
+                // ✅ Only validate session if token exists
+                ValidateUserSession();
             }
-
-            InitializeWebView();
+            else
+            {
+                InitializeWebView(); // Only show login WebView if no valid session
+            }
         }
+
 
         public LoginWindow(bool isLogout) // Constructor accepting a boolean
         {
@@ -66,15 +66,24 @@ namespace AssetManager.Desktop
 
         private void HandleLogout()
         {
-            Console.WriteLine("👤 Logging out...");
+            Console.WriteLine("👤 Logging out due to expired or invalid token...");
 
             // Clear user session and stored tokens
             Environment.SetEnvironmentVariable("userId", "", EnvironmentVariableTarget.User);
             Environment.SetEnvironmentVariable("accessToken", "", EnvironmentVariableTarget.User);
             Environment.SetEnvironmentVariable("twoLeggedToken", "", EnvironmentVariableTarget.User);
 
-            MessageBox.Show("✅ Successfully logged out.", "Logout", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show("⚠️ Your session has expired. Please log in again.", "Session Expired", MessageBoxButton.OK, MessageBoxImage.Warning);
+
+            // 🚀 Reopen the login window
+            Dispatcher.Invoke(() =>
+            {
+                var loginWindow = new LoginWindow();
+                loginWindow.Show();
+                this.Close();
+            });
         }
+
 
         private async void InitializeWebView()
         {
@@ -115,19 +124,36 @@ namespace AssetManager.Desktop
         /// <summary>
         /// Checks if the user has a valid session.
         /// </summary>
-        private void ValidateUserSession()
+        /// <summary>
+        /// Checks if the user has a valid session.
+        /// If the access token is expired, logs out and returns to the login window.
+        /// </summary>
+        /// <summary>
+        /// Checks if the user has a valid session.
+        /// If the access token is expired, logs out and returns to the login window.
+        /// </summary>
+        private async void ValidateUserSession()
         {
             string userSession = Environment.GetEnvironmentVariable("userId", EnvironmentVariableTarget.User);
+            string storedAccessToken = Environment.GetEnvironmentVariable("accessToken", EnvironmentVariableTarget.User);
+            string storedTwoLeggedToken = Environment.GetEnvironmentVariable("twoLeggedToken", EnvironmentVariableTarget.User);
 
-            if (!string.IsNullOrEmpty(userSession))
+            if (!string.IsNullOrEmpty(userSession) && !string.IsNullOrEmpty(storedAccessToken))
             {
-                string storedAccessToken = Environment.GetEnvironmentVariable("accessToken", EnvironmentVariableTarget.User);
-                string storedTwoLeggedToken = Environment.GetEnvironmentVariable("twoLeggedToken", EnvironmentVariableTarget.User);
+                bool isTokenValid = IsTokenValid(storedAccessToken) && await VerifyTokenWithApiAsync(storedAccessToken);
 
-                if (IsTokenValid(storedAccessToken))
+                if (isTokenValid)
                 {
+                    Console.WriteLine("✅ Token is valid. Opening MainWindow...");
                     TokenManager.SetToken(storedAccessToken);
                     TokenManager.SetTwoLeggedToken(storedTwoLeggedToken);
+
+                    // ✅ Ensure MainWindow opens only once
+                    if (Application.Current.Windows.OfType<MainWindow>().Any())
+                    {
+                        Console.WriteLine("⚠️ MainWindow is already open, skipping...");
+                        return; // Prevent duplicate opening
+                    }
 
                     MainWindow mainWindow = new MainWindow(userSession);
                     mainWindow.Show();
@@ -135,10 +161,14 @@ namespace AssetManager.Desktop
                 }
                 else
                 {
-                    ClearStoredCredentials();
+                    Console.WriteLine("⚠️ Token expired. Logging out...");
+                    HandleLogout();
                 }
             }
         }
+
+
+
 
         /// <summary>
         /// Clears stored credentials if the token is invalid.
@@ -410,125 +440,59 @@ namespace AssetManager.Desktop
         {
             try
             {
-                // Get token, either from parameter or from TokenManager
-                string token = tokenParam;
+                string token = !string.IsNullOrEmpty(tokenParam) ? tokenParam : TokenManager.GetToken();
 
-                // If token is null or empty, try to get it from TokenManager
-                if (string.IsNullOrEmpty(token))
-                {
-                    Console.WriteLine("🔍 Token parameter is empty, trying to get from TokenManager...");
-                    token = TokenManager.GetToken();
-                }
-
-                // Check if we have a valid token
                 if (string.IsNullOrEmpty(token))
                 {
                     Console.WriteLine("❌ No valid token available");
-                    MessageBox.Show("Authentication token is missing or invalid. Please log in again.",
-                        "Authentication Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show("Authentication token is missing or invalid. Please log in again.", "Authentication Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
                 Console.WriteLine("🔍 Getting user data with token...");
 
-                // Safely log part of the token if it exists
-                if (token.Length >= 10)
-                {
-                    Console.WriteLine($"🔑 Token (first 10 chars): {token.Substring(0, 10)}...");
-                }
-                else
-                {
-                    Console.WriteLine($"🔑 Token: {token}");
-                }
-
-                // Use HttpClient directly instead of Autodesk.Authentication lib
                 using HttpClient client = new HttpClient();
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-                // APS v2 user profile endpoint
                 string userProfileUrl = "https://developer.api.autodesk.com/userprofile/v1/users/@me";
-
-                // Make the request
                 HttpResponseMessage response = await client.GetAsync(userProfileUrl);
                 string responseContent = await response.Content.ReadAsStringAsync();
-
-                Console.WriteLine($"🔍 User API Response Status: {response.StatusCode}");
 
                 if (!response.IsSuccessStatusCode)
                 {
                     Console.WriteLine($"❌ Failed to get user info: {response.StatusCode}");
-                    Console.WriteLine($"❌ Error details: {responseContent}");
-
-                    if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-                    {
-                        // Try to get a new token
-                        string refreshToken = TokenManager.GetRefreshToken();
-                        if (!string.IsNullOrEmpty(refreshToken))
-                        {
-                            Console.WriteLine("🔄 Trying to refresh token...");
-                            // If you have refresh token logic, add it here
-                        }
-
-                        MessageBox.Show("Your authentication session has expired. Please log in again.",
-                            "Authentication Error", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    }
-                    else
-                    {
-                        MessageBox.Show($"Failed to get user info: {response.StatusCode}\n{responseContent}",
-                            "Authentication Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    }
+                    HandleLogout();
                     return;
                 }
 
-                // Parse the response
                 using JsonDocument document = JsonDocument.Parse(responseContent);
-
-                // Extract user name
-                string userName = "";
-                if (document.RootElement.TryGetProperty("firstName", out JsonElement firstNameElement))
-                {
-                    userName = firstNameElement.GetString();
-                }
-
-                if (document.RootElement.TryGetProperty("lastName", out JsonElement lastNameElement))
-                {
-                    userName += " " + lastNameElement.GetString();
-                }
-
-                // Extract user ID and email
-                string userId = "";
-                if (document.RootElement.TryGetProperty("userId", out JsonElement userIdElement))
-                {
-                    userId = userIdElement.GetString();
-                }
-
-                string email = "";
-                if (document.RootElement.TryGetProperty("emailId", out JsonElement emailElement))
-                {
-                    email = emailElement.GetString();
-                }
+                string userName = document.RootElement.GetProperty("firstName").GetString() + " " +
+                                  document.RootElement.GetProperty("lastName").GetString();
+                string userId = document.RootElement.GetProperty("userId").GetString();
+                string email = document.RootElement.GetProperty("emailId").GetString();
 
                 Console.WriteLine($"✅ User data retrieved: {userName} ({email})");
 
-                // Save user info
                 Environment.SetEnvironmentVariable("userName", userName, EnvironmentVariableTarget.User);
                 Environment.SetEnvironmentVariable("userId", userId, EnvironmentVariableTarget.User);
 
-                // Open the main window
-                Dispatcher.Invoke(() => {
-                    MainWindow mainWindow = new MainWindow(responseContent);
-                    this.Close();
-                    mainWindow.Show();
-                });
+                // ✅ Prevent duplicate MainWindow
+                if (!Application.Current.Windows.OfType<MainWindow>().Any())
+                {
+                    Dispatcher.Invoke(() =>
+                    {
+                        MainWindow mainWindow = new MainWindow(responseContent);
+                        this.Close();
+                        mainWindow.Show();
+                    });
+                }
+                else
+                {
+                    Console.WriteLine("⚠️ MainWindow already open, skipping duplicate launch.");
+                }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"❌ Exception in GetUserData: {ex.Message}");
-                if (ex.InnerException != null)
-                {
-                    Console.WriteLine($"❌ Inner exception: {ex.InnerException.Message}");
-                }
-                Console.WriteLine($"❌ Stack trace: {ex.StackTrace}");
                 MessageBox.Show($"Error retrieving user data: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }

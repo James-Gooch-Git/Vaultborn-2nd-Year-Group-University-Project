@@ -24,6 +24,7 @@ using Microsoft.Web.WebView2.Wpf;
 using System.Windows.Data; // Fix for Binding issue
 using System.Windows.Controls;
 using ForgeViewerApp; // Ensure we use WPF DataGrid
+using AssetManagement.Infrastructure.Fusion;
 
 
 
@@ -50,18 +51,20 @@ namespace AssetManager.Desktop
         private static readonly HttpClient client = new HttpClient();
         private string selectedHubName = "Loading..."; // Default value before hubs load
         private bool isModelLoaded = false;
-
         private enum ViewType { Grid, List }
         private ViewType _lastViewType = ViewType.List; // Default to List View
 
 
-        // ✅ Constructor
+
+        // Constructor
         public MainWindow()
         {
             InitializeComponent();
+   
             //InitializeWebView2();
             //  ModelDataGrid.SelectionChanged += ModelDataGrid_SelectionChanged;
             Initialize();
+          
         }
    
         public MainWindow(string userData)
@@ -72,7 +75,6 @@ namespace AssetManager.Desktop
             _filedwnService = new FileDownloadService();
             Initialize();
         }
-
 
         private async void Initialize()
         {
@@ -91,7 +93,7 @@ namespace AssetManager.Desktop
 
                 Username_TextBlock.Text = await GetUserName(_userId);
                 UserPic_Image.Source = new BitmapImage(new Uri(await GetUserPic(_userId)));
-
+                FusionAddinInstaller.InstallFusionAddin(_accessToken);
                 // 🔹 Initialize data
                 LoadHubsAsync();
                 await LoadAllModels();
@@ -1300,8 +1302,6 @@ namespace AssetManager.Desktop
             }
         }
 
-
-
         private async void ModelsDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (ModelsDataGrid.SelectedItem is Dictionary<string, string> model)
@@ -1431,39 +1431,43 @@ namespace AssetManager.Desktop
         {
             ContextMenu menu = new ContextMenu();
 
-            MenuItem openInFusionItem = new MenuItem { Header = "🔷 Open in Fusion 360" };
+            MenuItem openInFusionItem = new MenuItem { Header = "🔷 Open in Fusion 360", Tag = modelId };
             openInFusionItem.Click += (s, e) =>
             {
-                if ((s as MenuItem)?.DataContext is Dictionary<string, string> model)
+                if (s is MenuItem menuItem && menuItem.Tag is string selectedModelId)
                 {
-                    BtnViewInFusion_Click(model["Id"]);
+                    Console.WriteLine($"🔷 Opening Model in Fusion 360: {selectedModelId}");
+                    BtnViewInFusion_Click(selectedModelId);
                 }
             };
 
-            MenuItem viewInAppItem = new MenuItem { Header = "🖥️ View in App" };
+            MenuItem viewInAppItem = new MenuItem { Header = "🖥️ View in App", Tag = modelId };
             viewInAppItem.Click += (s, e) =>
             {
-                if ((s as MenuItem)?.DataContext is Dictionary<string, string> model)
+                if (s is MenuItem menuItem && menuItem.Tag is string selectedModelId)
                 {
-                    BtnViewInApp_Click(model["Id"]);
+                    Console.WriteLine($"🖥️ Viewing Model in App: {selectedModelId}");
+                    BtnViewInApp_Click(selectedModelId);
                 }
             };
 
-            MenuItem downloadItem = new MenuItem { Header = "📥 Download" };
+            MenuItem downloadItem = new MenuItem { Header = "📥 Download", Tag = modelId };
             downloadItem.Click += (s, e) =>
             {
-                if ((s as MenuItem)?.DataContext is Dictionary<string, string> model)
+                if (s is MenuItem menuItem && menuItem.Tag is string selectedModelId)
                 {
-                    BtnDownload_Click(model["Id"]);
+                    Console.WriteLine($"📥 Downloading Model: {selectedModelId}");
+                    BtnDownload_Click(selectedModelId);
                 }
             };
 
-            MenuItem deleteItem = new MenuItem { Header = "🗑️ Delete" };
+            MenuItem deleteItem = new MenuItem { Header = "🗑️ Delete", Tag = modelId };
             deleteItem.Click += (s, e) =>
             {
-                if ((s as MenuItem)?.DataContext is Dictionary<string, string> model)
+                if (s is MenuItem menuItem && menuItem.Tag is string selectedModelId)
                 {
-                    BtnDeleteModel_Click(model["Id"]);
+                    Console.WriteLine($"🗑️ Deleting Model: {selectedModelId}");
+                    BtnDeleteModel_Click(selectedModelId);
                 }
             };
 
@@ -1474,6 +1478,7 @@ namespace AssetManager.Desktop
 
             return menu;
         }
+
         private async void List_Click(object sender, MouseButtonEventArgs e)
         {
             ModelsDataGrid.Visibility = Visibility.Visible; // Show DataGrid
@@ -1540,8 +1545,6 @@ namespace AssetManager.Desktop
             List_Border.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
         }
 
-
-
         private async void Grid_Click(object sender, MouseButtonEventArgs e)
         {
             if (string.IsNullOrEmpty(_selectedProjectId))
@@ -1569,6 +1572,7 @@ namespace AssetManager.Desktop
 
                 foreach (var model in models)
                 {
+
                     string projectId = _selectedProjectId;
                     string itemId = model["Id"];
 
@@ -1638,21 +1642,26 @@ namespace AssetManager.Desktop
                     // ✅ Ensure the menu button has the correct model assigned
                     menuButton.DataContext = model;
 
-                    // ✅ Create and attach ContextMenu
-                    ContextMenu contextMenu = CreateModelContextMenu(model["Id"], model["Name"]);
-                    menuButton.ContextMenu = contextMenu;
-
-                    // ✅ Ensure the menu opens on button click
+                    // ✅ Ensure the menu opens on button click and retrieves correct ID dynamically
                     menuButton.Click += (s, e) =>
                     {
                         if (s is Button btn && btn.DataContext is Dictionary<string, string> selectedModel)
                         {
-                            ContextMenu dynamicContextMenu = CreateModelContextMenu(selectedModel["Id"], selectedModel["Name"]);
+                            string selectedModelId = selectedModel["Id"];
+                            string selectedModelName = selectedModel["Name"];
+                            _selectedItemId = selectedModel["Id"];
+
+                            Console.WriteLine($"🔍 Three-dot menu clicked for Model ID: {selectedModelId}");
+
+                            // ✅ Generate ContextMenu dynamically on click
+                            ContextMenu dynamicContextMenu = CreateModelContextMenu(selectedModelId, selectedModelName);
+
                             dynamicContextMenu.PlacementTarget = btn;
                             dynamicContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
                             dynamicContextMenu.IsOpen = true;
                         }
                     };
+
 
                     // Container for Model Name + Menu Button
                     DockPanel topPanel = new DockPanel();
@@ -1681,95 +1690,95 @@ namespace AssetManager.Desktop
             Grid_Border.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
         }
 
-/*
-        private void SetupDataGrid()
-        {
-            if (ModelsDataGrid.Columns.Count > 0)
-            {
-                Console.WriteLine("🔄 DataGrid already set up, skipping redundant setup.");
-                return;
-            }
-
-            Console.WriteLine("🛠️ Setting up DataGrid...");
-
-            ModelsDataGrid.Columns.Clear(); // Clear previous setup
-            ModelsDataGrid.AutoGenerateColumns = false;
-
-            ModelsDataGrid.Columns.Add(new System.Windows.Controls.DataGridTextColumn
-            {
-                Header = "Name",
-                Binding = new Binding("Name"),
-                Width = new DataGridLength(1, DataGridLengthUnitType.Star)
-            });
-
-            ModelsDataGrid.Columns.Add(new System.Windows.Controls.DataGridTextColumn
-            {
-                Header = "Project",
-                Binding = new Binding("Project"),
-                Width = new DataGridLength(1, DataGridLengthUnitType.Star)
-            });
-
-            ModelsDataGrid.Columns.Add(new System.Windows.Controls.DataGridTextColumn
-            {
-                Header = "Last Modified",
-                Binding = new Binding("LastModified"),
-                Width = new DataGridLength(1, DataGridLengthUnitType.Star)
-            });
-
-            // Ensure Actions Column is only added once
-            if (!ModelsDataGrid.Columns.Any(col => col.Header?.ToString() == "Actions"))
-            {
-                var actionsColumn = new DataGridTemplateColumn
+        /*
+                private void SetupDataGrid()
                 {
-                    Header = "Actions",
-                    Width = new DataGridLength(50)
-                };
-
-                var cellTemplate = new DataTemplate();
-                var buttonFactory = new FrameworkElementFactory(typeof(Button));
-
-                buttonFactory.SetValue(Button.ContentProperty, "⋮"); // Three dots
-                buttonFactory.SetValue(Button.CursorProperty, Cursors.Hand);
-                buttonFactory.SetValue(Button.ToolTipProperty, "Click for options");
-
-                // Make sure the button opens the ContextMenu dynamically
-                buttonFactory.AddHandler(Button.ClickEvent, new RoutedEventHandler((s, e) =>
-                {
-                    if (s is Button btn && btn.DataContext is Dictionary<string, string> model)
+                    if (ModelsDataGrid.Columns.Count > 0)
                     {
-                        ContextMenu dynamicContextMenu = CreateModelContextMenu(model["Id"], model["Name"]);
-                        dynamicContextMenu.PlacementTarget = btn;
-                        dynamicContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
-                        dynamicContextMenu.IsOpen = true;
+                        Console.WriteLine("🔄 DataGrid already set up, skipping redundant setup.");
+                        return;
                     }
-                }));
 
-                cellTemplate.VisualTree = buttonFactory;
-                actionsColumn.CellTemplate = cellTemplate;
+                    Console.WriteLine("🛠️ Setting up DataGrid...");
 
-                ModelsDataGrid.Columns.Add(actionsColumn);
-            }
+                    ModelsDataGrid.Columns.Clear(); // Clear previous setup
+                    ModelsDataGrid.AutoGenerateColumns = false;
 
-            // ✅ Attach ContextMenu to **entire DataGridRow**
-            ModelsDataGrid.RowStyle = new Style(typeof(DataGridRow))
-            {
-                Setters =
-        {
-            new EventSetter(DataGridRow.LoadedEvent, new RoutedEventHandler((s, e) =>
-            {
-                if (s is DataGridRow row && row.DataContext is Dictionary<string, string> model)
+                    ModelsDataGrid.Columns.Add(new System.Windows.Controls.DataGridTextColumn
+                    {
+                        Header = "Name",
+                        Binding = new Binding("Name"),
+                        Width = new DataGridLength(1, DataGridLengthUnitType.Star)
+                    });
+
+                    ModelsDataGrid.Columns.Add(new System.Windows.Controls.DataGridTextColumn
+                    {
+                        Header = "Project",
+                        Binding = new Binding("Project"),
+                        Width = new DataGridLength(1, DataGridLengthUnitType.Star)
+                    });
+
+                    ModelsDataGrid.Columns.Add(new System.Windows.Controls.DataGridTextColumn
+                    {
+                        Header = "Last Modified",
+                        Binding = new Binding("LastModified"),
+                        Width = new DataGridLength(1, DataGridLengthUnitType.Star)
+                    });
+
+                    // Ensure Actions Column is only added once
+                    if (!ModelsDataGrid.Columns.Any(col => col.Header?.ToString() == "Actions"))
+                    {
+                        var actionsColumn = new DataGridTemplateColumn
+                        {
+                            Header = "Actions",
+                            Width = new DataGridLength(50)
+                        };
+
+                        var cellTemplate = new DataTemplate();
+                        var buttonFactory = new FrameworkElementFactory(typeof(Button));
+
+                        buttonFactory.SetValue(Button.ContentProperty, "⋮"); // Three dots
+                        buttonFactory.SetValue(Button.CursorProperty, Cursors.Hand);
+                        buttonFactory.SetValue(Button.ToolTipProperty, "Click for options");
+
+                        // Make sure the button opens the ContextMenu dynamically
+                        buttonFactory.AddHandler(Button.ClickEvent, new RoutedEventHandler((s, e) =>
+                        {
+                            if (s is Button btn && btn.DataContext is Dictionary<string, string> model)
+                            {
+                                ContextMenu dynamicContextMenu = CreateModelContextMenu(model["Id"], model["Name"]);
+                                dynamicContextMenu.PlacementTarget = btn;
+                                dynamicContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+                                dynamicContextMenu.IsOpen = true;
+                            }
+                        }));
+
+                        cellTemplate.VisualTree = buttonFactory;
+                        actionsColumn.CellTemplate = cellTemplate;
+
+                        ModelsDataGrid.Columns.Add(actionsColumn);
+                    }
+
+                    // ✅ Attach ContextMenu to **entire DataGridRow**
+                    ModelsDataGrid.RowStyle = new Style(typeof(DataGridRow))
+                    {
+                        Setters =
                 {
-                    // Ensure each row gets the correct menu dynamically
-                    row.ContextMenu = CreateModelContextMenu(model["Id"], model["Name"]);
+                    new EventSetter(DataGridRow.LoadedEvent, new RoutedEventHandler((s, e) =>
+                    {
+                        if (s is DataGridRow row && row.DataContext is Dictionary<string, string> model)
+                        {
+                            // Ensure each row gets the correct menu dynamically
+                            row.ContextMenu = CreateModelContextMenu(model["Id"], model["Name"]);
+                        }
+                    }))
                 }
-            }))
-        }
-            };
+                    };
 
-            Console.WriteLine("✅ DataGrid setup complete.");
-        }
+                    Console.WriteLine("✅ DataGrid setup complete.");
+                }
 
-*/
+        */
 
         #endregion
 
@@ -1813,38 +1822,63 @@ namespace AssetManager.Desktop
                 MessageBox.Show($"❌ Failed to launch Fusion 360: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }*/
-    private void LaunchFusionWithModel(string modelPath)
-    {
-        string fusion360Uri = "fusion360://command=openCloudModel&itemId=urn:adsk.wipprod:dm.lineage:pwGqGrbgRx6IUlR4Wtskdg";
-
-        string tempFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "fusion_model_path.txt");
-        File.WriteAllText(tempFilePath, modelPath);
-
-        string fusionPath = GetFusion360ExecutablePath();
-
-        if (string.IsNullOrEmpty(fusionPath) || !File.Exists(fusionPath))
+        private void LaunchFusionWithModel(string modelPath)
         {
-            MessageBox.Show("⚠️ Fusion 360 is not installed or could not be found.", "Fusion 360 Not Found", MessageBoxButton.OK, MessageBoxImage.Warning);
-            return;
+            try
+            {
+                // 1. Install the Fusion 360 add-in if not already installed
+               // AssetManagement.Infrastructure.Fusion.FusionAddinInstaller.InstallFusionAddin();
+
+                // 2. Get the path to the Fusion 360 executable
+                string fusionPath = GetFusion360ExecutablePath();
+                if (string.IsNullOrEmpty(fusionPath) || !File.Exists(fusionPath))
+                {
+                    MessageBox.Show("⚠️ Fusion 360 is not installed or could not be found.", "Fusion 360 Not Found", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                // 3. Create metadata file alongside the model file
+                // This ensures your add-in can find the metadata when saving back to Hub
+                string modelName = Path.GetFileNameWithoutExtension(modelPath);
+                string metadataFilePath = Path.Combine(Path.GetDirectoryName(modelPath), $"{modelName}.metadata.json");
+
+                // Create the metadata JSON with the necessary IDs
+                var metadata = new
+                {
+                    projectId = _selectedProjectId,
+                    itemId = _selectedItemId,
+                    folderId = _folderId,
+                    fileName = modelName
+                };
+
+                // Serialize and write the metadata to file
+                string metadataJson = System.Text.Json.JsonSerializer.Serialize(metadata, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+                File.WriteAllText(metadataFilePath, metadataJson);
+
+                Console.WriteLine($"✅ Created metadata file: {metadataFilePath}");
+
+                // 4. Download the model if needed
+                FileDownloadService fileDownloadService = new FileDownloadService();
+                fileDownloadService.DownloadModelAndSaveMetadata(_selectedProjectId, _selectedItemId, _selectedItemName, _folderId);
+
+                // 5. Launch Fusion 360 with the model
+                Process.Start(fusionPath, $"\"{modelPath}\"");
+                Console.WriteLine($"✅ Launched Fusion 360 with: {modelPath}");
+
+                // 6. Show a notification about the Save to Autodesk Hub feature
+                MessageBox.Show(
+                    "Model opened in Fusion 360. You can use the 'Save to Autodesk Hub' button in the ADD-INS menu to save changes back to the Autodesk Hub.",
+                    "Model Opened",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information
+                );
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"❌ Failed to launch Fusion 360: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
-
-        FileDownloadService fileDownloadService = new FileDownloadService();
-
-        try
-        {
-            fileDownloadService.DownloadModelAndSaveMetadata(_selectedProjectId, _selectedItemId, _selectedItemName, _folderId);
-            // Start Fusion 360 and open the model  
-            Process.Start(fusionPath, $"--exec \"{modelPath}\"");
-            Console.WriteLine($"✅ Launched Fusion 360 with: {modelPath}");
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show($"❌ Failed to launch Fusion 360: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
-    }
-
-
-    private string GetFusion360ExecutablePath()
+        private string GetFusion360ExecutablePath()
         {
             string fusionBasePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Autodesk", "webdeploy", "production");
             Console.WriteLine("fusion location: " + fusionBasePath);
@@ -1888,6 +1922,53 @@ namespace AssetManager.Desktop
             };
 
             return openFileDialog.ShowDialog() == true ? openFileDialog.FileName : null;
+        }
+
+        private async void BtnViewInFusion_Click(string _selectedItemId)
+        {
+            Console.WriteLine($"View in Fusion button clicked. Using global IDs:");
+            Console.WriteLine($"- Selected Item ID: {_selectedItemId}");
+            Console.WriteLine($"- Selected Project ID: {_selectedProjectId}");
+            Console.WriteLine($"- Selected Item Name: {_selectedItemName}");
+
+            if (string.IsNullOrEmpty(_selectedItemId) || string.IsNullOrEmpty(_selectedProjectId))
+            {
+                MessageBox.Show("❌ Please select a model before viewing in Fusion 360.", "Error", MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                return;
+            }
+
+            string modelFilePath = FindExistingModelFile(_selectedItemName);
+
+            if (modelFilePath == null)
+            {
+                Console.WriteLine("Downloading model");
+                // No matching file found, so download it
+                var fileDownloadService = new FileDownloadService();
+                await fileDownloadService.DownloadModelAsync(_selectedProjectId, _selectedItemId);
+            }
+
+            try
+            {
+                string saveDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+                    "DownloadedModels", _selectedItemName);
+                Console.WriteLine("Model dir: " + saveDirectory);
+
+                if (!Directory.Exists(saveDirectory))
+                {
+                    LaunchFusionWithModel(saveDirectory);
+                }
+                else
+                {
+                    // Directory exists, so we can just launch Fusion with the model
+                    LaunchFusionWithModel(saveDirectory);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"❌ Error launching Fusion script: {ex.Message}\n{ex.StackTrace}",
+                    "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         #endregion
@@ -1965,12 +2046,14 @@ namespace AssetManager.Desktop
             FileDownloadService fileDownloadService = new FileDownloadService();
             fileDownloadService.DownloadModelAsync(_selectedProjectId, _selectedItemId);
         }
+
         private void BtnDownload_Click(string selectedItemId)
         {
             Console.WriteLine("Downloading Model");
             FileDownloadService fileDownloadService = new FileDownloadService();
             fileDownloadService.DownloadModelAsync(_selectedProjectId, _selectedItemId);
         }
+
         private async void BtnViewInFusion_Click(object sender, RoutedEventArgs e)
         {
             Console.WriteLine($"View in Fusion button clicked. Using global IDs:");
@@ -2017,52 +2100,9 @@ namespace AssetManager.Desktop
                     "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-        private async void BtnViewInFusion_Click(string _selectedItemId)
-        {
-            Console.WriteLine($"View in Fusion button clicked. Using global IDs:");
-            Console.WriteLine($"- Selected Item ID: {_selectedItemId}");
-            Console.WriteLine($"- Selected Project ID: {_selectedProjectId}");
-            Console.WriteLine($"- Selected Item Name: {_selectedItemName}");
 
-            if (string.IsNullOrEmpty(_selectedItemId) || string.IsNullOrEmpty(_selectedProjectId))
-            {
-                MessageBox.Show("❌ Please select a model before viewing in Fusion 360.", "Error", MessageBoxButton.OK,
-                    MessageBoxImage.Error);
-                return;
-            }
 
-            string modelFilePath = FindExistingModelFile(_selectedItemName);
 
-            if (modelFilePath == null)
-            {
-                Console.WriteLine("Downloading model");
-                // No matching file found, so download it
-                var fileDownloadService = new FileDownloadService();
-                await fileDownloadService.DownloadModelAsync(_selectedProjectId, _selectedItemId);
-            }
-
-            try
-            {
-                string saveDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-                    "DownloadedModels", _selectedItemName);
-                Console.WriteLine("Model dir: " + saveDirectory);
-
-                if (!Directory.Exists(saveDirectory))
-                {
-                    // LaunchFusionWithModel(saveDirectory);
-                }
-                else
-                {
-                    // Directory exists, so we can just launch Fusion with the model
-                    //LaunchFusionWithModel(saveDirectory);
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"❌ Error launching Fusion script: {ex.Message}\n{ex.StackTrace}",
-                    "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
         //Fusion using Hub 
 
         /*    private async void BtnViewInFusion_Click(string selectedItemId)
@@ -2291,7 +2331,6 @@ namespace AssetManager.Desktop
 
             Console.WriteLine($"🔄 Returning to {_lastViewType} view.");
         }
-
 
         private async void LoadForgeViewer(string encodedUrn)
         {

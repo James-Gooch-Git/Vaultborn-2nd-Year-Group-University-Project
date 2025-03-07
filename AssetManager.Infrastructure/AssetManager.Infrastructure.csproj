@@ -9,6 +9,17 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <Compile Remove="Fusion\FusionAddinFiles\**" />
+      <EmbeddedResource Remove="Fusion\FusionAddinFiles\**" />
+      <None Remove="Fusion\FusionAddinFiles\**" />
+    </ItemGroup>
+
+
+    <ItemGroup>
+      <EmbeddedResource Include="Fusion\Resources\SaveToHub.py" />
+    </ItemGroup>
+
+    <ItemGroup>
       <PackageReference Include="Adsk.Platform.DataManagement" Version="0.1.3" />
       <PackageReference Include="Autodesk.Authentication" Version="2.0.0" />
       <PackageReference Include="Autodesk.DataManagement" Version="2.0.1" />
@@ -26,10 +37,8 @@
 
     </ItemGroup>
 
-	
 
-    
-    <ItemGroup>
+	<ItemGroup>
         <ProjectReference Include="..\AssetManager.Core\AssetManager.Core.csproj" />
     </ItemGroup>
 
