@@ -1385,11 +1385,22 @@ namespace AssetManager.Desktop
                     DownArrow.Kind = PackIconKind.ArrowDownBoldOutline;
                     DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
                 }
+
+                string visibility = await GetModelVisibility();
+                if (visibility == "Public")
+                {
+                    Public.IsSelected = true;
+                }
+                else if (visibility == "Private")
+                {
+                    Private.IsSelected = true;
+                }
                         
                 UpvoteTextBlock.Text = upvotes.ToString();
                 UpArrowBorder.Visibility = Visibility.Visible;
                 UpvoteTextBlock.Visibility = Visibility.Visible;
                 DownArrowBorder.Visibility = Visibility.Visible;
+                PublicPrivateComboBox.Visibility = Visibility.Visible;
             }
             else if (ModelsDataGrid.SelectedItem != null)
             {
@@ -3177,6 +3188,29 @@ namespace AssetManager.Desktop
             {
                 return result.Vote;
             }
+        }
+        
+        //Model Visibility
+        private async void PublicPrivateComboBox_OnSelectionChangedComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            ComboBox comboBox = sender as ComboBox;
+            var selectedItem = comboBox.SelectedItem as ComboBoxItem;
+            string option = selectedItem.Content.ToString();
+            selectedItem.IsEnabled = true;
+            selectedItem.IsSelected = true;
+            
+            MongoConnection database = new MongoConnection();
+            var filter = Builders<ModelData>.Filter.Eq(x => x.Id, _selectedItemId);
+            var update = Builders<ModelData>.Update.Set(x => x.PublicPrivate, option);
+            await database.ModelData.FindOneAndUpdateAsync(filter, update);
+            //MessageBox.Show($"Model updated to {option}");
+        }
+        
+        private async Task<string> GetModelVisibility()
+        {
+            MongoConnection database = new MongoConnection();
+            var result = await database.ModelData.Find(x => x.Id == _selectedItemId).FirstOrDefaultAsync();
+            return result.PublicPrivate;
         }
         
         //COMMENTED OUT FUNCTIONS//
