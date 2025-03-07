@@ -430,14 +430,14 @@ namespace AssetManager.Desktop
             _modelLoadCancellationTokenSource = new CancellationTokenSource();
             CancellationToken token = _modelLoadCancellationTokenSource.Token;
 
-            if (isModelLoaded) return;
+            //if (isModelLoaded) return;
             isModelLoaded = true;
 
             ModelsContainer.Children.Clear(); // Clear existing squares
-            List<Dictionary<string, string>> models = await GetAllModels();
+            //List<Dictionary<string, string>> models = await GetAllModels();
             if (token.IsCancellationRequested) return;
 
-            foreach (var model in models)
+            foreach (var model in Models)
             {
                 if (token.IsCancellationRequested) return;
 
