@@ -160,6 +160,8 @@
             <ColumnDefinition x:Name="ResizeSidebar" MinWidth="200" Width="Auto"/>
             <ColumnDefinition Width="5"/>
             <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="5"/>
+            <ColumnDefinition x:Name="ModelInfoSidebar" Width="0" MaxWidth="175"/>
         </Grid.ColumnDefinitions>
 
         <Border Grid.Row="0" Grid.ColumnSpan="3" BorderBrush="#797979" BorderThickness="0,0,0,1">
@@ -377,20 +379,20 @@
 
                     </Button>
                     
-                    <Border MouseLeftButtonDown="UpArrow_Click" x:Name="UpArrowBorder" Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" Cursor="Hand" Margin="0,0,5,0" Visibility="Hidden">
-                        <md:PackIcon x:Name="UpArrow" Kind="ArrowUpBoldOutline" Height="30" Width="30" VerticalAlignment="Center" HorizontalAlignment="Center"/> <!-- Foreground="#11d137" -->
+                    <!-- <Border MouseLeftButtonDown="UpArrow_Click" x:Name="UpArrowBorder" Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" Cursor="Hand" Margin="0,0,5,0" Visibility="Hidden">
+                        <md:PackIcon x:Name="UpArrow" Kind="ArrowUpBoldOutline" Height="30" Width="30" VerticalAlignment="Center" HorizontalAlignment="Center"/> 
                     </Border>
 
                     <TextBlock x:Name="UpvoteTextBlock" Text="0" Height="30" Width="30" FontSize="20" FontFamily="Arial" Margin="50,10,0,0" TextAlignment="Center" Visibility="Hidden"/>
 
                     <Border MouseLeftButtonDown="DownArrow_Click" x:Name="DownArrowBorder" Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" Cursor="Hand" Margin="100,0,5,0" Visibility="Hidden">
-                        <md:PackIcon x:Name="DownArrow" Kind="ArrowDownBoldOutline" Height="30" Width="30" VerticalAlignment="Center" HorizontalAlignment="Center"/> <!-- Foreground="Red" -->
+                        <md:PackIcon x:Name="DownArrow" Kind="ArrowDownBoldOutline" Height="30" Width="30" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                     </Border>
                     
                     <ComboBox x:Name="PublicPrivateComboBox" SelectionChanged="PublicPrivateComboBox_OnSelectionChangedComboBox_SelectionChanged" Width="100" Height="30" Visibility="Hidden" Margin="250,0,0,0">
                         <ComboBoxItem x:Name="Public">Public</ComboBoxItem>
                         <ComboBoxItem x:Name="Private">Private</ComboBoxItem>
-                    </ComboBox>
+                    </ComboBox> -->
                     
                     <!--
                     <Button HorizontalAlignment="Left" BorderThickness="0" x:Name="BtnDeleteModel" Width="100" Height="40" Click="BtnDeleteModel_Click" Cursor="Hand" Margin="180,0,0,0">
@@ -799,6 +801,45 @@
 
             </Grid>
 
+        </Border>
+        
+        <Border Grid.Row="1" Grid.Column="4" BorderBrush="#797979" BorderThickness="1,0,0,0" Padding="5,0,5,0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <!-- Metadata -->
+                    <RowDefinition Height="Auto"/>
+                    <!-- Tags -->
+                    <RowDefinition Height="Auto"/>
+                    <!-- Visibility -->
+                    <RowDefinition Height="Auto"/>
+                    <!-- Upvotes -->
+                    <RowDefinition Height="*"/>
+                    <!-- Comments Header -->
+                    <RowDefinition Height="*"/>
+                    <!-- Post Comments -->
+                    <RowDefinition Height="*"/>
+                    <!-- Comments List -->
+                </Grid.RowDefinitions>
+                
+                <TextBlock Text="Model Info"/>
+                
+                <ComboBox Grid.Row="2" x:Name="PublicPrivateComboBox" SelectionChanged="PublicPrivateComboBox_OnSelectionChangedComboBox_SelectionChanged" Width="100" Height="30" Margin="0,0,0,0">
+                    <ComboBoxItem x:Name="Public">Public</ComboBoxItem>
+                    <ComboBoxItem x:Name="Private">Private</ComboBoxItem>
+                </ComboBox>
+                
+                <Border Grid.Row="3" MouseLeftButtonDown="UpArrow_Click" x:Name="UpArrowBorder" Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" Cursor="Hand" Margin="0,0,5,0">
+                    <md:PackIcon x:Name="UpArrow" Kind="ArrowUpBoldOutline" Height="30" Width="30" VerticalAlignment="Center" HorizontalAlignment="Center"/> <!-- Foreground="#11d137" -->
+                </Border>
+
+                <TextBlock Grid.Row="3" x:Name="UpvoteTextBlock" Text="0" Height="30" Width="30" FontSize="20" FontFamily="Arial" Margin="50,10,0,0" TextAlignment="Center"/>
+
+                <Border Grid.Row="3" MouseLeftButtonDown="DownArrow_Click" x:Name="DownArrowBorder" Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" Cursor="Hand" Margin="100,0,5,0">
+                    <md:PackIcon x:Name="DownArrow" Kind="ArrowDownBoldOutline" Height="30" Width="30" VerticalAlignment="Center" HorizontalAlignment="Center"/> <!-- Foreground="Red" -->
+                </Border>
+                
+            </Grid>
         </Border>
 
     </Grid>
