@@ -1400,10 +1400,8 @@ namespace AssetManager.Desktop
                 }
                         
                 UpvoteTextBlock.Text = upvotes.ToString();
-                /*UpArrowBorder.Visibility = Visibility.Visible;
-                UpvoteTextBlock.Visibility = Visibility.Visible;
-                DownArrowBorder.Visibility = Visibility.Visible;
-                PublicPrivateComboBox.Visibility = Visibility.Visible;*/
+                ClearComments();
+                ListAllComments();
             }
             else if (ModelsDataGrid.SelectedItem != null)
             {
@@ -3231,23 +3229,6 @@ namespace AssetManager.Desktop
         //Tags
         
         //Comments feature
-        /*private void BtnViewComment_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                BtnAddComment.Visibility = Visibility.Visible;
-                CommentContent.Visibility = Visibility.Visible;
-                ListComments.Visibility = Visibility.Visible;
-                SortByComboBox.Visibility = Visibility.Visible;
-                ClearComments();
-                ListAllComments();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error: {ex.Message}");
-            }
-        }
-        
         private async void BtnAddComment_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -3260,7 +3241,7 @@ namespace AssetManager.Desktop
                     Comment commentContent = new Comment
                     {
                         CommentId = ObjectId.GenerateNewId(),
-                        AssetId = _modelId,
+                        AssetId = _selectedItemId,
                         UserId = Environment.GetEnvironmentVariable("userId", EnvironmentVariableTarget.User),
                         Content = comment,
                         CreatedDateTime = DateTime.Now
@@ -3280,7 +3261,7 @@ namespace AssetManager.Desktop
         {
             try
             {
-                List<Comment> comments = await GetAllComments(_modelId);
+                List<Comment> comments = await GetAllComments(_selectedItemId);
                 List<CommentItem> commentItems = new List<CommentItem>();
 
                 foreach (Comment comment in comments)
@@ -3312,7 +3293,7 @@ namespace AssetManager.Desktop
         
         private async void ListNewComment(Comment commentItem)
         {
-            List<Comment> comments = await GetAllComments(_modelId);
+            List<Comment> comments = await GetAllComments(_selectedItemId);
 
             foreach (Comment comment in comments)
             {
@@ -3341,7 +3322,51 @@ namespace AssetManager.Desktop
                 Console.WriteLine($"Error: {e.Message}");
                 throw;
             }
-        }*/
+        }
+        
+        private void SortByComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            ComboBox comboBox = sender as ComboBox;
+            var selectedItem = comboBox.SelectedItem as ComboBoxItem;
+            string sortOption = selectedItem.Content.ToString();
+            ClearComments();
+            SortComments(sortOption, _selectedItemId);
+        }
+        
+        private async void SortComments(string i, string assetId)
+        {
+            MongoConnection database = new MongoConnection();
+            var newest = Builders<Comment>.Sort.Descending(x => x.CreatedDateTime);
+            var oldest = Builders<Comment>.Sort.Ascending(x => x.CreatedDateTime);
+
+            switch (i)
+            {
+                case "Newest":
+                    List<Comment> newestComments = await database.Comments.Find(x => x.AssetId == assetId).Sort(newest).ToListAsync();
+                    foreach (Comment comment in newestComments)
+                    {
+                        string name = await GetUserName(comment.UserId);
+                        ListComments.Items.Add(new CommentItem { User = name, Content = comment.Content, CreatedDateTime = comment.CreatedDateTime });
+                    }
+                    break;
+                case "Oldest":
+                    List<Comment> oldestComments = await database.Comments.Find(x => x.AssetId == assetId).Sort(oldest).ToListAsync();
+                    foreach (Comment comment in oldestComments)
+                    {
+                        string name = await GetUserName(comment.UserId);
+                        ListComments.Items.Add(new CommentItem { User = name, Content = comment.Content, CreatedDateTime = comment.CreatedDateTime });
+                    }
+                    break;
+            }
+        }
+        
+        private class CommentItem
+        {
+            public string User { get; set; }
+            public string Content { get; set; }
+            public DateTime CreatedDateTime { get; set; }
+        }
+        
         
         //COMMENTED OUT FUNCTIONS//
 
