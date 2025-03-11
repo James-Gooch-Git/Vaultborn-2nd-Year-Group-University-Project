@@ -21,16 +21,16 @@ namespace AssetManagement.Infrastructure.Fusion
                 // Create Python files in the temporary directory
                 CreatePythonFiles(tempAddinPath, accessToken);
 
-                // 🔹 1️⃣ Copy to USER Add-ins folder (API\AddIns)
+               /* // 🔹 1️⃣ Copy to USER Add-ins folder (API\AddIns)
                 string userAddinsPath = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
                     "Autodesk", "Autodesk Fusion 360", "API", "AddIns"
                 );
 
                 CopyAddinToPath(tempAddinPath, userAddinsPath);
-
+               */
                 // 🔹 2️⃣ Copy to SYSTEM Add-ins folder (webdeploy\InternalAddins)
-               /* string systemAddinsPath = Path.Combine(
+                string systemAddinsPath = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                     "Autodesk", "webdeploy", "production"
                 );
@@ -51,7 +51,7 @@ namespace AssetManagement.Infrastructure.Fusion
                             break;
                         }
                     }
-                }*/
+                }
 
                 // Clean up temp directory
                 Directory.Delete(tempAddinPath, true);
