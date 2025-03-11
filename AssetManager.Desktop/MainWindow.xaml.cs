@@ -1948,6 +1948,61 @@ namespace AssetManager.Desktop
                 await fileDownloadService.DownloadModelAsync(_selectedProjectId, _selectedItemId);
             }
 
+        
+            try
+            {
+                string saveDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+                    "DownloadedModels", _selectedItemName);
+                Console.WriteLine("Model dir: " + saveDirectory);
+
+                // Write the file path to a shared file
+                string addInDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                    "Autodesk", "Autodesk Fusion 360", "API", "AddIns", "SaveToHub2");
+                string pathInfoFile = Path.Combine(addInDirectory, "current_model_path.txt");
+                File.WriteAllText(pathInfoFile, saveDirectory);
+                Console.WriteLine($"✅ Saved model path to: {pathInfoFile}");
+
+                if (!Directory.Exists(saveDirectory))
+                {
+                    LaunchFusionWithModel(saveDirectory);
+                }
+                else
+                {
+                    // Directory exists, so we can just launch Fusion with the model
+                    LaunchFusionWithModel(saveDirectory);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"❌ Error launching Fusion script: {ex.Message}\n{ex.StackTrace}",
+                    "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+    /*    private async void BtnViewInFusion_Click(object sender, RoutedEventArgs e)
+        {
+            Console.WriteLine($"View in Fusion button clicked. Using global IDs:");
+            Console.WriteLine($"- Selected Item ID: {_selectedItemId}");
+            Console.WriteLine($"- Selected Project ID: {_selectedProjectId}");
+            Console.WriteLine($"- Selected Item Name: {_selectedItemName}");
+
+            if (string.IsNullOrEmpty(_selectedItemId) || string.IsNullOrEmpty(_selectedProjectId))
+            {
+                MessageBox.Show("❌ Please select a model before viewing in Fusion 360.", "Error", MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                return;
+            }
+
+            string modelFilePath = FindExistingModelFile(_selectedItemName);
+
+            if (modelFilePath == null)
+            {
+                Console.WriteLine("Downloading model");
+                // No matching file found, so download it
+                var fileDownloadService = new FileDownloadService();
+                await fileDownloadService.DownloadModelAsync(_selectedProjectId, _selectedItemId);
+            }
+
             try
             {
                 string saveDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
@@ -1970,6 +2025,7 @@ namespace AssetManager.Desktop
                     "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+*/
 
         #endregion
 
@@ -2054,53 +2110,7 @@ namespace AssetManager.Desktop
             fileDownloadService.DownloadModelAsync(_selectedProjectId, _selectedItemId);
         }
 
-        private async void BtnViewInFusion_Click(object sender, RoutedEventArgs e)
-        {
-            Console.WriteLine($"View in Fusion button clicked. Using global IDs:");
-            Console.WriteLine($"- Selected Item ID: {_selectedItemId}");
-            Console.WriteLine($"- Selected Project ID: {_selectedProjectId}");
-            Console.WriteLine($"- Selected Item Name: {_selectedItemName}");
-
-            if (string.IsNullOrEmpty(_selectedItemId) || string.IsNullOrEmpty(_selectedProjectId))
-            {
-                MessageBox.Show("❌ Please select a model before viewing in Fusion 360.", "Error", MessageBoxButton.OK,
-                    MessageBoxImage.Error);
-                return;
-            }
-
-            string modelFilePath = FindExistingModelFile(_selectedItemName);
-
-            if (modelFilePath == null)
-            {
-                Console.WriteLine("Downloading model");
-                // No matching file found, so download it
-                var fileDownloadService = new FileDownloadService();
-                await fileDownloadService.DownloadModelAsync(_selectedProjectId, _selectedItemId);
-            }
-
-            try
-            {
-                string saveDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-                    "DownloadedModels", _selectedItemName);
-                Console.WriteLine("Model dir: " + saveDirectory);
-
-                if (!Directory.Exists(saveDirectory))
-                {
-                   LaunchFusionWithModel(saveDirectory);
-                }
-                else
-                {
-                    // Directory exists, so we can just launch Fusion with the model
-                    LaunchFusionWithModel(saveDirectory);
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"❌ Error launching Fusion script: {ex.Message}\n{ex.StackTrace}",
-                    "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
+     
 
 
         //Fusion using Hub 
