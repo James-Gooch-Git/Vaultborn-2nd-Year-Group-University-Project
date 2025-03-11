@@ -45,24 +45,23 @@ namespace AssetManagement.Infrastructure.Fusion
         {
             // Define files and directories to create
             string[] files = {
-                "SaveToHub2.manifest", "SaveToHub2.py", "config.py", "savetohub_palette.html", "AddInIcon.svg", ".env"
-            };
+        "SaveToHub2.manifest", "SaveToHub2.py", "config.py",
+        "savetohub_palette.html", "AddInIcon.svg", ".env", "embedded_requests.py"
+    };
 
             string[] directories = {
-                ".vscode", "commands/commandDialog/resources", "commands/paletteSend/resources",
-                "commands/paletteShow/resources/html/static", "lib/fusionAddInUtils"
-            };
+        ".vscode", "commands/commandDialog/resources", "commands/paletteSend/resources",
+        "commands/paletteShow/resources/html/static", "lib/fusionAddInUtils"
+    };
 
             string[] embeddedResources = {
-                "commands/commandDialog/__init__.py", "commands/commandDialog/entry.py",
-                "commands/commandDialog/resources/16x16.png", "commands/commandDialog/resources/32x32.png", "commands/commandDialog/resources/64x64.png",
-                "commands/paletteSend/__init__.py", "commands/paletteSend/entry.py",
-                "commands/paletteSend/resources/16x16.png", "commands/paletteSend/resources/32x32.png", "commands/paletteSend/resources/64x64.png",
-                "commands/paletteShow/__init__.py", "commands/paletteShow/entry.py",
-                "commands/paletteShow/resources/16x16.png", "commands/paletteShow/resources/32x32.png", "commands/paletteShow/resources/64x64.png",
-                "commands/paletteShow/resources/html/index.html", "commands/paletteShow/resources/html/static/palette.js",
-                "lib/fusionAddInUtils/__init__.py", "lib/fusionAddInUtils/event_utils.py", "lib/fusionAddInUtils/general_utils.py"
-            };
+        "commands/commandDialog/__init__.py", "commands/commandDialog/entry.py",
+        "commands/commandDialog/resources/16x16.png", "commands/commandDialog/resources/32x32.png",
+        "commands/paletteSend/__init__.py", "commands/paletteSend/entry.py",
+        "commands/paletteShow/__init__.py", "commands/paletteShow/entry.py",
+        "commands/paletteShow/resources/html/index.html", "commands/paletteShow/resources/html/static/palette.js",
+        "lib/fusionAddInUtils/__init__.py", "lib/fusionAddInUtils/event_utils.py"
+    };
 
             // Create directories
             foreach (string dir in directories)
@@ -81,12 +80,44 @@ namespace AssetManagement.Infrastructure.Fusion
                 CopyEmbeddedResource(resource, Path.Combine(addinPath, resource));
             }
 
-            // If accessToken is provided, save it to a token file
+            // **Recursively copy the "packages" directory**
+            string sourcePackagesPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "packages");
+            string destinationPackagesPath = Path.Combine(addinPath, "packages");
+
+            if (Directory.Exists(sourcePackagesPath))
+            {
+                CopyDirectory(sourcePackagesPath, destinationPackagesPath);
+                Console.WriteLine($"✅ Copied 'packages' directory from: {sourcePackagesPath}");
+            }
+            else
+            {
+                Console.WriteLine($"⚠️ Warning: 'packages' directory not found at {sourcePackagesPath}");
+            }
+
+            // If accessToken is provided, save it
             if (!string.IsNullOrEmpty(accessToken))
             {
                 File.WriteAllText(Path.Combine(addinPath, "auth_token.txt"), accessToken);
             }
         }
+
+        private static void CopyDirectory(string sourceDir, string destinationDir)
+        {
+            if (!Directory.Exists(destinationDir))
+            {
+                Directory.CreateDirectory(destinationDir);
+            }
+
+            foreach (string file in Directory.GetFiles(sourceDir, "*", SearchOption.AllDirectories))
+            {
+                string relativePath = file.Substring(sourceDir.Length + 1);
+                string destinationFile = Path.Combine(destinationDir, relativePath);
+
+                Directory.CreateDirectory(Path.GetDirectoryName(destinationFile));
+                File.Copy(file, destinationFile, true);
+            }
+        }
+
 
         private static void CopyEmbeddedResource(string resourceName, string destinationPath)
         {

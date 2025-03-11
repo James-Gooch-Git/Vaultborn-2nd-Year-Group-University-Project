@@ -6,12 +6,19 @@ import logging
 import threading
 import time
 
+
+# Add the packages directory to the Python path
+packages_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "packages")
+if packages_dir not in sys.path:
+    sys.path.insert(0, packages_dir)
+
 # Set up logging
 # Replace the logging setup code at the beginning of the file
 
 # Set up logging
 try:
-    log_dir = os.path.dirname(os.path.realpath(__file__))
+    log_dir = os.path.join(os.path.expanduser("~"), "Documents", "Fusion360Logs")
+    os.makedirs(log_dir, exist_ok=True)  # Ensure directory exists
     log_path = os.path.join(log_dir, 'savetohub_log.txt')
     
     # Try to write a test line to see if the directory is writable
@@ -84,8 +91,21 @@ def get_current_dir():
 # Helper function to save model to Autodesk Hub
 def saveToHub():
     try:
+        logs_dir = os.path.join(os.path.expanduser("~"), "Documents", "Fusion360Logs")
+        os.makedirs(logs_dir, exist_ok=True)
+        log_path = os.path.join(logs_dir, 'savetohub_log.txt')
+        
+        # Try writing a direct message to confirm we can write to this location
+        with open(log_path, 'a') as f:
+            timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
+            f.write(f"[{timestamp}] SaveToHub function called\n")
+            f.flush()
+        
         ui = app.userInterface
         doc = app.activeDocument
+        log_flush(f"SaveToHub started - Active document: {doc.name if doc else 'None'}", logging.INFO)
+        
+
         
         if not doc:
             ui.messageBox("No active document to export.", 
@@ -454,10 +474,22 @@ def saveToHub():
 def upload_file_to_hub(file_path, project_id, item_id, access_token):
     """Upload a file to Autodesk Hub using S3 signed URLs (matching the C# approach)"""
     try:
-        import requests
         import json
         import os
         import time
+        import requests
+    
+        
+
+        logs_dir = os.path.join(os.path.expanduser("~"), "Documents", "Fusion360Logs")
+        os.makedirs(logs_dir, exist_ok=True)
+        log_path = os.path.join(logs_dir, 'savetohub_log.txt')
+        
+        # Try writing a direct message to confirm we can write to this location
+        with open(log_path, 'a') as f:
+            timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
+            f.write(f"[{timestamp}] SaveToHub function called\n")
+            f.flush()
         
         logging.info(f"Starting upload of file: {file_path} to project: {project_id}, item: {item_id}")
         

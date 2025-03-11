@@ -84,6 +84,7 @@
       <EmbeddedResource Include="Fusion\Resources\config.py">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </EmbeddedResource>
+      <EmbeddedResource Include="Fusion\Resources\embedded_requests.py" />
       <EmbeddedResource Include="Fusion\Resources\lib\fusionAddInUtils\event_utils.py">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </EmbeddedResource>
@@ -156,6 +157,7 @@
 	  <None Remove="Fusion\Resources\commands\paletteShow\__init__.py" />
 	  <None Remove="Fusion\Resources\commands\__init__.py" />
 	  <None Remove="Fusion\Resources\config.py" />
+	  <None Remove="Fusion\Resources\embedded_requests.py" />
 	  <None Remove="Fusion\Resources\lib\fusionAddInUtils\event_utils.py" />
 	  <None Remove="Fusion\Resources\lib\fusionAddInUtils\general_utils.py" />
 	  <None Remove="Fusion\Resources\lib\fusionAddInUtils\__init__.py" />
@@ -173,5 +175,10 @@
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>
     </ItemGroup>
+
+
+	<ItemGroup>
+	  <Folder Include="Fusion\Resources\packages\" />
+	</ItemGroup>
 
 </Project>
