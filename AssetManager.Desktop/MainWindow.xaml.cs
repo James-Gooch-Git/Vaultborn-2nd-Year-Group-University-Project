@@ -2398,7 +2398,22 @@ namespace AssetManager.Desktop
         }
         #endregion
 
+        //NEEDS MIGRATING TO VERSION CONTROL//
+        #region Version Control
 
+        private async void VersionTest()
+        {
+
+            Console.WriteLine("\n\n\n\n\n\n\nVERSIONS")
+            var versions = DataManagement.GetItemVersions(_selectedProjectId, _selectedItemId);
+
+            foreach (var version in versions)
+            {
+                Console.WriteLine(version.ToString());
+            }
+        }
+
+        #endregion
 
 
 

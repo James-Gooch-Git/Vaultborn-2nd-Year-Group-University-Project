@@ -751,7 +751,55 @@ namespace AssetManager.Infrastructure.Services
             }
         }
 
+        public static async Task<List<(int VersionNumber, string VersionID, string CreateTime, string CreatedBy, string StorageURN)>> GetItemVersions(string projectId, string itemId)
+        {
+            string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/items/{itemId}/versions";
+            string _accessToken = TokenManager.GetToken();
+            var versionList = new List<(int, string, string, string, string)>();
 
+            if (string.IsNullOrEmpty(_accessToken))
+            {
+                Console.WriteLine("❌ Error: Access token is missing or invalid.");
+                return versionList;
+            }
+
+            try
+            {
+                client.DefaultRequestHeaders.Clear();
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
+                HttpResponseMessage response = await client.GetAsync(url);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine($"❌ Error: {response.StatusCode} - {response.ReasonPhrase}");
+                    return versionList;
+                }
+
+                string jsonResponse = await response.Content.ReadAsStringAsync();
+                using JsonDocument doc = JsonDocument.Parse(jsonResponse);
+                JsonElement root = doc.RootElement;
+
+                foreach (JsonElement version in root.GetProperty("data").EnumerateArray())
+                {
+                    int versionNumber = version.GetProperty("attributes").GetProperty("versionNumber").GetInt32();
+                    string versionID = version.GetProperty("id").GetString();
+                    string createTime = version.GetProperty("attributes").GetProperty("createTime").GetString();
+                    string createdBy = version.GetProperty("attributes").GetProperty("createUserName").GetString();
+                    string storageURN = version.GetProperty("relationships").GetProperty("storage").GetProperty("data").GetProperty("id").GetString();
+
+                    Console.WriteLine($"📄 Found Version: Number={versionNumber}, ID={versionID}, Created={createTime} by {createdBy}");
+
+                    versionList.Add((versionNumber, versionID, createTime, createdBy, storageURN));
+                }
+
+                return versionList;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Exception occurred: {ex.Message}");
+                return versionList;
+            }
+        }
 
 
 
