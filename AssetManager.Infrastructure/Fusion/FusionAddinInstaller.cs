@@ -2,6 +2,9 @@
 using System.IO;
 using System.Reflection;
 
+
+
+
 namespace AssetManagement.Infrastructure.Fusion
 {
     public class FusionAddinInstaller
@@ -10,6 +13,12 @@ namespace AssetManagement.Infrastructure.Fusion
         {
             try
             {
+                if (!CheckAndCloseFusion())
+                {
+                    Console.WriteLine("❌ Installation aborted due to Fusion 360 process issues.");
+                    return;
+                }
+
                 // Create temporary directory for preparing the add-in
                 string tempAddinPath = Path.Combine(Path.GetTempPath(), "SaveToHub");
                 if (Directory.Exists(tempAddinPath))
@@ -21,23 +30,23 @@ namespace AssetManagement.Infrastructure.Fusion
                 // Create Python files in the temporary directory
                 CreatePythonFiles(tempAddinPath, accessToken);
 
-               /* // 🔹 1️⃣ Copy to USER Add-ins folder (API\AddIns)
+                // 🔹 1️⃣ Copy to USER Add-ins folder (API\AddIns)
                 string userAddinsPath = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
                     "Autodesk", "Autodesk Fusion 360", "API", "AddIns"
                 );
 
                 CopyAddinToPath(tempAddinPath, userAddinsPath);
-               */
-                // 🔹 2️⃣ Copy to SYSTEM Add-ins folder (webdeploy\InternalAddins)
-                string systemAddinsPath = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                    "Autodesk", "webdeploy", "production"
-                );
 
-                if (Directory.Exists(systemAddinsPath))
+                // 🔹 2️⃣ Copy to SYSTEM Add-ins folder (webdeploy\InternalAddins)
+                /*  string systemAddinsPath = Path.Combine(
+                      Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                      "Autodesk", "webdeploy", "production"
+                  );*/
+
+                if (Directory.Exists(userAddinsPath))
                 {
-                    foreach (var folder in Directory.GetDirectories(systemAddinsPath))
+                    foreach (var folder in Directory.GetDirectories(userAddinsPath))
                     {
                         // Look for latest Fusion 360 installation
                         if (Path.GetFileName(folder).StartsWith("0"))
@@ -65,6 +74,76 @@ namespace AssetManagement.Infrastructure.Fusion
                 Console.WriteLine(ex.StackTrace);
             }
         }
+
+
+
+        private static bool CheckAndCloseFusion()
+        {
+            try
+            {
+                Process[] fusionProcesses = Process.GetProcessesByName("Fusion");
+
+                if (fusionProcesses.Length > 0)
+                {
+                    var messageBox = new Window
+                    {
+                        Title = "Fusion 360 is Running",
+                        Width = 300,
+                        Height = 150
+                    };
+
+                    var yesButton = new Button
+                    {
+                        Content = "Yes",
+                        Command = ReactiveCommand.Create(() =>
+                        {
+                            foreach (Process process in fusionProcesses)
+                            {
+                                try
+                                {
+                                    process.Kill();
+                                    process.WaitForExit();
+                                }
+                                catch (Exception ex)
+                                {
+                                    Console.WriteLine($"❌ Error closing Fusion 360: {ex.Message}");
+                                }
+                            }
+                            messageBox.Close();
+                        }),
+                    };
+
+                    var noButton = new Button
+                    {
+                        Content = "No",
+                        Command = ReactiveCommand.Create(() => messageBox.Close()),
+                    };
+
+                    messageBox.Content = new StackPanel
+                    {
+                        Children =
+                {
+                    new TextBlock { Text = "Fusion 360 is currently running.\nWould you like to close it?", Margin = new Avalonia.Thickness(10) },
+                    yesButton,
+                    noButton
+                }
+                    };
+
+                    Dispatcher.UIThread.InvokeAsync(async () =>
+                    {
+                        await messageBox.ShowDialog(new Window()); // Corrected syntax
+                    });
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error checking Fusion 360 status: {ex.Message}");
+                return false;
+            }
+        }
+
 
         private static void CreatePythonFiles(string addinPath, string accessToken)
         {
@@ -94,10 +173,19 @@ namespace AssetManagement.Infrastructure.Fusion
             }
 
             // Extract the Python script from embedded resources
-            string saveToHubPyContent = GetEmbeddedResourceContent("AssetManager.Infrastructure.Fusion.Resources.SaveToHub.py");
+            string sourcePath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "SaveToHub.py");
+            string destinationPath = Path.Combine(addinPath, "SaveToHub.py");
 
-            // Write the SaveToHub.py file
-            File.WriteAllText(Path.Combine(addinPath, "SaveToHub.py"), saveToHubPyContent);
+            if (File.Exists(sourcePath))
+            {
+                File.Copy(sourcePath, destinationPath, true);
+            }
+            else
+            {
+                Console.WriteLine("⚠️ Warning: SaveToHub.py not found in output directory!");
+            }
+
+           
         }
 
         /// <summary>
