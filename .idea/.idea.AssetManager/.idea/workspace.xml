@@ -131,6 +131,7 @@
       <workItem from="1741349755930" duration="344000" />
       <workItem from="1741350122823" duration="3694000" />
       <workItem from="1741609853164" duration="3256000" />
+      <workItem from="1741695197884" duration="317000" />
     </task>
     <task id="LOCAL-00001" summary="save main">
       <option name="closed" value="true" />
@@ -172,7 +173,15 @@
       <option name="project" value="LOCAL" />
       <updated>1741354912784</updated>
     </task>
-    <option name="localTasksCounter" value="6" />
+    <task id="LOCAL-00006" summary="comments merged">
+      <option name="closed" value="true" />
+      <created>1741614724333</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1741614724333</updated>
+    </task>
+    <option name="localTasksCounter" value="7" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -208,6 +217,7 @@
     <MESSAGE value="py exe" />
     <MESSAGE value="model visibility merged" />
     <MESSAGE value="grid view when not selected proj work - fix grid view when selected proj" />
-    <option name="LAST_COMMIT_MESSAGE" value="grid view when not selected proj work - fix grid view when selected proj" />
+    <MESSAGE value="comments merged" />
+    <option name="LAST_COMMIT_MESSAGE" value="comments merged" />
   </component>
 </project>

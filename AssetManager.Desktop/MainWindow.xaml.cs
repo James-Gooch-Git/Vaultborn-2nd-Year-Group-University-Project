@@ -3227,6 +3227,125 @@ namespace AssetManager.Desktop
         }
         
         //Tags
+        /*private async void BtnAddTags_Click(object sender, RoutedEventArgs e)
+        {
+            List<string> selectedTags = new List<string>();
+
+            foreach (CheckBox tag in TagsListBox.Items)
+            {
+                if (tag.IsChecked == true)
+                {
+                    //MessageBox.Show($"Selected tag: {tag.Content}");
+                    selectedTags.Add(tag.Content.ToString());
+                }
+            }
+            
+            MongoConnection database = new MongoConnection();
+            
+            var filter = Builders<ModelData>.Filter.Eq(x => x.Id, _modelId);
+            var clear = Builders<ModelData>.Update.Set(x => x.Tags, new List<string>() );
+            await database.ModelData.UpdateOneAsync(filter, clear);
+            
+            
+            var update = Builders<ModelData>.Update.AddToSetEach(x => x.Tags, selectedTags);
+            await database.ModelData.FindOneAndUpdateAsync(filter, update);
+            DisplayTagsListBox.Items.Clear();
+            await DisplayTags();
+        }
+
+        private async Task InitialiseTagsListBox()
+        {
+            try
+            {
+                ModelData result = await GetModelTags();
+                foreach (string tag in result.Tags)
+                {
+                    foreach (CheckBox checkBox in TagsListBox.Items)
+                    {
+                        if (checkBox.Content.ToString() == tag)
+                        {
+                            checkBox.IsChecked = true;
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show($"Error checking boxes: {e.Message}");
+                throw;
+            }
+        }
+        
+        private async Task DisplayTags()
+        {
+            List<string> tags = new List<string>();
+            ModelData result = await GetModelTags();
+            foreach (var tag in result.Tags)
+            {
+                tags.Add(tag);
+            }
+
+            foreach (string Tag in tags)
+            {
+                DisplayTagsListBox.Items.Add(Tag);
+            }
+        }*/
+        
+        /*private async Task DisplayAllTags()
+        {
+            List<string> tags = new List<string>();
+            MongoConnection database = new MongoConnection();
+            List<Tags> result = await database.Tags.Find(x => true).ToListAsync();
+            
+            foreach (Tags tag in result)
+            {
+                tags.Add(tag.TagName);
+            }
+            
+            foreach (string Tag in tags)
+            {
+                TagsListBox.Items.Add(Tag);
+            }
+        }*/
+
+        /*private async Task<ModelData> GetModelTags()
+        {
+            MongoConnection database = new MongoConnection();
+            var result = await database.ModelData.Find(x => x.Id == _modelId).FirstOrDefaultAsync();
+            return result;
+        }*/
+
+        /*private void UncheckTags()
+        {
+            foreach (CheckBox checkBox in TagsListBox.Items)
+            {
+                checkBox.IsChecked = false;
+            }
+        }*/
+
+        /*private async void InsertTagsDB()
+        {
+            List<string> tags = new List<string>
+            {
+                
+            };
+
+            List<Tags> tagItems = new List<Tags>();
+            foreach (string tag in tags)
+            {
+                tagItems.Add(new Tags { TagId = new ObjectId(), TagName = tag });    
+            }
+            
+            MongoConnection database = new MongoConnection();
+            await database.Tags.InsertManyAsync(tagItems);
+        }*/
+
+        /*private class TagItem
+        {
+            public ObjectId TagId { get; set; }
+            public string TagName { get; set; }
+        }*/
+
         
         //Comments feature
         private async void BtnAddComment_Click(object sender, RoutedEventArgs e)
@@ -3272,6 +3391,7 @@ namespace AssetManager.Desktop
 
                 if (commentItems.Count != 0)
                 {
+                    CommentsAmount.Text = $"All Comments ({commentItems.Count})";
                     foreach (CommentItem commentItem in commentItems)
                     {
                         ListComments.Items.Add(commentItem);
