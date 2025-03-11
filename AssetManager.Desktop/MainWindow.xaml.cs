@@ -1402,6 +1402,7 @@ namespace AssetManager.Desktop
                 UpvoteTextBlock.Text = upvotes.ToString();
                 ClearComments();
                 ListAllComments();
+                DisplayTags();
             }
             else if (ModelsDataGrid.SelectedItem != null)
             {
@@ -3227,33 +3228,55 @@ namespace AssetManager.Desktop
         }
         
         //Tags
-        /*private async void BtnAddTags_Click(object sender, RoutedEventArgs e)
+        private void AddTags_Click(object sender, MouseButtonEventArgs e)
+        {
+            try
+            {
+                var icon = sender as Border;
+                if (icon != null)
+                {
+                    ContextMenu tagsMenu =  this.FindResource("AddTagsContextMenu") as ContextMenu;
+                    if (tagsMenu != null)
+                    {
+                        tagsMenu.PlacementTarget = icon;
+                        tagsMenu.IsOpen = true;
+                    }
+                }
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine($"Error filtering: {exception.Message}");
+            }
+        }
+        private async void BtnAddTags_Click(object sender, RoutedEventArgs e)
         {
             List<string> selectedTags = new List<string>();
 
-            foreach (CheckBox tag in TagsListBox.Items)
-            {
-                if (tag.IsChecked == true)
+            ContextMenu tagsMenu = FindResource("FilterContextMenu") as ContextMenu;
+                foreach (var item in tagsMenu.Items)
                 {
-                    //MessageBox.Show($"Selected tag: {tag.Content}");
-                    selectedTags.Add(tag.Content.ToString());
+                    if (item != null && item is CheckBox checkBox)
+                    {
+                        if (checkBox.IsChecked == true)
+                        {
+                            selectedTags.Add(checkBox.Content.ToString());
+                        }
+                    }
                 }
-            }
             
             MongoConnection database = new MongoConnection();
             
-            var filter = Builders<ModelData>.Filter.Eq(x => x.Id, _modelId);
+            var filter = Builders<ModelData>.Filter.Eq(x => x.Id, _selectedItemId);
             var clear = Builders<ModelData>.Update.Set(x => x.Tags, new List<string>() );
             await database.ModelData.UpdateOneAsync(filter, clear);
             
             
             var update = Builders<ModelData>.Update.AddToSetEach(x => x.Tags, selectedTags);
             await database.ModelData.FindOneAndUpdateAsync(filter, update);
-            DisplayTagsListBox.Items.Clear();
             await DisplayTags();
         }
 
-        private async Task InitialiseTagsListBox()
+        /*private async Task InitialiseTagsListBox()
         {
             try
             {
@@ -3274,10 +3297,11 @@ namespace AssetManager.Desktop
                 MessageBox.Show($"Error checking boxes: {e.Message}");
                 throw;
             }
-        }
+        }*/
         
         private async Task DisplayTags()
         {
+            int i = 0;
             List<string> tags = new List<string>();
             ModelData result = await GetModelTags();
             foreach (var tag in result.Tags)
@@ -3285,11 +3309,51 @@ namespace AssetManager.Desktop
                 tags.Add(tag);
             }
 
+            if (tags.Count > 0)
+            {
+                TagsWrapPanel.Children.Remove(NoTagsText);
+            }
+            
             foreach (string Tag in tags)
             {
-                DisplayTagsListBox.Items.Add(Tag);
+                //DisplayTagsListBox.Items.Add(Tag);
+                Button tag = new Button
+                {
+                    Content = Tag,
+                    Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F25505")),
+                    Height = 25,
+                    Width = 50,
+                    BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F25505")),
+                    BorderThickness = new Thickness(2)
+                };
+
+                var border = new Border
+                {
+                    Background = tag.Background,
+                    BorderBrush = tag.BorderBrush,
+                    BorderThickness = tag.BorderThickness,
+                    CornerRadius = new CornerRadius(2),
+                    Child = tag,
+                };
+
+                /*TextBlock tag = new TextBlock
+                {
+                    Text = Tag,
+                    Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F25505")),
+                    
+                };*/
+                
+                TagsWrapPanel.Children.Insert(i, border);
+                i++;
             }
-        }*/
+        }
+        
+        private async Task<ModelData> GetModelTags()
+        {
+            MongoConnection database = new MongoConnection();
+            var result = await database.ModelData.Find(x => x.Id == _selectedItemId).FirstOrDefaultAsync();
+            return result;
+        }
         
         /*private async Task DisplayAllTags()
         {

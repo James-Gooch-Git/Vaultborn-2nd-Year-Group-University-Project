@@ -147,6 +147,113 @@
             <CheckBox Content="Intergalactic Federation"/>
             <CheckBox Content="Hive Mind"/>
         </ContextMenu>
+        
+        <ContextMenu x:Key="AddTagsContextMenu" Width="200" Height="400">
+            <Button x:Name="BtnAddTags" Content="Update Tags" Click="BtnAddTags_Click"/>
+            <CheckBox Content="D and D"/>
+            <CheckBox Content="Pathfinder"/>
+            <CheckBox Content="Warhammer 40K"/>
+            <CheckBox Content="Warhammer AOS"/>
+            <CheckBox Content="Call of Cthulhu"/>
+            <CheckBox Content="Shadowrun"/>
+            <CheckBox Content="Starfinder"/>
+            <CheckBox Content="FATE"/>
+            <CheckBox Content="GURPS"/>
+            <CheckBox Content="World of Darkness"/>
+            <CheckBox Content="Savage Worlds"/>
+            <CheckBox Content="Blades in the Dark"/>
+            <CheckBox Content="Cyberpunk RED"/>
+            <CheckBox Content="Star Wars RPG"/>
+            <CheckBox Content="Fantasy"/>
+            <CheckBox Content="Sci-Fi"/>
+            <CheckBox Content="Steampunk"/>
+            <CheckBox Content="Cyberpunk"/>
+            <CheckBox Content="Post-Apocalyptic"/>
+            <CheckBox Content="Modern"/>
+            <CheckBox Content="Horror"/>
+            <CheckBox Content="Mythology"/>
+            <CheckBox Content="Dark Fantasy"/>
+            <CheckBox Content="High Fantasy"/>
+            <CheckBox Content="Medieval"/>
+            <CheckBox Content="Western"/>
+            <CheckBox Content="Space Opera"/>
+            <CheckBox Content="Lovecraftian"/>
+            <CheckBox Content="Dieselpunk"/>
+            <CheckBox Content="Hero"/>
+            <CheckBox Content="Villain"/>
+            <CheckBox Content="NPC"/>
+            <CheckBox Content="Monster"/>
+            <CheckBox Content="Boss Monster"/>
+            <CheckBox Content="Minion"/>
+            <CheckBox Content="Humanoid"/>
+            <CheckBox Content="Vehicle"/>
+            <CheckBox Content="Mech"/>
+            <CheckBox Content="Construct"/>
+            <CheckBox Content="Summonable Creature"/>
+            <CheckBox Content="Undead"/>
+            <CheckBox Content="Beast"/>
+            <CheckBox Content="Mount"/>
+            <CheckBox Content="Dragon"/>
+            <CheckBox Content="Giant"/>
+            <CheckBox Content="Warrior"/>
+            <CheckBox Content="Knight"/>
+            <CheckBox Content="Paladin"/>
+            <CheckBox Content="Barbarian"/>
+            <CheckBox Content="Rogue"/>
+            <CheckBox Content="Assassin"/>
+            <CheckBox Content="Ranger"/>
+            <CheckBox Content="Hunter"/>
+            <CheckBox Content="Sorcerer"/>
+            <CheckBox Content="Wizard"/>
+            <CheckBox Content="Cleric"/>
+            <CheckBox Content="Druid"/>
+            <CheckBox Content="Necromancer"/>
+            <CheckBox Content="Bard"/>
+            <CheckBox Content="Monk"/>
+            <CheckBox Content="Gunslinger"/>
+            <CheckBox Content="Artificer"/>
+            <CheckBox Content="Alchemist"/>
+            <CheckBox Content="Psionic"/>
+            <CheckBox Content="Human"/>
+            <CheckBox Content="Elf"/>
+            <CheckBox Content="Dwarf"/>
+            <CheckBox Content="Orc"/>
+            <CheckBox Content="Goblin"/>
+            <CheckBox Content="Troll"/>
+            <CheckBox Content="Demon"/>
+            <CheckBox Content="Devil"/>
+            <CheckBox Content="Undead"/>
+            <CheckBox Content="Skeleton"/>
+            <CheckBox Content="Zombie"/>
+            <CheckBox Content="Werewolf"/>
+            <CheckBox Content="Vampire"/>
+            <CheckBox Content="Golem"/>
+            <CheckBox Content="Elemental"/>
+            <CheckBox Content="Celestial"/>
+            <CheckBox Content="Fairy"/>
+            <CheckBox Content="Tiefling"/>
+            <CheckBox Content="Dragonborn"/>
+            <CheckBox Content="Halfling"/>
+            <CheckBox Content="Gnome"/>
+            <CheckBox Content="Lizardfolk"/>
+            <CheckBox Content="Beholder"/>
+            <CheckBox Content="Eldritch Horror"/>
+            <CheckBox Content="Alien"/>
+            <CheckBox Content="Kingdom Army"/>
+            <CheckBox Content="Rebel Forces"/>
+            <CheckBox Content="Pirates"/>
+            <CheckBox Content="Cultists"/>
+            <CheckBox Content="Dark Brotherhood"/>
+            <CheckBox Content="Holy Order"/>
+            <CheckBox Content="Empire"/>
+            <CheckBox Content="Mercenaries"/>
+            <CheckBox Content="Guilds"/>
+            <CheckBox Content="Coven"/>
+            <CheckBox Content="Druidic Circle"/>
+            <CheckBox Content="Necromantic Order"/>
+            <CheckBox Content="Intergalactic Federation"/>
+            <CheckBox Content="Hive Mind"/>
+        </ContextMenu>
     </Window.Resources>
 
     <Grid>
@@ -840,6 +947,139 @@
                 <Border Grid.Row="3" MouseLeftButtonDown="DownArrow_Click" x:Name="DownArrowBorder" Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" Cursor="Hand" Margin="100,0,5,0">
                     <md:PackIcon x:Name="DownArrow" Kind="ArrowDownBoldOutline" Height="30" Width="30" VerticalAlignment="Center" HorizontalAlignment="Center"/> <!-- Foreground="Red" -->
                 </Border>
+                
+                <!-- Tags Check Box -->
+                <ListBox Grid.Row="6" Name="TagsListBox" Width="200" Height="200" Visibility="Hidden" HorizontalAlignment="Left">
+                    <CheckBox Content="D and D"/>
+                    <CheckBox Content="Pathfinder"/>
+                    <CheckBox Content="Warhammer 40K"/>
+                    <CheckBox Content="Warhammer AOS"/>
+                    <CheckBox Content="Call of Cthulhu"/>
+                    <CheckBox Content="Shadowrun"/>
+                    <CheckBox Content="Starfinder"/>
+                    <CheckBox Content="FATE"/>
+                    <CheckBox Content="GURPS"/>
+                    <CheckBox Content="World of Darkness"/>
+                    <CheckBox Content="Savage Worlds"/>
+                    <CheckBox Content="Blades in the Dark"/>
+                    <CheckBox Content="Cyberpunk RED"/>
+                    <CheckBox Content="Star Wars RPG"/>
+                    <CheckBox Content="Fantasy"/>
+                    <CheckBox Content="Sci-Fi"/>
+                    <CheckBox Content="Steampunk"/>
+                    <CheckBox Content="Cyberpunk"/>
+                    <CheckBox Content="Post-Apocalyptic"/>
+                    <CheckBox Content="Modern"/>
+                    <CheckBox Content="Horror"/>
+                    <CheckBox Content="Mythology"/>
+                    <CheckBox Content="Dark Fantasy"/>
+                    <CheckBox Content="High Fantasy"/>
+                    <CheckBox Content="Medieval"/>
+                    <CheckBox Content="Western"/>
+                    <CheckBox Content="Space Opera"/>
+                    <CheckBox Content="Lovecraftian"/>
+                    <CheckBox Content="Dieselpunk"/>
+                    <CheckBox Content="Hero"/>
+                    <CheckBox Content="Villain"/>
+                    <CheckBox Content="NPC"/>
+                    <CheckBox Content="Monster"/>
+                    <CheckBox Content="Boss Monster"/>
+                    <CheckBox Content="Minion"/>
+                    <CheckBox Content="Humanoid"/>
+                    <CheckBox Content="Vehicle"/>
+                    <CheckBox Content="Mech"/>
+                    <CheckBox Content="Construct"/>
+                    <CheckBox Content="Summonable Creature"/>
+                    <CheckBox Content="Undead"/>
+                    <CheckBox Content="Beast"/>
+                    <CheckBox Content="Mount"/>
+                    <CheckBox Content="Dragon"/>
+                    <CheckBox Content="Giant"/>
+                    <CheckBox Content="Warrior"/>
+                    <CheckBox Content="Knight"/>
+                    <CheckBox Content="Paladin"/>
+                    <CheckBox Content="Barbarian"/>
+                    <CheckBox Content="Rogue"/>
+                    <CheckBox Content="Assassin"/>
+                    <CheckBox Content="Ranger"/>
+                    <CheckBox Content="Hunter"/>
+                    <CheckBox Content="Sorcerer"/>
+                    <CheckBox Content="Wizard"/>
+                    <CheckBox Content="Cleric"/>
+                    <CheckBox Content="Druid"/>
+                    <CheckBox Content="Necromancer"/>
+                    <CheckBox Content="Bard"/>
+                    <CheckBox Content="Monk"/>
+                    <CheckBox Content="Gunslinger"/>
+                    <CheckBox Content="Artificer"/>
+                    <CheckBox Content="Alchemist"/>
+                    <CheckBox Content="Psionic"/>
+                    <CheckBox Content="Human"/>
+                    <CheckBox Content="Elf"/>
+                    <CheckBox Content="Dwarf"/>
+                    <CheckBox Content="Orc"/>
+                    <CheckBox Content="Goblin"/>
+                    <CheckBox Content="Troll"/>
+                    <CheckBox Content="Demon"/>
+                    <CheckBox Content="Devil"/>
+                    <CheckBox Content="Undead"/>
+                    <CheckBox Content="Skeleton"/>
+                    <CheckBox Content="Zombie"/>
+                    <CheckBox Content="Werewolf"/>
+                    <CheckBox Content="Vampire"/>
+                    <CheckBox Content="Golem"/>
+                    <CheckBox Content="Elemental"/>
+                    <CheckBox Content="Celestial"/>
+                    <CheckBox Content="Fairy"/>
+                    <CheckBox Content="Tiefling"/>
+                    <CheckBox Content="Dragonborn"/>
+                    <CheckBox Content="Halfling"/>
+                    <CheckBox Content="Gnome"/>
+                    <CheckBox Content="Lizardfolk"/>
+                    <CheckBox Content="Beholder"/>
+                    <CheckBox Content="Eldritch Horror"/>
+                    <CheckBox Content="Alien"/>
+                    <CheckBox Content="Kingdom Army"/>
+                    <CheckBox Content="Rebel Forces"/>
+                    <CheckBox Content="Pirates"/>
+                    <CheckBox Content="Cultists"/>
+                    <CheckBox Content="Dark Brotherhood"/>
+                    <CheckBox Content="Holy Order"/>
+                    <CheckBox Content="Empire"/>
+                    <CheckBox Content="Mercenaries"/>
+                    <CheckBox Content="Guilds"/>
+                    <CheckBox Content="Coven"/>
+                    <CheckBox Content="Druidic Circle"/>
+                    <CheckBox Content="Necromantic Order"/>
+                    <CheckBox Content="Intergalactic Federation"/>
+                    <CheckBox Content="Hive Mind"/>
+                </ListBox>
+                
+                <!-- Add tags button -->
+                <!-- <Button x:Name="BtnAddTags"  
+                        Content="Update Selected Tags"
+                        Width="200" Height="40"  
+                        Click="BtnAddTags_Click" 
+                        Grid.Row="6" HorizontalAlignment="Center" Margin="10"
+                        Visibility="Hidden"/> -->
+                
+                <!-- Display Tags -->
+                <WrapPanel Grid.Row="1" x:Name="TagsWrapPanel">
+                    <TextBlock x:Name="NoTagsText" Text="No Tags Currently selected"/>
+                    <Border Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" 
+                            HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" 
+                            Cursor="Hand" MouseLeftButtonDown="AddTags_Click">
+                        <md:PackIcon Cursor="Hand" HorizontalAlignment="Right" FontWeight="Light" 
+                                     Kind="Plus" Style="{StaticResource IconHover}" Height="16" Width="16"/>
+                    </Border>
+                </WrapPanel>
+                <!-- <ListBox x:Name="DisplayTagsListBox" Grid.Row="6" Width="200" Height="200" HorizontalAlignment="Right" Visibility="Hidden" ItemsSource="{Binding Tags}">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Label Content="{Binding }"/>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox> -->
                 
                 <!-- Comments Header -->
                 <TextBlock Grid.Row="4" x:Name="CommentsAmount" Text="All Comments (0)"/>
