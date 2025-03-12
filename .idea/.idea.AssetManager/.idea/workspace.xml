@@ -10,7 +10,6 @@
   <component name="ChangeListManager">
     <list default="true" id="29dceaf0-6b38-45af-9473-223a6fd443eb" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/.idea.AssetManager/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.AssetManager/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml.cs" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml.cs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -132,6 +131,8 @@
       <workItem from="1741350122823" duration="3694000" />
       <workItem from="1741609853164" duration="3256000" />
       <workItem from="1741695197884" duration="317000" />
+      <workItem from="1741782721806" duration="182000" />
+      <workItem from="1741786539801" duration="3853000" />
     </task>
     <task id="LOCAL-00001" summary="save main">
       <option name="closed" value="true" />
@@ -181,7 +182,15 @@
       <option name="project" value="LOCAL" />
       <updated>1741614724333</updated>
     </task>
-    <option name="localTasksCounter" value="7" />
+    <task id="LOCAL-00007" summary="still merging tags">
+      <option name="closed" value="true" />
+      <created>1741703419590</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1741703419590</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -218,6 +227,7 @@
     <MESSAGE value="model visibility merged" />
     <MESSAGE value="grid view when not selected proj work - fix grid view when selected proj" />
     <MESSAGE value="comments merged" />
-    <option name="LAST_COMMIT_MESSAGE" value="comments merged" />
+    <MESSAGE value="still merging tags" />
+    <option name="LAST_COMMIT_MESSAGE" value="still merging tags" />
   </component>
 </project>

@@ -98,6 +98,38 @@ namespace AssetManager.Desktop
                 // 🔹 Initialize data
                 LoadHubsAsync();
                 await LoadAllModels();
+                if (!ModelsDataGrid.Columns.Any(col => col.Header?.ToString() == "Actions"))
+                {
+                    var actionsColumn = new DataGridTemplateColumn
+                    {
+                        Header = "Actions",
+                        Width = new DataGridLength(50)
+                    };
+
+                    var cellTemplate = new DataTemplate();
+                    var buttonFactory = new FrameworkElementFactory(typeof(Button));
+
+                    buttonFactory.SetValue(Button.ContentProperty, "⋮"); // Three-dot menu
+                    buttonFactory.SetValue(Button.CursorProperty, Cursors.Hand);
+                    buttonFactory.SetValue(Button.ToolTipProperty, "Click for options");
+
+                    // ✅ Open ContextMenu when button is clicked
+                    buttonFactory.AddHandler(Button.ClickEvent, new RoutedEventHandler((s, ev) =>
+                    {
+                        if (s is Button btn && btn.DataContext is Dictionary<string, string> selectedModel)
+                        {
+                            ContextMenu dynamicContextMenu = CreateModelContextMenu(selectedModel["Id"], selectedModel["Name"]);
+                            dynamicContextMenu.PlacementTarget = btn;
+                            dynamicContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+                            dynamicContextMenu.IsOpen = true;
+                        }
+                    }));
+
+                    cellTemplate.VisualTree = buttonFactory;
+                    actionsColumn.CellTemplate = cellTemplate;
+
+                    ModelsDataGrid.Columns.Add(actionsColumn);
+                }
 
                 var hubDetails = await DataManagement.GetPersonalHubDetails();
 
@@ -1320,7 +1352,6 @@ namespace AssetManager.Desktop
         {
             if (ModelsDataGrid.SelectedItem is Dictionary<string, string> model)
             {
-                ModelInfoSidebar.Width = new GridLength(175);
                 _selectedModel = model;
 
                 // Debug - print what we're actually selecting
@@ -1362,47 +1393,11 @@ namespace AssetManager.Desktop
                 // Also immediately fetch and set the storage ID for the selected item
                 await FetchAndSetStorageId();
                 
-                //display upvotes
-                int upvotes = await GetModelUpvoteCount(model["Id"]);
-                        
-                await SetUserModelVote(_selectedItemId, _userId);
-                int vote = await GetUserModelVote(_selectedItemId, _userId);
-                if (vote == 1)
+                if (ModelsDataGrid.CurrentColumn.Header.ToString() != "Actions")
                 {
-                    UpArrow.Kind = PackIconKind.ArrowTopBold;
-                    UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#11d137"));
-                    DownArrow.Kind = PackIconKind.ArrowDownBoldOutline;
-                    DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+                    ModelInfoSidebar.Width = new GridLength(200);
+                    await InitializeModelsInfoSidebar();
                 }
-                else if (vote == -1)
-                {
-                    DownArrow.Kind = PackIconKind.ArrowDownBold;
-                    DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d11111"));
-                    UpArrow.Kind = PackIconKind.ArrowTopBoldOutline;
-                    UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
-                }
-                else
-                {
-                    UpArrow.Kind = PackIconKind.ArrowTopBoldOutline;
-                    UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
-                    DownArrow.Kind = PackIconKind.ArrowDownBoldOutline;
-                    DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
-                }
-
-                string visibility = await GetModelVisibility();
-                if (visibility == "Public")
-                {
-                    Public.IsSelected = true;
-                }
-                else if (visibility == "Private")
-                {
-                    Private.IsSelected = true;
-                }
-                        
-                UpvoteTextBlock.Text = upvotes.ToString();
-                ClearComments();
-                ListAllComments();
-                DisplayTags();
             }
             else if (ModelsDataGrid.SelectedItem != null)
             {
@@ -3087,7 +3082,53 @@ namespace AssetManager.Desktop
                 MessageBox.Show($"Error filtering: {exception.Message}");
             }
         }
+        
+        //initalise models sidebar
+        private async Task InitializeModelsInfoSidebar()
+        {
+            //display upvotes
+                int upvotes = await GetModelUpvoteCount(_selectedItemId);
+                        
+                await SetUserModelVote(_selectedItemId, _userId);
+                int vote = await GetUserModelVote(_selectedItemId, _userId);
+                if (vote == 1)
+                {
+                    UpArrow.Kind = PackIconKind.ArrowTopBold;
+                    UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#11d137"));
+                    DownArrow.Kind = PackIconKind.ArrowDownBoldOutline;
+                    DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+                }
+                else if (vote == -1)
+                {
+                    DownArrow.Kind = PackIconKind.ArrowDownBold;
+                    DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d11111"));
+                    UpArrow.Kind = PackIconKind.ArrowTopBoldOutline;
+                    UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+                }
+                else
+                {
+                    UpArrow.Kind = PackIconKind.ArrowTopBoldOutline;
+                    UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+                    DownArrow.Kind = PackIconKind.ArrowDownBoldOutline;
+                    DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+                }
 
+                string visibility = await GetModelVisibility();
+                if (visibility == "Public")
+                {
+                    Public.IsSelected = true;
+                }
+                else if (visibility == "Private")
+                {
+                    Private.IsSelected = true;
+                }
+                        
+                UpvoteTextBlock.Text = upvotes.ToString();
+                ClearComments();
+                ListAllComments();
+                await DisplayTags();
+        }
+        
         //Upvote system
         private async void UpArrow_Click(object sender, RoutedEventArgs e)
         {
@@ -3228,10 +3269,17 @@ namespace AssetManager.Desktop
         }
         
         //Tags
-        private void AddTags_Click(object sender, MouseButtonEventArgs e)
+        private async void AddTags_Click(object sender, MouseButtonEventArgs e)
         {
             try
             {
+                List<string> tags = new List<string>();
+                ModelData result = await GetModelTags();
+                foreach (var tag in result.Tags)
+                {
+                    tags.Add(tag);
+                }
+                
                 var icon = sender as Border;
                 if (icon != null)
                 {
@@ -3240,6 +3288,16 @@ namespace AssetManager.Desktop
                     {
                         tagsMenu.PlacementTarget = icon;
                         tagsMenu.IsOpen = true;
+                        foreach (var item in tagsMenu.Items)
+                        {
+                            if (item != null && item is CheckBox checkBox)
+                            {
+                                if (tags.Contains(checkBox.Content))
+                                {
+                                    checkBox.IsChecked = true;
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -3252,17 +3310,17 @@ namespace AssetManager.Desktop
         {
             List<string> selectedTags = new List<string>();
 
-            ContextMenu tagsMenu = FindResource("FilterContextMenu") as ContextMenu;
-                foreach (var item in tagsMenu.Items)
+            ContextMenu tagsMenu = FindResource("AddTagsContextMenu") as ContextMenu;
+            foreach (var item in tagsMenu.Items)
+            {
+                if (item != null && item is CheckBox checkBox)
                 {
-                    if (item != null && item is CheckBox checkBox)
+                    if (checkBox.IsChecked == true)
                     {
-                        if (checkBox.IsChecked == true)
-                        {
-                            selectedTags.Add(checkBox.Content.ToString());
-                        }
+                        selectedTags.Add(checkBox.Content.ToString());
                     }
                 }
+            }
             
             MongoConnection database = new MongoConnection();
             
@@ -3311,18 +3369,35 @@ namespace AssetManager.Desktop
 
             if (tags.Count > 0)
             {
-                TagsWrapPanel.Children.Remove(NoTagsText);
+                //TagsWrapPanel.Children.Remove(NoTagsText);
+                NoTagsText.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                NoTagsText.Visibility = Visibility.Visible;
+            }
+            
+            //remove existing displayed tags
+            for (int j = TagsWrapPanel.Children.Count-1; j > -1; j--)
+            {
+                if (TagsWrapPanel.Children[j] is Border border)
+                {
+                    if (border.Child is Button)
+                    {
+                        TagsWrapPanel.Children.RemoveAt(j);
+                    }
+                }
             }
             
             foreach (string Tag in tags)
             {
-                //DisplayTagsListBox.Items.Add(Tag);
                 Button tag = new Button
                 {
                     Content = Tag,
                     Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F25505")),
                     Height = 25,
                     Width = 50,
+                    Foreground = new SolidColorBrush(Colors.White),
                     BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F25505")),
                     BorderThickness = new Thickness(2)
                 };
@@ -3335,13 +3410,6 @@ namespace AssetManager.Desktop
                     CornerRadius = new CornerRadius(2),
                     Child = tag,
                 };
-
-                /*TextBlock tag = new TextBlock
-                {
-                    Text = Tag,
-                    Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F25505")),
-                    
-                };*/
                 
                 TagsWrapPanel.Children.Insert(i, border);
                 i++;
@@ -3354,30 +3422,6 @@ namespace AssetManager.Desktop
             var result = await database.ModelData.Find(x => x.Id == _selectedItemId).FirstOrDefaultAsync();
             return result;
         }
-        
-        /*private async Task DisplayAllTags()
-        {
-            List<string> tags = new List<string>();
-            MongoConnection database = new MongoConnection();
-            List<Tags> result = await database.Tags.Find(x => true).ToListAsync();
-            
-            foreach (Tags tag in result)
-            {
-                tags.Add(tag.TagName);
-            }
-            
-            foreach (string Tag in tags)
-            {
-                TagsListBox.Items.Add(Tag);
-            }
-        }*/
-
-        /*private async Task<ModelData> GetModelTags()
-        {
-            MongoConnection database = new MongoConnection();
-            var result = await database.ModelData.Find(x => x.Id == _modelId).FirstOrDefaultAsync();
-            return result;
-        }*/
 
         /*private void UncheckTags()
         {
@@ -3385,29 +3429,6 @@ namespace AssetManager.Desktop
             {
                 checkBox.IsChecked = false;
             }
-        }*/
-
-        /*private async void InsertTagsDB()
-        {
-            List<string> tags = new List<string>
-            {
-                
-            };
-
-            List<Tags> tagItems = new List<Tags>();
-            foreach (string tag in tags)
-            {
-                tagItems.Add(new Tags { TagId = new ObjectId(), TagName = tag });    
-            }
-            
-            MongoConnection database = new MongoConnection();
-            await database.Tags.InsertManyAsync(tagItems);
-        }*/
-
-        /*private class TagItem
-        {
-            public ObjectId TagId { get; set; }
-            public string TagName { get; set; }
         }*/
 
         
@@ -3452,10 +3473,11 @@ namespace AssetManager.Desktop
                     string name = await GetUserName(comment.UserId);
                     commentItems.Add(new CommentItem {User = name, Content = comment.Content, CreatedDateTime = comment.CreatedDateTime});
                 }
+                
+                CommentsAmount.Text = $"All Comments ({commentItems.Count})";
 
                 if (commentItems.Count != 0)
                 {
-                    CommentsAmount.Text = $"All Comments ({commentItems.Count})";
                     foreach (CommentItem commentItem in commentItems)
                     {
                         ListComments.Items.Add(commentItem);
