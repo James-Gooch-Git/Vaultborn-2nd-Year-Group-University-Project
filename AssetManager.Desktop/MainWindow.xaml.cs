@@ -26,7 +26,9 @@ using System.Windows.Controls;
 using ForgeViewerApp; // Ensure we use WPF DataGrid
 using AssetManagement.Infrastructure.Fusion;
 
-
+using MongoDB.Bson;
+using AssetManager.Infrastructure.Models;
+using Newtonsoft.Json;
 
 namespace AssetManager.Desktop
 {
@@ -40,7 +42,7 @@ namespace AssetManager.Desktop
         private string _selectedItemName;
         private string selectedHubID;
         private string _folderId;
-        private string hubID;
+        private static string hubID;
         private string _objectId;
         private List<(string HubID, string HubName, string HubType)> hubs = new List<(string, string, string)>();
         private CancellationTokenSource _modelLoadCancellationTokenSource = new CancellationTokenSource();
@@ -51,6 +53,9 @@ namespace AssetManager.Desktop
         private static readonly HttpClient client = new HttpClient();
         private string selectedHubName = "Loading..."; // Default value before hubs load
         private bool isModelLoaded = false;
+        
+        private List<Dictionary<string, string>> originalResults;
+
         private enum ViewType { Grid, List }
         private ViewType _lastViewType = ViewType.List; // Default to List View
 
@@ -76,6 +81,7 @@ namespace AssetManager.Desktop
             Initialize();
         }
 
+
         private async void Initialize()
         {
             try
@@ -97,6 +103,38 @@ namespace AssetManager.Desktop
                 // 🔹 Initialize data
                 LoadHubsAsync();
                 await LoadAllModels();
+                if (!ModelsDataGrid.Columns.Any(col => col.Header?.ToString() == "Actions"))
+                {
+                    var actionsColumn = new DataGridTemplateColumn
+                    {
+                        Header = "Actions",
+                        Width = new DataGridLength(50)
+                    };
+
+                    var cellTemplate = new DataTemplate();
+                    var buttonFactory = new FrameworkElementFactory(typeof(Button));
+
+                    buttonFactory.SetValue(Button.ContentProperty, "⋮"); // Three-dot menu
+                    buttonFactory.SetValue(Button.CursorProperty, Cursors.Hand);
+                    buttonFactory.SetValue(Button.ToolTipProperty, "Click for options");
+
+                    // ✅ Open ContextMenu when button is clicked
+                    buttonFactory.AddHandler(Button.ClickEvent, new RoutedEventHandler((s, ev) =>
+                    {
+                        if (s is Button btn && btn.DataContext is Dictionary<string, string> selectedModel)
+                        {
+                            ContextMenu dynamicContextMenu = CreateModelContextMenu(selectedModel["Id"], selectedModel["Name"]);
+                            dynamicContextMenu.PlacementTarget = btn;
+                            dynamicContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+                            dynamicContextMenu.IsOpen = true;
+                        }
+                    }));
+
+                    cellTemplate.VisualTree = buttonFactory;
+                    actionsColumn.CellTemplate = cellTemplate;
+
+                    ModelsDataGrid.Columns.Add(actionsColumn);
+                }
 
                 var hubDetails = await DataManagement.GetPersonalHubDetails();
 
@@ -249,6 +287,10 @@ namespace AssetManager.Desktop
         {
             MongoConnection database = new MongoConnection();
             var userData = await database.Users.Find(x => x.Id == userId).FirstOrDefaultAsync();
+            if (userData == null)
+            {
+                return "Unknown User";
+            }
             return userData.Username;
         }
 
@@ -314,7 +356,7 @@ namespace AssetManager.Desktop
             if (string.IsNullOrEmpty(_selectedProjectId) || string.IsNullOrEmpty(_folderId))
             {
                 Console.WriteLine("❌ Error: No project or folder selected.");
-                return;
+                //return;
             }
 
             try
@@ -322,7 +364,7 @@ namespace AssetManager.Desktop
                 Console.WriteLine($"🔄 Loading models for project: {_selectedProjectId}");
 
                 // Fetch models from Autodesk API
-                var models = await GetModelsFromProject(_selectedProjectId, _folderId);
+                var models = await GetAllModels();//await GetModelsFromProject(_selectedProjectId, _folderId);
 
                 if (models != null && models.Any())
                 {
@@ -332,6 +374,8 @@ namespace AssetManager.Desktop
                         ModelsDataGrid.ItemsSource = null;
                         ModelsDataGrid.Items.Clear();
                         ModelsDataGrid.ItemsSource = models;
+                        originalResults = models;
+                        Models = models;
                     });
 
                     Console.WriteLine($"✅ {models.Count} models loaded successfully.");
@@ -423,14 +467,14 @@ namespace AssetManager.Desktop
             _modelLoadCancellationTokenSource = new CancellationTokenSource();
             CancellationToken token = _modelLoadCancellationTokenSource.Token;
 
-            if (isModelLoaded) return;
+            //if (isModelLoaded) return;
             isModelLoaded = true;
 
             ModelsContainer.Children.Clear(); // Clear existing squares
-            List<Dictionary<string, string>> models = await GetAllModels();
+            //List<Dictionary<string, string>> models = await GetAllModels();
             if (token.IsCancellationRequested) return;
 
-            foreach (var model in models)
+            foreach (var model in Models)
             {
                 if (token.IsCancellationRequested) return;
 
@@ -561,9 +605,10 @@ namespace AssetManager.Desktop
                     foreach (JsonElement hub in hubsRoot.GetProperty("data").EnumerateArray())
                     {
                         string hubID = hub.GetProperty("id").GetString();
-                        hubID = selectedHubID;
+                        //hubID = selectedHubID;
 
                         string projectsUrl = $"https://developer.api.autodesk.com/project/v1/hubs/{hubID}/projects";
+                        await Task.Delay(500);
                         HttpResponseMessage projectsResponse = await client.GetAsync(projectsUrl);
 
                         if (!projectsResponse.IsSuccessStatusCode)
@@ -624,6 +669,7 @@ namespace AssetManager.Desktop
                                         { "Project", projectName },
                                         { "LastModified", lastModified }
                                     });
+                                    await GetModelData(modelId, projectId, projectName);
                                 }
                             }
                         }
@@ -908,14 +954,14 @@ namespace AssetManager.Desktop
 
                             // Create model dictionary with all necessary IDs
                             var modelDict = new Dictionary<string, string>
-                    {
-                        { "Id", itemId },
-                        { "Name", modelName },
-                        { "ProjectId", projectId },
-                        { "FolderId", folderId },
-                        { "Project", _selectedProjectName ?? "Unknown Project" },
-                        { "LastModified", formattedDate }
-                    };
+                            {
+                                { "Id", itemId },
+                                { "Name", modelName },
+                                { "ProjectId", projectId },
+                                { "FolderId", folderId },
+                                { "Project", _selectedProjectName ?? "Unknown Project" },
+                                { "LastModified", formattedDate }
+                            };
 
                             // Add to models list
                             models.Add(modelDict);
@@ -1049,6 +1095,7 @@ namespace AssetManager.Desktop
                 ModelsDataGrid.ItemsSource = null;
                 ModelsDataGrid.Items.Clear();
                 ModelsDataGrid.ItemsSource = models;
+                originalResults = models;
 
                 // Clear existing columns
                 ModelsDataGrid.Columns.Clear();
@@ -1346,6 +1393,12 @@ namespace AssetManager.Desktop
 
                 // Also immediately fetch and set the storage ID for the selected item
                 await FetchAndSetStorageId();
+                
+                if (ModelsDataGrid.CurrentColumn.Header.ToString() != "Actions")
+                {
+                    ModelInfoSidebar.Width = new GridLength(200);
+                    await InitializeModelsInfoSidebar();
+                }
             }
             else if (ModelsDataGrid.SelectedItem != null)
             {
@@ -1363,7 +1416,15 @@ namespace AssetManager.Desktop
             var border = sender as Border;
             var icon = border?.Child as PackIcon;
 
-            if (icon != null)
+            if (icon.Kind.ToString() == "ArrowTopBoldOutline")
+            {
+                icon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#11d137"));
+            }
+            else if (icon.Kind.ToString() == "ArrowDownBoldOutline")
+            {
+                icon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d11111"));
+            }
+            else if (icon != null && icon.Kind != PackIconKind.ArrowTopBold && icon.Kind != PackIconKind.ArrowDownBold)
             {
                 icon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F25505"));
             }
@@ -1374,7 +1435,7 @@ namespace AssetManager.Desktop
             var border = sender as Border;
             var icon = border?.Child as PackIcon;
 
-            if (icon != null)
+            if (icon != null && icon.Kind != PackIconKind.ArrowTopBold && icon.Kind != PackIconKind.ArrowDownBold)
             {
                 icon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
             }
@@ -1489,18 +1550,28 @@ namespace AssetManager.Desktop
             {
                 ModelsDataGrid.ItemsSource = null; // Clear previous data
 
-                // Fetch models for the selected project
-                List<Dictionary<string, string>> models = await GetModelsFromProject(_selectedProjectId, _folderId);
-
-                if (models == null || models.Count == 0)
+                if (string.IsNullOrEmpty(_selectedProjectId))
                 {
-                    Console.WriteLine("🔄 No models found, clearing grid.");
-                    ModelsDataGrid.ItemsSource = null;
-                    return;
+                    if (Models != null)
+                    {
+                        ModelsDataGrid.ItemsSource = Models;
+                    }
                 }
+                else
+                {
+                    // Fetch models for the selected project
+                    List<Dictionary<string, string>> models = await GetModelsFromProject(_selectedProjectId, _folderId);
 
-                ModelsDataGrid.ItemsSource = models;
-                Console.WriteLine($"✅ Loaded {models.Count} models.");
+                    if (models == null || models.Count == 0)
+                    {
+                        Console.WriteLine("🔄 No models found, clearing grid.");
+                        ModelsDataGrid.ItemsSource = null;
+                        return;
+                    }
+
+                    ModelsDataGrid.ItemsSource = models;
+                    Console.WriteLine($"✅ Loaded {models.Count} models.");
+                }
 
                 // ✅ Ensure "Actions" column exists only once
                 if (!ModelsDataGrid.Columns.Any(col => col.Header?.ToString() == "Actions"))
@@ -1547,17 +1618,23 @@ namespace AssetManager.Desktop
 
         private async void Grid_Click(object sender, MouseButtonEventArgs e)
         {
+            // Clear previous grid data
+            ModelsContainer.Children.Clear();
+            
             if (string.IsNullOrEmpty(_selectedProjectId))
             {
                 MessageBox.Show("❌ Please select a project to view models.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                
+                CreateGridView(Models);
+                ModelsDataGrid.Visibility = Visibility.Collapsed; // Hide DataGrid
+                Grid_View.Visibility = Visibility.Visible; // Show Grid View
+                List_Border.Background = Brushes.Transparent;
+                Grid_Border.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
                 return;
             }
 
             ModelsDataGrid.Visibility = Visibility.Collapsed; // Hide DataGrid
             Grid_View.Visibility = Visibility.Visible; // Show Grid View
-
-            // Clear previous grid data
-            ModelsContainer.Children.Clear();
 
             try
             {
@@ -1572,7 +1649,6 @@ namespace AssetManager.Desktop
 
                 foreach (var model in models)
                 {
-
                     string projectId = _selectedProjectId;
                     string itemId = model["Id"];
 
@@ -1662,7 +1738,6 @@ namespace AssetManager.Desktop
                         }
                     };
 
-
                     // Container for Model Name + Menu Button
                     DockPanel topPanel = new DockPanel();
                     DockPanel.SetDock(modelName, Dock.Left);
@@ -1689,6 +1764,108 @@ namespace AssetManager.Desktop
             List_Border.Background = Brushes.Transparent;
             Grid_Border.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
         }
+        
+        private void CreateGridView(List<Dictionary<string, string>> models)
+        {
+            foreach (var model in models)
+            {
+                // UI Container for Model
+                    Border modelSquare = new Border
+                    {
+                        Width = 263,
+                        Height = 300, // Increased to fit the image
+                        CornerRadius = new CornerRadius(5),
+                        Background = Brushes.White,
+                        BorderBrush = Brushes.LightGray,
+                        BorderThickness = new Thickness(1),
+                        Margin = new Thickness(10),
+                        Effect = new DropShadowEffect
+                        {
+                            Color = Colors.Black,
+                            Opacity = 0.1,
+                            BlurRadius = 10,
+                            ShadowDepth = 2
+                        }
+                    };
+
+                    StackPanel content = new StackPanel
+                    {
+                        Orientation = Orientation.Vertical,
+                        VerticalAlignment = VerticalAlignment.Center,
+                        HorizontalAlignment = HorizontalAlignment.Left
+                    };
+
+                    // Thumbnail Image
+                    Image thumbnailImage = new Image
+                    {
+                        Width = 200,
+                        Height = 200,
+                        Margin = new Thickness(10),
+                        Stretch = Stretch.Uniform
+                    };
+
+                    // Load thumbnail asynchronously
+                    _ = ShowThumbnail(model["ProjectId"], model["Id"], thumbnailImage);
+
+                    TextBlock modelName = new TextBlock
+                    {
+                        Text = model["Name"],
+                        FontSize = 16,
+                        FontWeight = FontWeights.Normal,
+                        TextAlignment = TextAlignment.Center,
+                        HorizontalAlignment = HorizontalAlignment.Left,
+                        TextWrapping = TextWrapping.Wrap,
+                        Margin = new Thickness(5, 2, 5, 2)
+                    };
+
+                    // ✅ Three-dot menu button
+                    Button menuButton = new Button
+                    {
+                        Content = "⋮", // Three-dot icon
+                        FontSize = 18,
+                        Width = 30,
+                        Height = 30,
+                        Background = Brushes.Transparent,
+                        BorderBrush = Brushes.Transparent,
+                        Padding = new Thickness(5),
+                        HorizontalAlignment = HorizontalAlignment.Right,
+                        ToolTip = "More Options"
+                    };
+
+                    // ✅ Ensure the menu button has the correct model assigned
+                    menuButton.DataContext = model;
+
+                    // ✅ Create and attach ContextMenu
+                    ContextMenu contextMenu = CreateModelContextMenu(model["Id"], model["Name"]);
+                    menuButton.ContextMenu = contextMenu;
+
+                    // ✅ Ensure the menu opens on button click
+                    menuButton.Click += (s, e) =>
+                    {
+                        if (s is Button btn && btn.DataContext is Dictionary<string, string> selectedModel)
+                        {
+                            ContextMenu dynamicContextMenu = CreateModelContextMenu(selectedModel["Id"], selectedModel["Name"]);
+                            dynamicContextMenu.PlacementTarget = btn;
+                            dynamicContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+                            dynamicContextMenu.IsOpen = true;
+                        }
+                    };
+
+                    // Container for Model Name + Menu Button
+                    DockPanel topPanel = new DockPanel();
+                    DockPanel.SetDock(modelName, Dock.Left);
+                    DockPanel.SetDock(menuButton, Dock.Right);
+                    topPanel.Children.Add(modelName);
+                    topPanel.Children.Add(menuButton);
+
+                    // Add elements to content panel
+                    content.Children.Add(thumbnailImage);
+                    content.Children.Add(topPanel);
+
+                    modelSquare.Child = content;
+                    ModelsContainer.Children.Add(modelSquare);
+            }
+        }
 
         /*
                 private void SetupDataGrid()
@@ -1698,6 +1875,16 @@ namespace AssetManager.Desktop
                         Console.WriteLine("🔄 DataGrid already set up, skipping redundant setup.");
                         return;
                     }
+        
+
+/*
+        private void SetupDataGrid()
+        {
+            if (ModelsDataGrid.Columns.Count > 0)
+            {
+                Console.WriteLine("🔄 DataGrid already set up, skipping redundant setup.");
+                return;
+            }
 
                     Console.WriteLine("🛠️ Setting up DataGrid...");
 
@@ -2531,12 +2718,12 @@ namespace AssetManager.Desktop
 
                     // 🔹 Step 3: Store item details for data grid
                     modelsList.Add(new Dictionary<string, string>
-            {
-                { "Id", itemId },
-                { "Name", itemName },
-                { "StorageId", storageId },
-                { "LatestVersion", latestVersion }
-            });
+                    {
+                        { "Id", itemId },
+                        { "Name", itemName },
+                        { "StorageId", storageId },
+                        { "LatestVersion", latestVersion }
+                    });
                 }
 
                 // 🔹 Step 4: Update Data Grid on UI thread
@@ -2796,7 +2983,750 @@ namespace AssetManager.Desktop
             }
         }
         #endregion
+        
+        //project text
+        private void TextBlockBorder_Enter(object sender, MouseEventArgs e)
+        {
+            var border = sender as Border;
+            if (border != null && border.Child is TextBlock textBlock)
+            {
+                textBlock.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F25505"));
+            }
+        }
+        
+        private void TextBlockBorder_Leave(object sender, MouseEventArgs e)
+        {
+            var border = sender as Border;
+            if (border != null && border.Child is TextBlock textBlock)
+            {
+                textBlock.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+            }
+        }
+        
+        private async void ProjectsText_Click(object sender, MouseButtonEventArgs e)
+        {
+            ModelsDataGrid.Columns[1].Header = "Project";
+            ModelsDataGrid.Columns[2].Header = "Last Modified";
+            ModelsDataGrid.ItemsSource = null;
+            await LoadAllModels();
+            DisplayGridModels();
+        }
+        
+        //models put in db
+        private static async Task GetModelData(string modelId, string projectId, string folderName)
+        {
+            try
+            {
+                //MessageBox.Show($"{DateTime.Now}");
+                string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/items/{modelId}";
+                using (HttpClient client = new HttpClient())
+                {
+                    client.DefaultRequestHeaders.Clear();
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TokenManager.GetToken());
+                    var response = await client.GetAsync(url);
+                    string responseString = await response.Content.ReadAsStringAsync();
+                    var JsonResponse = JsonConvert.DeserializeObject<dynamic>(responseString);
+                    
+                    //MessageBox.Show("Item: " + responseString);
+                    ModelData data = new ModelData
+                    {
+                        Id = modelId,
+                        Name = JsonResponse.data.attributes.displayName,
+                        HubId = hubID,
+                        CreatedBy = JsonResponse.data.attributes.createUserId,
+                        CreatedDate = JsonResponse.data.attributes.createTime,
+                        ModifiedDate = JsonResponse.data.attributes.lastModifiedTime,
+                        ModifiedBy = JsonResponse.data.attributes.lastModifiedUserId,
+                        FileSize = (int)JsonResponse["included"][0]["attributes"]["storageSize"],
+                        PublicPrivate = "Private",
+                        Foldername = folderName,
+                        FolderId = projectId,
+                        UpvoteCount = 0
+                    };
+                    
+                    InsertModelDB(data);
+                }
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show($"Error getting model data: {e.Message}");
+                throw;
+            }
+        } 
+        
+        private async static void InsertModelDB(ModelData modelData)
+        {
+            MongoConnection database = new MongoConnection();
+            var findModel = await database.ModelData.Find(x => x.Id == modelData.Id).FirstOrDefaultAsync();
 
+            if (findModel == null)
+            {
+                await database.ModelData.InsertOneAsync(modelData);
+            }
+        }
+        
+        //Fuzzy search
+        private async void SearchText_Box_OnKeyDown(object sender, KeyEventArgs e)
+        {
+            try
+            {
+                List<Dictionary<string, string>> searchResults = new List<Dictionary<string, string>>();
+                if (e.Key == Key.Enter)
+                {
+                    MongoConnection database = new MongoConnection();
+                    List<ModelData> result = await database.ModelData.Find(x => x.PublicPrivate == "Public" || x.HubId == hubID).ToListAsync();
+            
+                    string[,] modelsArray = new string[result.Count, 9];
+                    int index = 0;
+                    foreach (ModelData modelData in result)
+                    {
+                        modelsArray[index, 0] = modelData.Id;
+                        modelsArray[index, 1] = modelData.Name;
+                        modelsArray[index, 2] = modelData.HubId;
+                        modelsArray[index, 3] = modelData.CreatedBy;
+                        modelsArray[index, 4] = modelData.CreatedDate;
+                        modelsArray[index, 5] = modelData.ModifiedDate;
+                        modelsArray[index, 6] = modelData.ModifiedBy;
+                        modelsArray[index, 7] = modelData.FileSize.ToString();
+                        modelsArray[index, 8] = modelData.FolderId;
+                        index++;
+                    }
+            
+                    var modelNames = result.Select(x => x.Name).ToList();
+                    var topResults = FuzzySharp.Process.ExtractTop(SearchText_Box.Text, modelNames, limit: 3);
+                
+                    foreach (var match in topResults)
+                    {
+                        for (int i = 0; i < modelNames.Count; i++)
+                        {
+                            Console.WriteLine($"{match.Value}: {modelsArray[i, 1]}");
+                            if (match.Value == modelsArray[i, 1])
+                            {
+                                Console.WriteLine($"Found Match: {match.Value}");
+                                string name = await GetUserName(modelsArray[i,3]);
+                                //MessageBox.Show($"Result: {match.Value}, Score: {match.Score}");
+                                searchResults.Add(new Dictionary<string, string>
+                                {
+                                    { "Name", modelsArray[i, 1] },
+                                    { "Project", name },
+                                    { "LastModified", match.Score.ToString() },
+                                    { "Id", modelsArray[i, 0] },
+                                    { "ProjectId" , modelsArray[i, 8]}
+                                });
+                                break;
+                            }
+                        }
+                    }
+                }
+                DisplaySearchResults(searchResults);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error searching text box: {ex.Message}");
+            }
+        }
+
+        private void DisplaySearchResults(List<Dictionary<string, string>> searchResults)
+        {
+            ModelsDataGrid.Columns[1].Header = "Created By";
+            ModelsDataGrid.Columns[2].Header = "Score";
+            ModelsDataGrid.ItemsSource = searchResults;
+            originalResults = searchResults;
+            Models = searchResults;
+            DisplayGridModels();
+        }
+        
+        //Filter tags
+        private void Filter_Click(object sender, MouseButtonEventArgs e)
+        {
+            try
+            {
+                var icon = sender as Border;
+                if (icon != null)
+                {
+                    ContextMenu filterMenu =  this.FindResource("FilterContextMenu") as ContextMenu;
+                    if (filterMenu != null)
+                    {
+                        filterMenu.PlacementTarget = icon;
+                        filterMenu.IsOpen = true;
+                    }
+                }
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine($"Error filtering: {exception.Message}");
+            }
+        }
+
+        private async void BtnClearFilters_Click(object sender, RoutedEventArgs e)
+        {
+            ContextMenu filterMenu = FindResource("FilterContextMenu") as ContextMenu;
+            foreach (var item in filterMenu.Items)
+            {
+                if (item is CheckBox checkBox)
+                    checkBox.IsChecked = false;
+            }
+
+            ModelsDataGrid.ItemsSource = originalResults;
+            Models = originalResults;
+            DisplayGridModels();
+        }
+
+        private async void BtnSearchFilters_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                ModelsDataGrid.ItemsSource = originalResults;
+                List<Dictionary<string, string>> models = new List<Dictionary<string, string>>();
+                List<string> selectedTags = new List<string>();
+                List<string> IDs = new List<string>();
+            
+                MongoConnection database = new MongoConnection();
+                
+                ContextMenu filterMenu = FindResource("FilterContextMenu") as ContextMenu;
+                foreach (var item in filterMenu.Items)
+                {
+                    if (item != null && item is CheckBox checkBox)
+                    {
+                        if (checkBox.IsChecked == true)
+                        {
+                            selectedTags.Add(checkBox.Content.ToString());
+                        }
+                    }
+                }
+                
+                foreach (var item in ModelsDataGrid.Items)
+                {
+                    if (item is Dictionary<string, string> modelData && modelData.ContainsKey("Id"))
+                    {
+                        string Id = modelData["Id"];
+                        IDs.Add(Id);
+                    }
+                }
+                
+                ModelsDataGrid.ItemsSource = null;
+                
+                foreach (var id in IDs)
+                {
+                    var filter = Builders<ModelData>.Filter.And(Builders<ModelData>.Filter.Eq("Id", id),
+                        Builders<ModelData>.Filter.In("Tags", selectedTags));
+                
+                    var result = await database.ModelData.Find(filter).FirstOrDefaultAsync();
+
+                    if (result != null)
+                    {
+                        models.Add(new Dictionary<string, string>
+                        {
+                            { "Name", result.Name },
+                            { "Project", result.Foldername },
+                            { "LastModified", result.ModifiedDate },
+                            { "Id", id },
+                            { "ProjectId", result.FolderId}
+                        });
+                    }
+                }
+                
+                ModelsDataGrid.ItemsSource = models;
+                Models = models;
+                DisplayGridModels();
+            }
+            catch (Exception exception)
+            {
+                MessageBox.Show($"Error filtering: {exception.Message}");
+            }
+        }
+        
+        //initalise models sidebar
+        private async Task InitializeModelsInfoSidebar()
+        {
+            //display upvotes
+                int upvotes = await GetModelUpvoteCount(_selectedItemId);
+                        
+                await SetUserModelVote(_selectedItemId, _userId);
+                int vote = await GetUserModelVote(_selectedItemId, _userId);
+                if (vote == 1)
+                {
+                    UpArrow.Kind = PackIconKind.ArrowTopBold;
+                    UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#11d137"));
+                    DownArrow.Kind = PackIconKind.ArrowDownBoldOutline;
+                    DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+                }
+                else if (vote == -1)
+                {
+                    DownArrow.Kind = PackIconKind.ArrowDownBold;
+                    DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d11111"));
+                    UpArrow.Kind = PackIconKind.ArrowTopBoldOutline;
+                    UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+                }
+                else
+                {
+                    UpArrow.Kind = PackIconKind.ArrowTopBoldOutline;
+                    UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+                    DownArrow.Kind = PackIconKind.ArrowDownBoldOutline;
+                    DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+                }
+
+                string visibility = await GetModelVisibility();
+                if (visibility == "Public")
+                {
+                    Public.IsSelected = true;
+                }
+                else if (visibility == "Private")
+                {
+                    Private.IsSelected = true;
+                }
+                        
+                UpvoteTextBlock.Text = upvotes.ToString();
+                ClearComments();
+                ListAllComments();
+                await DisplayTags();
+        }
+        
+        //Upvote system
+        private async void UpArrow_Click(object sender, RoutedEventArgs e)
+        {
+            if (UpArrow.Kind == PackIconKind.ArrowTopBoldOutline)
+            {
+                if (DownArrow.Kind == PackIconKind.ArrowDownBold)
+                {
+                    DownArrow.Kind = PackIconKind.ArrowDownBoldOutline;
+                    DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+                    await UpdateModelUpvoteCount(2, _selectedItemId); //remove downvote and add upvote
+                }
+                else
+                {
+                    await UpdateModelUpvoteCount(1, _selectedItemId); //add upvote
+                }
+                UpArrow.Kind = PackIconKind.ArrowTopBold;
+                UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#11d137"));
+                await UpdateUserModelVote(_selectedItemId, _userId, 1);
+            }
+            else
+            {
+                UpArrow.Kind = PackIconKind.ArrowTopBoldOutline;
+                UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#11d137"));
+                await UpdateModelUpvoteCount(-1, _selectedItemId); //remove upvote
+                await UpdateUserModelVote(_selectedItemId, _userId, 0);
+            }
+        }
+
+        private async void DownArrow_Click(object sender, RoutedEventArgs e)
+        {
+            if (DownArrow.Kind == PackIconKind.ArrowDownBoldOutline)
+            {
+                if (UpArrow.Kind == PackIconKind.ArrowTopBold)
+                {
+                    UpArrow.Kind = PackIconKind.ArrowTopBoldOutline;
+                    UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+                    await UpdateModelUpvoteCount(-2, _selectedItemId); //remove upvote and add downvote
+                }
+                else
+                {
+                    await UpdateModelUpvoteCount(-1, _selectedItemId); //add downvote
+                }
+                DownArrow.Kind = PackIconKind.ArrowDownBold;
+                DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d11111"));
+                await UpdateUserModelVote(_selectedItemId, _userId, -1);
+            }
+            else
+            {
+                DownArrow.Kind = PackIconKind.ArrowDownBoldOutline;
+                DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d11111"));
+                await UpdateModelUpvoteCount(1, _selectedItemId); //remove downvote
+                await UpdateUserModelVote(_selectedItemId, _userId, 0);
+            }
+        }
+        
+        private async Task<int> GetModelUpvoteCount(string id)
+        {
+            MongoConnection database = new MongoConnection();
+            var userData = await database.ModelData.Find(x => x.Id == id).FirstOrDefaultAsync();
+            if (userData == null)
+            {
+                return 0;
+            }
+            return userData.UpvoteCount;
+        }
+
+        private async Task UpdateModelUpvoteCount(int num, string id)
+        {
+            MongoConnection database = new MongoConnection();
+            var filter = Builders<ModelData>.Filter.Eq("Id", id);
+            var update = Builders<ModelData>.Update.Inc("UpvoteCount", num);
+            await database.ModelData.UpdateOneAsync(filter, update);
+            int upvoteCount = await GetModelUpvoteCount(id);
+            UpvoteTextBlock.Text = upvoteCount.ToString();
+        }
+
+        private async Task SetUserModelVote(string modelId, string userId)
+        {
+            MongoConnection database = new MongoConnection();
+            var findVote = await database.Upvotes.Find(x => x.ModelId == modelId && x.UserId == userId).FirstOrDefaultAsync();
+
+            if (findVote == null)
+            {
+                Upvotes upvote = new Upvotes()
+                {
+                    Id = new ObjectId(), ModelId = modelId, UserId = userId, Vote = 0
+                };
+                await database.Upvotes.InsertOneAsync(upvote);
+            }
+            
+        }
+
+        private async Task UpdateUserModelVote(string modelId, string userId, int vote)
+        {
+            MongoConnection database = new MongoConnection();
+            var filter = Builders<Upvotes>.Filter.And(
+                Builders<Upvotes>.Filter.Eq("ModelId", modelId),
+                            Builders<Upvotes>.Filter.Eq("UserId", userId));
+            var update = Builders<Upvotes>.Update.Set("Vote", vote);
+            await database.Upvotes.UpdateOneAsync(filter, update);
+        }
+        
+        private async Task<int> GetUserModelVote(string modelId, string userId)
+        {
+            MongoConnection database = new MongoConnection();
+            var result = await database.Upvotes.Find(x => x.ModelId == modelId && x.UserId == userId).FirstOrDefaultAsync();
+            if (result == null)
+            {
+                return 0;
+            }
+            else
+            {
+                return result.Vote;
+            }
+        }
+        
+        //Model Visibility
+        private async void PublicPrivateComboBox_OnSelectionChangedComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            ComboBox comboBox = sender as ComboBox;
+            var selectedItem = comboBox.SelectedItem as ComboBoxItem;
+            string option = selectedItem.Content.ToString();
+            selectedItem.IsEnabled = true;
+            selectedItem.IsSelected = true;
+            
+            MongoConnection database = new MongoConnection();
+            var filter = Builders<ModelData>.Filter.Eq(x => x.Id, _selectedItemId);
+            var update = Builders<ModelData>.Update.Set(x => x.PublicPrivate, option);
+            await database.ModelData.FindOneAndUpdateAsync(filter, update);
+            //MessageBox.Show($"Model updated to {option}");
+        }
+        
+        private async Task<string> GetModelVisibility()
+        {
+            MongoConnection database = new MongoConnection();
+            var result = await database.ModelData.Find(x => x.Id == _selectedItemId).FirstOrDefaultAsync();
+            return result.PublicPrivate;
+        }
+        
+        //Tags
+        private async void AddTags_Click(object sender, MouseButtonEventArgs e)
+        {
+            try
+            {
+                List<string> tags = new List<string>();
+                ModelData result = await GetModelTags();
+                foreach (var tag in result.Tags)
+                {
+                    tags.Add(tag);
+                }
+                
+                var icon = sender as Border;
+                if (icon != null)
+                {
+                    ContextMenu tagsMenu =  this.FindResource("AddTagsContextMenu") as ContextMenu;
+                    if (tagsMenu != null)
+                    {
+                        tagsMenu.PlacementTarget = icon;
+                        tagsMenu.IsOpen = true;
+                        foreach (var item in tagsMenu.Items)
+                        {
+                            if (item != null && item is CheckBox checkBox)
+                            {
+                                if (tags.Contains(checkBox.Content))
+                                {
+                                    checkBox.IsChecked = true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine($"Error filtering: {exception.Message}");
+            }
+        }
+        private async void BtnAddTags_Click(object sender, RoutedEventArgs e)
+        {
+            List<string> selectedTags = new List<string>();
+
+            ContextMenu tagsMenu = FindResource("AddTagsContextMenu") as ContextMenu;
+            foreach (var item in tagsMenu.Items)
+            {
+                if (item != null && item is CheckBox checkBox)
+                {
+                    if (checkBox.IsChecked == true)
+                    {
+                        selectedTags.Add(checkBox.Content.ToString());
+                    }
+                }
+            }
+            
+            MongoConnection database = new MongoConnection();
+            
+            var filter = Builders<ModelData>.Filter.Eq(x => x.Id, _selectedItemId);
+            var clear = Builders<ModelData>.Update.Set(x => x.Tags, new List<string>() );
+            await database.ModelData.UpdateOneAsync(filter, clear);
+            
+            
+            var update = Builders<ModelData>.Update.AddToSetEach(x => x.Tags, selectedTags);
+            await database.ModelData.FindOneAndUpdateAsync(filter, update);
+            await DisplayTags();
+        }
+
+        /*private async Task InitialiseTagsListBox()
+        {
+            try
+            {
+                ModelData result = await GetModelTags();
+                foreach (string tag in result.Tags)
+                {
+                    foreach (CheckBox checkBox in TagsListBox.Items)
+                    {
+                        if (checkBox.Content.ToString() == tag)
+                        {
+                            checkBox.IsChecked = true;
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show($"Error checking boxes: {e.Message}");
+                throw;
+            }
+        }*/
+        
+        private async Task DisplayTags()
+        {
+            int i = 0;
+            List<string> tags = new List<string>();
+            ModelData result = await GetModelTags();
+            foreach (var tag in result.Tags)
+            {
+                tags.Add(tag);
+            }
+
+            if (tags.Count > 0)
+            {
+                //TagsWrapPanel.Children.Remove(NoTagsText);
+                NoTagsText.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                NoTagsText.Visibility = Visibility.Visible;
+            }
+            
+            //remove existing displayed tags
+            for (int j = TagsWrapPanel.Children.Count-1; j > -1; j--)
+            {
+                if (TagsWrapPanel.Children[j] is Border border)
+                {
+                    if (border.Child is Button)
+                    {
+                        TagsWrapPanel.Children.RemoveAt(j);
+                    }
+                }
+            }
+            
+            foreach (string Tag in tags)
+            {
+                Button tag = new Button
+                {
+                    Content = Tag,
+                    Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F25505")),
+                    Height = 25,
+                    Width = 50,
+                    Foreground = new SolidColorBrush(Colors.White),
+                    BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F25505")),
+                    BorderThickness = new Thickness(2)
+                };
+
+                var border = new Border
+                {
+                    Background = tag.Background,
+                    BorderBrush = tag.BorderBrush,
+                    BorderThickness = tag.BorderThickness,
+                    CornerRadius = new CornerRadius(2),
+                    Child = tag,
+                };
+                
+                TagsWrapPanel.Children.Insert(i, border);
+                i++;
+            }
+        }
+        
+        private async Task<ModelData> GetModelTags()
+        {
+            MongoConnection database = new MongoConnection();
+            var result = await database.ModelData.Find(x => x.Id == _selectedItemId).FirstOrDefaultAsync();
+            return result;
+        }
+
+        /*private void UncheckTags()
+        {
+            foreach (CheckBox checkBox in TagsListBox.Items)
+            {
+                checkBox.IsChecked = false;
+            }
+        }*/
+
+        
+        //Comments feature
+        private async void BtnAddComment_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                string comment = CommentContent.Text;
+
+                if (!string.IsNullOrEmpty(comment) && !comment.StartsWith("Add a comment"))
+                {
+                    MongoConnection database = new MongoConnection();
+                    Comment commentContent = new Comment
+                    {
+                        CommentId = ObjectId.GenerateNewId(),
+                        AssetId = _selectedItemId,
+                        UserId = Environment.GetEnvironmentVariable("userId", EnvironmentVariableTarget.User),
+                        Content = comment,
+                        CreatedDateTime = DateTime.Now
+                    };
+
+                    await database.Comments.InsertOneAsync(commentContent);
+                    ListNewComment(commentContent);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error: {ex.Message}");
+            }
+        }
+        
+        private async void ListAllComments()
+        {
+            try
+            {
+                List<Comment> comments = await GetAllComments(_selectedItemId);
+                List<CommentItem> commentItems = new List<CommentItem>();
+
+                foreach (Comment comment in comments)
+                {
+                    string name = await GetUserName(comment.UserId);
+                    commentItems.Add(new CommentItem {User = name, Content = comment.Content, CreatedDateTime = comment.CreatedDateTime});
+                }
+                
+                CommentsAmount.Text = $"All Comments ({commentItems.Count})";
+
+                if (commentItems.Count != 0)
+                {
+                    foreach (CommentItem commentItem in commentItems)
+                    {
+                        ListComments.Items.Add(commentItem);
+                    }
+                }
+                else
+                {
+                    ListComments.Items.Add(new CommentItem
+                    {
+                        User = String.Empty, Content = "There are no Comments", CreatedDateTime = DateTime.MinValue
+                    });
+                }
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show($"Error: {e.Message}");
+            }
+        }
+        
+        private async void ListNewComment(Comment commentItem)
+        {
+            List<Comment> comments = await GetAllComments(_selectedItemId);
+
+            foreach (Comment comment in comments)
+            {
+                if (commentItem.CommentId == comment.CommentId)
+                {
+                    string name = await GetUserName(commentItem.UserId);
+                    ListComments.Items.Add(new CommentItem { User = name, Content = comment.Content, CreatedDateTime = comment.CreatedDateTime });
+                }
+            }
+        }
+        
+        private void ClearComments()
+        {
+            ListComments.Items.Clear();
+        }
+        private async Task<List<Comment>> GetAllComments(string assetId)
+        {
+            try
+            {
+                MongoConnection database = new MongoConnection();
+                var allComments = await database.Comments.Find(x => x.AssetId == assetId ).ToListAsync();
+                return allComments;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Error: {e.Message}");
+                throw;
+            }
+        }
+        
+        private void SortByComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            ComboBox comboBox = sender as ComboBox;
+            var selectedItem = comboBox.SelectedItem as ComboBoxItem;
+            string sortOption = selectedItem.Content.ToString();
+            ClearComments();
+            SortComments(sortOption, _selectedItemId);
+        }
+        
+        private async void SortComments(string i, string assetId)
+        {
+            MongoConnection database = new MongoConnection();
+            var newest = Builders<Comment>.Sort.Descending(x => x.CreatedDateTime);
+            var oldest = Builders<Comment>.Sort.Ascending(x => x.CreatedDateTime);
+
+            switch (i)
+            {
+                case "Newest":
+                    List<Comment> newestComments = await database.Comments.Find(x => x.AssetId == assetId).Sort(newest).ToListAsync();
+                    foreach (Comment comment in newestComments)
+                    {
+                        string name = await GetUserName(comment.UserId);
+                        ListComments.Items.Add(new CommentItem { User = name, Content = comment.Content, CreatedDateTime = comment.CreatedDateTime });
+                    }
+                    break;
+                case "Oldest":
+                    List<Comment> oldestComments = await database.Comments.Find(x => x.AssetId == assetId).Sort(oldest).ToListAsync();
+                    foreach (Comment comment in oldestComments)
+                    {
+                        string name = await GetUserName(comment.UserId);
+                        ListComments.Items.Add(new CommentItem { User = name, Content = comment.Content, CreatedDateTime = comment.CreatedDateTime });
+                    }
+                    break;
+            }
+        }
+        
+        private class CommentItem
+        {
+            public string User { get; set; }
+            public string Content { get; set; }
+            public DateTime CreatedDateTime { get; set; }
+        }
+        
+        
         //COMMENTED OUT FUNCTIONS//
 
         /* private void BtnGenerate3D_Click(object sender, RoutedEventArgs e)
