@@ -33,6 +33,9 @@
       <EmbeddedResource Include="Fusion\Resources\commands\commandDialog\entry.py">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </EmbeddedResource>
+		<EmbeddedResource Include="Fusion\Resources\commands\commandDialog\resources\16x16.png">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</EmbeddedResource>
       <EmbeddedResource Include="Fusion\Resources\commands\commandDialog\resources\32x32.png">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </EmbeddedResource>
