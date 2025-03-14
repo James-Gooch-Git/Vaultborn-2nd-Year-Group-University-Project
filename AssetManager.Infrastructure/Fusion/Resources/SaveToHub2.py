@@ -938,7 +938,7 @@ def run(context):
             try:
                 app.userInterface.messageBox(
                    # "SaveToHub panels have been added to all tabs. Please check your toolbars.",
-                    "SaveToHub Installation",
+                  #  "SaveToHub Installation",
                     adsk.core.MessageBoxButtonTypes.OKButtonType,
                     adsk.core.MessageBoxIconTypes.InformationIconType
                 )
