@@ -797,7 +797,7 @@ def showPalette():
         )
         
         # Force the palette to be floating
-        palette.dockingState = adsk.core.PaletteDockingStates.PaletteDockStateFloating
+       # palette.dockingState = adsk.core.PaletteDockingStates.PaletteDockStateFloating
         
         # Position it in a visible area
         try:
@@ -968,6 +968,15 @@ def run(context):
         
         logging.info("SaveToHub add-in starting...")
         
+        # Delete command if it already exists
+        existing_cmd = ui.commandDefinitions.itemById(commandId)
+        if existing_cmd:
+            logging.info(f"Command '{commandId}' already exists - removing it")
+            try:
+                existing_cmd.deleteMe()
+            except:
+                logging.warning(f"Could not delete existing command: {commandId}")
+        
         # Create a command definition for the SaveToHub command
         cmdDef = ui.commandDefinitions.addButtonDefinition(
             commandId, 
@@ -981,50 +990,65 @@ def run(context):
         cmdDef.commandCreated.add(onCommandCreated)
         handlers.append(onCommandCreated)
         
-        # Add the command to the quick access toolbar (QAT)
-        qatPanel = ui.allToolbarPanels.itemById('QAT')
-        if qatPanel:
-            qatControl = qatPanel.controls.addCommand(cmdDef, '', False)
-            logging.info("Command added to QAT")
+        # Add the command to panels with error handling
+        try:
+            # Add the command to the quick access toolbar (QAT)
+            qatPanel = ui.allToolbarPanels.itemById('QAT')
+            if qatPanel:
+                # Check if the control already exists
+                existing_control = qatPanel.controls.itemById(commandId)
+                if existing_control:
+                    existing_control.deleteMe()
+                
+                qatControl = qatPanel.controls.addCommand(cmdDef, '', False)
+                logging.info("Command added to QAT")
+        except Exception as e:
+            logging.warning(f"Failed to add command to QAT: {str(e)}")
         
-        # Add the command to the UI panel - try both panel IDs
-        utilsPanel = ui.allToolbarPanels.itemById('UtilityPanel')
-        if utilsPanel:
-            utilsControl = utilsPanel.controls.addCommand(cmdDef, '', False)
-            logging.info("Command added to Utility panel")
-        else:
-            utilsPanel = ui.allToolbarPanels.itemById('UtilitiesPanel')
+        try:
+            # Add to Utility panel
+            utilsPanel = ui.allToolbarPanels.itemById('UtilityPanel')
             if utilsPanel:
+                # Check if the control already exists
+                existing_control = utilsPanel.controls.itemById(commandId)
+                if existing_control:
+                    existing_control.deleteMe()
+                    
                 utilsControl = utilsPanel.controls.addCommand(cmdDef, '', False)
-                logging.info("Command added to Utilities panel")
+                logging.info("Command added to Utility panel")
             else:
-                # Log all available panels
-                logging.info("Available panels:")
+                utilsPanel = ui.allToolbarPanels.itemById('UtilitiesPanel')
+                if utilsPanel:
+                    # Check if the control already exists
+                    existing_control = utilsPanel.controls.itemById(commandId)
+                    if existing_control:
+                        existing_control.deleteMe()
+                        
+                    utilsControl = utilsPanel.controls.addCommand(cmdDef, '', False)
+                    logging.info("Command added to Utilities panel")
+        except Exception as e:
+            logging.warning(f"Failed to add command to Utility panel: {str(e)}")
+            
+            # Try to find an alternative panel
+            try:
                 for panel in ui.allToolbarPanels:
-                    logging.info(f"Panel ID: {panel.id}, Name: {panel.name}")
                     if "UTILITY" in panel.name.upper():
-                        utilsPanel = panel
-                        utilsPanel.controls.addCommand(cmdDef, '', False)
-                        logging.info(f"Command added to found panel: {panel.id}")
-                        break
+                        try:
+                            # Check if the control already exists
+                            existing_control = panel.controls.itemById(commandId)
+                            if existing_control:
+                                existing_control.deleteMe()
+                                
+                            panel.controls.addCommand(cmdDef, '', False)
+                            logging.info(f"Command added to found panel: {panel.id}")
+                            break
+                        except Exception as e2:
+                            logging.warning(f"Failed to add to panel {panel.id}: {str(e2)}")
+            except Exception as e3:
+                logging.warning(f"Failed to find alternative panel: {str(e3)}")
         
-        # Create a command to show the palette
-        createShowPaletteCommand()
-        
-        # Register for workspace activated events
-        onWorkspaceActivated = WorkspaceActivatedHandler()
-        ui.workspaceActivated.add(onWorkspaceActivated)
-        handlers.append(onWorkspaceActivated)
-        
-        # Show the palette when the add-in starts
-        success = showPalette()
-        if not success:
-            ui.messageBox("Could not show Save To Hub palette. Use the 'Show Save To Hub Palette' command in the Utilities panel to show it.",
-                         "SaveToHub", 
-                         adsk.core.MessageBoxButtonTypes.OKButtonType,
-                         adsk.core.MessageBoxIconTypes.InformationIconType)
-        
-        logging.info("Add-in initialization completed")
+        # We're removing the automatic palette display
+        logging.info("Add-in initialization completed - no palette shown at startup")
         
     except Exception as e:
         error_message = traceback.format_exc()

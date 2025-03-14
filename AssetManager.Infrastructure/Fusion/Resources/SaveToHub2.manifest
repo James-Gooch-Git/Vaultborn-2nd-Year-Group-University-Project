@@ -7,7 +7,7 @@
 		"":	""
 	},
 	"version":	"",
-	"runOnStartup":	true,
+	"runOnStartup":	false,
 	"supportedOS":	"windows|mac",
 	"editEnabled":	true,
 	"iconFilename":	"AddInIcon.svg"
