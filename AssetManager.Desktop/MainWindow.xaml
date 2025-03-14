@@ -265,9 +265,9 @@
 
         <Grid.ColumnDefinitions>
             <ColumnDefinition x:Name="ResizeSidebar" MinWidth="200" Width="Auto"/>
-            <ColumnDefinition Width="5"/>
+            <!--<ColumnDefinition Width="5"/>-->
             <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="5"/>
+            <!--<ColumnDefinition Width="5"/>-->
             <ColumnDefinition x:Name="ModelInfoSidebar" Width="0" MaxWidth="175"/>
         </Grid.ColumnDefinitions>
 
@@ -348,7 +348,7 @@
                 </Grid.RowDefinitions>
 
                 <!-- Hubs Selection Header -->
-                <Border Grid.Row="0" Background="#F0F0F0" BorderBrush="#D3D3D3" BorderThickness="0,0,0,1" Padding="5">
+                <Border Grid.Row="0" Background="#F0F0F0" BorderBrush="#D3D3D3" BorderThickness="0,0,0,1" Padding="5" Margin="-5,0,-5,0">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
@@ -361,10 +361,8 @@
                            VerticalAlignment="Center" HorizontalAlignment="Left"/>
 
                         <!-- Dropdown Arrow for Selecting a Hub -->
-                        <Border Grid.Column="1" Background="Transparent" VerticalAlignment="Center" 
-                        HorizontalAlignment="Right" MouseLeftButtonDown="ToggleHubsMenu">
-                            <TextBlock Text="▼" FontSize="12" Foreground="#4B4b4b" FontWeight="Bold" 
-                               VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,0,5,0"/>
+                        <Border Grid.Column="1" Background="Transparent" VerticalAlignment="Center" HorizontalAlignment="Right" MouseLeftButtonDown="ToggleHubsMenu">
+                            <md:PackIcon Kind="ChevronDown" Width="16" Height="16" Foreground="#4B4B4B" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="Bold" Cursor="Hand"/>
                         </Border>
                     </Grid>
                 </Border>
@@ -426,11 +424,7 @@
             </Grid>
         </Border>
 
-
-
-
-
-        <Border Grid.Row="1" Grid.Column="2">
+        <Border Grid.Row="1" Grid.Column="1">
 
             <Grid>
                 <Grid.RowDefinitions>
@@ -728,9 +722,7 @@
                             <!-- Close Viewer Button -->
                             <Border Grid.Row="0" Background="#F0F0F0">
                                 <StackPanel Orientation="Horizontal" Margin="5">
-                                    <Button x:Name="BtnCloseViewer" Content="× Close" 
-                    Background="Transparent" BorderBrush="#CCCCCC"
-                    Margin="10,5" Padding="8,3" Click="Btn_CloseViewer_Click"/>
+                                    <Button x:Name="BtnCloseViewer" Content="× Close" Background="Transparent" BorderBrush="#CCCCCC" Margin="10,5" Padding="8,3" Click="Btn_CloseViewer_Click"/>
                                 </StackPanel>
                             </Border>
 
@@ -910,7 +902,7 @@
 
         </Border>
         
-        <Border Grid.Row="1" Grid.Column="4" BorderBrush="#797979" BorderThickness="1,0,0,0" Padding="5,0,5,0">
+        <Border Grid.Row="1" Grid.Column="3" BorderBrush="#797979" BorderThickness="1,0,0,0" Padding="5,0,5,0">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>

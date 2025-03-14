@@ -461,32 +461,31 @@ namespace AssetManager.Desktop
                         if (token.IsCancellationRequested) return;
                     }
                 }*/
+
         private async void DisplayGridModels()
         {
-            _modelLoadCancellationTokenSource.Cancel();
-            _modelLoadCancellationTokenSource = new CancellationTokenSource();
-            CancellationToken token = _modelLoadCancellationTokenSource.Token;
-
-            //if (isModelLoaded) return;
+            if (isModelLoaded) return;
             isModelLoaded = true;
 
-            ModelsContainer.Children.Clear(); // Clear existing squares
-            //List<Dictionary<string, string>> models = await GetAllModels();
-            if (token.IsCancellationRequested) return;
+            // Fetch models for the selected project only
+            List<Dictionary<string, string>> models = await GetModelsFromProject(_selectedProjectId, _folderId);
 
-            foreach (var model in Models)
+            if (models == null || models.Count == 0)
             {
-                if (token.IsCancellationRequested) return;
+                MessageBox.Show("No models found for this project.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
 
+            foreach (var model in models)
+            {
                 string modelId = model["Id"];
                 string modelName = model["Name"];
                 string projectId = _selectedProjectId;
 
-                // Border container
                 Border modelSquare = new Border
                 {
                     Width = 263,
-                    Height = 300,
+                    Height = 253,
                     CornerRadius = new CornerRadius(5),
                     Background = Brushes.White,
                     BorderBrush = Brushes.LightGray,
@@ -501,76 +500,238 @@ namespace AssetManager.Desktop
                     }
                 };
 
+                Grid grid = new Grid();
+
+                grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(170) });
+                grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+
+                Border headerBackground = new Border
+                {
+                    Background = new SolidColorBrush(Color.FromRgb(230, 230, 230)),
+                    HorizontalAlignment = HorizontalAlignment.Stretch,
+                    Margin = new Thickness(5)
+                };
+
+                Grid.SetRow(headerBackground, 0);
+                grid.Children.Add(headerBackground);
+
+                Grid overlayGrid = new Grid
+                {
+                    HorizontalAlignment = HorizontalAlignment.Stretch,
+                    VerticalAlignment = VerticalAlignment.Stretch
+                };
+
                 StackPanel content = new StackPanel
                 {
                     Orientation = Orientation.Vertical,
                     VerticalAlignment = VerticalAlignment.Center,
-                    HorizontalAlignment = HorizontalAlignment.Left
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    Margin = new Thickness(8, 5, 5, 2)
                 };
 
-                // Thumbnail Image
                 Image thumbnailImage = new Image
                 {
-                    Width = 200,
-                    Height = 200,
-                    Margin = new Thickness(10),
-                    Stretch = Stretch.Uniform
+                    Width = 150,
+                    Height = 150,
+                    Stretch = Stretch.Uniform,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center
                 };
+
                 _ = ShowThumbnail(projectId, modelId, thumbnailImage);
 
-                // Model Name
+                Grid.SetRow(thumbnailImage, 0);
+                grid.Children.Add(thumbnailImage);
+
                 TextBlock modelNameBlock = new TextBlock
                 {
-                    Text = modelName,
+                    Text = model["Name"],
                     FontSize = 16,
                     FontWeight = FontWeights.Normal,
+                    Foreground = (Brush)new BrushConverter().ConvertFrom("#4B4B4B"),
                     TextAlignment = TextAlignment.Center,
                     HorizontalAlignment = HorizontalAlignment.Left,
-                    TextWrapping = TextWrapping.Wrap,
-                    Margin = new Thickness(5, 2, 5, 2)
+                    TextWrapping = TextWrapping.Wrap
                 };
 
-                // Three-dot menu button
-                Button menuButton = new Button
+                TextBlock projectNameBlock = new TextBlock
                 {
-                    Content = "⋮", // Three-dot icon
-                    FontSize = 18,
-                    Width = 30,
-                    Height = 30,
+                    Text = model["Project"],
+                    FontSize = 14,
+                    FontWeight = FontWeights.Normal,
+                    Foreground = Brushes.Gray,
+                    TextAlignment = TextAlignment.Left,
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    TextWrapping = TextWrapping.Wrap
+                };
+
+                content.Children.Add(modelNameBlock);
+                content.Children.Add(projectNameBlock);
+
+                Grid.SetRow(content, 1);
+                grid.Children.Add(content);
+
+                Border iconBorder = new Border
+                {
                     Background = Brushes.Transparent,
                     BorderBrush = Brushes.Transparent,
-                    Padding = new Thickness(5),
-                    HorizontalAlignment = HorizontalAlignment.Right,
-                    ToolTip = "More Options"
+                    VerticalAlignment = VerticalAlignment.Center,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    Cursor = Cursors.Hand,
+                    Margin = new Thickness(0, 6.5, 2, 0)
                 };
 
-                // Create and attach ContextMenu
-                ContextMenu contextMenu = CreateModelContextMenu(modelId, modelName);
-                menuButton.ContextMenu = contextMenu;
-
-                // Ensure the menu opens on button click
-                menuButton.Click += (s, e) =>
+                PackIcon icon = new PackIcon
                 {
-                    menuButton.ContextMenu.PlacementTarget = menuButton;
-                    menuButton.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
-                    menuButton.ContextMenu.IsOpen = true;
+                    Kind = PackIconKind.DotsVertical,
+                    Width = 20,
+                    Height = 20,
+                    Foreground = Brushes.Gray,
+                    Cursor = Cursors.Hand
                 };
 
-                // Top row container for model name and menu button
-                DockPanel topPanel = new DockPanel();
-                DockPanel.SetDock(modelNameBlock, Dock.Left);
-                DockPanel.SetDock(menuButton, Dock.Right);
-                topPanel.Children.Add(modelNameBlock);
-                topPanel.Children.Add(menuButton);
+                ContextMenu contextMenu = CreateModelContextMenu(modelId, modelName);
+                icon.ContextMenu = contextMenu;
 
-                // Add elements to content panel
-                content.Children.Add(thumbnailImage);
-                content.Children.Add(topPanel);
+                icon.MouseLeftButtonUp += (s, e) =>
+                {
+                    icon.ContextMenu.PlacementTarget = icon;
+                    icon.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+                    icon.ContextMenu.IsOpen = true;
+                };
 
-                modelSquare.Child = content;
+                iconBorder.Child = icon;
+
+                Border iconContainer = new Border
+                {
+                    Child = iconBorder,
+                    HorizontalAlignment = HorizontalAlignment.Right,
+                    VerticalAlignment = VerticalAlignment.Bottom,
+                    Margin = new Thickness(5)
+                };
+
+                overlayGrid.Children.Add(iconContainer);
+
+                Grid parentGrid = new Grid();
+                parentGrid.Children.Add(grid);
+                parentGrid.Children.Add(overlayGrid);
+
+                modelSquare.Child = parentGrid;
                 ModelsContainer.Children.Add(modelSquare);
             }
         }
+
+        //private async void DisplayGridModels()
+        //{
+        //    _modelLoadCancellationTokenSource.Cancel();
+        //    _modelLoadCancellationTokenSource = new CancellationTokenSource();
+        //    CancellationToken token = _modelLoadCancellationTokenSource.Token;
+
+        //    //if (isModelLoaded) return;
+        //    isModelLoaded = true;
+
+        //    ModelsContainer.Children.Clear(); // Clear existing squares
+        //    //List<Dictionary<string, string>> models = await GetAllModels();
+        //    if (token.IsCancellationRequested) return;
+
+        //    foreach (var model in Models)
+        //    {
+        //        if (token.IsCancellationRequested) return;
+
+        //        string modelId = model["Id"];
+        //        string modelName = model["Name"];
+        //        string projectId = _selectedProjectId;
+
+        //        // Border container
+        //        Border modelSquare = new Border
+        //        {
+        //            Width = 263,
+        //            Height = 300,
+        //            CornerRadius = new CornerRadius(5),
+        //            Background = Brushes.White,
+        //            BorderBrush = Brushes.LightGray,
+        //            BorderThickness = new Thickness(1),
+        //            Margin = new Thickness(10),
+        //            Effect = new DropShadowEffect
+        //            {
+        //                Color = Colors.Black,
+        //                Opacity = 0.1,
+        //                BlurRadius = 10,
+        //                ShadowDepth = 2
+        //            }
+        //        };
+
+        //        StackPanel content = new StackPanel
+        //        {
+        //            Orientation = Orientation.Vertical,
+        //            VerticalAlignment = VerticalAlignment.Center,
+        //            HorizontalAlignment = HorizontalAlignment.Left
+        //        };
+
+        //        // Thumbnail Image
+        //        Image thumbnailImage = new Image
+        //        {
+        //            Width = 200,
+        //            Height = 200,
+        //            Margin = new Thickness(10),
+        //            Stretch = Stretch.Uniform
+        //        };
+        //        _ = ShowThumbnail(projectId, modelId, thumbnailImage);
+
+        //        // Model Name
+        //        TextBlock modelNameBlock = new TextBlock
+        //        {
+        //            Text = modelName,
+        //            FontSize = 16,
+        //            FontWeight = FontWeights.Normal,
+        //            TextAlignment = TextAlignment.Center,
+        //            HorizontalAlignment = HorizontalAlignment.Left,
+        //            TextWrapping = TextWrapping.Wrap,
+        //            Margin = new Thickness(5, 2, 5, 2)
+        //        };
+
+        //        // Three-dot menu button
+        //        Button menuButton = new Button
+        //        {
+        //            Content = "⋮", // Three-dot icon
+        //            FontSize = 18,
+        //            Width = 30,
+        //            Height = 30,
+        //            Background = Brushes.Transparent,
+        //            BorderBrush = Brushes.Transparent,
+        //            Padding = new Thickness(5),
+        //            HorizontalAlignment = HorizontalAlignment.Right,
+        //            ToolTip = "More Options"
+        //        };
+
+        //        // Create and attach ContextMenu
+        //        ContextMenu contextMenu = CreateModelContextMenu(modelId, modelName);
+        //        menuButton.ContextMenu = contextMenu;
+
+        //        // Ensure the menu opens on button click
+        //        menuButton.Click += (s, e) =>
+        //        {
+        //            menuButton.ContextMenu.PlacementTarget = menuButton;
+        //            menuButton.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+        //            menuButton.ContextMenu.IsOpen = true;
+        //        };
+
+        //        // Top row container for model name and menu button
+        //        DockPanel topPanel = new DockPanel();
+        //        DockPanel.SetDock(modelNameBlock, Dock.Left);
+        //        DockPanel.SetDock(menuButton, Dock.Right);
+        //        topPanel.Children.Add(modelNameBlock);
+        //        topPanel.Children.Add(menuButton);
+
+        //        // Add elements to content panel
+        //        content.Children.Add(thumbnailImage);
+        //        content.Children.Add(topPanel);
+
+        //        modelSquare.Child = content;
+        //        ModelsContainer.Children.Add(modelSquare);
+        //    }
+        //}
 
         private async Task<List<Dictionary<string, string>>> GetAllModels()
         {
@@ -1618,13 +1779,9 @@ namespace AssetManager.Desktop
 
         private async void Grid_Click(object sender, MouseButtonEventArgs e)
         {
-            // Clear previous grid data
-            ModelsContainer.Children.Clear();
-            
             if (string.IsNullOrEmpty(_selectedProjectId))
             {
                 MessageBox.Show("❌ Please select a project to view models.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
-                
                 CreateGridView(Models);
                 ModelsDataGrid.Visibility = Visibility.Collapsed; // Hide DataGrid
                 Grid_View.Visibility = Visibility.Visible; // Show Grid View
@@ -1636,124 +1793,15 @@ namespace AssetManager.Desktop
             ModelsDataGrid.Visibility = Visibility.Collapsed; // Hide DataGrid
             Grid_View.Visibility = Visibility.Visible; // Show Grid View
 
+            // Clear previous grid data
+            ModelsContainer.Children.Clear();
+
             try
             {
-                // Fetch models for the selected project only
-                List<Dictionary<string, string>> models = await GetModelsFromProject(_selectedProjectId, _folderId);
+                DisplayGridModels();
 
-                if (models == null || models.Count == 0)
-                {
-                    MessageBox.Show("No models found for this project.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
-                    return;
-                }
 
-                foreach (var model in models)
-                {
-                    string projectId = _selectedProjectId;
-                    string itemId = model["Id"];
-
-                    // UI Container for Model
-                    Border modelSquare = new Border
-                    {
-                        Width = 263,
-                        Height = 300, // Increased to fit the image
-                        CornerRadius = new CornerRadius(5),
-                        Background = Brushes.White,
-                        BorderBrush = Brushes.LightGray,
-                        BorderThickness = new Thickness(1),
-                        Margin = new Thickness(10),
-                        Effect = new DropShadowEffect
-                        {
-                            Color = Colors.Black,
-                            Opacity = 0.1,
-                            BlurRadius = 10,
-                            ShadowDepth = 2
-                        }
-                    };
-
-                    StackPanel content = new StackPanel
-                    {
-                        Orientation = Orientation.Vertical,
-                        VerticalAlignment = VerticalAlignment.Center,
-                        HorizontalAlignment = HorizontalAlignment.Left
-                    };
-
-                    // Thumbnail Image
-                    Image thumbnailImage = new Image
-                    {
-                        Width = 200,
-                        Height = 200,
-                        Margin = new Thickness(10),
-                        Stretch = Stretch.Uniform
-                    };
-
-                    // Load thumbnail asynchronously
-                    _ = ShowThumbnail(projectId, itemId, thumbnailImage);
-
-                    TextBlock modelName = new TextBlock
-                    {
-                        Text = model["Name"],
-                        FontSize = 16,
-                        FontWeight = FontWeights.Normal,
-                        TextAlignment = TextAlignment.Center,
-                        HorizontalAlignment = HorizontalAlignment.Left,
-                        TextWrapping = TextWrapping.Wrap,
-                        Margin = new Thickness(5, 2, 5, 2)
-                    };
-
-                    // ✅ Three-dot menu button
-                    Button menuButton = new Button
-                    {
-                        Content = "⋮", // Three-dot icon
-                        FontSize = 18,
-                        Width = 30,
-                        Height = 30,
-                        Background = Brushes.Transparent,
-                        BorderBrush = Brushes.Transparent,
-                        Padding = new Thickness(5),
-                        HorizontalAlignment = HorizontalAlignment.Right,
-                        ToolTip = "More Options"
-                    };
-
-                    // ✅ Ensure the menu button has the correct model assigned
-                    menuButton.DataContext = model;
-
-                    // ✅ Ensure the menu opens on button click and retrieves correct ID dynamically
-                    menuButton.Click += (s, e) =>
-                    {
-                        if (s is Button btn && btn.DataContext is Dictionary<string, string> selectedModel)
-                        {
-                            string selectedModelId = selectedModel["Id"];
-                            string selectedModelName = selectedModel["Name"];
-                            _selectedItemId = selectedModel["Id"];
-
-                            Console.WriteLine($"🔍 Three-dot menu clicked for Model ID: {selectedModelId}");
-
-                            // ✅ Generate ContextMenu dynamically on click
-                            ContextMenu dynamicContextMenu = CreateModelContextMenu(selectedModelId, selectedModelName);
-
-                            dynamicContextMenu.PlacementTarget = btn;
-                            dynamicContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
-                            dynamicContextMenu.IsOpen = true;
-                        }
-                    };
-
-                    // Container for Model Name + Menu Button
-                    DockPanel topPanel = new DockPanel();
-                    DockPanel.SetDock(modelName, Dock.Left);
-                    DockPanel.SetDock(menuButton, Dock.Right);
-                    topPanel.Children.Add(modelName);
-                    topPanel.Children.Add(menuButton);
-
-                    // Add elements to content panel
-                    content.Children.Add(thumbnailImage);
-                    content.Children.Add(topPanel);
-
-                    modelSquare.Child = content;
-                    ModelsContainer.Children.Add(modelSquare);
-                }
-
-                Console.WriteLine($"✅ {models.Count} models loaded successfully in grid view.");
+                //Console.WriteLine($"✅ {models.Count} models loaded successfully in grid view.");
             }
             catch (Exception ex)
             {
@@ -1764,108 +1812,408 @@ namespace AssetManager.Desktop
             List_Border.Background = Brushes.Transparent;
             Grid_Border.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
         }
-        
+
+        //private async void Grid_Click(object sender, MouseButtonEventArgs e)
+        //{
+        //    // Clear previous grid data
+        //    ModelsContainer.Children.Clear();
+
+        //    if (string.IsNullOrEmpty(_selectedProjectId))
+        //    {
+        //        MessageBox.Show("❌ Please select a project to view models.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+
+        //        CreateGridView(Models);
+        //        ModelsDataGrid.Visibility = Visibility.Collapsed; // Hide DataGrid
+        //        Grid_View.Visibility = Visibility.Visible; // Show Grid View
+        //        List_Border.Background = Brushes.Transparent;
+        //        Grid_Border.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
+        //        return;
+        //    }
+
+        //    ModelsDataGrid.Visibility = Visibility.Collapsed; // Hide DataGrid
+        //    Grid_View.Visibility = Visibility.Visible; // Show Grid View
+
+        //    try
+        //    {
+        //        // Fetch models for the selected project only
+        //        List<Dictionary<string, string>> models = await GetModelsFromProject(_selectedProjectId, _folderId);
+
+        //        if (models == null || models.Count == 0)
+        //        {
+        //            MessageBox.Show("No models found for this project.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
+        //            return;
+        //        }
+
+        //        foreach (var model in models)
+        //        {
+        //            string projectId = _selectedProjectId;
+        //            string itemId = model["Id"];
+
+        //            // UI Container for Model
+        //            Border modelSquare = new Border
+        //            {
+        //                Width = 263,
+        //                Height = 300, // Increased to fit the image
+        //                CornerRadius = new CornerRadius(5),
+        //                Background = Brushes.White,
+        //                BorderBrush = Brushes.LightGray,
+        //                BorderThickness = new Thickness(1),
+        //                Margin = new Thickness(10),
+        //                Effect = new DropShadowEffect
+        //                {
+        //                    Color = Colors.Black,
+        //                    Opacity = 0.1,
+        //                    BlurRadius = 10,
+        //                    ShadowDepth = 2
+        //                }
+        //            };
+
+        //            StackPanel content = new StackPanel
+        //            {
+        //                Orientation = Orientation.Vertical,
+        //                VerticalAlignment = VerticalAlignment.Center,
+        //                HorizontalAlignment = HorizontalAlignment.Left
+        //            };
+
+        //            // Thumbnail Image
+        //            Image thumbnailImage = new Image
+        //            {
+        //                Width = 200,
+        //                Height = 200,
+        //                Margin = new Thickness(10),
+        //                Stretch = Stretch.Uniform
+        //            };
+
+        //            // Load thumbnail asynchronously
+        //            _ = ShowThumbnail(projectId, itemId, thumbnailImage);
+
+        //            TextBlock modelName = new TextBlock
+        //            {
+        //                Text = model["Name"],
+        //                FontSize = 16,
+        //                FontWeight = FontWeights.Normal,
+        //                TextAlignment = TextAlignment.Center,
+        //                HorizontalAlignment = HorizontalAlignment.Left,
+        //                TextWrapping = TextWrapping.Wrap,
+        //                Margin = new Thickness(5, 2, 5, 2)
+        //            };
+
+        //            // ✅ Three-dot menu button
+        //            Button menuButton = new Button
+        //            {
+        //                Content = "⋮", // Three-dot icon
+        //                FontSize = 18,
+        //                Width = 30,
+        //                Height = 30,
+        //                Background = Brushes.Transparent,
+        //                BorderBrush = Brushes.Transparent,
+        //                Padding = new Thickness(5),
+        //                HorizontalAlignment = HorizontalAlignment.Right,
+        //                ToolTip = "More Options"
+        //            };
+
+        //            // ✅ Ensure the menu button has the correct model assigned
+        //            menuButton.DataContext = model;
+
+        //            // ✅ Ensure the menu opens on button click and retrieves correct ID dynamically
+        //            menuButton.Click += (s, e) =>
+        //            {
+        //                if (s is Button btn && btn.DataContext is Dictionary<string, string> selectedModel)
+        //                {
+        //                    string selectedModelId = selectedModel["Id"];
+        //                    string selectedModelName = selectedModel["Name"];
+        //                    _selectedItemId = selectedModel["Id"];
+
+        //                    Console.WriteLine($"🔍 Three-dot menu clicked for Model ID: {selectedModelId}");
+
+        //                    // ✅ Generate ContextMenu dynamically on click
+        //                    ContextMenu dynamicContextMenu = CreateModelContextMenu(selectedModelId, selectedModelName);
+
+        //                    dynamicContextMenu.PlacementTarget = btn;
+        //                    dynamicContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+        //                    dynamicContextMenu.IsOpen = true;
+        //                }
+        //            };
+
+        //            // Container for Model Name + Menu Button
+        //            DockPanel topPanel = new DockPanel();
+        //            DockPanel.SetDock(modelName, Dock.Left);
+        //            DockPanel.SetDock(menuButton, Dock.Right);
+        //            topPanel.Children.Add(modelName);
+        //            topPanel.Children.Add(menuButton);
+
+        //            // Add elements to content panel
+        //            content.Children.Add(thumbnailImage);
+        //            content.Children.Add(topPanel);
+
+        //            modelSquare.Child = content;
+        //            ModelsContainer.Children.Add(modelSquare);
+        //        }
+
+        //        Console.WriteLine($"✅ {models.Count} models loaded successfully in grid view.");
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        MessageBox.Show($"❌ Error loading models: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        //    }
+
+        //    // Update UI styles to reflect active view mode
+        //    List_Border.Background = Brushes.Transparent;
+        //    Grid_Border.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
+        //}
+
         private void CreateGridView(List<Dictionary<string, string>> models)
         {
+            if (isModelLoaded) return;
+            isModelLoaded = true;
+
             foreach (var model in models)
             {
-                // UI Container for Model
-                    Border modelSquare = new Border
+                //string modelId = model["Id"];
+                //string modelName = model["Name"];
+                //string projectId = _selectedProjectId;
+
+                Border modelSquare = new Border
+                {
+                    Width = 263,
+                    Height = 253,
+                    CornerRadius = new CornerRadius(5),
+                    Background = Brushes.White,
+                    BorderBrush = Brushes.LightGray,
+                    BorderThickness = new Thickness(1),
+                    Margin = new Thickness(10),
+                    Effect = new DropShadowEffect
                     {
-                        Width = 263,
-                        Height = 300, // Increased to fit the image
-                        CornerRadius = new CornerRadius(5),
-                        Background = Brushes.White,
-                        BorderBrush = Brushes.LightGray,
-                        BorderThickness = new Thickness(1),
-                        Margin = new Thickness(10),
-                        Effect = new DropShadowEffect
-                        {
-                            Color = Colors.Black,
-                            Opacity = 0.1,
-                            BlurRadius = 10,
-                            ShadowDepth = 2
-                        }
-                    };
+                        Color = Colors.Black,
+                        Opacity = 0.1,
+                        BlurRadius = 10,
+                        ShadowDepth = 2
+                    }
+                };
 
-                    StackPanel content = new StackPanel
-                    {
-                        Orientation = Orientation.Vertical,
-                        VerticalAlignment = VerticalAlignment.Center,
-                        HorizontalAlignment = HorizontalAlignment.Left
-                    };
+                Grid grid = new Grid();
 
-                    // Thumbnail Image
-                    Image thumbnailImage = new Image
-                    {
-                        Width = 200,
-                        Height = 200,
-                        Margin = new Thickness(10),
-                        Stretch = Stretch.Uniform
-                    };
+                grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(170) });
+                grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
-                    // Load thumbnail asynchronously
-                    _ = ShowThumbnail(model["ProjectId"], model["Id"], thumbnailImage);
 
-                    TextBlock modelName = new TextBlock
-                    {
-                        Text = model["Name"],
-                        FontSize = 16,
-                        FontWeight = FontWeights.Normal,
-                        TextAlignment = TextAlignment.Center,
-                        HorizontalAlignment = HorizontalAlignment.Left,
-                        TextWrapping = TextWrapping.Wrap,
-                        Margin = new Thickness(5, 2, 5, 2)
-                    };
+                Border headerBackground = new Border
+                {
+                    Background = new SolidColorBrush(Color.FromRgb(230, 230, 230)),
+                    HorizontalAlignment = HorizontalAlignment.Stretch,
+                    Margin = new Thickness(5)
+                };
 
-                    // ✅ Three-dot menu button
-                    Button menuButton = new Button
-                    {
-                        Content = "⋮", // Three-dot icon
-                        FontSize = 18,
-                        Width = 30,
-                        Height = 30,
-                        Background = Brushes.Transparent,
-                        BorderBrush = Brushes.Transparent,
-                        Padding = new Thickness(5),
-                        HorizontalAlignment = HorizontalAlignment.Right,
-                        ToolTip = "More Options"
-                    };
+                Grid.SetRow(headerBackground, 0);
+                grid.Children.Add(headerBackground);
 
-                    // ✅ Ensure the menu button has the correct model assigned
-                    menuButton.DataContext = model;
+                Grid overlayGrid = new Grid
+                {
+                    HorizontalAlignment = HorizontalAlignment.Stretch,
+                    VerticalAlignment = VerticalAlignment.Stretch
+                };
 
-                    // ✅ Create and attach ContextMenu
-                    ContextMenu contextMenu = CreateModelContextMenu(model["Id"], model["Name"]);
-                    menuButton.ContextMenu = contextMenu;
+                StackPanel content = new StackPanel
+                {
+                    Orientation = Orientation.Vertical,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    Margin = new Thickness(8, 5, 5, 2)
+                };
 
-                    // ✅ Ensure the menu opens on button click
-                    menuButton.Click += (s, e) =>
-                    {
-                        if (s is Button btn && btn.DataContext is Dictionary<string, string> selectedModel)
-                        {
-                            ContextMenu dynamicContextMenu = CreateModelContextMenu(selectedModel["Id"], selectedModel["Name"]);
-                            dynamicContextMenu.PlacementTarget = btn;
-                            dynamicContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
-                            dynamicContextMenu.IsOpen = true;
-                        }
-                    };
+                Image thumbnailImage = new Image
+                {
+                    Width = 150,
+                    Height = 150,
+                    Stretch = Stretch.Uniform,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center
+                };
 
-                    // Container for Model Name + Menu Button
-                    DockPanel topPanel = new DockPanel();
-                    DockPanel.SetDock(modelName, Dock.Left);
-                    DockPanel.SetDock(menuButton, Dock.Right);
-                    topPanel.Children.Add(modelName);
-                    topPanel.Children.Add(menuButton);
+                _ = ShowThumbnail(model["ProjectId"], model["Id"], thumbnailImage);
 
-                    // Add elements to content panel
-                    content.Children.Add(thumbnailImage);
-                    content.Children.Add(topPanel);
+                Grid.SetRow(thumbnailImage, 0);
+                grid.Children.Add(thumbnailImage);
 
-                    modelSquare.Child = content;
-                    ModelsContainer.Children.Add(modelSquare);
+                TextBlock modelNameBlock = new TextBlock
+                {
+                    Text = model["Name"],
+                    FontSize = 16,
+                    FontWeight = FontWeights.Normal,
+                    Foreground = (Brush)new BrushConverter().ConvertFrom("#4B4B4B"),
+                    TextAlignment = TextAlignment.Center,
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    TextWrapping = TextWrapping.Wrap
+                };
+
+                TextBlock projectNameBlock = new TextBlock
+                {
+                    Text = model["Project"],
+                    FontSize = 14,
+                    FontWeight = FontWeights.Normal,
+                    Foreground = Brushes.Gray,
+                    TextAlignment = TextAlignment.Left,
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    TextWrapping = TextWrapping.Wrap
+                };
+
+                content.Children.Add(modelNameBlock);
+                content.Children.Add(projectNameBlock);
+
+                Grid.SetRow(content, 1);
+                grid.Children.Add(content);
+
+                Border iconBorder = new Border
+                {
+                    Background = Brushes.Transparent,
+                    BorderBrush = Brushes.Transparent,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    Cursor = Cursors.Hand,
+                    Margin = new Thickness(0, 6.5, 2, 0)
+                };
+
+                PackIcon icon = new PackIcon
+                {
+                    Kind = PackIconKind.DotsVertical,
+                    Width = 20,
+                    Height = 20,
+                    Foreground = Brushes.Gray,
+                    Cursor = Cursors.Hand
+                };
+
+                ContextMenu contextMenu = CreateModelContextMenu(model["Id"], model["Name"]);
+                icon.ContextMenu = contextMenu;
+
+                icon.MouseLeftButtonUp += (s, e) =>
+                {
+                    icon.ContextMenu.PlacementTarget = icon;
+                    icon.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+                    icon.ContextMenu.IsOpen = true;
+                };
+
+                iconBorder.Child = icon;
+
+                Border iconContainer = new Border
+                {
+                    Child = iconBorder,
+                    HorizontalAlignment = HorizontalAlignment.Right,
+                    VerticalAlignment = VerticalAlignment.Bottom,
+                    Margin = new Thickness(5)
+                };
+
+                overlayGrid.Children.Add(iconContainer);
+
+                Grid parentGrid = new Grid();
+                parentGrid.Children.Add(grid);
+                parentGrid.Children.Add(overlayGrid);
+
+                modelSquare.Child = parentGrid;
+                ModelsContainer.Children.Add(modelSquare);
             }
         }
+
+        //private void CreateGridView(List<Dictionary<string, string>> models)
+        //{
+        //    foreach (var model in models)
+        //    {
+        //        // UI Container for Model
+        //            Border modelSquare = new Border
+        //            {
+        //                Width = 263,
+        //                Height = 300, // Increased to fit the image
+        //                CornerRadius = new CornerRadius(5),
+        //                Background = Brushes.White,
+        //                BorderBrush = Brushes.LightGray,
+        //                BorderThickness = new Thickness(1),
+        //                Margin = new Thickness(10),
+        //                Effect = new DropShadowEffect
+        //                {
+        //                    Color = Colors.Black,
+        //                    Opacity = 0.1,
+        //                    BlurRadius = 10,
+        //                    ShadowDepth = 2
+        //                }
+        //            };
+
+        //            StackPanel content = new StackPanel
+        //            {
+        //                Orientation = Orientation.Vertical,
+        //                VerticalAlignment = VerticalAlignment.Center,
+        //                HorizontalAlignment = HorizontalAlignment.Left
+        //            };
+
+        //            // Thumbnail Image
+        //            Image thumbnailImage = new Image
+        //            {
+        //                Width = 200,
+        //                Height = 200,
+        //                Margin = new Thickness(10),
+        //                Stretch = Stretch.Uniform
+        //            };
+
+        //            // Load thumbnail asynchronously
+        //            _ = ShowThumbnail(model["ProjectId"], model["Id"], thumbnailImage);
+
+        //            TextBlock modelName = new TextBlock
+        //            {
+        //                Text = model["Name"],
+        //                FontSize = 16,
+        //                FontWeight = FontWeights.Normal,
+        //                TextAlignment = TextAlignment.Center,
+        //                HorizontalAlignment = HorizontalAlignment.Left,
+        //                TextWrapping = TextWrapping.Wrap,
+        //                Margin = new Thickness(5, 2, 5, 2)
+        //            };
+
+        //            // ✅ Three-dot menu button
+        //            Button menuButton = new Button
+        //            {
+        //                Content = "⋮", // Three-dot icon
+        //                FontSize = 18,
+        //                Width = 30,
+        //                Height = 30,
+        //                Background = Brushes.Transparent,
+        //                BorderBrush = Brushes.Transparent,
+        //                Padding = new Thickness(5),
+        //                HorizontalAlignment = HorizontalAlignment.Right,
+        //                ToolTip = "More Options"
+        //            };
+
+        //            // ✅ Ensure the menu button has the correct model assigned
+        //            menuButton.DataContext = model;
+
+        //            // ✅ Create and attach ContextMenu
+        //            ContextMenu contextMenu = CreateModelContextMenu(model["Id"], model["Name"]);
+        //            menuButton.ContextMenu = contextMenu;
+
+        //            // ✅ Ensure the menu opens on button click
+        //            menuButton.Click += (s, e) =>
+        //            {
+        //                if (s is Button btn && btn.DataContext is Dictionary<string, string> selectedModel)
+        //                {
+        //                    ContextMenu dynamicContextMenu = CreateModelContextMenu(selectedModel["Id"], selectedModel["Name"]);
+        //                    dynamicContextMenu.PlacementTarget = btn;
+        //                    dynamicContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+        //                    dynamicContextMenu.IsOpen = true;
+        //                }
+        //            };
+
+        //            // Container for Model Name + Menu Button
+        //            DockPanel topPanel = new DockPanel();
+        //            DockPanel.SetDock(modelName, Dock.Left);
+        //            DockPanel.SetDock(menuButton, Dock.Right);
+        //            topPanel.Children.Add(modelName);
+        //            topPanel.Children.Add(menuButton);
+
+        //            // Add elements to content panel
+        //            content.Children.Add(thumbnailImage);
+        //            content.Children.Add(topPanel);
+
+        //            modelSquare.Child = content;
+        //            ModelsContainer.Children.Add(modelSquare);
+        //    }
+        //}
 
         /*
                 private void SetupDataGrid()
