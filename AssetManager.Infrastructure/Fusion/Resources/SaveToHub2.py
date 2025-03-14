@@ -786,63 +786,174 @@ def run(context):
         # Get the "Design" workspace which contains the main tabs
         designWorkspace = ui.workspaces.itemById('FusionSolidEnvironment')
         
+        # Modified section for tab integration with improved error handling and logging
+# Replace the corresponding section in the run function
+
+        # Modified section for tab integration with correct Fusion 360 Tab IDs
+# Replace the corresponding section in the run function
+
+        # Comprehensive fix for tab integration in Fusion 360
+# Replace the tab integration section in the run function with this code
+
+        
         if designWorkspace:
-            # Get all toolbar tabs (SOLID, SURFACE, MESH, etc.)
+            # Get all toolbar tabs
             toolbarTabs = designWorkspace.toolbarTabs
-            
-            # Log for debugging
+    
+            # Log for debugging - list all available tabs
             logging.info(f"Found {toolbarTabs.count} toolbar tabs")
-            
-            # Tabs we want to add our panel and button to
-            target_tabs = ["SOLID", "SURFACE", "MESH", "SHEET METAL", "PLASTIC", "UTILITIES", "MANAGE"]
-            
+            logging.info("Available tabs:")
             for i in range(toolbarTabs.count):
                 tab = toolbarTabs.item(i)
+                logging.info(f"  - Tab index {i}: ID '{tab.id}' with name '{tab.name}'")
+    
+            # First, check if the command already exists and is valid
+            cmd_def = ui.commandDefinitions.itemById(commandId)
+            if not cmd_def or not cmd_def.isValid:
+                logging.warning("Command definition is not valid - this may cause visibility issues")
+    
+            # Process all available tabs
+            for i in range(toolbarTabs.count):
+                try:
+                    tab = toolbarTabs.item(i)
+                    tab_id = tab.id
+                    tab_name = tab.name
+            
+                    # Log which tab we're currently processing
+                    logging.info(f"Processing tab: {tab_name} (ID: {tab_id})")
+            
+                    # Try a couple of different panel approaches for each tab
+                    # First try with a custom panel ID
+                    try:
+                        # Try to get existing panel first
+                        customPanelId = 'SaveToHubPanel' + tab_id  # Make panel ID unique per tab
+                        customPanel = tab.toolbarPanels.itemById(customPanelId)
                 
-                # Only process tabs in our target list
-                if tab.name in target_tabs:
-                    logging.info(f"Processing tab: {tab.name}")
+                        if not customPanel:
+                            logging.info(f"  Creating new custom panel '{customPanelId}' in tab: {tab_name}")
+                            customPanel = tab.toolbarPanels.add(
+                                customPanelId,
+                                'Save To Hub'  # Panel display name
+                            )
+                
+                        if customPanel and customPanel.isValid:
+                            logging.info(f"  Custom panel is valid in {tab_name}")
                     
-                    # Check if our custom panel already exists
-                    customPanelId = 'SaveToHubPanel'
-                    customPanel = tab.toolbarPanels.itemById(customPanelId)
+                            # Remove existing control if present
+                            existing_control = customPanel.controls.itemById(commandId)
+                            if existing_control:
+                                try:
+                                    existing_control.deleteMe()
+                                    logging.info(f"  Removed existing control in {tab_name}")
+                                except Exception as e:
+                                    logging.warning(f"  Could not remove existing control: {str(e)}")
                     
-                    # If panel doesn't exist, create it
-                    if not customPanel:
-                        logging.info(f"Creating new panel in tab: {tab.name}")
-                        customPanel = tab.toolbarPanels.add(
-                            customPanelId,
-                            'Save To Hub'
-                        )
+                            # Add command to panel with maximum visibility settings
+                            control = customPanel.controls.addCommand(cmdDef)
+                            control.isPromoted = True  # Show as button
+                            control.isPromotedByDefault = True  # Show by default
+                            logging.info(f"  Added command to custom panel in {tab_name} with isPromoted=True")
                     
-                    if customPanel:
-                        logging.info(f"Adding command to panel in {tab.name}")
+                            # Try to make sure panel is visible
+                            customPanel.isVisible = True
+                            logging.info(f"  Set panel visibility to True")
+                        else:
+                            logging.warning(f"  Custom panel creation failed or panel is invalid in tab: {tab_name}")
+                    
+                    except Exception as panel_error:
+                        logging.error(f"  Error with custom panel in tab {tab_name}: {str(panel_error)}")
+                        logging.error(traceback.format_exc())
+                
+                        # Try alternative: use an existing standard panel in this tab
+                        try:
+                            logging.info(f"  Trying to use standard panel in {tab_name}")
+                    
+                            # Try to find a suitable existing panel
+                            # Look for a common panel like "MODIFY" or "CREATE"
+                            standard_panels = ["MODIFY", "CREATE", "INSPECT", "TOOLS", "UTILITIES"]
+                    
+                            # List all available panels in this tab
+                            logging.info(f"  Available panels in {tab_name}:")
+                            for p in range(tab.toolbarPanels.count):
+                                panel = tab.toolbarPanels.item(p)
+                                logging.info(f"    - Panel index {p}: ID '{panel.id}' with name '{panel.name}'")
+                    
+                            # Try to find a usable panel
+                            standard_panel = None
+                            for panel_name in standard_panels:
+                                # Try different approaches to finding the panel
+                                for p in range(tab.toolbarPanels.count):
+                                    panel = tab.toolbarPanels.item(p)
+                                    if (panel.name.upper() == panel_name or 
+                                        panel.id.upper() == panel_name or 
+                                        panel_name in panel.id.upper() or 
+                                        panel_name in panel.name.upper()):
+                                        standard_panel = panel
+                                        logging.info(f"  Found standard panel: {panel.name} (ID: {panel.id})")
+                                        break
+                                if standard_panel:
+                                    break
+                    
+                            # If we found a usable panel, add our command to it
+                            if standard_panel and standard_panel.isValid:
+                                # Remove existing control if present
+                                existing_control = standard_panel.controls.itemById(commandId)
+                                if existing_control:
+                                    try:
+                                        existing_control.deleteMe()
+                                        logging.info(f"  Removed existing control from standard panel")
+                                    except Exception as e:
+                                        logging.warning(f"  Could not remove existing control: {str(e)}")
                         
-                        # Check if control already exists
-                        existing_control = customPanel.controls.itemById(commandId)
-                        if existing_control:
-                            existing_control.deleteMe()
+                                # Add command to the standard panel
+                                control = standard_panel.controls.addCommand(cmdDef)
+                                control.isPromoted = True
+                                logging.info(f"  Added command to standard panel {standard_panel.name} in {tab_name}")
+                            else:
+                                logging.warning(f"  Could not find suitable standard panel in {tab_name}")
                         
-                        # Add command to panel
-                        control = customPanel.controls.addCommand(cmdDef)
-                        
-                        # Make sure it's promoted to appear as a button
-                        control.isPromoted = True
-                    else:
-                        logging.warning(f"Failed to create or find custom panel in tab: {tab.name}")
+                                # Last resort: try to add to the first available panel
+                                if tab.toolbarPanels.count > 0:
+                                    first_panel = tab.toolbarPanels.item(0)
+                                    if first_panel and first_panel.isValid:
+                                        control = first_panel.controls.addCommand(cmdDef)
+                                        control.isPromoted = True
+                                        logging.info(f"  Added command to first available panel ({first_panel.name}) in {tab_name}")
+                                    else:
+                                        logging.warning(f"  First panel is not valid in {tab_name}")
+                                else:
+                                    logging.warning(f"  No panels available in {tab_name}")
+                
+                        except Exception as standard_panel_error:
+                            logging.error(f"  Error with standard panel approach: {str(standard_panel_error)}")
+                            logging.error(traceback.format_exc())
+        
+                except Exception as tab_error:
+                    logging.error(f"Error processing tab at index {i}: {str(tab_error)}")
+                    logging.error(traceback.format_exc())
+    
+            logging.info("Finished processing all tabs")
+    
+            # Try to force a UI refresh
+            try:
+                app.userInterface.messageBox(
+                   # "SaveToHub panels have been added to all tabs. Please check your toolbars.",
+                    "SaveToHub Installation",
+                    adsk.core.MessageBoxButtonTypes.OKButtonType,
+                    adsk.core.MessageBoxIconTypes.InformationIconType
+                )
+            except:
+                pass
         else:
             logging.warning("FusionSolidEnvironment workspace not found")
-        
-        logging.info("Add-in initialization completed")
-        
     except Exception as e:
         error_message = traceback.format_exc()
         logging.error(f"Failed to initialize SaveToHub add-in:\n{error_message}")
         if ui:
             ui.messageBox(f'Failed to initialize SaveToHub add-in:\n{error_message}',
-                         'SaveToHub Error',
-                         adsk.core.MessageBoxButtonTypes.OKButtonType,
-                         adsk.core.MessageBoxIconTypes.CriticalIconType)
+                            'SaveToHub Error',
+                            adsk.core.MessageBoxButtonTypes.OKButtonType,
+                            adsk.core.MessageBoxIconTypes.CriticalIconType)
 # Stop function called when Fusion 360 stops
 def stop(context):
     global handlers
