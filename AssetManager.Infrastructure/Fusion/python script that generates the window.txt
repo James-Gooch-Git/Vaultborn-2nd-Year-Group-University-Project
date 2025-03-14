@@ -1,4 +1,4 @@
-﻿import adsk.core, adsk.fusion, adsk.cam, traceback
+import adsk.core, adsk.fusion, adsk.cam, traceback
 import os
 import sys
 import json
@@ -90,19 +90,19 @@ def saveToHub():
 def showPalette():
     try:
         global palette, ui
-
+        
         # First, check if the palette already exists
         existingPalette = ui.palettes.itemById(paletteName)
         if existingPalette:
-            existingPalette.isVisible = True  # Make sure it's visible
-            existingPalette.dockingState = adsk.core.PaletteDockingStates.PaletteDockStateFloating  # Force floating
-            logging.info("Showing existing floating palette")
+            # If it exists, just show it
+            existingPalette.isVisible = True
+            logging.info("Showing existing palette")
             return True
-
-        # Get script directory
-        script_dir = get_current_dir()
-
-        # 🔹 Define the correct HTML content
+            
+        # Create a new palette with a properly formatted HTML URL
+        logging.info("Creating new palette")
+        
+        # Define HTML content
         html_content = '''
         <html>
         <head>
@@ -140,43 +140,51 @@ def showPalette():
         </body>
         </html>
         '''
-
-        # 🔹 Create a temporary HTML file if it doesn't exist
-        html_file_path = os.path.join(script_dir, 'savetohub_palette.html')
-
-        with open(html_file_path, 'w', encoding='utf-8') as f:
+        
+        # Create a temporary HTML file
+        html_dir = get_current_dir()
+        html_file_path = os.path.join(html_dir, 'savetohub_palette.html')
+        
+        with open(html_file_path, 'w') as f:
             f.write(html_content)
-
-        # 🔹 Convert file path to a URL format
+        
+        # Use file:// protocol for the HTML file URL
         html_file_url = 'file:///' + html_file_path.replace('\\', '/')
-
-        # 🔹 Create the floating palette
+        logging.info(f"HTML file URL: {html_file_url}")
+        
+        # Create palette with the file URL
         palette = ui.palettes.add(
             id=paletteName,
             name='Save To Hub',
-            htmlFileURL=html_file_url,  # ✅ Dynamically generated HTML file
+            htmlFileURL=html_file_url,
             isVisible=True,
             showCloseButton=True,
-            isResizable=True,
-            width=300,
-            height=200,
+            isResizable=False,
+            width=250,
+            height=120,
             useNewWebBrowser=True
         )
-
-        # Force floating mode
+        
+        # Force the palette to be floating
         palette.dockingState = adsk.core.PaletteDockingStates.PaletteDockStateFloating
-
-        # Set position manually
+        
+        # Position it in a visible area
         try:
-            palette.setPosition(800, 200)
+            # Set position at top-right using fixed coordinates
+            palette.setPosition(900, 200)
         except:
-            logging.warning("⚠️ Could not set palette position")
-
-        logging.info("✅ Floating palette with dynamically generated HTML created successfully")
+            logging.warning("Could not set palette position")
+        
+        # Add event handler
+        onHTMLEvent = PaletteEventHandler()
+        palette.incomingFromHTML.add(onHTMLEvent)
+        handlers.append(onHTMLEvent)
+        
+        logging.info("Palette created successfully")
         return True
     except:
         error_message = traceback.format_exc()
-        logging.error(f"❌ Failed to create floating palette: {error_message}")
+        logging.error(f"Failed to create palette: {error_message}")
         return False
 
 # Handler for palette HTML events
@@ -321,14 +329,15 @@ class WorkspaceActivatedHandler(adsk.core.WorkspaceEventHandler):
             error_message = traceback.format_exc()
             logging.error(f"Failed in workspace activated: {error_message}")
 
+# Run when Fusion 360 starts
 def run(context):
     try:
         global app, ui
         app = adsk.core.Application.get()
         ui = app.userInterface
-
+        
         logging.info("SaveToHub add-in starting...")
-
+        
         # Create a command definition for the SaveToHub command
         cmdDef = ui.commandDefinitions.addButtonDefinition(
             commandId, 
@@ -336,85 +345,136 @@ def run(context):
             'Save your design to Autodesk Hub',
             ''  # Use empty string for default icon
         )
-
+        
         # Connect to the command created event
         onCommandCreated = CommandCreatedEventHandler()
         cmdDef.commandCreated.add(onCommandCreated)
         handlers.append(onCommandCreated)
-
-        # 🔹 Add button to the UTILITIES PANEL
-        utilitiesPanel = ui.allToolbarPanels.itemById('UtilitiesPanel')
-
-        if utilitiesPanel:
-            utilitiesPanel.controls.addCommand(cmdDef, '', False)
-            logging.info("✅ Save To Hub button added to the Utilities panel!")
+        
+        # Add the command to the quick access toolbar (QAT)
+        qatPanel = ui.allToolbarPanels.itemById('QAT')
+        if qatPanel:
+            qatControl = qatPanel.controls.addCommand(cmdDef, '', False)
+            logging.info("Command added to QAT")
+        
+        # Add the command to the UI panel - try both panel IDs
+        utilsPanel = ui.allToolbarPanels.itemById('UtilityPanel')
+        if utilsPanel:
+            utilsControl = utilsPanel.controls.addCommand(cmdDef, '', False)
+            logging.info("Command added to Utility panel")
         else:
-            logging.warning("⚠️ Could not find the Utilities panel. Trying alternative panels...")
-
-            # Try alternative panel IDs
-            for panel in ui.allToolbarPanels:
-                if "UTILITY" in panel.id.upper():
-                    panel.controls.addCommand(cmdDef, '', False)
-                    logging.info(f"✅ Save To Hub added to {panel.id}")
-                    break
-
+            utilsPanel = ui.allToolbarPanels.itemById('UtilitiesPanel')
+            if utilsPanel:
+                utilsControl = utilsPanel.controls.addCommand(cmdDef, '', False)
+                logging.info("Command added to Utilities panel")
+            else:
+                # Log all available panels
+                logging.info("Available panels:")
+                for panel in ui.allToolbarPanels:
+                    logging.info(f"Panel ID: {panel.id}, Name: {panel.name}")
+                    if "UTILITY" in panel.name.upper():
+                        utilsPanel = panel
+                        utilsPanel.controls.addCommand(cmdDef, '', False)
+                        logging.info(f"Command added to found panel: {panel.id}")
+                        break
+        
+        # Create a command to show the palette
+        createShowPaletteCommand()
+        
+        # Register for workspace activated events
+        onWorkspaceActivated = WorkspaceActivatedHandler()
+        ui.workspaceActivated.add(onWorkspaceActivated)
+        handlers.append(onWorkspaceActivated)
+        
         # Show the palette when the add-in starts
         success = showPalette()
         if not success:
-            ui.messageBox("Could not show Save To Hub palette. Click the Utilities panel button to show it.",
-                          "SaveToHub",
-                          adsk.core.MessageBoxButtonTypes.OKButtonType,
-                          adsk.core.MessageBoxIconTypes.InformationIconType)
-
+            ui.messageBox("Could not show Save To Hub palette. Use the 'Show Save To Hub Palette' command in the Utilities panel to show it.",
+                         "SaveToHub", 
+                         adsk.core.MessageBoxButtonTypes.OKButtonType,
+                         adsk.core.MessageBoxIconTypes.InformationIconType)
+        
+        logging.info("Add-in initialization completed")
+        
     except Exception as e:
         error_message = traceback.format_exc()
-        logging.error(f"❌ Failed to initialize SaveToHub add-in:\n{error_message}")
+        logging.error(f"Failed to initialize SaveToHub add-in:\n{error_message}")
         if ui:
             ui.messageBox(f'Failed to initialize SaveToHub add-in:\n{error_message}',
-                          'SaveToHub Error',
-                          adsk.core.MessageBoxButtonTypes.OKButtonType,
-                          adsk.core.MessageBoxIconTypes.CriticalIconType)
+                         'SaveToHub Error',
+                         adsk.core.MessageBoxButtonTypes.OKButtonType,
+                         adsk.core.MessageBoxIconTypes.CriticalIconType)
 
 # Stop function called when Fusion 360 stops
 def stop(context):
+    # Declare global variables at the beginning of the function
     global palette, handlers
-
+    
     try:
         logging.info("Stopping SaveToHub add-in")
-
-        app = adsk.core.Application.get()
-        ui = app.userInterface
-
+        
+        # First, try to get a fresh reference to the application and UI
+        try:
+            app = adsk.core.Application.get()
+            if app:
+                ui = app.userInterface
+            else:
+                ui = None
+        except:
+            ui = None
+            logging.warning("Could not get application reference during shutdown")
+        
         # Remove the palette if it exists
-        if palette:
-            palette.deleteMe()
-            palette = None
-            logging.info("Palette removed")
-
-        # Remove the command definitions
-        cmdDef = ui.commandDefinitions.itemById(commandId)
-        if cmdDef:
-            cmdDef.deleteMe()
-            logging.info("Command definition removed")
-
-        # 🔹 REMOVE FROM UTILITIES PANEL
-        utilitiesPanel = ui.allToolbarPanels.itemById('UtilitiesPanel')
-
-        if utilitiesPanel:
-            control = utilitiesPanel.controls.itemById(commandId)
-            if control:
-                control.deleteMe()
-                logging.info("✅ Save To Hub button removed from the Utilities panel")
-
-        logging.info("✅ Add-in cleanup completed!")
-
+        try:
+            if palette is not None:
+                palette.deleteMe()
+                palette = None
+                logging.info("Palette removed")
+            else:
+                logging.info("No palette to remove")
+        except:
+            logging.warning("Error removing palette")
+        
+        # Remove the command definitions if UI is still available
+        if ui:
+            try:
+                cmdDef = ui.commandDefinitions.itemById(commandId)
+                if cmdDef:
+                    cmdDef.deleteMe()
+                    logging.info("Command definition removed")
+            except:
+                logging.warning("Error removing command definition")
+                
+            try:
+                showPaletteCmdDef = ui.commandDefinitions.itemById('ShowSaveToHubPaletteCommand')
+                if showPaletteCmdDef:
+                    showPaletteCmdDef.deleteMe()
+                    logging.info("Show palette command removed")
+            except:
+                logging.warning("Error removing show palette command")
+        
+        # Clean up the handlers
+        try:
+            if handlers:
+                handlers.clear()
+                logging.info("Handlers cleared")
+        except:
+            logging.warning("Error clearing handlers")
+        
+        logging.info("Add-in cleanup completed")
+        
     except Exception as e:
         error_message = traceback.format_exc()
-        logging.error(f"❌ Failed to clean up SaveToHub add-in:\n{error_message}")
+        logging.error(f"Failed to clean up SaveToHub add-in:\n{error_message}")
         try:
-            ui.messageBox(f'Failed to clean up SaveToHub add-in:\n{error_message}',
-                          'SaveToHub Error',
-                          adsk.core.MessageBoxButtonTypes.OKButtonType,
-                          adsk.core.MessageBoxIconTypes.CriticalIconType)
+            # Try to get UI again if needed for message box
+            app = adsk.core.Application.get()
+            ui = app.userInterface
+            if ui:
+                ui.messageBox(f'Failed to clean up SaveToHub add-in:\n{error_message}',
+                             'SaveToHub Error',
+                             adsk.core.MessageBoxButtonTypes.OKButtonType,
+                             adsk.core.MessageBoxIconTypes.CriticalIconType)
         except:
-            logging.error("⚠️ Could not show error message box")
+            # If everything fails, just log the error
+            logging.error("Could not show error message box")
