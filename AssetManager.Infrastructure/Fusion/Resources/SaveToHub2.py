@@ -77,8 +77,8 @@ ui = None
 handlers = []
 commandId = 'SaveToHubCommand'
 commandTitle = 'Save To Hub'
-palette = None
-paletteName = 'SaveToHubPalette'
+#palette = None
+#paletteName = 'SaveToHubPalette'
 
 # Get current directory
 def get_current_dir():
@@ -717,123 +717,124 @@ def upload_file_to_hub(file_path, project_id, item_id, access_token):
         logging.error(traceback.format_exc())
         return False
 # Create the floating palette
-def showPalette():
-    try:
-        global palette, ui
+# def showPalette():
+#     try:
+#         global palette, ui
         
-        # First, check if the palette already exists
-        existingPalette = ui.palettes.itemById(paletteName)
-        if existingPalette:
-            # If it exists, just show it
-            existingPalette.isVisible = True
-            logging.info("Showing existing palette")
-            return True
+#         # First, check if the palette already exists
+#         existingPalette = ui.palettes.itemById(paletteName)
+#         if existingPalette:
+#             # If it exists, just show it
+#             existingPalette.isVisible = True
+#             logging.info("Showing existing palette")
+#             return True
             
-        # Create a new palette with a properly formatted HTML URL
-        logging.info("Creating new palette")
+#         # Create a new palette with a properly formatted HTML URL
+#         logging.info("Creating new palette")
         
-        # Define HTML content
-        html_content = '''
-        <html>
-        <head>
-            <style>
-                body {
-                    margin: 10px;
-                    font-family: Arial;
-                    background-color: #f0f0f0;
-                }
-                h3 {
-                    text-align: center;
-                    margin-top: 0;
-                }
-                button {
-                    width: 100%;
-                    height: 40px;
-                    background-color: #0078D7;
-                    color: white;
-                    border: none;
-                    border-radius: 5px;
-                    font-size: 16px;
-                    cursor: pointer;
-                    font-weight: bold;
-                }
-            </style>
-        </head>
-        <body>
-            <h3>Save To Hub</h3>
-            <button id="saveButton">Save To Hub</button>
-           <script>
-            document.getElementById("saveButton").addEventListener("click", function() {
-                // Use adsk.fusionSendData instead of window.location.href
-                window.adsk.fusionSendData('save', '');
-            });
-        </script>
-        </body>
-        </html>
-        '''
+#         # Define HTML content
+#         html_content = '''
+#         <html>
+#         <head>
+#             <style>
+#                 body {
+#                     margin: 10px;
+#                     font-family: Arial;
+#                     background-color: #f0f0f0;
+#                 }
+#                 h3 {
+#                     text-align: center;
+#                     margin-top: 0;
+#                 }
+#                 button {
+#                     width: 100%;
+#                     height: 40px;
+#                     background-color: #0078D7;
+#                     color: white;
+#                     border: none;
+#                     border-radius: 5px;
+#                     font-size: 16px;
+#                     cursor: pointer;
+#                     font-weight: bold;
+#                 }
+#             </style>
+#         </head>
+#         <body>
+#             <h3>Save To Hub</h3>
+#             <button id="saveButton">Save To Hub</button>
+#            <script>
+#             document.getElementById("saveButton").addEventListener("click", function() {
+#                 // Use adsk.fusionSendData instead of window.location.href
+#                 window.adsk.fusionSendData('save', '');
+#             });
+#         </script>
+#         </body>
+#         </html>
+#         '''
         
-        # Create a temporary HTML file
-        html_dir = get_current_dir()
-        html_file_path = os.path.join(html_dir, 'savetohub_palette.html')
+#         # Create a temporary HTML file
+#         html_dir = get_current_dir()
+#         html_file_path = os.path.join(html_dir, 'savetohub_palette.html')
         
-        with open(html_file_path, 'w') as f:
-            f.write(html_content)
+#         with open(html_file_path, 'w') as f:
+#             f.write(html_content)
         
-        # Use file:// protocol for the HTML file URL
-        html_file_url = 'file:///' + html_file_path.replace('\\', '/')
-        logging.info(f"HTML file URL: {html_file_url}")
+#         # Use file:// protocol for the HTML file URL
+#         html_file_url = 'file:///' + html_file_path.replace('\\', '/')
+#         logging.info(f"HTML file URL: {html_file_url}")
         
-        # Create palette with the file URL
-        palette = ui.palettes.add(
-            id=paletteName,
-            name='Save To Hub',
-            htmlFileURL=html_file_url,
-            isVisible=True,
-            showCloseButton=True,
-            isResizable=False,
-            width=250,
-            height=120,
-            useNewWebBrowser=True
-        )
+#         # Create palette with the file URL
+#         palette = ui.palettes.add(
+#             id=paletteName,
+#             name='Save To Hub',
+#             htmlFileURL=html_file_url,
+#             isVisible=True,
+#             showCloseButton=True,
+#             isResizable=False,
+#             width=250,
+#             height=120,
+#             useNewWebBrowser=True
+#         )
         
-        # Force the palette to be floating
-       # palette.dockingState = adsk.core.PaletteDockingStates.PaletteDockStateFloating
+#         # Force the palette to be floating
+#        # palette.dockingState = adsk.core.PaletteDockingStates.PaletteDockStateFloating
         
-        # Position it in a visible area
-        try:
-            # Set position at top-right using fixed coordinates
-            palette.setPosition(900, 200)
-        except:
-            logging.warning("Could not set palette position")
+#         # Position it in a visible area
+#         try:
+#             # Set position at top-right using fixed coordinates
+#             palette.setPosition(900, 200)
+#         except:
+#             logging.warning("Could not set palette position")
         
-        # Add event handler
-        onHTMLEvent = PaletteEventHandler()
-        palette.incomingFromHTML.add(onHTMLEvent)
-        handlers.append(onHTMLEvent)
+#         # Add event handler
+#         onHTMLEvent = PaletteEventHandler()
+#         palette.incomingFromHTML.add(onHTMLEvent)
+#         handlers.append(onHTMLEvent)
         
-        logging.info("Palette created successfully")
-        return True
-    except:
-        error_message = traceback.format_exc()
-        logging.error(f"Failed to create palette: {error_message}")
-        return False
+#         logging.info("Palette created successfully")
+#         return True
+#     except:
+#         error_message = traceback.format_exc()
+#         logging.error(f"Failed to create palette: {error_message}")
+#         return False
 
 # Handler for palette HTML events
-class PaletteEventHandler(adsk.core.HTMLEventHandler):
-    def __init__(self):
-        super().__init__()
+# class PaletteEventHandler(adsk.core.HTMLEventHandler):
+#     def __init__(self):
+#         super().__init__()
     
-    def notify(self, args):
-        try:
-            htmlArgs = adsk.core.HTMLEventArgs.cast(args)
-            logging.info(f"Received HTML event: {htmlArgs.action}")
+#     def notify(self, args):
+#         try:
+#             htmlArgs = adsk.core.HTMLEventArgs.cast(args)
+#             logging.info(f"Received HTML event: {htmlArgs.action}")
             
-            # If we get any event from the HTML side, we can handle it here
-            if htmlArgs.action == "save":
-                saveToHub()
-        except:
-            error_message = traceback.format_exc()
-            logging.error(f"Failed in palette event: {error_message}")
+#             # If we get any event from the HTML side, we can handle it here
+#             if htmlArgs.action == "save":
+#                 saveToHub()
+#         except:
+#             error_message = traceback.format_exc()
+#             logging.error(f"Failed in palette event: {error_message}")
+
 # Command created event handler
 class CommandCreatedEventHandler(adsk.core.CommandCreatedEventHandler):
     def __init__(self):
@@ -867,97 +868,97 @@ class CommandExecuteHandler(adsk.core.CommandEventHandler):
             logging.error(f"Failed in command execute event: {error_message}")
 
 # Create a command to show the palette
-def createShowPaletteCommand():
-    try:
-        # Check if command already exists
-        showPaletteCmdDef = ui.commandDefinitions.itemById('ShowSaveToHubPaletteCommand')
-        if showPaletteCmdDef:
-            showPaletteCmdDef.deleteMe()
+# def createShowPaletteCommand():
+#     try:
+#         # Check if command already exists
+#         showPaletteCmdDef = ui.commandDefinitions.itemById('ShowSaveToHubPaletteCommand')
+#         if showPaletteCmdDef:
+#             showPaletteCmdDef.deleteMe()
             
-        # Create command definition
-        showPaletteCmdDef = ui.commandDefinitions.addButtonDefinition(
-            'ShowSaveToHubPaletteCommand',
-            'Show Save To Hub Palette',
-            'Shows the Save To Hub floating palette',
-            ''
-        )
+#         # Create command definition
+#         showPaletteCmdDef = ui.commandDefinitions.addButtonDefinition(
+#             'ShowSaveToHubPaletteCommand',
+#             'Show Save To Hub Palette',
+#             'Shows the Save To Hub floating palette',
+#             ''
+#         )
         
-        # Connect to command created event
-        onShowPaletteCreated = ShowPaletteCommandCreatedHandler()
-        showPaletteCmdDef.commandCreated.add(onShowPaletteCreated)
-        handlers.append(onShowPaletteCreated)
+#         # Connect to command created event
+#         onShowPaletteCreated = ShowPaletteCommandCreatedHandler()
+#         showPaletteCmdDef.commandCreated.add(onShowPaletteCreated)
+#         handlers.append(onShowPaletteCreated)
         
-        # Add to toolbar
-        utilsPanel = ui.allToolbarPanels.itemById('UtilityPanel')  # Try the correct panel name first
-        if not utilsPanel:
-            utilsPanel = ui.allToolbarPanels.itemById('UtilitiesPanel')  # Fallback to original name
+#         # Add to toolbar
+#         utilsPanel = ui.allToolbarPanels.itemById('UtilityPanel')  # Try the correct panel name first
+#         if not utilsPanel:
+#             utilsPanel = ui.allToolbarPanels.itemById('UtilitiesPanel')  # Fallback to original name
         
-        if utilsPanel:
-            utilsPanel.controls.addCommand(showPaletteCmdDef, '', False)
-            logging.info(f"Command added to panel: {utilsPanel.id}")
-        else:
-            # Log all available panels for debugging
-            panel_ids = [panel.id for panel in ui.allToolbarPanels]
-            logging.info(f"Available panels: {panel_ids}")
-            logging.warning("Could not find Utility panel")
+#         if utilsPanel:
+#             utilsPanel.controls.addCommand(showPaletteCmdDef, '', False)
+#             logging.info(f"Command added to panel: {utilsPanel.id}")
+#         else:
+#             # Log all available panels for debugging
+#             panel_ids = [panel.id for panel in ui.allToolbarPanels]
+#             logging.info(f"Available panels: {panel_ids}")
+#             logging.warning("Could not find Utility panel")
             
-        return showPaletteCmdDef
-    except:
-        error_message = traceback.format_exc()
-        logging.error(f"Failed to create show palette command: {error_message}")
-        return None
+#         return showPaletteCmdDef
+#     except:
+#         error_message = traceback.format_exc()
+#         logging.error(f"Failed to create show palette command: {error_message}")
+#         return None
 
 # Handler for show palette command
-class ShowPaletteCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
-    def __init__(self):
-        super().__init__()
+# class ShowPaletteCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
+#     def __init__(self):
+#         super().__init__()
     
-    def notify(self, args):
-        try:
-            cmd = args.command
+#     def notify(self, args):
+#         try:
+#             cmd = args.command
             
-            # Connect to execute event
-            onExecute = ShowPaletteCommandExecuteHandler()
-            cmd.execute.add(onExecute)
-            handlers.append(onExecute)
-        except:
-            error_message = traceback.format_exc()
-            logging.error(f"Failed in show palette command created: {error_message}")
+#             # Connect to execute event
+#             onExecute = ShowPaletteCommandExecuteHandler()
+#             cmd.execute.add(onExecute)
+#             handlers.append(onExecute)
+#         except:
+#             error_message = traceback.format_exc()
+#             logging.error(f"Failed in show palette command created: {error_message}")
 
-# Handler for show palette command execute
-class ShowPaletteCommandExecuteHandler(adsk.core.CommandEventHandler):
-    def __init__(self):
-        super().__init__()
+# # Handler for show palette command execute
+# class ShowPaletteCommandExecuteHandler(adsk.core.CommandEventHandler):
+#     def __init__(self):
+#         super().__init__()
     
-    def notify(self, args):
-        try:
-            # Show the palette
-            showPalette()
-        except:
-            error_message = traceback.format_exc()
-            logging.error(f"Failed to show palette from command: {error_message}")
+#     def notify(self, args):
+#         try:
+#             # Show the palette
+#             showPalette()
+#         except:
+#             error_message = traceback.format_exc()
+#             logging.error(f"Failed to show palette from command: {error_message}")
 
-# Handler for workspace activated event - show palette when design workspace activated
-class WorkspaceActivatedHandler(adsk.core.WorkspaceEventHandler):
-    def __init__(self):
-        super().__init__()
+# # Handler for workspace activated event - show palette when design workspace activated
+# class WorkspaceActivatedHandler(adsk.core.WorkspaceEventHandler):
+#     def __init__(self):
+#         super().__init__()
     
-    def notify(self, args):
-        try:
-            workspace = adsk.core.WorkspaceEventArgs.cast(args).workspace
-            if workspace.id == 'FusionSolidEnvironment':
-                # Wait a moment before showing palette to ensure UI is ready
-                def delayed_show():
-                    time.sleep(1)
-                    showPalette()
+#     def notify(self, args):
+#         try:
+#             workspace = adsk.core.WorkspaceEventArgs.cast(args).workspace
+#             if workspace.id == 'FusionSolidEnvironment':
+#                 # Wait a moment before showing palette to ensure UI is ready
+#                 def delayed_show():
+#                     time.sleep(1)
+#                     showPalette()
                 
-                # Run in a separate thread
-                thread = threading.Thread(target=delayed_show)
-                thread.daemon = True
-                thread.start()
-        except:
-            error_message = traceback.format_exc()
-            logging.error(f"Failed in workspace activated: {error_message}")
+#                 # Run in a separate thread
+#                 thread = threading.Thread(target=delayed_show)
+#                 thread.daemon = True
+#                 thread.start()
+#         except:
+#             error_message = traceback.format_exc()
+#             logging.error(f"Failed in workspace activated: {error_message}")
 
 # Run when Fusion 360 starts
 def run(context):
@@ -977,12 +978,19 @@ def run(context):
             except:
                 logging.warning(f"Could not delete existing command: {commandId}")
         
-        # Create a command definition for the SaveToHub command
+        # Get icon folder path
+        # Adjust this path to match your actual folder structure
+        icon_folder = os.path.join(get_current_dir(), 'commands', 'commandDialog', 'resources')
+        
+        # Log the icon path to verify it's correct
+        logging.info(f"Icon folder path: {icon_folder}")
+        
+        # Create a command definition for the SaveToHub command with icon
         cmdDef = ui.commandDefinitions.addButtonDefinition(
             commandId, 
             commandTitle, 
             'Save your design to Autodesk Hub',
-            ''  # Use empty string for default icon
+            icon_folder  # Specify the folder containing icon resources
         )
         
         # Connect to the command created event
@@ -990,65 +998,36 @@ def run(context):
         cmdDef.commandCreated.add(onCommandCreated)
         handlers.append(onCommandCreated)
         
-        # Add the command to panels with error handling
-        try:
-            # Add the command to the quick access toolbar (QAT)
-            qatPanel = ui.allToolbarPanels.itemById('QAT')
-            if qatPanel:
-                # Check if the control already exists
-                existing_control = qatPanel.controls.itemById(commandId)
+        # Add the command to the Make panel
+        workspace = ui.workspaces.itemById('FusionSolidEnvironment')
+        if workspace:
+            # Get Make panel
+            make_panel = workspace.toolbarPanels.itemById('MakePanel')
+            
+            if make_panel:
+                # Check if control already exists
+                existing_control = make_panel.controls.itemById(commandId)
                 if existing_control:
                     existing_control.deleteMe()
                 
-                qatControl = qatPanel.controls.addCommand(cmdDef, '', False)
-                logging.info("Command added to QAT")
-        except Exception as e:
-            logging.warning(f"Failed to add command to QAT: {str(e)}")
-        
-        try:
-            # Add to Utility panel
-            utilsPanel = ui.allToolbarPanels.itemById('UtilityPanel')
-            if utilsPanel:
-                # Check if the control already exists
-                existing_control = utilsPanel.controls.itemById(commandId)
-                if existing_control:
-                    existing_control.deleteMe()
-                    
-                utilsControl = utilsPanel.controls.addCommand(cmdDef, '', False)
-                logging.info("Command added to Utility panel")
+                # Add command to panel
+                control = make_panel.controls.addCommand(cmdDef)
+                
+                # Make sure it's promoted to appear as a button
+                control.isPromoted = True
+                
+                logging.info("Command added to Make panel")
             else:
-                utilsPanel = ui.allToolbarPanels.itemById('UtilitiesPanel')
-                if utilsPanel:
-                    # Check if the control already exists
-                    existing_control = utilsPanel.controls.itemById(commandId)
-                    if existing_control:
-                        existing_control.deleteMe()
-                        
-                    utilsControl = utilsPanel.controls.addCommand(cmdDef, '', False)
-                    logging.info("Command added to Utilities panel")
-        except Exception as e:
-            logging.warning(f"Failed to add command to Utility panel: {str(e)}")
-            
-            # Try to find an alternative panel
-            try:
-                for panel in ui.allToolbarPanels:
-                    if "UTILITY" in panel.name.upper():
-                        try:
-                            # Check if the control already exists
-                            existing_control = panel.controls.itemById(commandId)
-                            if existing_control:
-                                existing_control.deleteMe()
-                                
-                            panel.controls.addCommand(cmdDef, '', False)
-                            logging.info(f"Command added to found panel: {panel.id}")
-                            break
-                        except Exception as e2:
-                            logging.warning(f"Failed to add to panel {panel.id}: {str(e2)}")
-            except Exception as e3:
-                logging.warning(f"Failed to find alternative panel: {str(e3)}")
+                logging.warning("Make panel not found")
+                
+                # Log available panels for debugging
+                panel_ids = [panel.id for panel in workspace.toolbarPanels]
+                logging.info(f"Available panels: {panel_ids}")
+                logging.info(f"Panel names: {[panel.name for panel in workspace.toolbarPanels]}")
+        else:
+            logging.warning("FusionSolidEnvironment workspace not found")
         
-        # We're removing the automatic palette display
-        logging.info("Add-in initialization completed - no palette shown at startup")
+        logging.info("Add-in initialization completed")
         
     except Exception as e:
         error_message = traceback.format_exc()
@@ -1058,11 +1037,9 @@ def run(context):
                          'SaveToHub Error',
                          adsk.core.MessageBoxButtonTypes.OKButtonType,
                          adsk.core.MessageBoxIconTypes.CriticalIconType)
-
 # Stop function called when Fusion 360 stops
 def stop(context):
-    # Declare global variables at the beginning of the function
-    global palette, handlers
+    global handlers
     
     try:
         logging.info("Stopping SaveToHub add-in")
@@ -1078,34 +1055,25 @@ def stop(context):
             ui = None
             logging.warning("Could not get application reference during shutdown")
         
-        # Remove the palette if it exists
-        try:
-            if palette is not None:
-                palette.deleteMe()
-                palette = None
-                logging.info("Palette removed")
-            else:
-                logging.info("No palette to remove")
-        except:
-            logging.warning("Error removing palette")
-        
         # Remove the command definitions if UI is still available
         if ui:
             try:
+                # Get workspace, panel and control
+                workspace = ui.workspaces.itemById('FusionSolidEnvironment')
+                if workspace:
+                    panel = workspace.toolbarPanels.itemById('MakePanel')
+                    if panel:
+                        command_control = panel.controls.itemById(commandId)
+                        if command_control:
+                            command_control.deleteMe()
+                
+                # Remove command definition
                 cmdDef = ui.commandDefinitions.itemById(commandId)
                 if cmdDef:
                     cmdDef.deleteMe()
                     logging.info("Command definition removed")
             except:
                 logging.warning("Error removing command definition")
-                
-            try:
-                showPaletteCmdDef = ui.commandDefinitions.itemById('ShowSaveToHubPaletteCommand')
-                if showPaletteCmdDef:
-                    showPaletteCmdDef.deleteMe()
-                    logging.info("Show palette command removed")
-            except:
-                logging.warning("Error removing show palette command")
         
         # Clean up the handlers
         try:
@@ -1120,15 +1088,3 @@ def stop(context):
     except Exception as e:
         error_message = traceback.format_exc()
         logging.error(f"Failed to clean up SaveToHub add-in:\n{error_message}")
-        try:
-            # Try to get UI again if needed for message box
-            app = adsk.core.Application.get()
-            ui = app.userInterface
-            if ui:
-                ui.messageBox(f'Failed to clean up SaveToHub add-in:\n{error_message}',
-                             'SaveToHub Error',
-                             adsk.core.MessageBoxButtonTypes.OKButtonType,
-                             adsk.core.MessageBoxIconTypes.CriticalIconType)
-        except:
-            # If everything fails, just log the error
-            logging.error("Could not show error message box")
