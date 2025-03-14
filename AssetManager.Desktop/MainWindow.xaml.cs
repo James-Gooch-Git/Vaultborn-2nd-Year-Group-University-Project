@@ -1653,42 +1653,81 @@ namespace AssetManager.Desktop
         {
             ContextMenu menu = new ContextMenu();
 
-            MenuItem openInFusionItem = new MenuItem { Header = "🔷 Open in Fusion 360", Tag = modelId };
+            MenuItem openInFusionItem = new MenuItem { Header = "🔷 Open in Fusion 360" };
+            // Store both ID and name in Tag as a tuple
+            openInFusionItem.Tag = new Tuple<string, string>(modelId, modelName);
+
             openInFusionItem.Click += (s, e) =>
             {
-                if (s is MenuItem menuItem && menuItem.Tag is string selectedModelId)
+                if (s is MenuItem menuItem && menuItem.Tag is Tuple<string, string> modelInfo)
                 {
-                    Console.WriteLine($"🔷 Opening Model in Fusion 360: {selectedModelId}");
-                    BtnViewInFusion_Click(selectedModelId);
+                    string selectedModelId = modelInfo.Item1;
+                    string selectedModelName = modelInfo.Item2;
+
+                    Console.WriteLine($"🔷 Opening Model in Fusion 360: {selectedModelName} (ID: {selectedModelId})");
+
+                    // Update ALL global variables before calling the method
+                    _selectedItemId = selectedModelId;
+                    _selectedItemName = selectedModelName;
+
+                    // Log the values to ensure they're set properly
+                    Console.WriteLine($"Updated globals - ID: {_selectedItemId}, Name: {_selectedItemName}");
+
+                    // Call the updated method signature
+                    BtnViewInFusion_Click(s, e);
                 }
             };
 
-            MenuItem viewInAppItem = new MenuItem { Header = "🖥️ View in App", Tag = modelId };
+            MenuItem viewInAppItem = new MenuItem { Header = "🖥️ View in App" };
+            viewInAppItem.Tag = new Tuple<string, string>(modelId, modelName);
             viewInAppItem.Click += (s, e) =>
             {
-                if (s is MenuItem menuItem && menuItem.Tag is string selectedModelId)
+                if (s is MenuItem menuItem && menuItem.Tag is Tuple<string, string> modelInfo)
                 {
+                    string selectedModelId = modelInfo.Item1;
                     Console.WriteLine($"🖥️ Viewing Model in App: {selectedModelId}");
+
+                    // Make sure globals are updated
+                    _selectedItemId = selectedModelId;
+                    _selectedItemName = modelInfo.Item2;
+
+                    // If your method still expects a parameter, pass it
                     BtnViewInApp_Click(selectedModelId);
                 }
             };
 
-            MenuItem downloadItem = new MenuItem { Header = "📥 Download", Tag = modelId };
+            MenuItem downloadItem = new MenuItem { Header = "📥 Download" };
+            downloadItem.Tag = new Tuple<string, string>(modelId, modelName);
             downloadItem.Click += (s, e) =>
             {
-                if (s is MenuItem menuItem && menuItem.Tag is string selectedModelId)
+                if (s is MenuItem menuItem && menuItem.Tag is Tuple<string, string> modelInfo)
                 {
+                    string selectedModelId = modelInfo.Item1;
                     Console.WriteLine($"📥 Downloading Model: {selectedModelId}");
+
+                    // Make sure globals are updated
+                    _selectedItemId = selectedModelId;
+                    _selectedItemName = modelInfo.Item2;
+
+                    // If your method still expects a parameter, pass it
                     BtnDownload_Click(selectedModelId);
                 }
             };
 
-            MenuItem deleteItem = new MenuItem { Header = "🗑️ Delete", Tag = modelId };
+            MenuItem deleteItem = new MenuItem { Header = "🗑️ Delete" };
+            deleteItem.Tag = new Tuple<string, string>(modelId, modelName);
             deleteItem.Click += (s, e) =>
             {
-                if (s is MenuItem menuItem && menuItem.Tag is string selectedModelId)
+                if (s is MenuItem menuItem && menuItem.Tag is Tuple<string, string> modelInfo)
                 {
+                    string selectedModelId = modelInfo.Item1;
                     Console.WriteLine($"🗑️ Deleting Model: {selectedModelId}");
+
+                    // Make sure globals are updated 
+                    _selectedItemId = selectedModelId;
+                    _selectedItemName = modelInfo.Item2;
+
+                    // If your method still expects a parameter, pass it
                     BtnDeleteModel_Click(selectedModelId);
                 }
             };
@@ -1700,38 +1739,68 @@ namespace AssetManager.Desktop
 
             return menu;
         }
-
         private async void List_Click(object sender, MouseButtonEventArgs e)
         {
             ModelsDataGrid.Visibility = Visibility.Visible; // Show DataGrid
             Grid_View.Visibility = Visibility.Collapsed;
             isModelLoaded = false;
-
             try
             {
                 ModelsDataGrid.ItemsSource = null; // Clear previous data
-
-                if (string.IsNullOrEmpty(_selectedProjectId))
+                                                   // Fetch models for the selected project
+                List<Dictionary<string, string>> models = await GetModelsFromProject(_selectedProjectId, _folderId);
+                if (models == null || models.Count == 0)
                 {
-                    if (Models != null)
-                    {
-                        ModelsDataGrid.ItemsSource = Models;
-                    }
+                    Console.WriteLine("🔄 No models found, clearing grid.");
+                    ModelsDataGrid.ItemsSource = null;
+                    return;
                 }
-                else
+                ModelsDataGrid.ItemsSource = models;
+                Console.WriteLine($"✅ Loaded {models.Count} models.");
+
+                // Ensure SelectionChanged event is attached
+                // Note: Since you already have a comprehensive ModelsDataGrid_SelectionChanged method,
+                // this ensures it's properly attached when switching to list view
+                ModelsDataGrid.SelectionChanged -= ModelsDataGrid_SelectionChanged;
+                ModelsDataGrid.SelectionChanged += ModelsDataGrid_SelectionChanged;
+
+                // ✅ Add Versions column if it doesn't exist yet
+                if (!ModelsDataGrid.Columns.Any(col => col.Header?.ToString() == "Versions"))
                 {
-                    // Fetch models for the selected project
-                    List<Dictionary<string, string>> models = await GetModelsFromProject(_selectedProjectId, _folderId);
-
-                    if (models == null || models.Count == 0)
+                    var versionsColumn = new DataGridTemplateColumn
                     {
-                        Console.WriteLine("🔄 No models found, clearing grid.");
-                        ModelsDataGrid.ItemsSource = null;
-                        return;
-                    }
+                        Header = "Versions",
+                        Width = new DataGridLength(80)
+                    };
+                    var versionTemplate = new DataTemplate();
+                    var versionButtonFactory = new FrameworkElementFactory(typeof(Button));
+                    versionButtonFactory.SetValue(Button.ContentProperty, "Versions ▼");
+                    versionButtonFactory.SetValue(Button.WidthProperty, 70.0);
+                    versionButtonFactory.SetValue(Button.CursorProperty, Cursors.Hand);
+                    versionButtonFactory.SetValue(Button.ToolTipProperty, "Show model versions");
+                    versionButtonFactory.SetValue(Button.BackgroundProperty, Brushes.Transparent);
+                    versionButtonFactory.SetValue(Button.BorderBrushProperty, Brushes.Transparent);
 
-                    ModelsDataGrid.ItemsSource = models;
-                    Console.WriteLine($"✅ Loaded {models.Count} models.");
+                    // Open versions menu when button is clicked
+                    versionButtonFactory.AddHandler(Button.ClickEvent, new RoutedEventHandler((s, ev) =>
+                    {
+                        if (s is Button btn && btn.DataContext is Dictionary<string, string> selectedModel)
+                        {
+                            // Note: We don't need to manually update _selectedItemId here since
+                            // clicking the button will also select the row, triggering the SelectionChanged event
+
+                            ContextMenu versionsMenu = CreateModelVersionsMenu(selectedModel["Id"], selectedModel["Name"]);
+                            versionsMenu.PlacementTarget = btn;
+                            versionsMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+                            versionsMenu.IsOpen = true;
+                        }
+                    }));
+
+                    versionTemplate.VisualTree = versionButtonFactory;
+                    versionsColumn.CellTemplate = versionTemplate;
+
+                    // Add at the beginning (index 0) so it appears on the left
+                    ModelsDataGrid.Columns.Insert(0, versionsColumn);
                 }
 
                 // ✅ Ensure "Actions" column exists only once
@@ -1742,29 +1811,27 @@ namespace AssetManager.Desktop
                         Header = "Actions",
                         Width = new DataGridLength(50)
                     };
-
                     var cellTemplate = new DataTemplate();
                     var buttonFactory = new FrameworkElementFactory(typeof(Button));
-
                     buttonFactory.SetValue(Button.ContentProperty, "⋮"); // Three-dot menu
                     buttonFactory.SetValue(Button.CursorProperty, Cursors.Hand);
                     buttonFactory.SetValue(Button.ToolTipProperty, "Click for options");
-
                     // ✅ Open ContextMenu when button is clicked
                     buttonFactory.AddHandler(Button.ClickEvent, new RoutedEventHandler((s, ev) =>
                     {
                         if (s is Button btn && btn.DataContext is Dictionary<string, string> selectedModel)
                         {
+                            // Note: We don't need to manually update _selectedItemId here since
+                            // clicking the button will also select the row, triggering the SelectionChanged event
+
                             ContextMenu dynamicContextMenu = CreateModelContextMenu(selectedModel["Id"], selectedModel["Name"]);
                             dynamicContextMenu.PlacementTarget = btn;
                             dynamicContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
                             dynamicContextMenu.IsOpen = true;
                         }
                     }));
-
                     cellTemplate.VisualTree = buttonFactory;
                     actionsColumn.CellTemplate = cellTemplate;
-
                     ModelsDataGrid.Columns.Add(actionsColumn);
                 }
             }
@@ -1772,21 +1839,172 @@ namespace AssetManager.Desktop
             {
                 MessageBox.Show($"❌ Error loading models: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
-
             Grid_Border.Background = Brushes.Transparent;
             List_Border.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
         }
 
+        // New function to create versions menu
+        private ContextMenu CreateModelVersionsMenu(string modelId, string modelName)
+        {
+            ContextMenu versionsMenu = new ContextMenu();
+
+            // Add a header item (non-clickable)
+            MenuItem headerItem = new MenuItem
+            {
+                Header = $"Versions of {modelName}",
+                IsEnabled = false,
+                FontWeight = FontWeights.Bold
+            };
+            versionsMenu.Items.Add(headerItem);
+            versionsMenu.Items.Add(new Separator());
+
+            // Loading indicator
+            MenuItem loadingItem = new MenuItem
+            {
+                Header = "Loading versions...",
+                IsEnabled = false
+            };
+            versionsMenu.Items.Add(loadingItem);
+
+            // Fetch and add model versions asynchronously
+            Task.Run(async () =>
+            {
+                try
+                {
+                    var versions = await GetModelVersions(modelId);
+
+                    Dispatcher.Invoke(() =>
+                    {
+                        // Remove loading indicator
+                        versionsMenu.Items.Remove(loadingItem);
+
+                        if (versions == null || !versions.Any())
+                        {
+                            MenuItem noVersionsItem = new MenuItem
+                            {
+                                Header = "No versions available",
+                                IsEnabled = false
+                            };
+                            versionsMenu.Items.Add(noVersionsItem);
+                            return;
+                        }
+
+                        foreach (var version in versions)
+                        {
+                            MenuItem versionItem = new MenuItem
+                            {
+                                Header = $"{version["VersionName"]} - Version {version["VersionNumber"]}",
+                                Tag = version["VersionId"]
+                            };
+
+                            versionItem.Click += (s, e) =>
+                            {
+                                // Handle version selection
+                                string versionId = (string)((MenuItem)s).Tag;
+                                LoadModelVersion(modelId, versionId);
+                            };
+
+                            versionsMenu.Items.Add(versionItem);
+                        }
+                    });
+                }
+                catch (Exception ex)
+                {
+                    Dispatcher.Invoke(() =>
+                    {
+                        // Remove loading indicator
+                        versionsMenu.Items.Remove(loadingItem);
+
+                        MenuItem errorItem = new MenuItem
+                        {
+                            Header = $"Error loading versions: {ex.Message}",
+                            IsEnabled = false
+                        };
+                        versionsMenu.Items.Add(errorItem);
+                    });
+                }
+            });
+
+            return versionsMenu;
+        }
+
+        // Function to get model versions
+        private async Task<List<Dictionary<string, string>>> GetModelVersions(string modelId)
+        {
+            List<Dictionary<string, string>> versions = new List<Dictionary<string, string>>();
+
+            try
+            {
+                // Call your existing method to get versions
+                var versionsList = await GetVersionsForItemAsync(_selectedProjectId, modelId);
+
+                if (versionsList != null && versionsList.Any())
+                {
+                    foreach (var (versionId, versionName, storageId) in versionsList)
+                    {
+                        // Extract version number from the versionId
+                        string versionNumber = "Unknown";
+                        if (versionId.Contains("version="))
+                        {
+                            // Parse out the actual version number
+                            string[] parts = versionId.Split(new[] { "version=" }, StringSplitOptions.None);
+                            if (parts.Length > 1)
+                            {
+                                // Remove any non-numeric characters after the version number
+                                string versionPart = parts[1];
+                                int endIndex = 0;
+                                while (endIndex < versionPart.Length && char.IsDigit(versionPart[endIndex]))
+                                    endIndex++;
+
+                                versionNumber = versionPart.Substring(0, endIndex);
+                            }
+                        }
+
+                        versions.Add(new Dictionary<string, string>
+                {
+                    { "VersionId", versionId },
+                    { "VersionName", versionName },
+                    { "VersionNumber", versionNumber },
+                    { "StorageId", storageId ?? "N/A" }
+                });
+                    }
+
+                    // Sort versions by version number in descending order (newest first)
+                    versions = versions
+                        .OrderByDescending(v => int.TryParse(v["VersionNumber"], out int num) ? num : 0)
+                        .ToList();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error fetching model versions: {ex.Message}");
+                return null;
+            }
+
+            return versions;
+        }
+
+        // Function to handle version selection
+        private void LoadModelVersion(string modelId, string versionId)
+        {
+            Console.WriteLine($"🔍 Selected version {versionId} for model {modelId}");
+
+            // Display a notification
+            MessageBox.Show($"Selected Version ID: {versionId} for Model ID: {modelId}",
+                            "Version Selected",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Information);
+
+            // You can add additional functionality here:
+            // - Load the version details
+            // - Display the version in a viewer
+            // - Enable specific actions for this version
+        }
         private async void Grid_Click(object sender, MouseButtonEventArgs e)
         {
             if (string.IsNullOrEmpty(_selectedProjectId))
             {
                 MessageBox.Show("❌ Please select a project to view models.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
-                CreateGridView(Models);
-                ModelsDataGrid.Visibility = Visibility.Collapsed; // Hide DataGrid
-                Grid_View.Visibility = Visibility.Visible; // Show Grid View
-                List_Border.Background = Brushes.Transparent;
-                Grid_Border.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
                 return;
             }
 
@@ -1798,10 +2016,224 @@ namespace AssetManager.Desktop
 
             try
             {
-                DisplayGridModels();
+                // Fetch models for the selected project only
+                List<Dictionary<string, string>> models = await GetModelsFromProject(_selectedProjectId, _folderId);
 
+                if (models == null || models.Count == 0)
+                {
+                    MessageBox.Show("No models found for this project.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
 
-                //Console.WriteLine($"✅ {models.Count} models loaded successfully in grid view.");
+                foreach (var model in models)
+                {
+                    string projectId = _selectedProjectId;
+                    string itemId = model["Id"];
+
+                    // UI Container for Model
+                    Border modelSquare = new Border
+                    {
+                        Width = 263,
+                        Height = 300, // Increased to fit the image
+                        CornerRadius = new CornerRadius(5),
+                        Background = Brushes.White,
+                        BorderBrush = Brushes.LightGray,
+                        BorderThickness = new Thickness(1),
+                        Margin = new Thickness(10),
+                        Effect = new DropShadowEffect
+                        {
+                            Color = Colors.Black,
+                            Opacity = 0.1,
+                            BlurRadius = 10,
+                            ShadowDepth = 2
+                        },
+                        Tag = model, // Store the model data in the Tag for easy access
+                        Cursor = Cursors.Hand // Change cursor to indicate clickability
+                    };
+
+                    // Add mouse click handler to the entire model card
+                    modelSquare.MouseLeftButtonDown += (s, args) =>
+                    {
+                        if (s is Border border && border.Tag is Dictionary<string, string> selectedModel)
+                        {
+                            // Set the selected model and update all tracking variables
+                            _selectedModel = selectedModel;
+
+                            // Extract and set all relevant IDs, similar to your ModelsDataGrid_SelectionChanged
+                            if (selectedModel.TryGetValue("Id", out string modelId) || selectedModel.TryGetValue("id", out modelId))
+                            {
+                                _selectedItemId = modelId;
+                                Console.WriteLine($"✅ Set selected item ID: {_selectedItemId}");
+                            }
+                            else
+                            {
+                                _selectedItemId = null;
+                                Console.WriteLine("❌ Model ID missing in selection.");
+                            }
+
+                            // Set the name and related project properties
+                            _selectedItemName = selectedModel.ContainsKey("Name") ? selectedModel["Name"] :
+                                               (selectedModel.ContainsKey("name") ? selectedModel["name"] : "Unknown");
+
+                            // Set the project ID - either from the model or use the currently selected one
+                            if (selectedModel.TryGetValue("ProjectId", out string projId) || selectedModel.TryGetValue("projectId", out projId))
+                            {
+                                _selectedProjectId = projId;
+                                Console.WriteLine($"✅ Set selected project ID: {_selectedProjectId}");
+                            }
+
+                            _selectedProjectName = selectedModel.ContainsKey("Project") ? selectedModel["Project"] :
+                                                  (selectedModel.ContainsKey("project") ? selectedModel["project"] : _selectedProjectName);
+
+                            Console.WriteLine($"✅ Selected Model: {_selectedItemName} (ID: {_selectedItemId}, Project ID: {_selectedProjectId})");
+
+                            // Call FetchAndSetStorageId asynchronously
+                            Task.Run(async () => await FetchAndSetStorageId());
+
+                            // Highlight the selected model
+                            HighlightSelectedModel(border);
+                        }
+                    };
+
+                    StackPanel content = new StackPanel
+                    {
+                        Orientation = Orientation.Vertical,
+                        VerticalAlignment = VerticalAlignment.Center,
+                        HorizontalAlignment = HorizontalAlignment.Left
+                    };
+
+                    // Thumbnail Image
+                    Image thumbnailImage = new Image
+                    {
+                        Width = 200,
+                        Height = 200,
+                        Margin = new Thickness(10),
+                        Stretch = Stretch.Uniform
+                    };
+
+                    // Load thumbnail asynchronously
+                    _ = ShowThumbnail(projectId, itemId, thumbnailImage);
+
+                    TextBlock modelName = new TextBlock
+                    {
+                        Text = model["Name"],
+                        FontSize = 16,
+                        FontWeight = FontWeights.Normal,
+                        TextAlignment = TextAlignment.Center,
+                        HorizontalAlignment = HorizontalAlignment.Left,
+                        TextWrapping = TextWrapping.Wrap,
+                        Margin = new Thickness(5, 2, 5, 2)
+                    };
+
+                    // ✅ Add Versions dropdown button
+                    Button versionsButton = new Button
+                    {
+                        Content = "Versions ▼",
+                        FontSize = 12,
+                        Width = 75,
+                        Height = 25,
+                        Background = Brushes.Transparent,
+                        BorderBrush = new SolidColorBrush(Colors.LightGray),
+                        BorderThickness = new Thickness(1),
+                        Padding = new Thickness(5, 2, 5, 2),
+                        HorizontalAlignment = HorizontalAlignment.Left,
+                        ToolTip = "Show model versions",
+                        Margin = new Thickness(0, 0, 5, 0)
+                    };
+
+                    // Ensure the versions button has the correct model assigned
+                    versionsButton.DataContext = model;
+
+                    // Handle versions button click
+                    versionsButton.Click += (s, ev) =>
+                    {
+                        if (s is Button btn && btn.DataContext is Dictionary<string, string> selectedModel)
+                        {
+                            string selectedModelId = selectedModel["Id"];
+                            string selectedModelName = selectedModel["Name"];
+
+                            // Update global variables directly
+                            _selectedItemId = selectedModelId;
+                            _selectedModel = selectedModel;
+
+                            Console.WriteLine($"🔍 Versions button clicked for Model ID: {selectedModelId}");
+
+                            // Generate versions menu dynamically
+                            ContextMenu versionsMenu = CreateModelVersionsMenu(selectedModelId, selectedModelName);
+                            versionsMenu.PlacementTarget = btn;
+                            versionsMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+                            versionsMenu.IsOpen = true;
+                        }
+                    };
+
+                    // ✅ Three-dot menu button
+                    Button menuButton = new Button
+                    {
+                        Content = "⋮", // Three-dot icon
+                        FontSize = 18,
+                        Width = 30,
+                        Height = 30,
+                        Background = Brushes.Transparent,
+                        BorderBrush = Brushes.Transparent,
+                        Padding = new Thickness(5),
+                        HorizontalAlignment = HorizontalAlignment.Right,
+                        ToolTip = "More Options"
+                    };
+
+                    // ✅ Ensure the menu button has the correct model assigned
+                    menuButton.DataContext = model;
+
+                    // ✅ Ensure the menu opens on button click and retrieves correct ID dynamically
+                    menuButton.Click += (s, ev) =>
+                    {
+                        if (s is Button btn && btn.DataContext is Dictionary<string, string> selectedModel)
+                        {
+                            string selectedModelId = selectedModel["Id"];
+                            string selectedModelName = selectedModel["Name"];
+
+                            // Update global variables directly
+                            _selectedItemId = selectedModelId;
+                            _selectedModel = selectedModel;
+
+                            Console.WriteLine($"🔍 Three-dot menu clicked for Model ID: {selectedModelId}");
+
+                            // ✅ Generate ContextMenu dynamically on click
+                            ContextMenu dynamicContextMenu = CreateModelContextMenu(selectedModelId, selectedModelName);
+
+                            dynamicContextMenu.PlacementTarget = btn;
+                            dynamicContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+                            dynamicContextMenu.IsOpen = true;
+                        }
+                    };
+
+                    // Create a panel for just the versions button
+                    StackPanel versionsPanel = new StackPanel
+                    {
+                        Orientation = Orientation.Horizontal,
+                        HorizontalAlignment = HorizontalAlignment.Left,
+                        Margin = new Thickness(5, 2, 5, 2)
+                    };
+                    versionsPanel.Children.Add(versionsButton);
+
+                    // Add elements to content panel in the desired order
+                    content.Children.Add(thumbnailImage);
+                    content.Children.Add(versionsPanel); // Versions button first
+
+                    // Container for Model Name + Three-dot menu
+                    DockPanel namePanel = new DockPanel();
+                    DockPanel.SetDock(modelName, Dock.Left);
+                    DockPanel.SetDock(menuButton, Dock.Right);
+                    namePanel.Children.Add(menuButton);
+                    namePanel.Children.Add(modelName);
+
+                    // Add the name panel after the versions button
+                    content.Children.Add(namePanel);
+
+                    modelSquare.Child = content;
+                    ModelsContainer.Children.Add(modelSquare);
+                }
+
+                Console.WriteLine($"✅ {models.Count} models loaded successfully in grid view.");
             }
             catch (Exception ex)
             {
@@ -1812,6 +2244,26 @@ namespace AssetManager.Desktop
             List_Border.Background = Brushes.Transparent;
             Grid_Border.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
         }
+
+        // Helper method to highlight the currently selected model
+        private void HighlightSelectedModel(Border selectedModel)
+        {
+            // Reset all models to default appearance
+            foreach (var child in ModelsContainer.Children)
+            {
+                if (child is Border border)
+                {
+                    border.BorderBrush = Brushes.LightGray;
+                    border.BorderThickness = new Thickness(1);
+                }
+            }
+
+            // Highlight the selected model
+            selectedModel.BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#2196F3")); // Blue highlight
+            selectedModel.BorderThickness = new Thickness(2);
+        }
+
+        // Helper method to highlight the currently selected model
 
         //private async void Grid_Click(object sender, MouseButtonEventArgs e)
         //{
@@ -2459,7 +2911,7 @@ namespace AssetManager.Desktop
             return openFileDialog.ShowDialog() == true ? openFileDialog.FileName : null;
         }
 
-        private async void BtnViewInFusion_Click(string _selectedItemId)
+        private async void BtnViewInFusion_Click(object sender, RoutedEventArgs e)
         {
             Console.WriteLine($"View in Fusion button clicked. Using global IDs:");
             Console.WriteLine($"- Selected Item ID: {_selectedItemId}");
@@ -2474,7 +2926,6 @@ namespace AssetManager.Desktop
             }
 
             string modelFilePath = FindExistingModelFile(_selectedItemName);
-
             if (modelFilePath == null)
             {
                 Console.WriteLine("Downloading model");
@@ -2483,29 +2934,27 @@ namespace AssetManager.Desktop
                 await fileDownloadService.DownloadModelAsync(_selectedProjectId, _selectedItemId);
             }
 
-        
             try
             {
                 string saveDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
                     "DownloadedModels", _selectedItemName);
                 Console.WriteLine("Model dir: " + saveDirectory);
-
                 // Write the file path to a shared file
                 string addInDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
                     "Autodesk", "Autodesk Fusion 360", "API", "AddIns", "SaveToHub2");
+
+                // Make sure the directory exists
+                if (!Directory.Exists(addInDirectory))
+                {
+                    Directory.CreateDirectory(addInDirectory);
+                }
+
                 string pathInfoFile = Path.Combine(addInDirectory, "current_model_path.txt");
                 File.WriteAllText(pathInfoFile, saveDirectory);
                 Console.WriteLine($"✅ Saved model path to: {pathInfoFile}");
 
-                if (!Directory.Exists(saveDirectory))
-                {
-                    LaunchFusionWithModel(saveDirectory);
-                }
-                else
-                {
-                    // Directory exists, so we can just launch Fusion with the model
-                    LaunchFusionWithModel(saveDirectory);
-                }
+                // Launch Fusion with the model
+                LaunchFusionWithModel(saveDirectory);
             }
             catch (Exception ex)
             {
@@ -2514,53 +2963,53 @@ namespace AssetManager.Desktop
             }
         }
 
-    /*    private async void BtnViewInFusion_Click(object sender, RoutedEventArgs e)
-        {
-            Console.WriteLine($"View in Fusion button clicked. Using global IDs:");
-            Console.WriteLine($"- Selected Item ID: {_selectedItemId}");
-            Console.WriteLine($"- Selected Project ID: {_selectedProjectId}");
-            Console.WriteLine($"- Selected Item Name: {_selectedItemName}");
-
-            if (string.IsNullOrEmpty(_selectedItemId) || string.IsNullOrEmpty(_selectedProjectId))
+        /*    private async void BtnViewInFusion_Click(object sender, RoutedEventArgs e)
             {
-                MessageBox.Show("❌ Please select a model before viewing in Fusion 360.", "Error", MessageBoxButton.OK,
-                    MessageBoxImage.Error);
-                return;
-            }
+                Console.WriteLine($"View in Fusion button clicked. Using global IDs:");
+                Console.WriteLine($"- Selected Item ID: {_selectedItemId}");
+                Console.WriteLine($"- Selected Project ID: {_selectedProjectId}");
+                Console.WriteLine($"- Selected Item Name: {_selectedItemName}");
 
-            string modelFilePath = FindExistingModelFile(_selectedItemName);
-
-            if (modelFilePath == null)
-            {
-                Console.WriteLine("Downloading model");
-                // No matching file found, so download it
-                var fileDownloadService = new FileDownloadService();
-                await fileDownloadService.DownloadModelAsync(_selectedProjectId, _selectedItemId);
-            }
-
-            try
-            {
-                string saveDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-                    "DownloadedModels", _selectedItemName);
-                Console.WriteLine("Model dir: " + saveDirectory);
-
-                if (!Directory.Exists(saveDirectory))
+                if (string.IsNullOrEmpty(_selectedItemId) || string.IsNullOrEmpty(_selectedProjectId))
                 {
-                    LaunchFusionWithModel(saveDirectory);
+                    MessageBox.Show("❌ Please select a model before viewing in Fusion 360.", "Error", MessageBoxButton.OK,
+                        MessageBoxImage.Error);
+                    return;
                 }
-                else
+
+                string modelFilePath = FindExistingModelFile(_selectedItemName);
+
+                if (modelFilePath == null)
                 {
-                    // Directory exists, so we can just launch Fusion with the model
-                    LaunchFusionWithModel(saveDirectory);
+                    Console.WriteLine("Downloading model");
+                    // No matching file found, so download it
+                    var fileDownloadService = new FileDownloadService();
+                    await fileDownloadService.DownloadModelAsync(_selectedProjectId, _selectedItemId);
+                }
+
+                try
+                {
+                    string saveDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+                        "DownloadedModels", _selectedItemName);
+                    Console.WriteLine("Model dir: " + saveDirectory);
+
+                    if (!Directory.Exists(saveDirectory))
+                    {
+                        LaunchFusionWithModel(saveDirectory);
+                    }
+                    else
+                    {
+                        // Directory exists, so we can just launch Fusion with the model
+                        LaunchFusionWithModel(saveDirectory);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"❌ Error launching Fusion script: {ex.Message}\n{ex.StackTrace}",
+                        "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"❌ Error launching Fusion script: {ex.Message}\n{ex.StackTrace}",
-                    "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-*/
+    */
 
         #endregion
 
@@ -2873,6 +3322,12 @@ namespace AssetManager.Desktop
                 ModelsDataGrid.Visibility = Visibility.Visible;
                 Grid_View.Visibility = Visibility.Collapsed;
             }
+            _selectedItemId = null;
+            //_selectedVersionId = null; // If you're tracking version ID
+            _objectId = null; // If you're tracking storage ID
+           // _currentModelUrn = null;   // If you're tracking the URN
+
+            Console.WriteLine("🔄 Global variables reset after closing Forge Viewer");
 
             Console.WriteLine($"🔄 Returning to {_lastViewType} view.");
         }
