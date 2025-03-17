@@ -480,6 +480,8 @@
 
                     </Button>
                     
+                    <Button x:Name="BtnMarketplace" Content="Marketplace" Width="80" Height="30"/>
+                    
                     <!-- <Border MouseLeftButtonDown="UpArrow_Click" x:Name="UpArrowBorder" Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" Cursor="Hand" Margin="0,0,5,0" Visibility="Hidden">
                         <md:PackIcon x:Name="UpArrow" Kind="ArrowUpBoldOutline" Height="30" Width="30" VerticalAlignment="Center" HorizontalAlignment="Center"/> 
                     </Border>
@@ -905,22 +907,15 @@
         <Border Grid.Row="1" Grid.Column="3" BorderBrush="#797979" BorderThickness="1,0,0,0" Padding="5,0,5,0">
             <Grid>
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <!-- Metadata -->
-                    <RowDefinition Height="Auto"/>
-                    <!-- Tags -->
-                    <RowDefinition Height="Auto"/>
-                    <!-- Visibility -->
-                    <RowDefinition Height="Auto"/>
-                    <!-- Upvotes -->
-                    <RowDefinition Height="Auto"/>
-                    <!-- Comments Header -->
-                    <RowDefinition Height="Auto"/>
-                    <!-- Post Comments -->
-                    <RowDefinition Height="Auto"/>
-                    <!-- Sort Comments -->
-                    <RowDefinition Height="*"/>
-                    <!-- Comments List -->
+                    <RowDefinition Height="Auto"/> <!-- Metadata -->
+                    <RowDefinition Height="Auto"/> <!-- Tags -->
+                    <RowDefinition Height="Auto"/> <!-- Visibility -->
+                    <RowDefinition Height="Auto"/> <!-- Upvotes -->
+                    <RowDefinition Height="Auto"/> <!-- List Model -->
+                    <RowDefinition Height="Auto"/> <!-- Comments Header -->
+                    <RowDefinition Height="Auto"/> <!-- Post Comments -->
+                    <RowDefinition Height="Auto"/> <!-- Sort Comments -->
+                    <RowDefinition Height="*"/> <!-- Comments List -->
                 </Grid.RowDefinitions>
                 
                 <TextBlock Text="Model Info"/>
@@ -940,112 +935,7 @@
                     <md:PackIcon x:Name="DownArrow" Kind="ArrowDownBoldOutline" Height="30" Width="30" VerticalAlignment="Center" HorizontalAlignment="Center"/> <!-- Foreground="Red" -->
                 </Border>
                 
-                <!-- Tags Check Box -->
-                <ListBox Grid.Row="6" Name="TagsListBox" Width="200" Height="200" Visibility="Hidden" HorizontalAlignment="Left">
-                    <CheckBox Content="D and D"/>
-                    <CheckBox Content="Pathfinder"/>
-                    <CheckBox Content="Warhammer 40K"/>
-                    <CheckBox Content="Warhammer AOS"/>
-                    <CheckBox Content="Call of Cthulhu"/>
-                    <CheckBox Content="Shadowrun"/>
-                    <CheckBox Content="Starfinder"/>
-                    <CheckBox Content="FATE"/>
-                    <CheckBox Content="GURPS"/>
-                    <CheckBox Content="World of Darkness"/>
-                    <CheckBox Content="Savage Worlds"/>
-                    <CheckBox Content="Blades in the Dark"/>
-                    <CheckBox Content="Cyberpunk RED"/>
-                    <CheckBox Content="Star Wars RPG"/>
-                    <CheckBox Content="Fantasy"/>
-                    <CheckBox Content="Sci-Fi"/>
-                    <CheckBox Content="Steampunk"/>
-                    <CheckBox Content="Cyberpunk"/>
-                    <CheckBox Content="Post-Apocalyptic"/>
-                    <CheckBox Content="Modern"/>
-                    <CheckBox Content="Horror"/>
-                    <CheckBox Content="Mythology"/>
-                    <CheckBox Content="Dark Fantasy"/>
-                    <CheckBox Content="High Fantasy"/>
-                    <CheckBox Content="Medieval"/>
-                    <CheckBox Content="Western"/>
-                    <CheckBox Content="Space Opera"/>
-                    <CheckBox Content="Lovecraftian"/>
-                    <CheckBox Content="Dieselpunk"/>
-                    <CheckBox Content="Hero"/>
-                    <CheckBox Content="Villain"/>
-                    <CheckBox Content="NPC"/>
-                    <CheckBox Content="Monster"/>
-                    <CheckBox Content="Boss Monster"/>
-                    <CheckBox Content="Minion"/>
-                    <CheckBox Content="Humanoid"/>
-                    <CheckBox Content="Vehicle"/>
-                    <CheckBox Content="Mech"/>
-                    <CheckBox Content="Construct"/>
-                    <CheckBox Content="Summonable Creature"/>
-                    <CheckBox Content="Undead"/>
-                    <CheckBox Content="Beast"/>
-                    <CheckBox Content="Mount"/>
-                    <CheckBox Content="Dragon"/>
-                    <CheckBox Content="Giant"/>
-                    <CheckBox Content="Warrior"/>
-                    <CheckBox Content="Knight"/>
-                    <CheckBox Content="Paladin"/>
-                    <CheckBox Content="Barbarian"/>
-                    <CheckBox Content="Rogue"/>
-                    <CheckBox Content="Assassin"/>
-                    <CheckBox Content="Ranger"/>
-                    <CheckBox Content="Hunter"/>
-                    <CheckBox Content="Sorcerer"/>
-                    <CheckBox Content="Wizard"/>
-                    <CheckBox Content="Cleric"/>
-                    <CheckBox Content="Druid"/>
-                    <CheckBox Content="Necromancer"/>
-                    <CheckBox Content="Bard"/>
-                    <CheckBox Content="Monk"/>
-                    <CheckBox Content="Gunslinger"/>
-                    <CheckBox Content="Artificer"/>
-                    <CheckBox Content="Alchemist"/>
-                    <CheckBox Content="Psionic"/>
-                    <CheckBox Content="Human"/>
-                    <CheckBox Content="Elf"/>
-                    <CheckBox Content="Dwarf"/>
-                    <CheckBox Content="Orc"/>
-                    <CheckBox Content="Goblin"/>
-                    <CheckBox Content="Troll"/>
-                    <CheckBox Content="Demon"/>
-                    <CheckBox Content="Devil"/>
-                    <CheckBox Content="Undead"/>
-                    <CheckBox Content="Skeleton"/>
-                    <CheckBox Content="Zombie"/>
-                    <CheckBox Content="Werewolf"/>
-                    <CheckBox Content="Vampire"/>
-                    <CheckBox Content="Golem"/>
-                    <CheckBox Content="Elemental"/>
-                    <CheckBox Content="Celestial"/>
-                    <CheckBox Content="Fairy"/>
-                    <CheckBox Content="Tiefling"/>
-                    <CheckBox Content="Dragonborn"/>
-                    <CheckBox Content="Halfling"/>
-                    <CheckBox Content="Gnome"/>
-                    <CheckBox Content="Lizardfolk"/>
-                    <CheckBox Content="Beholder"/>
-                    <CheckBox Content="Eldritch Horror"/>
-                    <CheckBox Content="Alien"/>
-                    <CheckBox Content="Kingdom Army"/>
-                    <CheckBox Content="Rebel Forces"/>
-                    <CheckBox Content="Pirates"/>
-                    <CheckBox Content="Cultists"/>
-                    <CheckBox Content="Dark Brotherhood"/>
-                    <CheckBox Content="Holy Order"/>
-                    <CheckBox Content="Empire"/>
-                    <CheckBox Content="Mercenaries"/>
-                    <CheckBox Content="Guilds"/>
-                    <CheckBox Content="Coven"/>
-                    <CheckBox Content="Druidic Circle"/>
-                    <CheckBox Content="Necromantic Order"/>
-                    <CheckBox Content="Intergalactic Federation"/>
-                    <CheckBox Content="Hive Mind"/>
-                </ListBox>
+                <Button x:Name="BtnListModel"  Content="List Model"  Width="75" Height="30" Click="BtnListModel_Click" Grid.Row="4" />
                 
                 <!-- Add tags button -->
                 <!-- <Button x:Name="BtnAddTags"  
@@ -1074,11 +964,11 @@
                 </ListBox> -->
                 
                 <!-- Comments Header -->
-                <TextBlock Grid.Row="4" x:Name="CommentsAmount" Text="All Comments (0)"/>
+                <TextBlock Grid.Row="5" x:Name="CommentsAmount" Text="All Comments (0)"/>
                 
                 <!-- Comments List -->
                 <ListBox x:Name="ListComments" Width="Auto" Height="Auto" 
-                         Grid.Row="7" HorizontalAlignment="Center">
+                         Grid.Row="8" HorizontalAlignment="Center">
                     <ListBox.ItemTemplate>
                         <DataTemplate>
                             <Grid>
@@ -1097,17 +987,17 @@
 
                 <!-- Comment Input -->
                 <TextBox x:Name="CommentContent" Text="Add a comment"
-                         Width="75" Height="30" Grid.Row="5" HorizontalAlignment="Left"/>
+                         Width="75" Height="30" Grid.Row="6" HorizontalAlignment="Left"/>
 
                 <!-- Post Comment Button -->
                 <Button x:Name="BtnAddComment"  
                         Content="Post Comment"  
                         Width="75" Height="30" 
                         Click="BtnAddComment_Click" 
-                        Grid.Row="5" HorizontalAlignment="Right"/>
+                        Grid.Row="6" HorizontalAlignment="Right"/>
 
                 <!-- Sort By for Comments -->
-                <ComboBox Grid.Row="6" Name="SortByComboBox" SelectionChanged="SortByComboBox_SelectionChanged" Width="150" Height="30">
+                <ComboBox Grid.Row="7" Name="SortByComboBox" SelectionChanged="SortByComboBox_SelectionChanged" Width="150" Height="30">
                     <ComboBoxItem>Newest</ComboBoxItem>
                     <ComboBoxItem>Oldest</ComboBoxItem>
                 </ComboBox>

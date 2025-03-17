@@ -4539,6 +4539,11 @@ namespace AssetManager.Desktop
             public DateTime CreatedDateTime { get; set; }
         }
         
+        //marketplace
+        private void BtnListModel_Click(object sender, RoutedEventArgs e)
+        {
+            
+        }
         
         //COMMENTED OUT FUNCTIONS//
 
@@ -4738,6 +4743,7 @@ namespace AssetManager.Desktop
 */
 
 
+        
     }
 
 }
