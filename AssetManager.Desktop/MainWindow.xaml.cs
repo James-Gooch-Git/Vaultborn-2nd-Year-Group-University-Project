@@ -300,6 +300,17 @@ namespace AssetManager.Desktop
             var userData = await database.Users.Find(x => x.Id == userId).FirstOrDefaultAsync();
             return userData.ProfilePic;
         }
+        
+        private async Task<string> GetModelName(string modelId)
+        {
+            MongoConnection database = new MongoConnection();
+            var userData = await database.ModelData.Find(x => x.Id == modelId).FirstOrDefaultAsync();
+            if (userData == null)
+            {
+                return "Unknown Name";
+            }
+            return userData.Name;
+        }
         #endregion
 
         //NEEDS MIGRATING TO HUBS SERVICE || HUBS//
@@ -4540,8 +4551,78 @@ namespace AssetManager.Desktop
         }
         
         //marketplace
-        private void BtnListModel_Click(object sender, RoutedEventArgs e)
+        private async void BtnListModel_Click(object sender, RoutedEventArgs e)
         {
+            MongoConnection database = new MongoConnection();
+            var findListing = await database.ListedModels.Find(x => x.ModelId == _selectedItemId).FirstOrDefaultAsync();
+            if (findListing != null)
+            {
+                MessageBox.Show($"Model already listed");
+                return;
+            }
+            ListModelPopup.IsOpen = true;
+        }
+        
+        private async void BtnList_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                MongoConnection database = new MongoConnection();
+                
+                if ((PriceTextBox.Text == "Enter Price" || string.IsNullOrEmpty(PriceTextBox.Text)) ||
+                    (DescriptionTextBox.Text == "Enter Description") || string.IsNullOrEmpty(DescriptionTextBox.Text))
+                {
+                    MessageBox.Show("Please enter a price or description");
+                    return;
+                }
+
+                if (double.TryParse(PriceTextBox.Text, out double price))
+                {
+                    string[] part = PriceTextBox.Text.Split('.');
+                    if (part.Length != 2 )
+                    {
+                        MessageBox.Show("Please enter a valid price");
+                        return;
+                    }
+
+                    if (part[1].Length != 2)
+                    {
+                        MessageBox.Show("Please enter a valid price");
+                        return;
+                    }
+                }
+                else
+                {
+                    MessageBox.Show("Please enter a valid price");
+                    return;
+                }
+
+                var modelTags = await GetModelTags();
+                List<string> tags = new List<string>();
+                foreach (var tag in modelTags.Tags)
+                {
+                    tags.Add(tag);
+                }
+
+                string modelName = await GetModelName(_selectedItemId);
+                
+                ListedModels models = new ListedModels()
+                {
+                    ModelId = _selectedItemId,
+                    Name = modelName,
+                    SellerId = _userId,
+                    Price = price,
+                    Tags = tags,
+                    Description = DescriptionTextBox.Text
+                };
+                await database.ListedModels.InsertOneAsync(models);
+                
+                MessageBox.Show($"Model listing successful!");
+            }
+            catch (Exception exception)
+            {
+                MessageBox.Show($"Error: {exception.Message}");
+            }
             
         }
         

@@ -937,6 +937,30 @@
                 
                 <Button x:Name="BtnListModel"  Content="List Model"  Width="75" Height="30" Click="BtnListModel_Click" Grid.Row="4" />
                 
+                <Popup x:Name="ListModelPopup" Placement="Bottom" PlacementTarget="{Binding ElementName=BtnListModel}" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade" HorizontalOffset="-250">
+                        <Border x:Name="ListModelBorder" Background="#F0F0F0" CornerRadius="5"
+                                Width="200" Height="200" Margin="5">
+                            <!-- <Border.Effect>
+                                <DropShadowEffect BlurRadius="50" ShadowDepth="10" Color="Black" Opacity="0.2"/>
+                            </Border.Effect> -->
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="30"/> <!-- Price -->
+                                    <RowDefinition Height="*"/> <!-- Description -->
+                                    <RowDefinition Height="30"/> <!-- List -->
+                                </Grid.RowDefinitions>
+                                
+                                <TextBlock Text="Price:" HorizontalAlignment="Left"/>
+                                <TextBox x:Name="PriceTextBox" Text="Enter Price" HorizontalAlignment="Right" MinWidth="50"/>
+                                
+                                <TextBlock Grid.Row="1" Text="Description:" HorizontalAlignment="Left"/>
+                                <TextBox Grid.Row="1" x:Name="DescriptionTextBox" Text="Enter Description" HorizontalAlignment="Right" MinWidth="100"/>
+                                
+                                <Button Grid.Row="2" Content="List" Click="BtnList_Click" Width="80" Height="20"/>
+                            </Grid>
+                        </Border>
+                    </Popup>
+                
                 <!-- Add tags button -->
                 <!-- <Button x:Name="BtnAddTags"  
                         Content="Update Selected Tags"

@@ -15,7 +15,7 @@ public class ListedModels
     public string SellerId { get; set; }
     
     [BsonElement("_price")]
-    public float Price { get; set; }
+    public double Price { get; set; }
     
     [BsonElement("_tags")]
     public List<string> Tags { get; set; } = new List<string>();
