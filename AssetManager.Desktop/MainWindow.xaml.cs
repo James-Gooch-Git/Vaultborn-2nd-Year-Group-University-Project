@@ -17,6 +17,7 @@ using System.Net;
 using System.Windows.Input;
 using System.Windows.Media.Effects;
 
+
 using System.Text;
 
 using Microsoft.Web.WebView2.Core;
@@ -134,6 +135,9 @@ namespace AssetManager.Desktop
                     actionsColumn.CellTemplate = cellTemplate;
 
                     ModelsDataGrid.Columns.Add(actionsColumn);
+                    
+                    slider.ValueChanged += Slider_ValueChanged;
+                    sliderValue.Text = "Value: " + slider.Value.ToString();
                 }
 
                 var hubDetails = await DataManagement.GetPersonalHubDetails();
@@ -3408,12 +3412,12 @@ namespace AssetManager.Desktop
                 Console.WriteLine("VERSION TEST: " + version.ToString());
             }
         }
+        
         private void Slider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            // Update the displayed value
-            selectedValue.Text = "Selected Value: " + e.NewValue.ToString("0");
+            // Update the TextBlock with the current slider value
+            sliderValue.Text = "Value: " + e.NewValue.ToString();
         }
-
         #endregion
 
 
