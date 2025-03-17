@@ -67,35 +67,58 @@ public class FileDownloadService
         }
     }
 
-/*    private async Task<string> GetStorageIdFromItem(string projectId, string itemId, string accessToken)
+    public async Task DownloadModelAndSaveMetadata(string _selectedProjectId, string _selectedItemId, string _selectedItemName, string _selectedFolderId)
     {
-        string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/items/{itemId}";
+        await DownloadModelAsync(_selectedProjectId, _selectedItemId);
 
-        using var client = new HttpClient();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        string saveDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "DownloadedModels");
+        string modelPath = Path.Combine(saveDirectory, _selectedItemName); // Model file path
 
-        HttpResponseMessage response = await client.GetAsync(url);
-        if (!response.IsSuccessStatusCode)
+        string metadataPath = modelPath + ".metadata.json";
+
+        // Write metadata
+        var metadata = new
         {
+            projectId = _selectedProjectId,
+            folderId = _selectedFolderId,
+            itemId = _selectedItemId,
+            itemName = _selectedItemName
+        };
+        File.WriteAllText(metadataPath, System.Text.Json.JsonSerializer.Serialize(metadata));
+
+        Console.WriteLine($"✅ Model metadata saved: {metadataPath}");
+    }
+
+
+    /*    private async Task<string> GetStorageIdFromItem(string projectId, string itemId, string accessToken)
+        {
+            string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/items/{itemId}";
+
+            using var client = new HttpClient();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+            HttpResponseMessage response = await client.GetAsync(url);
+            if (!response.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            string jsonResponse = await response.Content.ReadAsStringAsync();
+            using JsonDocument doc = JsonDocument.Parse(jsonResponse);
+            JsonElement root = doc.RootElement;
+
+            if (root.TryGetProperty("included", out JsonElement includedArray) && includedArray.GetArrayLength() > 0)
+            {
+                return includedArray[0]
+                    .GetProperty("relationships")
+                    .GetProperty("storage")
+                    .GetProperty("data")
+                    .GetProperty("id")
+                    .GetString();
+            }
+
             return null;
-        }
-
-        string jsonResponse = await response.Content.ReadAsStringAsync();
-        using JsonDocument doc = JsonDocument.Parse(jsonResponse);
-        JsonElement root = doc.RootElement;
-
-        if (root.TryGetProperty("included", out JsonElement includedArray) && includedArray.GetArrayLength() > 0)
-        {
-            return includedArray[0]
-                .GetProperty("relationships")
-                .GetProperty("storage")
-                .GetProperty("data")
-                .GetProperty("id")
-                .GetString();
-        }
-
-        return null;
-    }*/
+        }*/
 
     public async Task<string> GetStorageIdFromItem(string projectId, string itemId)
     {
@@ -264,28 +287,7 @@ public class FileDownloadService
         return string.Concat(fileName.Where(c => !invalidChars.Contains(c)));
     }
     
-    public async Task DownloadModelAndSaveMetadata(string _selectedProjectId, string _selectedItemId, string _selectedItemName, string _selectedFolderId)
-    {   
-        await DownloadModelAsync(_selectedProjectId, _selectedItemId);
-
-        string saveDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "DownloadedModels");
-        string modelPath = Path.Combine(saveDirectory, _selectedItemName); // Model file path
-
-        string metadataPath = modelPath + ".metadata.json";
-
-        // Write metadata
-        var metadata = new
-        {
-            projectId = _selectedProjectId,
-            folderId = _selectedFolderId,
-            itemId = _selectedItemId,
-            itemName = _selectedItemName
-        };
-        File.WriteAllText(metadataPath, System.Text.Json.JsonSerializer.Serialize(metadata));
-
-        Console.WriteLine($"✅ Model metadata saved: {metadataPath}");
-    }
-
+ 
 }
 
 

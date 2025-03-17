@@ -62,6 +62,7 @@ namespace AssetManager.Desktop
                 HandleLogout();
             }
             InitializeComponent();
+            InitializeWebView();
         }
 
         private void HandleLogout()

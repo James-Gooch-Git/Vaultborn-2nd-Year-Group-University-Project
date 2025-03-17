@@ -14,9 +14,99 @@
       <None Remove="Fusion\FusionAddinFiles\**" />
     </ItemGroup>
 
+	<ItemGroup>
+		<None Include="Fusion\Resources\*.env" CopyToOutputDirectory="PreserveNewest" />
+		<None Include="Fusion\Resources\config.py" CopyToOutputDirectory="PreserveNewest" />
+		<None Include="Fusion\Resources\savetohub_palette.html" CopyToOutputDirectory="PreserveNewest" />
+		<None Include="Fusion\Resources\AddInIcon.svg" CopyToOutputDirectory="PreserveNewest" />
+		<None Include="Fusion\Resources\commands\**\*" CopyToOutputDirectory="PreserveNewest" />
+		<None Include="Fusion\Resources\lib\fusionAddInUtils\**\*" CopyToOutputDirectory="PreserveNewest" />
+	</ItemGroup>
 
-    <ItemGroup>
+	<ItemGroup>
+      <EmbeddedResource Include="Fusion\Resources\.env">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <EmbeddedResource Include="Fusion\Resources\AddInIcon.svg">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <EmbeddedResource Include="Fusion\Resources\commands\commandDialog\entry.py">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </EmbeddedResource>
+		<EmbeddedResource Include="Fusion\Resources\commands\commandDialog\resources\16x16.png">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</EmbeddedResource>
+      <EmbeddedResource Include="Fusion\Resources\commands\commandDialog\resources\32x32.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <EmbeddedResource Include="Fusion\Resources\commands\commandDialog\resources\64x64.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <EmbeddedResource Include="Fusion\Resources\commands\commandDialog\__init__.py">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <EmbeddedResource Include="Fusion\Resources\commands\paletteSend\entry.py">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <EmbeddedResource Include="Fusion\Resources\commands\paletteSend\resources\16x16.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <EmbeddedResource Include="Fusion\Resources\commands\paletteSend\resources\32x32.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <EmbeddedResource Include="Fusion\Resources\commands\paletteSend\resources\64x64.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <EmbeddedResource Include="Fusion\Resources\commands\paletteSend\__init__.py">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <EmbeddedResource Include="Fusion\Resources\commands\paletteShow\entry.py">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <EmbeddedResource Include="Fusion\Resources\commands\paletteShow\resources\16x16.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <EmbeddedResource Include="Fusion\Resources\commands\paletteShow\resources\32x32.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <EmbeddedResource Include="Fusion\Resources\commands\paletteShow\resources\64x64.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <EmbeddedResource Include="Fusion\Resources\commands\paletteShow\resources\html\index.html">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <EmbeddedResource Include="Fusion\Resources\commands\paletteShow\resources\html\static\palette.js">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <EmbeddedResource Include="Fusion\Resources\commands\paletteShow\__init__.py">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <EmbeddedResource Include="Fusion\Resources\commands\__init__.py">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <EmbeddedResource Include="Fusion\Resources\config.py">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <EmbeddedResource Include="Fusion\Resources\embedded_requests.py" />
+      <EmbeddedResource Include="Fusion\Resources\lib\fusionAddInUtils\event_utils.py">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <EmbeddedResource Include="Fusion\Resources\lib\fusionAddInUtils\general_utils.py">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <EmbeddedResource Include="Fusion\Resources\lib\fusionAddInUtils\__init__.py">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </EmbeddedResource>
       <EmbeddedResource Include="Fusion\Resources\SaveToHub.py" />
+      <EmbeddedResource Include="Fusion\Resources\SaveToHub2.manifest">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <EmbeddedResource Include="Fusion\Resources\SaveToHub2.py">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </EmbeddedResource>
+      <EmbeddedResource Include="Fusion\Resources\savetohub_palette.html">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </EmbeddedResource>
     </ItemGroup>
 
     <ItemGroup>
@@ -45,12 +135,53 @@
 	<ItemGroup>
     		<PackageReference Include="System.Collections" Version="4.3.0" />
 	</ItemGroup>
+	<ItemGroup>
+		<EmbeddedResource Include="..\AssetManager.Infrastructure.Fusion.Resources\AssetManager.Infrastructure.Fusion.Resources\**\*.*" />
+	</ItemGroup>
+	<ItemGroup>
+	  <None Remove="Fusion\Resources\.env" />
+	  <None Remove="Fusion\Resources\AddInIcon.svg" />
+	  <None Remove="Fusion\Resources\commands\commandDialog\entry.py" />
+	  <None Remove="Fusion\Resources\commands\commandDialog\resources\16x16.png" />
+	  <None Remove="Fusion\Resources\commands\commandDialog\resources\32x32.png" />
+	  <None Remove="Fusion\Resources\commands\commandDialog\resources\64x64.png" />
+	  <None Remove="Fusion\Resources\commands\commandDialog\__init__.py" />
+	  <None Remove="Fusion\Resources\commands\paletteSend\entry.py" />
+	  <None Remove="Fusion\Resources\commands\paletteSend\resources\16x16.png" />
+	  <None Remove="Fusion\Resources\commands\paletteSend\resources\32x32.png" />
+	  <None Remove="Fusion\Resources\commands\paletteSend\resources\64x64.png" />
+	  <None Remove="Fusion\Resources\commands\paletteSend\__init__.py" />
+	  <None Remove="Fusion\Resources\commands\paletteShow\entry.py" />
+	  <None Remove="Fusion\Resources\commands\paletteShow\resources\16x16.png" />
+	  <None Remove="Fusion\Resources\commands\paletteShow\resources\32x32.png" />
+	  <None Remove="Fusion\Resources\commands\paletteShow\resources\64x64.png" />
+	  <None Remove="Fusion\Resources\commands\paletteShow\resources\html\index.html" />
+	  <None Remove="Fusion\Resources\commands\paletteShow\resources\html\static\palette.js" />
+	  <None Remove="Fusion\Resources\commands\paletteShow\__init__.py" />
+	  <None Remove="Fusion\Resources\commands\__init__.py" />
+	  <None Remove="Fusion\Resources\config.py" />
+	  <None Remove="Fusion\Resources\embedded_requests.py" />
+	  <None Remove="Fusion\Resources\lib\fusionAddInUtils\event_utils.py" />
+	  <None Remove="Fusion\Resources\lib\fusionAddInUtils\general_utils.py" />
+	  <None Remove="Fusion\Resources\lib\fusionAddInUtils\__init__.py" />
+	  <None Remove="Fusion\Resources\SaveToHub2.manifest" />
+	  <None Remove="Fusion\Resources\SaveToHub2.py" />
+	  <None Remove="Fusion\Resources\savetohub_palette.html" />
+	</ItemGroup>
+	<ItemGroup>
+	  <Page Include="Fusion\Resources\commands\commandDialog\resources\16x16.png" />
+	</ItemGroup>
 
-    
-    <ItemGroup>
+
+	<ItemGroup>
       <None Update="appsettings.json">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>
     </ItemGroup>
+
+
+	<ItemGroup>
+	  <Folder Include="Fusion\Resources\packages\" />
+	</ItemGroup>
 
 </Project>
