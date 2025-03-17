@@ -4551,6 +4551,42 @@ namespace AssetManager.Desktop
         }
         
         //marketplace
+        private async void InitializeMarketplace()
+        {
+            MongoConnection database = new MongoConnection();
+            List<Dictionary<string, string>> allListedModels = new List<Dictionary<string, string>>();
+            var listedModels = await database.ListedModels.Find(FilterDefinition<ListedModels>.Empty).ToListAsync();
+            foreach (var model in listedModels)
+            {
+                string sellerName = await GetUserName(model.SellerId);
+                allListedModels.Add(new Dictionary<string, string>
+                {
+                    { "Name", model.Name },
+                    { "Description", model.Description },
+                    { "Seller", sellerName },
+                    { "Id", model.ModelId },
+                    { "Price", model.Price.ToString()}
+                });
+            }
+            
+            MarketplaceDataGrid.ItemsSource = allListedModels;
+        }
+        
+        private async void BtnMarketplace_Click(object sender, RoutedEventArgs e)
+        {
+            MarketplaceBorder.Visibility = Visibility.Visible;
+            ProjectsBorder.Visibility = Visibility.Collapsed;
+            LibraryBorder.Visibility = Visibility.Collapsed;
+            InitializeMarketplace();
+        }
+        
+        private void BtnLibrary_Click(object sender, RoutedEventArgs e)
+        {
+            MarketplaceBorder.Visibility = Visibility.Collapsed;
+            ProjectsBorder.Visibility = Visibility.Visible;
+            LibraryBorder.Visibility = Visibility.Visible;
+        }
+        
         private async void BtnListModel_Click(object sender, RoutedEventArgs e)
         {
             MongoConnection database = new MongoConnection();
@@ -4822,8 +4858,6 @@ namespace AssetManager.Desktop
         }
 
 */
-
-
         
     }
 

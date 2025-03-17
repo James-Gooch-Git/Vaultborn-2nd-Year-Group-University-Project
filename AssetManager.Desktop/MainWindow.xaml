@@ -336,7 +336,7 @@
 
         </Border>
 
-        <Border Grid.Row="1" Grid.Column="0" BorderBrush="#797979" BorderThickness="0,0,1,0" Padding="5,0,5,0">
+        <Border x:Name="ProjectsBorder" Grid.Row="1" Grid.Column="0" BorderBrush="#797979" BorderThickness="0,0,1,0" Padding="5,0,5,0">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -424,7 +424,8 @@
             </Grid>
         </Border>
 
-        <Border Grid.Row="1" Grid.Column="1">
+        <!-- Asset Library -->
+        <Border x:Name="LibraryBorder" Grid.Row="1" Grid.Column="1">
 
             <Grid>
                 <Grid.RowDefinitions>
@@ -480,7 +481,7 @@
 
                     </Button>
                     
-                    <Button x:Name="BtnMarketplace" Content="Marketplace" Width="80" Height="30"/>
+                    <Button x:Name="BtnMarketplace" Click="BtnMarketplace_Click" Content="Marketplace" Width="80" Height="30"/>
                     
                     <!-- <Border MouseLeftButtonDown="UpArrow_Click" x:Name="UpArrowBorder" Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" Cursor="Hand" Margin="0,0,5,0" Visibility="Hidden">
                         <md:PackIcon x:Name="UpArrow" Kind="ArrowUpBoldOutline" Height="30" Width="30" VerticalAlignment="Center" HorizontalAlignment="Center"/> 
@@ -904,6 +905,269 @@
 
         </Border>
         
+        <!-- Marketplace -->
+        <Border x:Name="MarketplaceBorder" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Visibility="Collapsed">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="60"/>
+                    <RowDefinition Height="70"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Text="Marketplace" FontSize="20" Foreground="#4B4b4b" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="20,0,0,0"/>
+
+                <Border HorizontalAlignment="Stretch" VerticalAlignment="Bottom" BorderBrush="#4B4B4B" BorderThickness="0,1,0,0" Margin="20,0,20,0"/>
+
+                <Grid Grid.Row="1">
+
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    
+                    <Button x:Name="BtnLibrary" Click="BtnLibrary_Click" Content="Asset Library" Width="80" Height="30"/>
+
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+
+                        <!--<TextBlock Text="Sort By" Cursor="Hand" FontSize="13" Foreground="#4B4B4B" VerticalAlignment="Center"/>
+
+                        <md:PackIcon Kind="ChevronDown" Cursor="Hand" Foreground="#4B4B4B" VerticalAlignment="Center" Margin="0,0,5,0"/>-->
+
+                        <!--<Rectangle Fill="#A3A3A3" Height="20" Width="1" RenderTransformOrigin="0.5,0.5" Margin="0,0,5,0">
+                            <Rectangle.RenderTransform>
+                                <TransformGroup>
+                                    <ScaleTransform ScaleX="-1"/>
+                                    <SkewTransform/>
+                                    <RotateTransform/>
+                                    <TranslateTransform/>
+                                </TransformGroup>
+                            </Rectangle.RenderTransform>
+                        </Rectangle>-->
+
+                        <Border MouseLeftButtonDown="Filter_Click" Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" Cursor="Hand" Margin="0,0,5,0">
+                            <md:PackIcon Kind="FilterOutline" Cursor="Hand" Style="{StaticResource IconHover}" VerticalAlignment="Center"/>
+                        </Border>
+
+                        <Rectangle Fill="#A3A3A3" Height="20" Width="1" RenderTransformOrigin="0.5,0.5" Margin="0,0,5,0">
+                            <Rectangle.RenderTransform>
+                                <TransformGroup>
+                                    <ScaleTransform ScaleX="-1"/>
+                                    <SkewTransform/>
+                                    <RotateTransform/>
+                                    <TranslateTransform/>
+                                </TransformGroup>
+                            </Rectangle.RenderTransform>
+                        </Rectangle>
+
+                        <Border  MouseLeftButtonDown="Grid_Click" Background="Transparent" BorderBrush="Transparent" CornerRadius="3" VerticalAlignment="Center" HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" Cursor="Hand" Margin="0,0,5,0">
+                            <md:PackIcon  MouseLeftButtonDown="Grid_Click" Kind="ViewGridOutline" Cursor="Hand" Style="{StaticResource IconHover}" VerticalAlignment="Center"/>
+                        </Border>
+
+                        <Border MouseLeftButtonDown="List_Click" Background="#E9E9E9" BorderBrush="Transparent" CornerRadius="3" VerticalAlignment="Center" HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" Cursor="Hand" Margin="0,0,5,0">
+                            <md:PackIcon MouseLeftButtonDown="List_Click" Grid.Row="1" Grid.Column="1" Kind="FormatListBulleted" Cursor="Hand" Style="{StaticResource IconHover}" VerticalAlignment="Center"/>
+                        </Border>
+
+                        <Rectangle Fill="#A3A3A3" Height="20" Width="1" RenderTransformOrigin="0.5,0.5" Margin="0,0,8,0">
+                            <Rectangle.RenderTransform>
+                                <TransformGroup>
+                                    <ScaleTransform ScaleX="-1"/>
+                                    <SkewTransform/>
+                                    <RotateTransform/>
+                                    <TranslateTransform/>
+                                </TransformGroup>
+                            </Rectangle.RenderTransform>
+                        </Rectangle>
+
+                        <Button Cursor="IBeam" Focusable="False"  Width="115" Height="24" Background="Transparent" BorderBrush="#4B4B4B" Margin="0,0,20,0">
+
+                            <Button.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="3"/>
+                                </Style>
+                            </Button.Resources>
+
+                            <StackPanel Orientation="Horizontal">
+                                <md:PackIcon Kind="Magnify" Width="14" Height="14" VerticalAlignment="Center" Foreground="#4B4B4B" Margin="0,0,0,0"/>
+                                <TextBox VerticalAlignment="Center" VerticalContentAlignment="Center" Width="89" FontSize="10" Height="19" Margin="3,0,0,0" KeyDown="SearchText_Box_OnKeyDown"/>
+                                <TextBlock Text="Search By Name..." Foreground="#A3A3A3" FontSize="10" Margin="3,0,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
+
+                        </Button>
+
+                    </StackPanel>
+
+                </Grid>
+                
+                <Grid Grid.Row="2" Visibility="Collapsed">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <WrapPanel HorizontalAlignment="Center" VerticalAlignment="Top" />
+                    </ScrollViewer>
+                </Grid>
+                
+                <DataGrid Grid.Row="2" x:Name="MarketplaceDataGrid" 
+                                  AutoGenerateColumns="False" 
+                                  IsReadOnly="True" 
+                                  Background="Transparent" 
+                                  Margin="20,0,20,0" 
+                                  BorderThickness="0" 
+                                  HorizontalAlignment="Center" 
+                                  SelectionChanged="ModelsDataGrid_SelectionChanged" 
+                                  GridLinesVisibility="None" 
+                                  RowBackground="Transparent" 
+                                  AlternatingRowBackground="Transparent" 
+                                  HeadersVisibility="Column" 
+                                  ScrollViewer.VerticalScrollBarVisibility="Hidden"
+                                  ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+                                  Visibility="Visible">
+                    
+                            <DataGrid.Resources>
+                                <Style TargetType="DataGridColumnHeader">
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                                    <Setter Property="Padding" Value="5,0,5,0"/>
+                                    <Setter Property="FontSize" Value="16"/>
+                                    <Setter Property="Margin" Value="0,10,0,5"/>
+                                    <Setter Property="OverridesDefaultStyle" Value="True"/>
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="DataGridColumnHeader">
+                                                <Grid Background="Transparent">
+                                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" TextBlock.FontSize="16" TextBlock.FontWeight="Bold"/>
+                                                </Grid>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </DataGrid.Resources>
+
+                            <DataGrid.Columns>
+
+                                <DataGridTextColumn Header="Name" Binding="{Binding [Name]}" Width="*">
+                                    <DataGridTextColumn.ElementStyle>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="HorizontalAlignment" Value="Center"/>
+                                            <Setter Property="TextAlignment" Value="Center"/>
+                                            <Setter Property="FontSize" Value="15"/>
+                                        </Style>
+                                    </DataGridTextColumn.ElementStyle>
+
+                                    <DataGridTextColumn.HeaderStyle>
+                                        <Style TargetType="DataGridColumnHeader">
+                                            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                                            <Setter Property="Background" Value="Transparent"/>
+                                            <Setter Property="BorderBrush" Value="#4B4B4B"/>
+                                            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                                            <Setter Property="FontSize" Value="16"/>
+                                            <Setter Property="Foreground" Value="#4B4B4B"/>
+                                            <Setter Property="Margin" Value="0,10,0,5"/>
+                                            <Setter Property="Padding" Value="0,0,0,10"/>
+                                        </Style>
+                                    </DataGridTextColumn.HeaderStyle>
+
+                                    <DataGridTextColumn.CellStyle>
+                                        <Style TargetType="DataGridCell">
+                                            <Setter Property="Margin" Value="0,5,0,5" />
+                                        </Style>
+                                    </DataGridTextColumn.CellStyle>
+                                </DataGridTextColumn>
+
+                                <DataGridTextColumn Header="Description" Binding="{Binding [Description]}" Width="*">
+                                    <DataGridTextColumn.ElementStyle>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="HorizontalAlignment" Value="Center"/>
+                                            <Setter Property="TextAlignment" Value="Center"/>
+                                            <Setter Property="FontSize" Value="15"/>
+                                        </Style>
+                                    </DataGridTextColumn.ElementStyle>
+
+                                    <DataGridTextColumn.HeaderStyle>
+                                        <Style TargetType="DataGridColumnHeader">
+                                            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                                            <Setter Property="Background" Value="Transparent"/>
+                                            <Setter Property="BorderBrush" Value="#4B4B4B"/>
+                                            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                                            <Setter Property="FontSize" Value="16"/>
+                                            <Setter Property="Foreground" Value="#4B4B4B"/>
+                                            <Setter Property="Margin" Value="0,10,0,5"/>
+                                            <Setter Property="Padding" Value="0,0,0,10"/>
+                                        </Style>
+                                    </DataGridTextColumn.HeaderStyle>
+
+                                    <DataGridTextColumn.CellStyle>
+                                        <Style TargetType="DataGridCell">
+                                            <Setter Property="Margin" Value="0,5,0,5" />
+                                        </Style>
+                                    </DataGridTextColumn.CellStyle>
+                                </DataGridTextColumn>
+
+                                <DataGridTextColumn Header="Price" Binding="{Binding [Price]}" Width="*">
+                                    <DataGridTextColumn.ElementStyle>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="HorizontalAlignment" Value="Center"/>
+                                            <Setter Property="TextAlignment" Value="Center"/>
+                                            <Setter Property="FontSize" Value="15"/>
+                                        </Style>
+                                    </DataGridTextColumn.ElementStyle>
+
+                                    <DataGridTextColumn.HeaderStyle>
+                                        <Style TargetType="DataGridColumnHeader">
+                                            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                                            <Setter Property="Background" Value="Transparent"/>
+                                            <Setter Property="BorderBrush" Value="#4B4B4B"/>
+                                            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                                            <Setter Property="FontSize" Value="16"/>
+                                            <Setter Property="Foreground" Value="#4B4B4B"/>
+                                            <Setter Property="Margin" Value="0,10,0,5"/>
+                                            <Setter Property="Padding" Value="0,0,0,10"/>
+                                        </Style>
+                                    </DataGridTextColumn.HeaderStyle>
+
+                                    <DataGridTextColumn.CellStyle>
+                                        <Style TargetType="DataGridCell">
+                                            <Setter Property="Margin" Value="0,5,0,5" />
+                                        </Style>
+                                    </DataGridTextColumn.CellStyle>
+                                </DataGridTextColumn>
+                                
+                                <DataGridTextColumn Header="Seller" Binding="{Binding [Seller]}" Width="*">
+                                    <DataGridTextColumn.ElementStyle>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="HorizontalAlignment" Value="Center"/>
+                                            <Setter Property="TextAlignment" Value="Center"/>
+                                            <Setter Property="FontSize" Value="15"/>
+                                        </Style>
+                                    </DataGridTextColumn.ElementStyle>
+
+                                    <DataGridTextColumn.HeaderStyle>
+                                        <Style TargetType="DataGridColumnHeader">
+                                            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                                            <Setter Property="Background" Value="Transparent"/>
+                                            <Setter Property="BorderBrush" Value="#4B4B4B"/>
+                                            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                                            <Setter Property="FontSize" Value="16"/>
+                                            <Setter Property="Foreground" Value="#4B4B4B"/>
+                                            <Setter Property="Margin" Value="0,10,0,5"/>
+                                            <Setter Property="Padding" Value="0,0,0,10"/>
+                                        </Style>
+                                    </DataGridTextColumn.HeaderStyle>
+
+                                    <DataGridTextColumn.CellStyle>
+                                        <Style TargetType="DataGridCell">
+                                            <Setter Property="Margin" Value="0,5,0,5" />
+                                        </Style>
+                                    </DataGridTextColumn.CellStyle>
+                                </DataGridTextColumn>
+                                
+                                <DataGridTextColumn Header="Id" Binding="{Binding [Id]}" Width="*" Visibility="Collapsed"/>
+
+                            </DataGrid.Columns>
+
+                        </DataGrid>
+
+            </Grid>
+        </Border>
+            
+        <!-- Model Info Sidebar -->
         <Border Grid.Row="1" Grid.Column="3" BorderBrush="#797979" BorderThickness="1,0,0,0" Padding="5,0,5,0">
             <Grid>
                 <Grid.RowDefinitions>
@@ -960,14 +1224,6 @@
                             </Grid>
                         </Border>
                     </Popup>
-                
-                <!-- Add tags button -->
-                <!-- <Button x:Name="BtnAddTags"  
-                        Content="Update Selected Tags"
-                        Width="200" Height="40"  
-                        Click="BtnAddTags_Click" 
-                        Grid.Row="6" HorizontalAlignment="Center" Margin="10"
-                        Visibility="Hidden"/> -->
                 
                 <!-- Display Tags -->
                 <WrapPanel Grid.Row="1" x:Name="TagsWrapPanel">
