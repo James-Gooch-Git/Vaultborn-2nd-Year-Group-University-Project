@@ -203,12 +203,6 @@ namespace AssetManager.Desktop
             }
 
             string itemid = "urn: adsk.wipprod:dm.lineage:pwGqGrbgRx6IUlR4Wtskdg";
-            Image tempImage = new Image();
-
-            Console.WriteLine("\n\nShowing example thumbnail\n\n");
-            await ShowThumbnail(projectid, itemid, tempImage);
-
-
         }
 
         private async void LoadHubsAsync()
@@ -3210,6 +3204,7 @@ namespace AssetManager.Desktop
             //ForgeViewerWindow forgeViewer = new ForgeViewerWindow(encodedUrn);
             // forgeViewer.Show();
             LoadForgeViewer(encodedUrn);
+            
         }
 
         private async void BtnViewInApp_Click(string selectedItemId)
@@ -3303,6 +3298,7 @@ namespace AssetManager.Desktop
             //ForgeViewerWindow forgeViewer = new ForgeViewerWindow(encodedUrn);
             // forgeViewer.Show();
             LoadForgeViewer(encodedUrn);
+            VersionTest();
         }
 
         private void Btn_CloseViewer_Click(object sender, RoutedEventArgs e)
@@ -3404,13 +3400,18 @@ namespace AssetManager.Desktop
         private async void VersionTest()
         {
 
-            Console.WriteLine("\n\n\n\n\n\n\nVERSIONS")
-            var versions = DataManagement.GetItemVersions(_selectedProjectId, _selectedItemId);
+            Console.WriteLine("\n\n\n\n\n\n\nVERSIONS");
+            var versions = await DataManagement.GetItemVersions(_selectedProjectId, _selectedItemId);
 
             foreach (var version in versions)
             {
-                Console.WriteLine(version.ToString());
+                Console.WriteLine("VERSION TEST: " + version.ToString());
             }
+        }
+        private void Slider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            // Update the displayed value
+            selectedValue.Text = "Selected Value: " + e.NewValue.ToString("0");
         }
 
         #endregion

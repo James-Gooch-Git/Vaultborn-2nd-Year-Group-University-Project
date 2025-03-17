@@ -898,6 +898,28 @@
 
                 </Grid>
 
+                
+                <!-- The main Slider -->
+                <Slider Name="slider" Width="300" Height="20" Minimum="0" Maximum="100" VerticalAlignment="Center" HorizontalAlignment="Center" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="Slider_ValueChanged">
+                    <Slider.Template>
+                        <ControlTemplate TargetType="Slider">
+                            <Grid>
+                                <!-- The Track (Slider Background) -->
+                                <Rectangle Name="Track" Fill="Gray" Height="4" HorizontalAlignment="Stretch" VerticalAlignment="Center"/>
+                                <!-- The Thumb (Circle) -->
+                                <Ellipse Name="Thumb" Width="20" Height="20" Fill="Blue" VerticalAlignment="Center">
+                                    <Ellipse.RenderTransform>
+                                        <TranslateTransform X="{Binding Path=Value, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource SliderThumbPositionConverter}}"/>
+                                    </Ellipse.RenderTransform>
+                                </Ellipse>
+                            </Grid>
+                        </ControlTemplate>
+                    </Slider.Template>
+                </Slider>
+
+                <!-- Display the selected value -->
+                <TextBlock Name="selectedValue" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,30,0,0" FontSize="16"/>
+                
             </Grid>
 
         </Border>
