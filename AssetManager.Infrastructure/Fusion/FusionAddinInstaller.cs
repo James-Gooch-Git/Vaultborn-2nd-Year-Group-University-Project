@@ -216,26 +216,47 @@ namespace AssetManagement.Infrastructure.Fusion
                 // Get the Python executable path
                 string pythonExePath = Path.Combine(pythonDirs[0], "python.exe");
 
-                // Debugging: Print detected Python path
-                Console.WriteLine($"🐍 Using Fusion 360's Python at: {pythonExePath}");
-
-                // Run `pip install requests` inside Fusion 360's Python
-                ProcessStartInfo startInfo = new ProcessStartInfo
+                // 🔹 Step 1: Check if `requests` is already installed
+                ProcessStartInfo checkInfo = new ProcessStartInfo
                 {
                     FileName = pythonExePath,
-                    Arguments = "-m pip install requests --user",
+                    Arguments = "-c \"import requests\"",
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
                     CreateNoWindow = true
                 };
 
-                using (Process process = new Process { StartInfo = startInfo })
+                using (Process checkProcess = new Process { StartInfo = checkInfo })
                 {
-                    process.Start();
-                    string output = process.StandardOutput.ReadToEnd();
-                    string error = process.StandardError.ReadToEnd();
-                    process.WaitForExit();
+                    checkProcess.Start();
+                    checkProcess.WaitForExit();
+
+                    if (checkProcess.ExitCode == 0)
+                    {
+                        Console.WriteLine("✅ 'requests' is already installed in Fusion 360’s Python environment.");
+                        return;
+                    }
+                    Console.WriteLine("⚠️ 'requests' is missing. Installing in an isolated environment...");
+                }
+
+                // 🔹 Step 2: Install `requests` in Fusion 360’s local site-packages (not global)
+                ProcessStartInfo installInfo = new ProcessStartInfo
+                {
+                    FileName = pythonExePath,
+                    Arguments = "-m pip install requests --target \"Lib\\site-packages\"",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+
+                using (Process installProcess = new Process { StartInfo = installInfo })
+                {
+                    installProcess.Start();
+                    string output = installProcess.StandardOutput.ReadToEnd();
+                    string error = installProcess.StandardError.ReadToEnd();
+                    installProcess.WaitForExit();
 
                     Console.WriteLine($"✅ Pip Output: {output}");
                     if (!string.IsNullOrEmpty(error))
@@ -244,7 +265,7 @@ namespace AssetManagement.Infrastructure.Fusion
                     }
                 }
 
-                Console.WriteLine("✅ Successfully installed 'requests' in Fusion 360’s Python environment.");
+                Console.WriteLine("✅ Successfully installed 'requests' in Fusion 360’s local site-packages.");
             }
             catch (Exception ex)
             {
