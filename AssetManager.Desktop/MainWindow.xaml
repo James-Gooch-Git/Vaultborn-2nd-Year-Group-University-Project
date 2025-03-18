@@ -1195,14 +1195,38 @@
                     <Border.Effect>
                         <DropShadowEffect Color="Black" Opacity="0.1" BlurRadius="10" ShadowDepth="2"/>
                     </Border.Effect>
-                    
                     <Grid>
+                        <!-- Main Grid -->
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="170" />
-                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="170"/>
+                            <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
+
+                        <!-- Header Background -->
+                        <Border Grid.Row="0" Background="#E6E6E6" HorizontalAlignment="Stretch" Margin="5"/>
+
+                        <!-- Thumbnail Image -->
+                        <Image Grid.Row="0" Width="150" Height="150" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" Source="{Binding Thumbnail}"/>
                         
-                        <Border Background="#e6e6e6" HorizontalAlignment="Stretch" Margin="5"/>
+                        <Grid Grid.Row="1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="125" />
+                                <ColumnDefinition Width="125" />
+                            </Grid.ColumnDefinitions>
+                            
+                            <!-- Content StackPanel -->
+                            <StackPanel Grid.Column="0" Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="8,5,5,2">
+                                <TextBlock Text="Sphere" FontSize="16" FontWeight="Normal" Foreground="#4B4B4B" TextAlignment="Center" HorizontalAlignment="Left" TextWrapping="Wrap"/>
+                                <TextBlock Text="A sphere" FontSize="14" FontWeight="Normal" Foreground="Gray" TextAlignment="Left" HorizontalAlignment="Left" TextWrapping="Wrap"/>
+                            </StackPanel>
+                            
+                            <StackPanel Grid.Column="1" Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="8,5,5,2">
+                                <TextBlock Text="0.50" FontSize="16" FontWeight="Normal" Foreground="#4B4B4B" TextAlignment="Left" HorizontalAlignment="Left" TextWrapping="Wrap"/>
+                                <Border BorderBrush="Green" BorderThickness="2" CornerRadius="3">
+                                    <Button Content="Buy" Background="Green" Foreground="Azure" Width="50" Height="20" BorderBrush="Green" BorderThickness="2"/>
+                                </Border>
+                            </StackPanel>
+                        </Grid>
                     </Grid>
                 </Border>
             </Grid>
