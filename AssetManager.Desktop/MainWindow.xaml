@@ -883,15 +883,67 @@
 
                 </Grid>
 
-                <Grid x:Name="VersionSlider" Grid.Row="3" Visibility="Collapsed">
-                    <Slider Name="slider" HorizontalAlignment="Center" VerticalAlignment="Bottom" Width="200" Minimum="0" Maximum="100" Value="50" Margin="0,0,0,25"/>
-                    <TextBlock Name="sliderValue" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,40" FontSize="16"/>
+                <Grid x:Name="VersionSlider" Grid.Row="3" Visibility="Visible">
+                    <!-- Slider with Snapping Enabled -->
+                    <Slider Name="slider"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Bottom"
+            Width="500"
+            Minimum="0"
+            Maximum="100"
+            TickPlacement="BottomRight"
+            Ticks="0, 25, 50, 75, 100"
+            IsSnapToTickEnabled="True"
+            Value="50"
+            Margin="0,0,0,25"/>
+
+                    <!-- Display Slider Value -->
+                    <TextBlock Name="sliderValue"
+               HorizontalAlignment="Center"
+               VerticalAlignment="Bottom"
+               Margin="0,0,0,40"
+               FontSize="16"/>
+
+                    <!-- Marker Container (Uses a Grid to align correctly) -->
+                    <Grid HorizontalAlignment="Center" VerticalAlignment="Bottom" Width="500" Height="30">
+                        <!-- Marker at 0 -->
+                        <Border Width="20" Height="20" Background="LightGray" CornerRadius="3"
+                HorizontalAlignment="Left">
+                            <TextBlock Text="A" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+
+                        <!-- Marker at 25 -->
+                        <Border Width="20" Height="20" Background="LightGray" CornerRadius="3"
+                HorizontalAlignment="Left" Margin="100,0,0,0">
+                            <TextBlock Text="B" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+
+                        <!-- Marker at 50 -->
+                        <Border Width="20" Height="20" Background="LightGray" CornerRadius="3"
+                HorizontalAlignment="Center">
+                            <TextBlock Text="C" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+
+                        <!-- Marker at 75 -->
+                        <Border Width="20" Height="20" Background="LightGray" CornerRadius="3"
+                HorizontalAlignment="Right" Margin="0,0,100,0">
+                            <TextBlock Text="D" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+
+                        <!-- Marker at 100 -->
+                        <Border Width="20" Height="20" Background="LightGray" CornerRadius="3"
+                HorizontalAlignment="Right">
+                            <TextBlock Text="E" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </Grid>
                 </Grid>
 
-								
-                
 
-                
+
+
+
+
+
             </Grid>
 
         </Border>
