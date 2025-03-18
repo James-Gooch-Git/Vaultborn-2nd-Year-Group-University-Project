@@ -3303,6 +3303,7 @@ namespace AssetManager.Desktop
             // forgeViewer.Show();
             LoadForgeViewer(encodedUrn);
             VersionTest();
+            GenerateMarkers(7);
 
             Grid versionSlider = VersionSlider;
             versionSlider.Visibility = Visibility.Visible;
@@ -3424,6 +3425,40 @@ namespace AssetManager.Desktop
             // Update the TextBlock with the current slider value
             sliderValue.Text = "Value: " + e.NewValue.ToString();
         }
+
+        private void GenerateMarkers(int count)
+        {
+            MarkerContainer.Children.Clear(); // Clear previous markers
+            MarkerContainer.ColumnDefinitions.Clear(); // Reset grid structure
+
+            // Create columns for each marker
+            for (int i = 0; i < count; i++)
+            {
+                MarkerContainer.ColumnDefinitions.Add(new ColumnDefinition());
+            }
+
+            // Add markers
+            for (int i = 0; i < count; i++)
+            {
+                Border marker = new Border
+                {
+                    Width = 20,
+                    Height = 20,
+                    Background = new SolidColorBrush(Colors.LightGray),
+                    CornerRadius = new CornerRadius(3),
+                    Child = new TextBlock
+                    {
+                        Text = ((char)('A' + i)).ToString(), // Assign A, B, C, etc.
+                        HorizontalAlignment = HorizontalAlignment.Center,
+                        VerticalAlignment = VerticalAlignment.Center
+                    }
+                };
+
+                Grid.SetColumn(marker, i); // Position it in the correct column
+                MarkerContainer.Children.Add(marker);
+            }
+        }
+
         #endregion
 
 
