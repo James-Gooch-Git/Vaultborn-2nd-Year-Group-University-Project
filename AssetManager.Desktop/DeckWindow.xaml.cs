@@ -30,6 +30,8 @@ namespace AssetManager.Desktop
         {
             try
             {
+                //ImageProcessor.CombineImages("fire_dragon.png", "ornate-gold-frame.png", "fire_dragon.png");
+
                 if (_cardsCollection == null)
                 {
                     MessageBox.Show("Database connection failed: _cardsCollection is null.", "Error",
@@ -81,12 +83,26 @@ namespace AssetManager.Desktop
 
         private void DisplaySelectedCard(string name, string imageUrl, string description, BsonDocument stats)
         {
-            SelectedCardImage.Source = new BitmapImage(new Uri(imageUrl));
+            // Set the card name in the nameplate
             SelectedCardName.Text = name;
+
+            // Load the card image dynamically
+            BitmapImage cardImage = new BitmapImage();
+            cardImage.BeginInit();
+            cardImage.UriSource = new Uri(imageUrl, UriKind.Absolute);
+            cardImage.CacheOption = BitmapCacheOption.OnLoad;
+            cardImage.EndInit();
+
+            // Assign the card image to the UI
+            SelectedCardImage.Source = cardImage;
+
+            // Update description
             SelectedCardDescription.Text = description;
-            
+
+            // Clear previous stats
             SelectedCardStatsPanel.Children.Clear();
 
+            // Add stats dynamically
             foreach (var stat in stats.Elements)
             {
                 TextBlock statText = new TextBlock
