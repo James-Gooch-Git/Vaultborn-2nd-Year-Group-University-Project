@@ -51,7 +51,7 @@ namespace AssetManagement.Infrastructure.Fusion
 
             string[] directories = {
         ".vscode", "commands/commandDialog/resources", "commands/paletteSend/resources",
-        "commands/paletteShow/resources/html/static", "lib/fusionAddInUtils"
+        "commands/paletteShow/resources/html/static", "lib/fusionAddInUtils", "requests"
     };
 
             string[] embeddedResources = {
