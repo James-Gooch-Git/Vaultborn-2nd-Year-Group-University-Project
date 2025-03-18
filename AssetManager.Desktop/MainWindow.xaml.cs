@@ -2995,6 +2995,18 @@ namespace AssetManager.Desktop
 */
 
 
+        private void OpenDeckView_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                DeckView deckView = new DeckView();
+                deckView.Show();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error opening DeckView: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
     }
 
 }

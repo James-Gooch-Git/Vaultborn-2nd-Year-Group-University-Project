@@ -1,0 +1,112 @@
+<Window x:Class="AssetManager.Desktop.DeckView" 
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Deck Viewer" Height="600" Width="900" Background="White">
+
+    <Grid>
+        <!-- Main UI Layout -->
+        <Grid.RowDefinitions>
+            <RowDefinition Height="3*" /> <!-- Enlarged Card Display -->
+            <RowDefinition Height="1*" /> <!-- Card Selection Bar -->
+        </Grid.RowDefinitions>
+
+        <!-- Selected Card Display -->
+        <Grid Grid.Row="0" Margin="20">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2*" /> <!-- Card Image -->
+                <ColumnDefinition Width="3*" /> <!-- Description -->
+            </Grid.ColumnDefinitions>
+
+            <!-- Enlarged Selected Card -->
+            <Image x:Name="SelectedCardImage"
+                   Width="250" Height="350"
+                   HorizontalAlignment="Left"
+                   VerticalAlignment="Center"
+                   Stretch="Uniform"
+                   />
+
+            <!-- Card Details -->
+            <StackPanel Grid.Column="1" Margin="20">
+                <TextBlock x:Name="SelectedCardName"
+                           FontSize="24"
+                           Foreground="Black"
+                           FontWeight="Bold"
+                           Text="Select a Card"
+                           />
+                <TextBlock x:Name="SelectedCardDescription"
+                           FontSize="16"
+                           Foreground="Black"
+                           TextWrapping="Wrap"
+                           Text="Card details will appear here..."
+                           />
+                <StackPanel x:Name="SelectedCardStatsPanel"
+                            Margin="0,10,0,0">
+                </StackPanel>
+            </StackPanel>
+        </Grid>
+
+        <!-- Deck of Cards (Bottom Row) -->
+        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto">
+            <StackPanel x:Name="CardListPanel"
+                        Orientation="Horizontal"
+                        HorizontalAlignment="Center"
+                        Margin="10">
+                <!-- Cards will be added dynamically here -->
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Window>
+<!-- -->
+<!-- <Window x:Class="AssetManager.Desktop.DeckView" -->
+<!--         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" -->
+<!--         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" -->
+<!--         Title="DeckView" Height="600" Width="800"> -->
+<!-- -->
+<!--     <Grid Margin="10"> -->
+<!--         <Grid.ColumnDefinitions> -->
+<!--             <ColumnDefinition Width="2*" />  <!-- Enlarged Card --> -->
+<!--             <ColumnDefinition Width="3*" />  <!-- Description & Stats --> -->
+<!--         </Grid.ColumnDefinitions> -->
+<!-- -->
+<!--         ~1~ RPG-Style Card Display @1@ -->
+<!--         <Border Grid.Column="0" BorderThickness="5" CornerRadius="15" -->
+<!--                 BorderBrush="Gold" Background="Black" -->
+<!--                 Padding="10" Margin="10"> -->
+<!--             <Grid> -->
+<!--                 ~1~ Card Name Plate @1@ -->
+<!--                 <TextBlock x:Name="SelectedCardName" -->
+<!--                            FontSize="20" FontWeight="Bold" -->
+<!--                            Foreground="White" Background="DarkRed" -->
+<!--                            TextAlignment="Center" -->
+<!--                            Padding="5" -->
+<!--                            HorizontalAlignment="Stretch" -->
+<!--                            VerticalAlignment="Top"/> -->
+<!-- -->
+<!--                 ~1~ Card Image @1@ -->
+<!--                 <Image x:Name="SelectedCardImage" -->
+<!--                        Width="250" Height="350" -->
+<!--                        HorizontalAlignment="Center" -->
+<!--                        VerticalAlignment="Center" -->
+<!--                        Stretch="Uniform"/> -->
+<!--             </Grid> -->
+<!--         </Border> -->
+<!-- -->
+<!--         ~1~ Card Details @1@ -->
+<!--         <StackPanel Grid.Column="1" Margin="10"> -->
+<!--             <TextBlock x:Name="SelectedCardDescription" -->
+<!--                        FontSize="14" -->
+<!--                        Foreground="Gray" -->
+<!--                        TextWrapping="Wrap" -->
+<!--                        Margin="0,5,0,10"/> -->
+<!-- -->
+<!--             ~1~ Card Stats Section @1@ -->
+<!--             <StackPanel x:Name="SelectedCardStatsPanel" -->
+<!--                         Margin="0,10,0,0"/> -->
+<!--         </StackPanel> -->
+<!-- -->
+<!--         ~1~ Card List at the Bottom @1@ -->
+<!--         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Disabled" HorizontalScrollBarVisibility="Auto"> -->
+<!--             <StackPanel x:Name="CardListPanel" Orientation="Horizontal" HorizontalAlignment="Center"/> -->
+<!--         </ScrollViewer> -->
+<!--     </Grid> -->
+<!-- </Window> -->
