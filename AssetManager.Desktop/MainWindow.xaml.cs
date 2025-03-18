@@ -186,7 +186,7 @@ namespace AssetManager.Desktop
 
             foreach (var (projectId, projectName) in projects)
             {
-                Console.WriteLine($"\n📌 Project ID: {projectId}, Name: {projectName}\n");
+                Console.WriteLine($"📌 Project ID: {projectId}, Name: {projectName}");
                 if (projectName == "Default Project")
                 {
                     projectid = projectId;
@@ -197,15 +197,15 @@ namespace AssetManager.Desktop
 
             var items = await DataManagement.GetItemsInFolder(projectid, folderId);
 
-            foreach (var (itemId, itemName) in items)
+            /*foreach (var (itemId, itemName) in items)
             {
-                Console.WriteLine($"\nItem Name: {itemName}\t Item ID: {itemId}\n");
-            }
+                Console.WriteLine($"Item Name: {itemName}\t Item ID: {itemId}");
+            }*/
 
             string itemid = "urn: adsk.wipprod:dm.lineage:pwGqGrbgRx6IUlR4Wtskdg";
             Image tempImage = new Image();
 
-            Console.WriteLine("\n\nShowing example thumbnail\n\n");
+            //Console.WriteLine("\n\nShowing example thumbnail\n\n");
             await ShowThumbnail(projectid, itemid, tempImage);
 
 

@@ -633,7 +633,7 @@ namespace AssetManager.Infrastructure.Services
                     }
 
                     string jsonResponse = await response.Content.ReadAsStringAsync();
-                    Console.WriteLine($"JSON Response: {jsonResponse}");
+                    //Console.WriteLine($"JSON Response: {jsonResponse}");
 
                     using JsonDocument doc = JsonDocument.Parse(jsonResponse);
                     JsonElement root = doc.RootElement;
