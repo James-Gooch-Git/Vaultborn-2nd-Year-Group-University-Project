@@ -3303,6 +3303,9 @@ namespace AssetManager.Desktop
             // forgeViewer.Show();
             LoadForgeViewer(encodedUrn);
             VersionTest();
+
+            Grid versionSlider = VersionSlider;
+            versionSlider.Visibility = Visibility.Visible;
         }
 
         private void Btn_CloseViewer_Click(object sender, RoutedEventArgs e)
@@ -3330,6 +3333,9 @@ namespace AssetManager.Desktop
             Console.WriteLine("🔄 Global variables reset after closing Forge Viewer");
 
             Console.WriteLine($"🔄 Returning to {_lastViewType} view.");
+
+            Grid versionSlider = VersionSlider;
+            versionSlider.Visibility = Visibility.Collapsed;
         }
 
         private async void LoadForgeViewer(string encodedUrn)

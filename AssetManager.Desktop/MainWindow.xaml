@@ -480,20 +480,7 @@
 
                     </Button>
                     
-                    <!-- <Border MouseLeftButtonDown="UpArrow_Click" x:Name="UpArrowBorder" Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" Cursor="Hand" Margin="0,0,5,0" Visibility="Hidden">
-                        <md:PackIcon x:Name="UpArrow" Kind="ArrowUpBoldOutline" Height="30" Width="30" VerticalAlignment="Center" HorizontalAlignment="Center"/> 
-                    </Border>
-
-                    <TextBlock x:Name="UpvoteTextBlock" Text="0" Height="30" Width="30" FontSize="20" FontFamily="Arial" Margin="50,10,0,0" TextAlignment="Center" Visibility="Hidden"/>
-
-                    <Border MouseLeftButtonDown="DownArrow_Click" x:Name="DownArrowBorder" Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" Cursor="Hand" Margin="100,0,5,0" Visibility="Hidden">
-                        <md:PackIcon x:Name="DownArrow" Kind="ArrowDownBoldOutline" Height="30" Width="30" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                    </Border>
                     
-                    <ComboBox x:Name="PublicPrivateComboBox" SelectionChanged="PublicPrivateComboBox_OnSelectionChangedComboBox_SelectionChanged" Width="100" Height="30" Visibility="Hidden" Margin="250,0,0,0">
-                        <ComboBoxItem x:Name="Public">Public</ComboBoxItem>
-                        <ComboBoxItem x:Name="Private">Private</ComboBoxItem>
-                    </ComboBox> -->
                     
                     <!--
                     <Button HorizontalAlignment="Left" BorderThickness="0" x:Name="BtnDeleteModel" Width="100" Height="40" Click="BtnDeleteModel_Click" Cursor="Hand" Margin="180,0,0,0">
@@ -860,9 +847,9 @@
                                         </Style>
                                     </DataGridTextColumn.CellStyle>
                                 </DataGridTextColumn>
-                                
+
                                 <DataGridTextColumn Header="Id" Binding="{Binding [Id]}" Width="*" Visibility="Collapsed"/>
-                                
+
                                 <!--
                                 <DataGridTemplateColumn Width="70">
                                     <DataGridTemplateColumn.HeaderStyle>
@@ -892,15 +879,17 @@
 
                         </DataGrid>
 
-
-
                     </Grid>
 
                 </Grid>
 
+                <Grid x:Name="VersionSlider" Grid.Row="3" Visibility="Collapsed">
+                    <Slider Name="slider" HorizontalAlignment="Center" VerticalAlignment="Bottom" Width="200" Minimum="0" Maximum="100" Value="50" Margin="0,0,0,25"/>
+                    <TextBlock Name="sliderValue" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,40" FontSize="16"/>
+                </Grid>
+
+								
                 
-                <Slider Name="slider" HorizontalAlignment="Center" VerticalAlignment="Center" Width="200" Minimum="0" Maximum="100" Value="50"/>
-                <TextBlock Name="sliderValue" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,40" FontSize="16"/>
 
                 
             </Grid>
@@ -1116,8 +1105,10 @@
                     <ComboBoxItem>Newest</ComboBoxItem>
                     <ComboBoxItem>Oldest</ComboBoxItem>
                 </ComboBox>
+								
                 
             </Grid>
+						
         </Border>
 
     </Grid>
