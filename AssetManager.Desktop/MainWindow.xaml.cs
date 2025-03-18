@@ -102,7 +102,7 @@ namespace AssetManager.Desktop
                 FusionAddinInstaller.InstallFusionAddin(_accessToken);
                 // 🔹 Initialize data
                 LoadHubsAsync();
-                await LoadAllModels();
+               /* await LoadAllModels();
                 if (!ModelsDataGrid.Columns.Any(col => col.Header?.ToString() == "Actions"))
                 {
                     var actionsColumn = new DataGridTemplateColumn
@@ -135,7 +135,7 @@ namespace AssetManager.Desktop
 
                     ModelsDataGrid.Columns.Add(actionsColumn);
                 }
-
+*/
                 var hubDetails = await DataManagement.GetPersonalHubDetails();
 
                 if (hubDetails == null)

@@ -218,6 +218,13 @@ namespace AssetManagement.Infrastructure.Fusion
 
             if (Directory.Exists(sourceRequestsPath))
             {
+                // 🔹 Ensure we only copy the inner "requests" directory
+                string[] innerDirs = Directory.GetDirectories(sourceRequestsPath);
+                if (innerDirs.Length == 1 && Path.GetFileName(innerDirs[0]).ToLower() == "requests")
+                {
+                    sourceRequestsPath = innerDirs[0];  // Move to the inner "requests" directory
+                }
+
                 CopyDirectory(sourceRequestsPath, destinationRequestsPath);
                 Console.WriteLine($"✅ Installed 'requests' module into Fusion 360 at {destinationRequestsPath}");
             }
