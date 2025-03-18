@@ -199,13 +199,13 @@ namespace AssetManagement.Infrastructure.Fusion
         {
             try
             {
-                // Locate Fusion 360's Python installation
+                // Locate Fusion 360's Python installation directory
                 string fusionPythonBasePath = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                     "Autodesk", "webdeploy", "production"
                 );
 
-                // Dynamically find the correct Fusion 360 Python directory
+                // Find the correct Python folder inside Fusion 360
                 string[] pythonDirs = Directory.GetDirectories(fusionPythonBasePath, "Python", SearchOption.AllDirectories);
                 if (pythonDirs.Length == 0)
                 {
@@ -213,35 +213,46 @@ namespace AssetManagement.Infrastructure.Fusion
                     return;
                 }
 
-                string fusionPythonLibPath = Path.Combine(pythonDirs[0], "Lib", "site-packages");
+                // Get the Python executable path
+                string pythonExePath = Path.Combine(pythonDirs[0], "python.exe");
 
-                // **Dynamically resolve the path to `requests` in Infrastructure**
-                string solutionDir = Directory.GetParent(AppDomain.CurrentDomain.BaseDirectory).Parent.Parent.Parent.FullName;
-                string sourceRequestsPath = Path.Combine(solutionDir, "AssetManager.Infrastructure", "Fusion", "Resources", "requests");
+                // Debugging: Print detected Python path
+                Console.WriteLine($"🐍 Using Fusion 360's Python at: {pythonExePath}");
 
-                string destinationRequestsPath = Path.Combine(fusionPythonLibPath, "requests");
-
-                // 🔍 Debugging: Print detected paths
-                Console.WriteLine($"🔍 Checking for 'requests' directory at: {sourceRequestsPath}");
-
-                // Verify `requests` directory exists before copying
-                if (!Directory.Exists(sourceRequestsPath))
+                // Run `pip install requests` inside Fusion 360's Python
+                ProcessStartInfo startInfo = new ProcessStartInfo
                 {
-                    Console.WriteLine($"❌ ERROR: 'requests' directory not found at {sourceRequestsPath}");
-                    return;
+                    FileName = pythonExePath,
+                    Arguments = "-m pip install requests --user",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+
+                using (Process process = new Process { StartInfo = startInfo })
+                {
+                    process.Start();
+                    string output = process.StandardOutput.ReadToEnd();
+                    string error = process.StandardError.ReadToEnd();
+                    process.WaitForExit();
+
+                    Console.WriteLine($"✅ Pip Output: {output}");
+                    if (!string.IsNullOrEmpty(error))
+                    {
+                        Console.WriteLine($"⚠️ Pip Error: {error}");
+                    }
                 }
 
-                Console.WriteLine($"✅ Found 'requests' at: {sourceRequestsPath}");
-
-                // Copy 'requests' into Fusion 360’s Python `site-packages`
-                CopyDirectory(sourceRequestsPath, destinationRequestsPath);
-                Console.WriteLine($"✅ Successfully installed 'requests' module into Fusion 360 at {destinationRequestsPath}");
+                Console.WriteLine("✅ Successfully installed 'requests' in Fusion 360’s Python environment.");
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"❌ Error installing 'requests' module: {ex.Message}");
             }
         }
+
+
 
 
 

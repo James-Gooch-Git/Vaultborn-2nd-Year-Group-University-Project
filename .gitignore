@@ -1,4 +1,4 @@
-AssetManager.Desktop/bin/
+bin/
 obj/
 /packages/
 riderModule.iml
