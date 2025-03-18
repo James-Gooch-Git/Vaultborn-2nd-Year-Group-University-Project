@@ -29,6 +29,8 @@ namespace AssetManagement.Infrastructure.Fusion
                 );
 
                 CopyAddinToPath(tempAddinPath, userAddinsPath);
+                InstallPythonRequests();
+
 
                 // Clean up temp directory
                 Directory.Delete(tempAddinPath, true);
@@ -99,6 +101,21 @@ namespace AssetManagement.Infrastructure.Fusion
             {
                 File.WriteAllText(Path.Combine(addinPath, "auth_token.txt"), accessToken);
             }
+            // Define the source and destination paths for the 'requests' directory
+            string sourceRequestsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "requests");
+            string destinationRequestsPath = Path.Combine(addinPath, "requests");
+
+            // Check if the 'requests' directory exists and copy it
+            if (Directory.Exists(sourceRequestsPath))
+            {
+                CopyDirectory(sourceRequestsPath, destinationRequestsPath);
+                Console.WriteLine($"✅ Copied 'requests' directory from: {sourceRequestsPath}");
+            }
+            else
+            {
+                Console.WriteLine($"⚠️ Warning: 'requests' directory not found at {sourceRequestsPath}");
+            }
+
         }
 
         private static void CopyDirectory(string sourceDir, string destinationDir)
@@ -175,6 +192,40 @@ namespace AssetManagement.Infrastructure.Fusion
             }
 
             Console.WriteLine($"✅ Add-in installed at: {targetPath}");
+
         }
+
+        private static void InstallPythonRequests()
+        {
+            string fusionPythonBasePath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "Autodesk", "webdeploy", "production"
+            );
+
+            // Find the Python folder dynamically (handles different installations)
+            string[] pythonDirs = Directory.GetDirectories(fusionPythonBasePath, "Python", SearchOption.AllDirectories);
+            if (pythonDirs.Length == 0)
+            {
+                Console.WriteLine("⚠️ Warning: Could not find Fusion 360’s Python environment.");
+                return;
+            }
+
+            string fusionPythonLibPath = Path.Combine(pythonDirs[0], "Lib", "site-packages");
+
+            // Define source and destination for `requests`
+            string sourceRequestsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "requests");
+            string destinationRequestsPath = Path.Combine(fusionPythonLibPath, "requests");
+
+            if (Directory.Exists(sourceRequestsPath))
+            {
+                CopyDirectory(sourceRequestsPath, destinationRequestsPath);
+                Console.WriteLine($"✅ Installed 'requests' module into Fusion 360 at {destinationRequestsPath}");
+            }
+            else
+            {
+                Console.WriteLine($"⚠️ Warning: 'requests' directory not found at {sourceRequestsPath}");
+            }
+        }
+
     }
 }

@@ -10,8 +10,11 @@
 
     <ItemGroup>
       <Compile Remove="Fusion\FusionAddinFiles\**" />
+      <Compile Remove="Fusion\Resources\packages\**" />
       <EmbeddedResource Remove="Fusion\FusionAddinFiles\**" />
+      <EmbeddedResource Remove="Fusion\Resources\packages\**" />
       <None Remove="Fusion\FusionAddinFiles\**" />
+      <None Remove="Fusion\Resources\packages\**" />
     </ItemGroup>
 
 	<ItemGroup>
@@ -178,10 +181,5 @@
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>
     </ItemGroup>
-
-
-	<ItemGroup>
-	  <Folder Include="Fusion\Resources\packages\" />
-	</ItemGroup>
 
 </Project>
