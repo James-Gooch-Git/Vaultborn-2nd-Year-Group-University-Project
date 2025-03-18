@@ -197,42 +197,60 @@ namespace AssetManagement.Infrastructure.Fusion
 
         private static void InstallPythonRequests()
         {
-            string fusionPythonBasePath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "Autodesk", "webdeploy", "production"
-            );
-
-            // Find the Python folder dynamically (handles different installations)
-            string[] pythonDirs = Directory.GetDirectories(fusionPythonBasePath, "Python", SearchOption.AllDirectories);
-            if (pythonDirs.Length == 0)
+            try
             {
-                Console.WriteLine("⚠️ Warning: Could not find Fusion 360’s Python environment.");
-                return;
-            }
+                // Locate Fusion 360's Python installation
+                string fusionPythonBasePath = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "Autodesk", "webdeploy", "production"
+                );
 
-            string fusionPythonLibPath = Path.Combine(pythonDirs[0], "Lib", "site-packages");
+                // Dynamically find the correct Fusion 360 Python directory
+                string[] pythonDirs = Directory.GetDirectories(fusionPythonBasePath, "Python", SearchOption.AllDirectories);
+                if (pythonDirs.Length == 0)
+                {
+                    Console.WriteLine("⚠️ Warning: Could not find Fusion 360’s Python environment.");
+                    return;
+                }
 
-            // Define source and destination for `requests`
-            string sourceRequestsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "requests");
-            string destinationRequestsPath = Path.Combine(fusionPythonLibPath, "requests");
+                string fusionPythonLibPath = Path.Combine(pythonDirs[0], "Lib", "site-packages");
 
-            if (Directory.Exists(sourceRequestsPath))
-            {
-                // 🔹 Ensure we only copy the inner "requests" directory
+                // 🔹 Locate `requests` inside Desktop's `bin` directory (since you manually placed it there)
+                string sourceRequestsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "requests");
+                string destinationRequestsPath = Path.Combine(fusionPythonLibPath, "requests");
+
+                // 🔍 Debugging: Print paths
+                Console.WriteLine($"🔍 Source 'requests' path: {sourceRequestsPath}");
+                Console.WriteLine($"🔍 Destination Fusion 360 path: {destinationRequestsPath}");
+
+                // 🔎 Check if the source directory exists
+                if (!Directory.Exists(sourceRequestsPath))
+                {
+                    Console.WriteLine($"❌ ERROR: 'requests' directory not found at {sourceRequestsPath}");
+                    return;
+                }
+
+                Console.WriteLine($"✅ Found 'requests' at: {sourceRequestsPath}");
+
+                // 🔹 Ensure we are copying only the correct "requests" subfolder if needed
                 string[] innerDirs = Directory.GetDirectories(sourceRequestsPath);
                 if (innerDirs.Length == 1 && Path.GetFileName(innerDirs[0]).ToLower() == "requests")
                 {
-                    sourceRequestsPath = innerDirs[0];  // Move to the inner "requests" directory
+                    sourceRequestsPath = innerDirs[0];  // Move to the actual "requests" directory
                 }
 
+                // 🔄 Copy 'requests' to Fusion 360 Python
                 CopyDirectory(sourceRequestsPath, destinationRequestsPath);
-                Console.WriteLine($"✅ Installed 'requests' module into Fusion 360 at {destinationRequestsPath}");
+                Console.WriteLine($"✅ Successfully installed 'requests' module into Fusion 360 at {destinationRequestsPath}");
             }
-            else
+            catch (Exception ex)
             {
-                Console.WriteLine($"⚠️ Warning: 'requests' directory not found at {sourceRequestsPath}");
+                Console.WriteLine($"❌ Error installing 'requests' module: {ex.Message}");
             }
         }
+
+
+
 
     }
 }
