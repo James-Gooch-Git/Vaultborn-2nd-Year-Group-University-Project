@@ -215,15 +215,16 @@ namespace AssetManagement.Infrastructure.Fusion
 
                 string fusionPythonLibPath = Path.Combine(pythonDirs[0], "Lib", "site-packages");
 
-                // 🔹 Locate `requests` inside Desktop's `bin` directory (since you manually placed it there)
-                string sourceRequestsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "requests");
+                // **Dynamically resolve the path to `requests` in Infrastructure**
+                string solutionDir = Directory.GetParent(AppDomain.CurrentDomain.BaseDirectory).Parent.Parent.Parent.FullName;
+                string sourceRequestsPath = Path.Combine(solutionDir, "AssetManager.Infrastructure", "Fusion", "Resources", "requests");
+
                 string destinationRequestsPath = Path.Combine(fusionPythonLibPath, "requests");
 
-                // 🔍 Debugging: Print paths
-                Console.WriteLine($"🔍 Source 'requests' path: {sourceRequestsPath}");
-                Console.WriteLine($"🔍 Destination Fusion 360 path: {destinationRequestsPath}");
+                // 🔍 Debugging: Print detected paths
+                Console.WriteLine($"🔍 Checking for 'requests' directory at: {sourceRequestsPath}");
 
-                // 🔎 Check if the source directory exists
+                // Verify `requests` directory exists before copying
                 if (!Directory.Exists(sourceRequestsPath))
                 {
                     Console.WriteLine($"❌ ERROR: 'requests' directory not found at {sourceRequestsPath}");
@@ -232,14 +233,7 @@ namespace AssetManagement.Infrastructure.Fusion
 
                 Console.WriteLine($"✅ Found 'requests' at: {sourceRequestsPath}");
 
-                // 🔹 Ensure we are copying only the correct "requests" subfolder if needed
-                string[] innerDirs = Directory.GetDirectories(sourceRequestsPath);
-                if (innerDirs.Length == 1 && Path.GetFileName(innerDirs[0]).ToLower() == "requests")
-                {
-                    sourceRequestsPath = innerDirs[0];  // Move to the actual "requests" directory
-                }
-
-                // 🔄 Copy 'requests' to Fusion 360 Python
+                // Copy 'requests' into Fusion 360’s Python `site-packages`
                 CopyDirectory(sourceRequestsPath, destinationRequestsPath);
                 Console.WriteLine($"✅ Successfully installed 'requests' module into Fusion 360 at {destinationRequestsPath}");
             }
@@ -248,6 +242,7 @@ namespace AssetManagement.Infrastructure.Fusion
                 Console.WriteLine($"❌ Error installing 'requests' module: {ex.Message}");
             }
         }
+
 
 
 
