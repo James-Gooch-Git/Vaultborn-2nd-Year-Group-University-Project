@@ -481,7 +481,11 @@
 
                     </Button>
                     
-                    <Button x:Name="BtnMarketplace" Click="BtnMarketplace_Click" Content="Marketplace" Width="80" Height="30"/>
+                    <Border MouseLeftButtonDown="MarketplaceGrid_Click" BorderBrush="#98730C" BorderThickness="3" CornerRadius="2" Width="90" Height="40" HorizontalAlignment="Left" Margin="150,0,0,0">
+                        <Button x:Name="BtnMarketplace" Click="BtnMarketplace_Click" Content="Marketplace" 
+                            BorderBrush="#98730C" BorderThickness="2" Background="#540754" Foreground="White"
+                            Width="90" Height="40" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
                     
                     <!-- <Border MouseLeftButtonDown="UpArrow_Click" x:Name="UpArrowBorder" Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" Cursor="Hand" Margin="0,0,5,0" Visibility="Hidden">
                         <md:PackIcon x:Name="UpArrow" Kind="ArrowUpBoldOutline" Height="30" Width="30" VerticalAlignment="Center" HorizontalAlignment="Center"/> 
@@ -925,7 +929,11 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     
-                    <Button x:Name="BtnLibrary" Click="BtnLibrary_Click" Content="Asset Library" Width="80" Height="30"/>
+                    <Border MouseLeftButtonDown="BtnLibrary_Click" BorderBrush="#98730C" BorderThickness="3" CornerRadius="2" Width="110" Height="40" HorizontalAlignment="Left" Margin="20,0,0,0">
+                        <Button x:Name="BtnLibrary" Click="BtnLibrary_Click" Content="Asset Library" 
+                                BorderBrush="#98730C" BorderThickness="2" Background="#540754" Foreground="White"
+                                Width="110" Height="40" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
 
                     <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
 
@@ -959,12 +967,12 @@
                             </Rectangle.RenderTransform>
                         </Rectangle>
 
-                        <Border  MouseLeftButtonDown="Grid_Click" Background="Transparent" BorderBrush="Transparent" CornerRadius="3" VerticalAlignment="Center" HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" Cursor="Hand" Margin="0,0,5,0">
-                            <md:PackIcon  MouseLeftButtonDown="Grid_Click" Kind="ViewGridOutline" Cursor="Hand" Style="{StaticResource IconHover}" VerticalAlignment="Center"/>
+                        <Border  x:Name="MarketplaceGridBorder" MouseLeftButtonDown="MarketplaceGrid_Click" Background="Transparent" BorderBrush="Transparent" CornerRadius="3" VerticalAlignment="Center" HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" Cursor="Hand" Margin="0,0,5,0">
+                            <md:PackIcon  MouseLeftButtonDown="MarketplaceGrid_Click" Kind="ViewGridOutline" Cursor="Hand" Style="{StaticResource IconHover}" VerticalAlignment="Center"/>
                         </Border>
 
-                        <Border MouseLeftButtonDown="List_Click" Background="#E9E9E9" BorderBrush="Transparent" CornerRadius="3" VerticalAlignment="Center" HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" Cursor="Hand" Margin="0,0,5,0">
-                            <md:PackIcon MouseLeftButtonDown="List_Click" Grid.Row="1" Grid.Column="1" Kind="FormatListBulleted" Cursor="Hand" Style="{StaticResource IconHover}" VerticalAlignment="Center"/>
+                        <Border x:Name="MarketplaceListBorder" MouseLeftButtonDown="MarketplaceList_Click" Background="#E9E9E9" BorderBrush="Transparent" CornerRadius="3" VerticalAlignment="Center" HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" Cursor="Hand" Margin="0,0,5,0">
+                            <md:PackIcon MouseLeftButtonDown="MarketplaceList_Click" Grid.Row="1" Grid.Column="1" Kind="FormatListBulleted" Cursor="Hand" Style="{StaticResource IconHover}" VerticalAlignment="Center"/>
                         </Border>
 
                         <Rectangle Fill="#A3A3A3" Height="20" Width="1" RenderTransformOrigin="0.5,0.5" Margin="0,0,8,0">
@@ -998,9 +1006,9 @@
 
                 </Grid>
                 
-                <Grid Grid.Row="2" Visibility="Collapsed">
+                <Grid Grid.Row="2" x:Name="MarketplaceGridView" Visibility="Collapsed">
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <WrapPanel HorizontalAlignment="Center" VerticalAlignment="Top" />
+                        <WrapPanel x:Name="MarketplaceModelsContainer" HorizontalAlignment="Center" VerticalAlignment="Top" />
                     </ScrollViewer>
                 </Grid>
                 
@@ -1190,45 +1198,6 @@
                         </DataGridTemplateColumn>
                     </DataGrid.Columns>
                 </DataGrid>
-                
-                <Border Grid.Row="2" Width="263" Height="253" CornerRadius="5" Background="White" BorderBrush="LightGray" BorderThickness="1" Margin="10">
-                    <Border.Effect>
-                        <DropShadowEffect Color="Black" Opacity="0.1" BlurRadius="10" ShadowDepth="2"/>
-                    </Border.Effect>
-                    <Grid>
-                        <!-- Main Grid -->
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="170"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
-
-                        <!-- Header Background -->
-                        <Border Grid.Row="0" Background="#E6E6E6" HorizontalAlignment="Stretch" Margin="5"/>
-
-                        <!-- Thumbnail Image -->
-                        <Image Grid.Row="0" Width="150" Height="150" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" Source="{Binding Thumbnail}"/>
-                        
-                        <Grid Grid.Row="1">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="125" />
-                                <ColumnDefinition Width="125" />
-                            </Grid.ColumnDefinitions>
-                            
-                            <!-- Content StackPanel -->
-                            <StackPanel Grid.Column="0" Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="8,5,5,2">
-                                <TextBlock Text="Sphere" FontSize="16" FontWeight="Normal" Foreground="#4B4B4B" TextAlignment="Center" HorizontalAlignment="Left" TextWrapping="Wrap"/>
-                                <TextBlock Text="A sphere" FontSize="14" FontWeight="Normal" Foreground="Gray" TextAlignment="Left" HorizontalAlignment="Left" TextWrapping="Wrap"/>
-                            </StackPanel>
-                            
-                            <StackPanel Grid.Column="1" Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="8,5,5,2">
-                                <TextBlock Text="0.50" FontSize="16" FontWeight="Normal" Foreground="#4B4B4B" TextAlignment="Left" HorizontalAlignment="Left" TextWrapping="Wrap"/>
-                                <Border BorderBrush="Green" BorderThickness="2" CornerRadius="3">
-                                    <Button Content="Buy" Background="Green" Foreground="Azure" Width="50" Height="20" BorderBrush="Green" BorderThickness="2"/>
-                                </Border>
-                            </StackPanel>
-                        </Grid>
-                    </Grid>
-                </Border>
             </Grid>
         </Border>
             
@@ -1266,26 +1235,30 @@
                 
                 <Button x:Name="BtnListModel"  Content="List Model"  Width="75" Height="30" Click="BtnListModel_Click" Grid.Row="4" />
                 
-                <Popup x:Name="ListModelPopup" Placement="Bottom" PlacementTarget="{Binding ElementName=BtnListModel}" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade" HorizontalOffset="-250">
-                        <Border x:Name="ListModelBorder" Background="#F0F0F0" CornerRadius="5"
-                                Width="200" Height="200" Margin="5">
+                <Popup x:Name="ListModelPopup" Placement="Bottom" PlacementTarget="{Binding ElementName=BtnListModel}" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade" HorizontalOffset="-150">
+                        <Border x:Name="ListModelBorder" Background="#5c1c1c" CornerRadius="5"
+                                Width="200" Height="200">
                             <!-- <Border.Effect>
                                 <DropShadowEffect BlurRadius="50" ShadowDepth="10" Color="Black" Opacity="0.2"/>
                             </Border.Effect> -->
-                            <Grid>
+                            <Grid Margin="10,10,10,2">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="30"/> <!-- Price -->
+                                    <RowDefinition Height="5"/> <!-- Space -->
                                     <RowDefinition Height="*"/> <!-- Description -->
                                     <RowDefinition Height="30"/> <!-- List -->
                                 </Grid.RowDefinitions>
                                 
-                                <TextBlock Text="Price:" HorizontalAlignment="Left"/>
-                                <TextBox x:Name="PriceTextBox" Text="Enter Price" HorizontalAlignment="Right" MinWidth="50"/>
+                                <TextBlock Text="Price:" Foreground="White" HorizontalAlignment="Left"/>
+                                <TextBox x:Name="PriceTextBox" Text="Enter Price" Background="Transparent" Foreground="White" BorderBrush="#98730c" HorizontalAlignment="Right" MinWidth="50"/>
                                 
-                                <TextBlock Grid.Row="1" Text="Description:" HorizontalAlignment="Left"/>
-                                <TextBox Grid.Row="1" x:Name="DescriptionTextBox" Text="Enter Description" HorizontalAlignment="Right" MinWidth="100"/>
+                                <TextBlock Grid.Row="2" Text="Description:" Foreground="White" HorizontalAlignment="Left"/>
+                                <TextBox Grid.Row="2" x:Name="DescriptionTextBox" Text="Enter Description" Background="Transparent" Foreground="White" BorderBrush="#98730c" HorizontalAlignment="Right" MinWidth="100"/>
                                 
-                                <Button Grid.Row="2" Content="List" Click="BtnList_Click" Width="80" Height="20"/>
+                                <Border Grid.Row="3" BorderBrush="#98730C" BorderThickness="2" CornerRadius="3" Width="60" Height="20" HorizontalAlignment="Center">
+                                    <Button Content="List" Click="BtnList_Click" Background="#540754" Foreground="White"
+                                            Width="60" Height="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
                             </Grid>
                         </Border>
                     </Popup>

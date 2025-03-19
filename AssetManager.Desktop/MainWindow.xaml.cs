@@ -23,6 +23,7 @@ using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Wpf;
 using System.Windows.Data; // Fix for Binding issue
 using System.Windows.Controls;
+using System.Windows.Documents;
 using ForgeViewerApp; // Ensure we use WPF DataGrid
 using AssetManagement.Infrastructure.Fusion;
 
@@ -55,6 +56,7 @@ namespace AssetManager.Desktop
         private bool isModelLoaded = false;
         
         private List<Dictionary<string, string>> originalResults;
+        //private List<Dictionary<string, string>> listedModels;
 
         private enum ViewType { Grid, List }
         private ViewType _lastViewType = ViewType.List; // Default to List View
@@ -310,6 +312,17 @@ namespace AssetManager.Desktop
                 return "Unknown Name";
             }
             return userData.Name;
+        }
+        
+        private async Task<string> GetModelProjectId(string modelId)
+        {
+            MongoConnection database = new MongoConnection();
+            var userData = await database.ModelData.Find(x => x.Id == modelId).FirstOrDefaultAsync();
+            if (userData == null)
+            {
+                return "Unknown Project";
+            }
+            return userData.FolderId;
         }
         #endregion
 
@@ -4554,10 +4567,18 @@ namespace AssetManager.Desktop
         private async void InitializeMarketplace()
         {
             MongoConnection database = new MongoConnection();
+            List<Dictionary<string, string>> allListedModels = await GetAllListedModels();
+            MarketplaceDataGrid.ItemsSource = allListedModels;
+        }
+
+        private async Task<List<Dictionary<string, string>>> GetAllListedModels()
+        {
+            MongoConnection database = new MongoConnection();
             List<Dictionary<string, string>> allListedModels = new List<Dictionary<string, string>>();
             var listedModels = await database.ListedModels.Find(FilterDefinition<ListedModels>.Empty).ToListAsync();
             foreach (var model in listedModels)
             {
+                string projectId = await GetModelProjectId(model.ModelId);
                 string sellerName = await GetUserName(model.SellerId);
                 allListedModels.Add(new Dictionary<string, string>
                 {
@@ -4565,11 +4586,11 @@ namespace AssetManager.Desktop
                     { "Description", model.Description },
                     { "Seller", sellerName },
                     { "Id", model.ModelId },
-                    { "Price", model.Price.ToString()}
+                    { "Price", model.Price.ToString()},
+                    { "ProjectId", projectId}
                 });
             }
-            
-            MarketplaceDataGrid.ItemsSource = allListedModels;
+            return allListedModels;
         }
         
         private async void BtnMarketplace_Click(object sender, RoutedEventArgs e)
@@ -4660,6 +4681,164 @@ namespace AssetManager.Desktop
                 MessageBox.Show($"Error: {exception.Message}");
             }
             
+        }
+
+        private async void MarketplaceGrid_Click(object sender, MouseButtonEventArgs e)
+        {
+            MarketplaceDataGrid.Visibility = Visibility.Collapsed;
+            MarketplaceGridView.Visibility = Visibility.Visible;
+            MarketplaceGridBorder.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
+            MarketplaceListBorder.Background = Brushes.Transparent;
+            
+            var listedModels = await GetAllListedModels();
+            MarketplaceModelsContainer.Children.Clear();
+            foreach (var model in listedModels)
+            {
+                Border modelSquare = new Border()
+                {
+                    Width = 263,
+                    Height = 253,
+                    CornerRadius = new CornerRadius(5),
+                    Background = Brushes.White,
+                    BorderBrush = Brushes.LightGray,
+                    BorderThickness = new Thickness(1),
+                    Margin = new Thickness(10),
+                    Effect = new DropShadowEffect
+                    {
+                        Color = Colors.Black,
+                        Opacity = 0.1,
+                        BlurRadius = 10,
+                        ShadowDepth = 2
+                    },
+                    Tag = model, // Store the model data in the Tag for easy access
+                    Cursor = Cursors.Hand // Change cursor to indicate
+                };
+
+                Grid grid = new Grid();
+                grid.RowDefinitions.Add(new RowDefinition{ Height = new GridLength(170)});
+                grid.RowDefinitions.Add(new RowDefinition{ Height = GridLength.Auto });
+                
+                Border headerBackground = new Border
+                {
+                    Background = new SolidColorBrush(Color.FromRgb(230,230,230)),
+                    HorizontalAlignment = HorizontalAlignment.Stretch,
+                    Margin = new Thickness(5)
+                };
+                
+                Grid.SetRow(headerBackground, 0);
+                grid.Children.Add(headerBackground);
+
+                Image thumbnailImage = new Image
+                {
+                    Width = 150,
+                    Height = 150,
+                    Stretch = Stretch.Uniform,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center,
+                };
+                
+                _ = ShowThumbnail(model["ProjectId"], model["Id"], thumbnailImage);
+                Grid.SetRow(thumbnailImage, 0);
+                grid.Children.Add(thumbnailImage);
+
+                Grid infoGrid = new Grid();
+                Grid.SetRow(infoGrid, 1);
+                grid.Children.Add(infoGrid);
+                
+                infoGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(125) });
+                infoGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(125) });
+
+                StackPanel textContent = new StackPanel
+                {
+                    Orientation = Orientation.Vertical,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    Margin = new Thickness(8,5,5,2)
+                };
+                
+                Grid.SetColumn(textContent, 0);
+                infoGrid.Children.Add(textContent);
+
+                TextBlock name = new TextBlock
+                {
+                    Text = model["Name"],
+                    FontSize = 16,
+                    FontWeight = FontWeights.Normal,
+                    Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B")),
+                    TextAlignment = TextAlignment.Center,
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    TextWrapping = TextWrapping.Wrap
+                };
+
+                TextBlock description = new TextBlock
+                {
+                    Text = model["Description"],
+                    FontSize = 14,
+                    FontWeight = FontWeights.Normal,
+                    Foreground = Brushes.Gray,
+                    TextAlignment = TextAlignment.Center,
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    TextWrapping = TextWrapping.Wrap
+                };
+                
+                textContent.Children.Add(name);
+                textContent.Children.Add(description);
+                
+                StackPanel priceContent = new StackPanel
+                {
+                    Orientation = Orientation.Vertical,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    Margin = new Thickness(8,5,5,2)
+                };
+                
+                Grid.SetColumn(priceContent, 1);
+                infoGrid.Children.Add(priceContent);
+                
+                TextBlock price = new TextBlock
+                {
+                    Text = model["Price"],
+                    FontSize = 16,
+                    FontWeight = FontWeights.Normal,
+                    Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B")),
+                    TextAlignment = TextAlignment.Center,
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    TextWrapping = TextWrapping.Wrap
+                };
+
+                Button buy = new Button
+                {
+                    Content = "Buy",
+                    Background = Brushes.Green,
+                    Foreground = Brushes.Azure,
+                    Width = 50,
+                    Height = 20,
+                    BorderBrush = Brushes.Green,
+                    BorderThickness = new Thickness(2)
+                };
+
+                Border buyBorder = new Border
+                {
+                    BorderBrush = buy.BorderBrush,
+                    BorderThickness = new Thickness(2),
+                    CornerRadius = new CornerRadius(3)
+                };
+                
+                buyBorder.Child = buy;
+                priceContent.Children.Add(price);
+                priceContent.Children.Add(buyBorder);
+
+                modelSquare.Child = grid;
+                MarketplaceModelsContainer.Children.Add(modelSquare);
+            }
+        }
+        
+        private async void MarketplaceList_Click(object sender, MouseButtonEventArgs e)
+        {
+            MarketplaceGridView.Visibility = Visibility.Collapsed;
+            MarketplaceDataGrid.Visibility = Visibility.Visible;
+            MarketplaceListBorder.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
+            MarketplaceGridBorder.Background = Brushes.Transparent;
         }
         
         //COMMENTED OUT FUNCTIONS//

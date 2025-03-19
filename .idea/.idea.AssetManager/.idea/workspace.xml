@@ -11,6 +11,7 @@
     <list default="true" id="29dceaf0-6b38-45af-9473-223a6fd443eb" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/.idea.AssetManager/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.AssetManager/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml.cs" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml.cs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -134,6 +135,8 @@
       <workItem from="1741782721806" duration="182000" />
       <workItem from="1741786539801" duration="3853000" />
       <workItem from="1742300881251" duration="5090000" />
+      <workItem from="1742393210455" duration="71000" />
+      <workItem from="1742393296184" duration="7667000" />
     </task>
     <task id="LOCAL-00001" summary="save main">
       <option name="closed" value="true" />
