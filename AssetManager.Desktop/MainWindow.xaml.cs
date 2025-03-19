@@ -3343,6 +3343,7 @@ namespace AssetManager.Desktop
                 {
                     await ForgeWebView.EnsureCoreWebView2Async();
                 }
+
                 string accessToken = TokenManager.GetToken();
                 if (string.IsNullOrEmpty(accessToken))
                 {
@@ -3354,6 +3355,9 @@ namespace AssetManager.Desktop
                 Console.WriteLine("🔄 Initializing WebView2...");
                 await ForgeWebView.EnsureCoreWebView2Async();
                 Console.WriteLine("✅ WebView2 initialized successfully.");
+
+                // ✅ Correct HDRI URL (must be .hdr or .dds, hosted with a direct link)
+                string hdriUrl = "https://www.dropbox.com/scl/fi/xb0pph37hni7q1qoa1inq/rogland_clear_night_4k.hdr?rlkey=mik14m29cyr3uzzj8guakwzxf&raw=1";
 
                 string htmlContent = $@"<!DOCTYPE html>
 <html>
@@ -3378,6 +3382,26 @@ namespace AssetManager.Desktop
             var viewerDiv = document.getElementById('forgeViewer');
             var viewer = new Autodesk.Viewing.GuiViewer3D(viewerDiv);
             viewer.start();
+
+            viewer.loadExtension('Autodesk.Viewing.EnvironmentSettings')
+                .then(() => {{
+                    console.log('🌌 EnvironmentSettings Extension Loaded!');
+
+                    // ✅ Register the HDRI as a Forge Viewer environment
+                    Autodesk.Viewing.Private.EnvSettings.addCustomEnvironment('Custom_Fantasy_HDRI', {{
+                        path: '{hdriUrl}',
+                        type: 'equirectangular', // Must be 'equirectangular' for HDRI
+                        displayName: 'Fantasy Night Sky',
+                    }});
+
+                    // ✅ Apply the HDRI as an available environment
+                    viewer.setEnvironment('Custom_Fantasy_HDRI');
+                    console.log('✅ Custom HDRI added to Environments List!');
+
+                    // ✅ Ensure the HDRI is visible
+                    viewer.setEnvMapBackground(true);
+                }});
+
             Autodesk.Viewing.Document.load(documentId, function(doc) {{
                 var defaultModel = doc.getRoot().getDefaultGeometry();
                 viewer.loadDocumentNode(doc, defaultModel);
@@ -3396,6 +3420,8 @@ namespace AssetManager.Desktop
                 Console.WriteLine($"❌ WebView2 initialization failed: {ex.Message}");
             }
         }
+
+
         #endregion
 
 
