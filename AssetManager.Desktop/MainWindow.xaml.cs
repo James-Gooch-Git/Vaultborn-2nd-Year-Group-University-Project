@@ -3332,6 +3332,156 @@ namespace AssetManager.Desktop
             Console.WriteLine($"🔄 Returning to {_lastViewType} view.");
         }
 
+        //Trying the SKybox
+        /* private async void LoadForgeViewer(string encodedUrn)
+        {
+            try
+            {
+                ForgeWebView.Visibility = Visibility.Visible;
+
+                // Initialize WebView2 if not already initialized
+                if (ForgeWebView.CoreWebView2 == null)
+                {
+                    await ForgeWebView.EnsureCoreWebView2Async();
+                    ForgeWebView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false;
+                    ForgeWebView.CoreWebView2.Settings.AreDefaultScriptDialogsEnabled = true;
+                }
+
+                string accessToken = TokenManager.GetToken();
+                if (string.IsNullOrEmpty(accessToken))
+                {
+                    Console.WriteLine("❌ Access token is missing.");
+                    MessageBox.Show("Authentication error. Please log in again.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                Console.WriteLine("🔄 Initializing WebView2...");
+                await ForgeWebView.EnsureCoreWebView2Async();
+                Console.WriteLine("✅ WebView2 initialized successfully.");
+
+                // HTML Content with Forge Viewer integration
+                string htmlContent = $@"<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='UTF-8'>
+    <meta http-equiv='X-UA-Compatible' content='IE=Edge' />
+    <title>Forge Viewer</title>
+    <script src='https://developer.api.autodesk.com/modelderivative/v2/viewers/7.52/viewer3D.min.js'></script>
+    <link rel='stylesheet' href='https://developer.api.autodesk.com/modelderivative/v2/viewers/7.52/style.min.css' type='text/css'>
+</head>
+<body>
+    <div id='forgeViewer' style='width: 100%; height: 100vh;'></div>
+
+    <!-- Log Display Area -->
+    <div id=""logConsole"" 
+        style=""position: absolute; bottom: 10px; left: 10px; width: 95%; max-height: 200px; overflow-y: auto; 
+        background: rgba(0, 0, 0, 0.7); color: white; padding: 10px; font-family: monospace;"">
+        <strong>Logs:</strong><br>
+    </div>
+
+    <script>
+        function logMessage(message) {{
+            console.log(message);  // Standard Console Log
+            let logDiv = document.getElementById(""logConsole"");
+            logDiv.innerHTML += message + ""<br>""; // Append log to UI
+            logDiv.scrollTop = logDiv.scrollHeight; // Auto-scroll to latest log
+        }}
+
+        Autodesk.Viewing.Private.env = {{ DISABLE_MIXPANEL_TRACKING: true }};
+        Autodesk.Viewing.Private.trackUsage = function() {{}};
+
+        var options = {{
+            env: 'AutodeskProduction',
+            getAccessToken: function(onTokenReady) {{
+                onTokenReady('{{accessToken}}', 3599);
+            }}
+        }};
+
+        var documentId = 'urn:{{encodedUrn}}';
+        Autodesk.Viewing.Initializer(options, function() {{
+            logMessage('✅ Viewer initialized.');
+            var viewerDiv = document.getElementById('forgeViewer');
+            window.viewer = new Autodesk.Viewing.GuiViewer3D(viewerDiv);
+            viewer.start();
+
+            Autodesk.Viewing.Document.load(documentId, function(doc) {{
+                var defaultModel = doc.getRoot().getDefaultGeometry();
+                viewer.loadDocumentNode(doc, defaultModel).then(function() {{
+                    logMessage('✅ Model loaded successfully.');
+                    
+                    viewer.loadExtension('CustomSkyboxExtension').then(() => {{
+                        logMessage('✅ CustomSkyboxExtension successfully loaded');
+                    }}).catch(err => {{
+                        logMessage('❌ Error loading CustomSkyboxExtension: ' + err);
+                    }});
+
+                }});
+            }}, function(errorMsg) {{
+                logMessage('❌ Error loading document: ' + errorMsg);
+            }});
+        }});
+    </script>
+</body>
+
+</html>";
+
+                ForgeWebView.NavigateToString(htmlContent);
+
+                // Inject the Skybox extension JavaScript after WebView2 loads
+                ForgeWebView.CoreWebView2.NavigationCompleted += async (sender, args) =>
+                {
+                    string jsScript = @"
+class CustomSkyboxExtension extends Autodesk.Viewing.Extension {
+    constructor(viewer, options) {
+        super(viewer, options);
+    }
+
+    load() {
+        console.log('✅ CustomSkyboxExtension loaded');
+
+               let envMapUrls = [
+            ""https://my-skybox-images.s3.eu-north-1.amazonaws.com/px.png"", // Right (+X)
+            ""https://my-skybox-images.s3.eu-north-1.amazonaws.com/nx.png"", // Left (-X)
+            ""https://my-skybox-images.s3.eu-north-1.amazonaws.com/py.png"", // Top (+Y)
+            ""https://my-skybox-images.s3.eu-north-1.amazonaws.com/ny.png"", // Bottom (-Y)
+            ""https://my-skybox-images.s3.eu-north-1.amazonaws.com/pz.png"", // Front (+Z)
+            ""https://my-skybox-images.s3.eu-north-1.amazonaws.com/nz.png""  // Back (-Z)
+        ];
+
+
+        viewer.impl.setLightPreset(0); // Disable Autodesk default lighting
+        viewer.impl.createCubeMapFromUrls(envMapUrls, function(cubeMap) {
+            if (cubeMap) {
+                viewer.impl.setBackgroundCubeMap(cubeMap);
+                viewer.impl.setUseCubeMap(true);
+                console.log('✅ Skybox Applied Successfully');
+            } else {
+                console.error('❌ Failed to load skybox cube map');
+            }
+        });
+
+        viewer.impl.invalidate(true, true, false);
+        return true;
+    }
+
+    unload() {
+        console.log('❌ CustomSkyboxExtension unloaded');
+        return true;
+    }
+}
+
+Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', CustomSkyboxExtension);
+";
+
+                    await ForgeWebView.CoreWebView2.ExecuteScriptAsync(jsScript);
+                };
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ WebView2 initialization failed: {ex.Message}");
+            }
+        }*/
+
         private async void LoadForgeViewer(string encodedUrn)
         {
             try
@@ -3360,58 +3510,58 @@ namespace AssetManager.Desktop
                 string hdriUrl = "https://www.dropbox.com/scl/fi/xb0pph37hni7q1qoa1inq/rogland_clear_night_4k.hdr?rlkey=mik14m29cyr3uzzj8guakwzxf&raw=1";
 
                 string htmlContent = $@"<!DOCTYPE html>
-<html>
-<head>
-    <meta charset='UTF-8'>
-    <meta http-equiv='X-UA-Compatible' content='IE=Edge' />
-    <title>Forge Viewer</title>
-    <script src='https://developer.api.autodesk.com/modelderivative/v2/viewers/7.52/viewer3D.min.js'></script>
-    <link rel='stylesheet' href='https://developer.api.autodesk.com/modelderivative/v2/viewers/7.52/style.min.css' type='text/css'>
-</head>
-<body>
-    <div id='forgeViewer' style='width: 100%; height: 100vh;'></div>
-    <script>
-        var options = {{
-            env: 'AutodeskProduction',
-            getAccessToken: function(onTokenReady) {{
-                onTokenReady('{accessToken}', 3599);
-            }}
-        }};
-        var documentId = 'urn:{encodedUrn}';
-        Autodesk.Viewing.Initializer(options, function() {{
-            var viewerDiv = document.getElementById('forgeViewer');
-            var viewer = new Autodesk.Viewing.GuiViewer3D(viewerDiv);
-            viewer.start();
+ <html>
+ <head>
+     <meta charset='UTF-8'>
+     <meta http-equiv='X-UA-Compatible' content='IE=Edge' />
+     <title>Forge Viewer</title>
+     <script src='https://developer.api.autodesk.com/modelderivative/v2/viewers/7.52/viewer3D.min.js'></script>
+     <link rel='stylesheet' href='https://developer.api.autodesk.com/modelderivative/v2/viewers/7.52/style.min.css' type='text/css'>
+ </head>
+ <body>
+     <div id='forgeViewer' style='width: 100%; height: 100vh;'></div>
+     <script>
+         var options = {{
+             env: 'AutodeskProduction',
+             getAccessToken: function(onTokenReady) {{
+                 onTokenReady('{accessToken}', 3599);
+             }}
+         }};
+         var documentId = 'urn:{encodedUrn}';
+         Autodesk.Viewing.Initializer(options, function() {{
+             var viewerDiv = document.getElementById('forgeViewer');
+             var viewer = new Autodesk.Viewing.GuiViewer3D(viewerDiv);
+             viewer.start();
 
-            viewer.loadExtension('Autodesk.Viewing.EnvironmentSettings')
-                .then(() => {{
-                    console.log('🌌 EnvironmentSettings Extension Loaded!');
+             viewer.loadExtension('Autodesk.Viewing.EnvironmentSettings')
+                 .then(() => {{
+                     console.log('🌌 EnvironmentSettings Extension Loaded!');
 
-                    // ✅ Register the HDRI as a Forge Viewer environment
-                    Autodesk.Viewing.Private.EnvSettings.addCustomEnvironment('Custom_Fantasy_HDRI', {{
-                        path: '{hdriUrl}',
-                        type: 'equirectangular', // Must be 'equirectangular' for HDRI
-                        displayName: 'Fantasy Night Sky',
-                    }});
+                     // ✅ Register the HDRI as a Forge Viewer environment
+                     Autodesk.Viewing.Private.EnvSettings.addCustomEnvironment('Custom_Fantasy_HDRI', {{
+                         path: '{hdriUrl}',
+                         type: 'equirectangular', // Must be 'equirectangular' for HDRI
+                         displayName: 'Fantasy Night Sky',
+                     }});
 
-                    // ✅ Apply the HDRI as an available environment
-                    viewer.setEnvironment('Custom_Fantasy_HDRI');
-                    console.log('✅ Custom HDRI added to Environments List!');
+                     // ✅ Apply the HDRI as an available environment
+                     viewer.setEnvironment('Custom_Fantasy_HDRI');
+                     console.log('✅ Custom HDRI added to Environments List!');
 
-                    // ✅ Ensure the HDRI is visible
-                    viewer.setEnvMapBackground(true);
-                }});
+                     // ✅ Ensure the HDRI is visible
+                     viewer.setEnvMapBackground(true);
+                 }});
 
-            Autodesk.Viewing.Document.load(documentId, function(doc) {{
-                var defaultModel = doc.getRoot().getDefaultGeometry();
-                viewer.loadDocumentNode(doc, defaultModel);
-            }}, function(errorMsg) {{
-                console.error('Error loading document: ' + errorMsg);
-            }});
-        }});
-    </script>
-</body>
-</html>";
+             Autodesk.Viewing.Document.load(documentId, function(doc) {{
+                 var defaultModel = doc.getRoot().getDefaultGeometry();
+                 viewer.loadDocumentNode(doc, defaultModel);
+             }}, function(errorMsg) {{
+                 console.error('Error loading document: ' + errorMsg);
+             }});
+         }});
+     </script>
+ </body>
+ </html>";
 
                 ForgeWebView.NavigateToString(htmlContent);
             }
