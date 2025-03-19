@@ -937,11 +937,31 @@
 
                     <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
 
-                        <!--<TextBlock Text="Sort By" Cursor="Hand" FontSize="13" Foreground="#4B4B4B" VerticalAlignment="Center"/>
-
-                        <md:PackIcon Kind="ChevronDown" Cursor="Hand" Foreground="#4B4B4B" VerticalAlignment="Center" Margin="0,0,5,0"/>-->
-
-                        <!--<Rectangle Fill="#A3A3A3" Height="20" Width="1" RenderTransformOrigin="0.5,0.5" Margin="0,0,5,0">
+                        <Border Cursor="Hand" MouseLeftButtonDown="MarketplaceSort_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock x:Name="SortByTextBlock" Text="Sort By Default" Cursor="Hand" FontSize="13" Foreground="#4B4B4B" VerticalAlignment="Center"/>
+                                <md:PackIcon x:Name="SortChevron" Kind="ChevronDown" Cursor="Hand" Foreground="#4B4B4B" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                            </StackPanel>
+                        </Border>
+                        
+                        <Popup x:Name="SortPopup" Placement="Bottom" PlacementTarget="{Binding ElementName=SortChevron}" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade" HorizontalOffset="-105">
+                        <Border x:Name="SortBorder" Background="#5c1c1c" CornerRadius="5"
+                                Width="120" Height="150">
+                            <!-- <Border.Effect>
+                                <DropShadowEffect BlurRadius="50" ShadowDepth="10" Color="Black" Opacity="0.2"/>
+                            </Border.Effect> -->
+                            <ListBox x:Name="SortListBox" SelectionChanged="SortListBox_SelectionChanged" Margin="10" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                                <ListBoxItem Height="20" Foreground="White" VerticalAlignment="Center" BorderBrush="#98730c" BorderThickness="0,0,0,1">Default</ListBoxItem>
+                                <ListBoxItem Height="20" Foreground="White" VerticalAlignment="Center" BorderBrush="#98730c" BorderThickness="0,0,0,1">Upvotes</ListBoxItem>
+                                <ListBoxItem Height="20" Foreground="White" VerticalAlignment="Center" BorderBrush="#98730c" BorderThickness="0,0,0,1">Price Lowest</ListBoxItem>
+                                <ListBoxItem Height="20" Foreground="White" VerticalAlignment="Center" BorderBrush="#98730c" BorderThickness="0,0,0,1">Price Highest</ListBoxItem>
+                                <ListBoxItem Height="20" Foreground="White" VerticalAlignment="Center" BorderBrush="#98730c" BorderThickness="0,0,0,1">Name A-Z</ListBoxItem>
+                                <ListBoxItem Height="20" Foreground="White" VerticalAlignment="Center" BorderBrush="#98730c" BorderThickness="0,0,0,1">Name Z-A</ListBoxItem>
+                            </ListBox>
+                        </Border>
+                    </Popup>
+                        
+                        <Rectangle Fill="#A3A3A3" Height="20" Width="1" RenderTransformOrigin="0.5,0.5" Margin="0,0,5,0">
                             <Rectangle.RenderTransform>
                                 <TransformGroup>
                                     <ScaleTransform ScaleX="-1"/>
@@ -950,7 +970,7 @@
                                     <TranslateTransform/>
                                 </TransformGroup>
                             </Rectangle.RenderTransform>
-                        </Rectangle>-->
+                        </Rectangle>
 
                         <Border MouseLeftButtonDown="Filter_Click" Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" Cursor="Hand" Margin="0,0,5,0">
                             <md:PackIcon Kind="FilterOutline" Cursor="Hand" Style="{StaticResource IconHover}" VerticalAlignment="Center"/>

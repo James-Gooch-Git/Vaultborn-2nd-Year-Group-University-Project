@@ -4840,6 +4840,22 @@ namespace AssetManager.Desktop
             MarketplaceListBorder.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
             MarketplaceGridBorder.Background = Brushes.Transparent;
         }
+
+        private void MarketplaceSort_Click(object sender, MouseButtonEventArgs e)
+        {
+            SortChevron.Kind = PackIconKind.ChevronUp;
+            SortPopup.IsOpen = true;
+        }
+
+        private void SortListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            ListBoxItem item = SortListBox.SelectedItem as ListBoxItem;
+            if (item != null)
+            {
+                string option = item.Content.ToString();
+                SortByTextBlock.Text = $"Sort By {option}";
+            }
+        }
         
         //COMMENTED OUT FUNCTIONS//
 
