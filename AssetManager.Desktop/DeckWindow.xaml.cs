@@ -109,9 +109,9 @@ namespace AssetManager.Desktop
                 {
                     Text = $"{stat.Name}: {stat.Value}",
                     FontSize = 14,
-                    Foreground = System.Windows.Media.Brushes.Black,
                     Margin = new Thickness(0, 2, 0, 2)
                 };
+                statText.Style = (Style)FindResource("StatsTextStyle");
                 SelectedCardStatsPanel.Children.Add(statText);
             }
         }
