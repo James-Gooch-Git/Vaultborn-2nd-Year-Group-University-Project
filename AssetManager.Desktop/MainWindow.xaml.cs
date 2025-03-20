@@ -32,6 +32,8 @@ using AssetManager.Infrastructure.Models;
 using Newtonsoft.Json;
 using AssetManagement.Infrastructure.Services;
 using Azure.Core;
+using System.Web;
+using Microsoft.WindowsAPICodePack.Taskbar;
 
 namespace AssetManager.Desktop
 {
@@ -58,6 +60,7 @@ namespace AssetManager.Desktop
         private bool isModelLoaded = false;
         
         private List<Dictionary<string, string>> originalResults;
+        private readonly PayPalService _payPalService;
         //private List<Dictionary<string, string>> listedModels;
 
         private enum ViewType { Grid, List }
@@ -93,6 +96,7 @@ namespace AssetManager.Desktop
             _filedwnService = new FileDownloadService();
             //InitializeTreeView();
             InitialiseFolders();
+            _payPalService = new PayPalService();
             Initialize();
         }
 
@@ -5123,9 +5127,67 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             }
         }
 
-        private void BtnBuy_Click(object sender, RoutedEventArgs e)
+        private async void BtnBuy_Click(object sender, RoutedEventArgs e)
         {
-            
+            try
+            {
+                BuyPopup.IsOpen = true;
+                if (MarketplaceDataGrid.SelectedItem is Dictionary<string, string> models)
+                {
+                    double price = double.Parse(models["Price"]);
+                    string aT = await _payPalService.GetPayPalAcessToken();
+                    string approvalUrl = await _payPalService.CreateOrder(aT, price);
+                    if (string.IsNullOrEmpty(approvalUrl))
+                    {
+                        MessageBox.Show($"❌ Payment Failed");
+                        BuyPopup.IsOpen = false;
+                    }
+                    else
+                    {
+                        webView.CoreWebView2.NavigationStarting -= Redirected;
+                        webView.CoreWebView2.NavigationStarting += Redirected;
+
+                        webView.CoreWebView2.Navigate(approvalUrl);
+                    }
+                }
+            }
+            catch (Exception exception)
+            {
+                MessageBox.Show($"Error: {exception.Message}");
+            }
+        }
+        
+        private async void Redirected(object sender, CoreWebView2NavigationStartingEventArgs args)
+        {
+            if (args.Uri.StartsWith("https://localhost:8080/return"))
+            {
+                args.Cancel = true;
+                Uri uri = new Uri(args.Uri);
+                Console.WriteLine($"{uri}");
+                string token = HttpUtility.ParseQueryString(uri.Query).Get("token");
+                string payerId = HttpUtility.ParseQueryString(uri.Query).Get("PayerId");
+                string payPalAccessToken = await _payPalService.GetPayPalAcessToken();
+                bool approved = await _payPalService.CapturePayment(token, payPalAccessToken);
+                if (approved)
+                {
+                    MessageBox.Show($"\u2705 Payment Successful");
+                    webView.CoreWebView2.Navigate("about:blank");
+                    BuyPopup.IsOpen = false;
+                }
+                else
+                {
+                    MessageBox.Show($"❌ Payment Failed");
+                    webView.CoreWebView2.Navigate("about:blank");
+                    BuyPopup.IsOpen = false;
+                }
+            }
+            else if (args.Uri.StartsWith("https://localhost:8080/cancel"))
+            {
+                args.Cancel = true;
+                MessageBox.Show($"❌ Payment Cancelled");
+                webView.CoreWebView2.Navigate("about:blank");
+                BuyPopup.IsOpen = false;
+            }
         }
         
         private void SortPopup_Closed(object? sender, EventArgs e)
