@@ -23,6 +23,7 @@ using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Wpf;
 using System.Windows.Data; // Fix for Binding issue
 using System.Windows.Controls;
+using System.Windows.Documents;
 using ForgeViewerApp; // Ensure we use WPF DataGrid
 using AssetManagement.Infrastructure.Fusion;
 
@@ -55,6 +56,7 @@ namespace AssetManager.Desktop
         private bool isModelLoaded = false;
         
         private List<Dictionary<string, string>> originalResults;
+        //private List<Dictionary<string, string>> listedModels;
 
         private enum ViewType { Grid, List }
         private ViewType _lastViewType = ViewType.List; // Default to List View
@@ -299,6 +301,28 @@ namespace AssetManager.Desktop
             MongoConnection database = new MongoConnection();
             var userData = await database.Users.Find(x => x.Id == userId).FirstOrDefaultAsync();
             return userData.ProfilePic;
+        }
+        
+        private async Task<string> GetModelName(string modelId)
+        {
+            MongoConnection database = new MongoConnection();
+            var userData = await database.ModelData.Find(x => x.Id == modelId).FirstOrDefaultAsync();
+            if (userData == null)
+            {
+                return "Unknown Name";
+            }
+            return userData.Name;
+        }
+        
+        private async Task<string> GetModelProjectId(string modelId)
+        {
+            MongoConnection database = new MongoConnection();
+            var userData = await database.ModelData.Find(x => x.Id == modelId).FirstOrDefaultAsync();
+            if (userData == null)
+            {
+                return "Unknown Project";
+            }
+            return userData.FolderId;
         }
         #endregion
 
@@ -4715,6 +4739,311 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             public DateTime CreatedDateTime { get; set; }
         }
         
+        //marketplace
+        private async void InitializeMarketplace()
+        {
+            MongoConnection database = new MongoConnection();
+            List<Dictionary<string, string>> allListedModels = await GetAllListedModels();
+            MarketplaceDataGrid.ItemsSource = allListedModels;
+        }
+
+        private async Task<List<Dictionary<string, string>>> GetAllListedModels()
+        {
+            MongoConnection database = new MongoConnection();
+            List<Dictionary<string, string>> allListedModels = new List<Dictionary<string, string>>();
+            var listedModels = await database.ListedModels.Find(FilterDefinition<ListedModels>.Empty).ToListAsync();
+            foreach (var model in listedModels)
+            {
+                string projectId = await GetModelProjectId(model.ModelId);
+                string sellerName = await GetUserName(model.SellerId);
+                allListedModels.Add(new Dictionary<string, string>
+                {
+                    { "Name", model.Name },
+                    { "Description", model.Description },
+                    { "Seller", sellerName },
+                    { "Id", model.ModelId },
+                    { "Price", model.Price.ToString()},
+                    { "ProjectId", projectId}
+                });
+            }
+            return allListedModels;
+        }
+        
+        private async void BtnMarketplace_Click(object sender, RoutedEventArgs e)
+        {
+            MarketplaceBorder.Visibility = Visibility.Visible;
+            ProjectsBorder.Visibility = Visibility.Collapsed;
+            LibraryBorder.Visibility = Visibility.Collapsed;
+            InitializeMarketplace();
+        }
+        
+        private void BtnLibrary_Click(object sender, RoutedEventArgs e)
+        {
+            MarketplaceBorder.Visibility = Visibility.Collapsed;
+            ProjectsBorder.Visibility = Visibility.Visible;
+            LibraryBorder.Visibility = Visibility.Visible;
+        }
+        
+        private async void BtnListModel_Click(object sender, RoutedEventArgs e)
+        {
+            MongoConnection database = new MongoConnection();
+            var findListing = await database.ListedModels.Find(x => x.ModelId == _selectedItemId).FirstOrDefaultAsync();
+            if (findListing != null)
+            {
+                MessageBox.Show($"Model already listed");
+                return;
+            }
+            ListModelPopup.IsOpen = true;
+        }
+        
+        private async void BtnList_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                MongoConnection database = new MongoConnection();
+                
+                if ((PriceTextBox.Text == "Enter Price" || string.IsNullOrEmpty(PriceTextBox.Text)) ||
+                    (DescriptionTextBox.Text == "Enter Description") || string.IsNullOrEmpty(DescriptionTextBox.Text))
+                {
+                    MessageBox.Show("Please enter a price or description");
+                    return;
+                }
+
+                if (double.TryParse(PriceTextBox.Text, out double price))
+                {
+                    string[] part = PriceTextBox.Text.Split('.');
+                    if (part.Length != 2 )
+                    {
+                        MessageBox.Show("Please enter a valid price");
+                        return;
+                    }
+
+                    if (part[1].Length != 2)
+                    {
+                        MessageBox.Show("Please enter a valid price");
+                        return;
+                    }
+                }
+                else
+                {
+                    MessageBox.Show("Please enter a valid price");
+                    return;
+                }
+
+                var modelTags = await GetModelTags();
+                List<string> tags = new List<string>();
+                foreach (var tag in modelTags.Tags)
+                {
+                    tags.Add(tag);
+                }
+
+                string modelName = await GetModelName(_selectedItemId);
+                
+                ListedModels models = new ListedModels()
+                {
+                    ModelId = _selectedItemId,
+                    Name = modelName,
+                    SellerId = _userId,
+                    Price = price,
+                    Tags = tags,
+                    Description = DescriptionTextBox.Text
+                };
+                await database.ListedModels.InsertOneAsync(models);
+                
+                MessageBox.Show($"Model listing successful!");
+            }
+            catch (Exception exception)
+            {
+                MessageBox.Show($"Error: {exception.Message}");
+            }
+            
+        }
+
+        private async void MarketplaceGrid_Click(object sender, MouseButtonEventArgs e)
+        {
+            MarketplaceDataGrid.Visibility = Visibility.Collapsed;
+            MarketplaceGridView.Visibility = Visibility.Visible;
+            MarketplaceGridBorder.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
+            MarketplaceListBorder.Background = Brushes.Transparent;
+            
+            var listedModels = await GetAllListedModels();
+            MarketplaceModelsContainer.Children.Clear();
+            foreach (var model in listedModels)
+            {
+                Border modelSquare = new Border()
+                {
+                    Width = 263,
+                    Height = 253,
+                    CornerRadius = new CornerRadius(5),
+                    Background = Brushes.White,
+                    BorderBrush = Brushes.LightGray,
+                    BorderThickness = new Thickness(1),
+                    Margin = new Thickness(10),
+                    Effect = new DropShadowEffect
+                    {
+                        Color = Colors.Black,
+                        Opacity = 0.1,
+                        BlurRadius = 10,
+                        ShadowDepth = 2
+                    },
+                    Tag = model, // Store the model data in the Tag for easy access
+                    Cursor = Cursors.Hand // Change cursor to indicate
+                };
+
+                Grid grid = new Grid();
+                grid.RowDefinitions.Add(new RowDefinition{ Height = new GridLength(170)});
+                grid.RowDefinitions.Add(new RowDefinition{ Height = GridLength.Auto });
+                
+                Border headerBackground = new Border
+                {
+                    Background = new SolidColorBrush(Color.FromRgb(230,230,230)),
+                    HorizontalAlignment = HorizontalAlignment.Stretch,
+                    Margin = new Thickness(5)
+                };
+                
+                Grid.SetRow(headerBackground, 0);
+                grid.Children.Add(headerBackground);
+
+                Image thumbnailImage = new Image
+                {
+                    Width = 150,
+                    Height = 150,
+                    Stretch = Stretch.Uniform,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center,
+                };
+                
+                _ = ShowThumbnail(model["ProjectId"], model["Id"], thumbnailImage);
+                Grid.SetRow(thumbnailImage, 0);
+                grid.Children.Add(thumbnailImage);
+
+                Grid infoGrid = new Grid();
+                Grid.SetRow(infoGrid, 1);
+                grid.Children.Add(infoGrid);
+                
+                infoGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(125) });
+                infoGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(125) });
+
+                StackPanel textContent = new StackPanel
+                {
+                    Orientation = Orientation.Vertical,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    Margin = new Thickness(8,5,5,2)
+                };
+                
+                Grid.SetColumn(textContent, 0);
+                infoGrid.Children.Add(textContent);
+
+                TextBlock name = new TextBlock
+                {
+                    Text = model["Name"],
+                    FontSize = 16,
+                    FontWeight = FontWeights.Normal,
+                    Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B")),
+                    TextAlignment = TextAlignment.Center,
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    TextWrapping = TextWrapping.Wrap
+                };
+
+                TextBlock description = new TextBlock
+                {
+                    Text = model["Description"],
+                    FontSize = 14,
+                    FontWeight = FontWeights.Normal,
+                    Foreground = Brushes.Gray,
+                    TextAlignment = TextAlignment.Center,
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    TextWrapping = TextWrapping.Wrap
+                };
+                
+                textContent.Children.Add(name);
+                textContent.Children.Add(description);
+                
+                StackPanel priceContent = new StackPanel
+                {
+                    Orientation = Orientation.Vertical,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    Margin = new Thickness(8,5,5,2)
+                };
+                
+                Grid.SetColumn(priceContent, 1);
+                infoGrid.Children.Add(priceContent);
+                
+                TextBlock price = new TextBlock
+                {
+                    Text = model["Price"],
+                    FontSize = 16,
+                    FontWeight = FontWeights.Normal,
+                    Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B")),
+                    TextAlignment = TextAlignment.Center,
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    TextWrapping = TextWrapping.Wrap
+                };
+
+                Button buy = new Button
+                {
+                    Content = "Buy",
+                    Background = Brushes.Green,
+                    Foreground = Brushes.Azure,
+                    Width = 50,
+                    Height = 20,
+                    BorderBrush = Brushes.Green,
+                    BorderThickness = new Thickness(2),
+                };
+
+                buy.Click += BtnBuy_Click;
+
+                Border buyBorder = new Border
+                {
+                    BorderBrush = buy.BorderBrush,
+                    BorderThickness = new Thickness(2),
+                    CornerRadius = new CornerRadius(3)
+                };
+                
+                buyBorder.Child = buy;
+                priceContent.Children.Add(price);
+                priceContent.Children.Add(buyBorder);
+
+                modelSquare.Child = grid;
+                MarketplaceModelsContainer.Children.Add(modelSquare);
+            }
+        }
+        
+        private async void MarketplaceList_Click(object sender, MouseButtonEventArgs e)
+        {
+            MarketplaceGridView.Visibility = Visibility.Collapsed;
+            MarketplaceDataGrid.Visibility = Visibility.Visible;
+            MarketplaceListBorder.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
+            MarketplaceGridBorder.Background = Brushes.Transparent;
+        }
+
+        private void MarketplaceSort_Click(object sender, MouseButtonEventArgs e)
+        {
+            SortChevron.Kind = PackIconKind.ChevronUp;
+            SortPopup.IsOpen = true;
+        }
+
+        private void SortListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            ListBoxItem item = SortListBox.SelectedItem as ListBoxItem;
+            if (item != null)
+            {
+                string option = item.Content.ToString();
+                SortByTextBlock.Text = $"Sort By {option}";
+            }
+        }
+
+        private void BtnBuy_Click(object sender, RoutedEventArgs e)
+        {
+            
+        }
+        
+        private void SortPopup_Closed(object? sender, EventArgs e)
+        {
+            SortChevron.Kind = PackIconKind.ChevronDown;
+        }
         
         //COMMENTED OUT FUNCTIONS//
 
@@ -4913,7 +5242,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
 */
 
-
+        
     }
 
 }
