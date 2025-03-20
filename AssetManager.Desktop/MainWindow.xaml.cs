@@ -4903,7 +4903,7 @@ namespace AssetManager.Desktop
                 string token = HttpUtility.ParseQueryString(uri.Query).Get("token");
                 string payerId = HttpUtility.ParseQueryString(uri.Query).Get("PayerId");
                 string payPalAccessToken = await _payPalService.GetPayPalAcessToken();
-                bool approved = await _payPalService.ExecutePayment(token, payPalAccessToken);
+                bool approved = await _payPalService.CapturePayment(token, payPalAccessToken);
                 if (approved)
                 {
                     MessageBox.Show($"\u2705 Payment Successful");

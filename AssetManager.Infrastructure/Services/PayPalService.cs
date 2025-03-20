@@ -77,7 +77,7 @@ public class PayPalService
         return approvalUrl;
     }
 
-    public async Task<bool> ExecutePayment(string token, string accessToken)
+    public async Task<bool> CapturePayment(string token, string accessToken)
     {
         var url = $"https://api-m.sandbox.paypal.com/v2/checkout/orders/{token}/capture";
         using var httpClient = new HttpClient();
@@ -86,7 +86,7 @@ public class PayPalService
         var response = await httpClient.PostAsync(url, content);
         var responseString = await response.Content.ReadAsStringAsync();
         var jsonResponse = JsonConvert.DeserializeObject<dynamic>(responseString);
-        Console.WriteLine($"PayPal Execute Response: {jsonResponse}");
+        Console.WriteLine($"PayPal Capture Response: {jsonResponse}");
         if (jsonResponse.status == "COMPLETED")
         {
             return true;
