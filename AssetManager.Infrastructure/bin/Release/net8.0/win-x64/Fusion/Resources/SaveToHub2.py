@@ -6,12 +6,19 @@ import logging
 import threading
 import time
 
+
+# Add the packages directory to the Python path
+packages_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "packages")
+if packages_dir not in sys.path:
+    sys.path.insert(0, packages_dir)
+
 # Set up logging
 # Replace the logging setup code at the beginning of the file
 
 # Set up logging
 try:
-    log_dir = os.path.dirname(os.path.realpath(__file__))
+    log_dir = os.path.join(os.path.expanduser("~"), "Documents", "Fusion360Logs")
+    os.makedirs(log_dir, exist_ok=True)  # Ensure directory exists
     log_path = os.path.join(log_dir, 'savetohub_log.txt')
     
     # Try to write a test line to see if the directory is writable
@@ -70,22 +77,31 @@ ui = None
 handlers = []
 commandId = 'SaveToHubCommand'
 commandTitle = 'Save To Hub'
-palette = None
-paletteName = 'SaveToHubPalette'
+#palette = None
+#paletteName = 'SaveToHubPalette'
 
 # Get current directory
 def get_current_dir():
     return os.path.dirname(os.path.realpath(__file__))
 
 # Helper function to save model to Autodesk Hub
-# Helper function to save model to Autodesk Hub
-# Helper function to save model to Autodesk Hub
-# Helper function to save model to Autodesk Hub
-# Helper function to save model to Autodesk Hub
 def saveToHub():
     try:
+        logs_dir = os.path.join(os.path.expanduser("~"), "Documents", "Fusion360Logs")
+        os.makedirs(logs_dir, exist_ok=True)
+        log_path = os.path.join(logs_dir, 'savetohub_log.txt')
+        
+        # Try writing a direct message to confirm we can write to this location
+        with open(log_path, 'a') as f:
+            timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
+            f.write(f"[{timestamp}] SaveToHub function called\n")
+            f.flush()
+        
         ui = app.userInterface
         doc = app.activeDocument
+        log_flush(f"SaveToHub started - Active document: {doc.name if doc else 'None'}", logging.INFO)
+        
+
         
         if not doc:
             ui.messageBox("No active document to export.", 
@@ -454,10 +470,22 @@ def saveToHub():
 def upload_file_to_hub(file_path, project_id, item_id, access_token):
     """Upload a file to Autodesk Hub using S3 signed URLs (matching the C# approach)"""
     try:
-        import requests
         import json
         import os
         import time
+        import requests
+    
+        
+
+        logs_dir = os.path.join(os.path.expanduser("~"), "Documents", "Fusion360Logs")
+        os.makedirs(logs_dir, exist_ok=True)
+        log_path = os.path.join(logs_dir, 'savetohub_log.txt')
+        
+        # Try writing a direct message to confirm we can write to this location
+        with open(log_path, 'a') as f:
+            timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
+            f.write(f"[{timestamp}] SaveToHub function called\n")
+            f.flush()
         
         logging.info(f"Starting upload of file: {file_path} to project: {project_id}, item: {item_id}")
         
@@ -684,124 +712,8 @@ def upload_file_to_hub(file_path, project_id, item_id, access_token):
         logging.error(f"Error in upload_file_to_hub: {str(e)}")
         logging.error(traceback.format_exc())
         return False
-# Create the floating palette
-def showPalette():
-    try:
-        global palette, ui
-        
-        # First, check if the palette already exists
-        existingPalette = ui.palettes.itemById(paletteName)
-        if existingPalette:
-            # If it exists, just show it
-            existingPalette.isVisible = True
-            logging.info("Showing existing palette")
-            return True
-            
-        # Create a new palette with a properly formatted HTML URL
-        logging.info("Creating new palette")
-        
-        # Define HTML content
-        html_content = '''
-        <html>
-        <head>
-            <style>
-                body {
-                    margin: 10px;
-                    font-family: Arial;
-                    background-color: #f0f0f0;
-                }
-                h3 {
-                    text-align: center;
-                    margin-top: 0;
-                }
-                button {
-                    width: 100%;
-                    height: 40px;
-                    background-color: #0078D7;
-                    color: white;
-                    border: none;
-                    border-radius: 5px;
-                    font-size: 16px;
-                    cursor: pointer;
-                    font-weight: bold;
-                }
-            </style>
-        </head>
-        <body>
-            <h3>Save To Hub</h3>
-            <button id="saveButton">Save To Hub</button>
-           <script>
-            document.getElementById("saveButton").addEventListener("click", function() {
-                // Use adsk.fusionSendData instead of window.location.href
-                window.adsk.fusionSendData('save', '');
-            });
-        </script>
-        </body>
-        </html>
-        '''
-        
-        # Create a temporary HTML file
-        html_dir = get_current_dir()
-        html_file_path = os.path.join(html_dir, 'savetohub_palette.html')
-        
-        with open(html_file_path, 'w') as f:
-            f.write(html_content)
-        
-        # Use file:// protocol for the HTML file URL
-        html_file_url = 'file:///' + html_file_path.replace('\\', '/')
-        logging.info(f"HTML file URL: {html_file_url}")
-        
-        # Create palette with the file URL
-        palette = ui.palettes.add(
-            id=paletteName,
-            name='Save To Hub',
-            htmlFileURL=html_file_url,
-            isVisible=True,
-            showCloseButton=True,
-            isResizable=False,
-            width=250,
-            height=120,
-            useNewWebBrowser=True
-        )
-        
-        # Force the palette to be floating
-        palette.dockingState = adsk.core.PaletteDockingStates.PaletteDockStateFloating
-        
-        # Position it in a visible area
-        try:
-            # Set position at top-right using fixed coordinates
-            palette.setPosition(900, 200)
-        except:
-            logging.warning("Could not set palette position")
-        
-        # Add event handler
-        onHTMLEvent = PaletteEventHandler()
-        palette.incomingFromHTML.add(onHTMLEvent)
-        handlers.append(onHTMLEvent)
-        
-        logging.info("Palette created successfully")
-        return True
-    except:
-        error_message = traceback.format_exc()
-        logging.error(f"Failed to create palette: {error_message}")
-        return False
 
-# Handler for palette HTML events
-class PaletteEventHandler(adsk.core.HTMLEventHandler):
-    def __init__(self):
-        super().__init__()
-    
-    def notify(self, args):
-        try:
-            htmlArgs = adsk.core.HTMLEventArgs.cast(args)
-            logging.info(f"Received HTML event: {htmlArgs.action}")
-            
-            # If we get any event from the HTML side, we can handle it here
-            if htmlArgs.action == "save":
-                saveToHub()
-        except:
-            error_message = traceback.format_exc()
-            logging.error(f"Failed in palette event: {error_message}")
+
 # Command created event handler
 class CommandCreatedEventHandler(adsk.core.CommandCreatedEventHandler):
     def __init__(self):
@@ -834,99 +746,6 @@ class CommandExecuteHandler(adsk.core.CommandEventHandler):
             error_message = traceback.format_exc()
             logging.error(f"Failed in command execute event: {error_message}")
 
-# Create a command to show the palette
-def createShowPaletteCommand():
-    try:
-        # Check if command already exists
-        showPaletteCmdDef = ui.commandDefinitions.itemById('ShowSaveToHubPaletteCommand')
-        if showPaletteCmdDef:
-            showPaletteCmdDef.deleteMe()
-            
-        # Create command definition
-        showPaletteCmdDef = ui.commandDefinitions.addButtonDefinition(
-            'ShowSaveToHubPaletteCommand',
-            'Show Save To Hub Palette',
-            'Shows the Save To Hub floating palette',
-            ''
-        )
-        
-        # Connect to command created event
-        onShowPaletteCreated = ShowPaletteCommandCreatedHandler()
-        showPaletteCmdDef.commandCreated.add(onShowPaletteCreated)
-        handlers.append(onShowPaletteCreated)
-        
-        # Add to toolbar
-        utilsPanel = ui.allToolbarPanels.itemById('UtilityPanel')  # Try the correct panel name first
-        if not utilsPanel:
-            utilsPanel = ui.allToolbarPanels.itemById('UtilitiesPanel')  # Fallback to original name
-        
-        if utilsPanel:
-            utilsPanel.controls.addCommand(showPaletteCmdDef, '', False)
-            logging.info(f"Command added to panel: {utilsPanel.id}")
-        else:
-            # Log all available panels for debugging
-            panel_ids = [panel.id for panel in ui.allToolbarPanels]
-            logging.info(f"Available panels: {panel_ids}")
-            logging.warning("Could not find Utility panel")
-            
-        return showPaletteCmdDef
-    except:
-        error_message = traceback.format_exc()
-        logging.error(f"Failed to create show palette command: {error_message}")
-        return None
-
-# Handler for show palette command
-class ShowPaletteCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
-    def __init__(self):
-        super().__init__()
-    
-    def notify(self, args):
-        try:
-            cmd = args.command
-            
-            # Connect to execute event
-            onExecute = ShowPaletteCommandExecuteHandler()
-            cmd.execute.add(onExecute)
-            handlers.append(onExecute)
-        except:
-            error_message = traceback.format_exc()
-            logging.error(f"Failed in show palette command created: {error_message}")
-
-# Handler for show palette command execute
-class ShowPaletteCommandExecuteHandler(adsk.core.CommandEventHandler):
-    def __init__(self):
-        super().__init__()
-    
-    def notify(self, args):
-        try:
-            # Show the palette
-            showPalette()
-        except:
-            error_message = traceback.format_exc()
-            logging.error(f"Failed to show palette from command: {error_message}")
-
-# Handler for workspace activated event - show palette when design workspace activated
-class WorkspaceActivatedHandler(adsk.core.WorkspaceEventHandler):
-    def __init__(self):
-        super().__init__()
-    
-    def notify(self, args):
-        try:
-            workspace = adsk.core.WorkspaceEventArgs.cast(args).workspace
-            if workspace.id == 'FusionSolidEnvironment':
-                # Wait a moment before showing palette to ensure UI is ready
-                def delayed_show():
-                    time.sleep(1)
-                    showPalette()
-                
-                # Run in a separate thread
-                thread = threading.Thread(target=delayed_show)
-                thread.daemon = True
-                thread.start()
-        except:
-            error_message = traceback.format_exc()
-            logging.error(f"Failed in workspace activated: {error_message}")
-
 # Run when Fusion 360 starts
 def run(context):
     try:
@@ -936,12 +755,27 @@ def run(context):
         
         logging.info("SaveToHub add-in starting...")
         
-        # Create a command definition for the SaveToHub command
+        # Delete command if it already exists
+        existing_cmd = ui.commandDefinitions.itemById(commandId)
+        if existing_cmd:
+            logging.info(f"Command '{commandId}' already exists - removing it")
+            try:
+                existing_cmd.deleteMe()
+            except:
+                logging.warning(f"Could not delete existing command: {commandId}")
+        
+        # Get icon folder path
+        icon_folder = os.path.join(get_current_dir(), 'commands', 'commandDialog', 'resources')
+        
+        # Log the icon path to verify it's correct
+        logging.info(f"Icon folder path: {icon_folder}")
+        
+        # Create a command definition for the SaveToHub command with icon
         cmdDef = ui.commandDefinitions.addButtonDefinition(
             commandId, 
             commandTitle, 
             'Save your design to Autodesk Hub',
-            ''  # Use empty string for default icon
+            icon_folder
         )
         
         # Connect to the command created event
@@ -949,64 +783,180 @@ def run(context):
         cmdDef.commandCreated.add(onCommandCreated)
         handlers.append(onCommandCreated)
         
-        # Add the command to the quick access toolbar (QAT)
-        qatPanel = ui.allToolbarPanels.itemById('QAT')
-        if qatPanel:
-            qatControl = qatPanel.controls.addCommand(cmdDef, '', False)
-            logging.info("Command added to QAT")
+        # Get the "Design" workspace which contains the main tabs
+        designWorkspace = ui.workspaces.itemById('FusionSolidEnvironment')
         
-        # Add the command to the UI panel - try both panel IDs
-        utilsPanel = ui.allToolbarPanels.itemById('UtilityPanel')
-        if utilsPanel:
-            utilsControl = utilsPanel.controls.addCommand(cmdDef, '', False)
-            logging.info("Command added to Utility panel")
+        # Modified section for tab integration with improved error handling and logging
+# Replace the corresponding section in the run function
+
+        # Modified section for tab integration with correct Fusion 360 Tab IDs
+# Replace the corresponding section in the run function
+
+        # Comprehensive fix for tab integration in Fusion 360
+# Replace the tab integration section in the run function with this code
+
+        
+        if designWorkspace:
+            # Get all toolbar tabs
+            toolbarTabs = designWorkspace.toolbarTabs
+    
+            # Log for debugging - list all available tabs
+            logging.info(f"Found {toolbarTabs.count} toolbar tabs")
+            logging.info("Available tabs:")
+            for i in range(toolbarTabs.count):
+                tab = toolbarTabs.item(i)
+                logging.info(f"  - Tab index {i}: ID '{tab.id}' with name '{tab.name}'")
+    
+            # First, check if the command already exists and is valid
+            cmd_def = ui.commandDefinitions.itemById(commandId)
+            if not cmd_def or not cmd_def.isValid:
+                logging.warning("Command definition is not valid - this may cause visibility issues")
+    
+            # Process all available tabs
+            for i in range(toolbarTabs.count):
+                try:
+                    tab = toolbarTabs.item(i)
+                    tab_id = tab.id
+                    tab_name = tab.name
+            
+                    # Log which tab we're currently processing
+                    logging.info(f"Processing tab: {tab_name} (ID: {tab_id})")
+            
+                    # Try a couple of different panel approaches for each tab
+                    # First try with a custom panel ID
+                    try:
+                        # Try to get existing panel first
+                        customPanelId = 'SaveToHubPanel' + tab_id  # Make panel ID unique per tab
+                        customPanel = tab.toolbarPanels.itemById(customPanelId)
+                
+                        if not customPanel:
+                            logging.info(f"  Creating new custom panel '{customPanelId}' in tab: {tab_name}")
+                            customPanel = tab.toolbarPanels.add(
+                                customPanelId,
+                                'Save To Hub'  # Panel display name
+                            )
+                
+                        if customPanel and customPanel.isValid:
+                            logging.info(f"  Custom panel is valid in {tab_name}")
+                    
+                            # Remove existing control if present
+                            existing_control = customPanel.controls.itemById(commandId)
+                            if existing_control:
+                                try:
+                                    existing_control.deleteMe()
+                                    logging.info(f"  Removed existing control in {tab_name}")
+                                except Exception as e:
+                                    logging.warning(f"  Could not remove existing control: {str(e)}")
+                    
+                            # Add command to panel with maximum visibility settings
+                            control = customPanel.controls.addCommand(cmdDef)
+                            control.isPromoted = True  # Show as button
+                            control.isPromotedByDefault = True  # Show by default
+                            logging.info(f"  Added command to custom panel in {tab_name} with isPromoted=True")
+                    
+                            # Try to make sure panel is visible
+                            customPanel.isVisible = True
+                            logging.info(f"  Set panel visibility to True")
+                        else:
+                            logging.warning(f"  Custom panel creation failed or panel is invalid in tab: {tab_name}")
+                    
+                    except Exception as panel_error:
+                        logging.error(f"  Error with custom panel in tab {tab_name}: {str(panel_error)}")
+                        logging.error(traceback.format_exc())
+                
+                        # Try alternative: use an existing standard panel in this tab
+                        try:
+                            logging.info(f"  Trying to use standard panel in {tab_name}")
+                    
+                            # Try to find a suitable existing panel
+                            # Look for a common panel like "MODIFY" or "CREATE"
+                            standard_panels = ["MODIFY", "CREATE", "INSPECT", "TOOLS", "UTILITIES"]
+                    
+                            # List all available panels in this tab
+                            logging.info(f"  Available panels in {tab_name}:")
+                            for p in range(tab.toolbarPanels.count):
+                                panel = tab.toolbarPanels.item(p)
+                                logging.info(f"    - Panel index {p}: ID '{panel.id}' with name '{panel.name}'")
+                    
+                            # Try to find a usable panel
+                            standard_panel = None
+                            for panel_name in standard_panels:
+                                # Try different approaches to finding the panel
+                                for p in range(tab.toolbarPanels.count):
+                                    panel = tab.toolbarPanels.item(p)
+                                    if (panel.name.upper() == panel_name or 
+                                        panel.id.upper() == panel_name or 
+                                        panel_name in panel.id.upper() or 
+                                        panel_name in panel.name.upper()):
+                                        standard_panel = panel
+                                        logging.info(f"  Found standard panel: {panel.name} (ID: {panel.id})")
+                                        break
+                                if standard_panel:
+                                    break
+                    
+                            # If we found a usable panel, add our command to it
+                            if standard_panel and standard_panel.isValid:
+                                # Remove existing control if present
+                                existing_control = standard_panel.controls.itemById(commandId)
+                                if existing_control:
+                                    try:
+                                        existing_control.deleteMe()
+                                        logging.info(f"  Removed existing control from standard panel")
+                                    except Exception as e:
+                                        logging.warning(f"  Could not remove existing control: {str(e)}")
+                        
+                                # Add command to the standard panel
+                                control = standard_panel.controls.addCommand(cmdDef)
+                                control.isPromoted = True
+                                logging.info(f"  Added command to standard panel {standard_panel.name} in {tab_name}")
+                            else:
+                                logging.warning(f"  Could not find suitable standard panel in {tab_name}")
+                        
+                                # Last resort: try to add to the first available panel
+                                if tab.toolbarPanels.count > 0:
+                                    first_panel = tab.toolbarPanels.item(0)
+                                    if first_panel and first_panel.isValid:
+                                        control = first_panel.controls.addCommand(cmdDef)
+                                        control.isPromoted = True
+                                        logging.info(f"  Added command to first available panel ({first_panel.name}) in {tab_name}")
+                                    else:
+                                        logging.warning(f"  First panel is not valid in {tab_name}")
+                                else:
+                                    logging.warning(f"  No panels available in {tab_name}")
+                
+                        except Exception as standard_panel_error:
+                            logging.error(f"  Error with standard panel approach: {str(standard_panel_error)}")
+                            logging.error(traceback.format_exc())
+        
+                except Exception as tab_error:
+                    logging.error(f"Error processing tab at index {i}: {str(tab_error)}")
+                    logging.error(traceback.format_exc())
+    
+            logging.info("Finished processing all tabs")
+    
+            # Try to force a UI refresh
+            try:
+                app.userInterface.messageBox(
+                   # "SaveToHub panels have been added to all tabs. Please check your toolbars.",
+                  #  "SaveToHub Installation",
+                    adsk.core.MessageBoxButtonTypes.OKButtonType,
+                    adsk.core.MessageBoxIconTypes.InformationIconType
+                )
+            except:
+                pass
         else:
-            utilsPanel = ui.allToolbarPanels.itemById('UtilitiesPanel')
-            if utilsPanel:
-                utilsControl = utilsPanel.controls.addCommand(cmdDef, '', False)
-                logging.info("Command added to Utilities panel")
-            else:
-                # Log all available panels
-                logging.info("Available panels:")
-                for panel in ui.allToolbarPanels:
-                    logging.info(f"Panel ID: {panel.id}, Name: {panel.name}")
-                    if "UTILITY" in panel.name.upper():
-                        utilsPanel = panel
-                        utilsPanel.controls.addCommand(cmdDef, '', False)
-                        logging.info(f"Command added to found panel: {panel.id}")
-                        break
-        
-        # Create a command to show the palette
-        createShowPaletteCommand()
-        
-        # Register for workspace activated events
-        onWorkspaceActivated = WorkspaceActivatedHandler()
-        ui.workspaceActivated.add(onWorkspaceActivated)
-        handlers.append(onWorkspaceActivated)
-        
-        # Show the palette when the add-in starts
-        success = showPalette()
-        if not success:
-            ui.messageBox("Could not show Save To Hub palette. Use the 'Show Save To Hub Palette' command in the Utilities panel to show it.",
-                         "SaveToHub", 
-                         adsk.core.MessageBoxButtonTypes.OKButtonType,
-                         adsk.core.MessageBoxIconTypes.InformationIconType)
-        
-        logging.info("Add-in initialization completed")
-        
+            logging.warning("FusionSolidEnvironment workspace not found")
     except Exception as e:
         error_message = traceback.format_exc()
         logging.error(f"Failed to initialize SaveToHub add-in:\n{error_message}")
         if ui:
             ui.messageBox(f'Failed to initialize SaveToHub add-in:\n{error_message}',
-                         'SaveToHub Error',
-                         adsk.core.MessageBoxButtonTypes.OKButtonType,
-                         adsk.core.MessageBoxIconTypes.CriticalIconType)
-
+                            'SaveToHub Error',
+                            adsk.core.MessageBoxButtonTypes.OKButtonType,
+                            adsk.core.MessageBoxIconTypes.CriticalIconType)
 # Stop function called when Fusion 360 stops
 def stop(context):
-    # Declare global variables at the beginning of the function
-    global palette, handlers
+    global handlers
     
     try:
         logging.info("Stopping SaveToHub add-in")
@@ -1022,34 +972,30 @@ def stop(context):
             ui = None
             logging.warning("Could not get application reference during shutdown")
         
-        # Remove the palette if it exists
-        try:
-            if palette is not None:
-                palette.deleteMe()
-                palette = None
-                logging.info("Palette removed")
-            else:
-                logging.info("No palette to remove")
-        except:
-            logging.warning("Error removing palette")
-        
         # Remove the command definitions if UI is still available
         if ui:
             try:
+                # Get the "Design" workspace
+                designWorkspace = ui.workspaces.itemById('FusionSolidEnvironment')
+                
+                if designWorkspace:
+                    # Loop through all toolbar tabs
+                    for i in range(designWorkspace.toolbarTabs.count):
+                        tab = designWorkspace.toolbarTabs.item(i)
+                        
+                        # Remove our custom panel if it exists
+                        customPanel = tab.toolbarPanels.itemById('SaveToHubPanel')
+                        if customPanel:
+                            customPanel.deleteMe()
+                            logging.info(f"Removed custom panel from tab: {tab.name}")
+                
+                # Remove command definition
                 cmdDef = ui.commandDefinitions.itemById(commandId)
                 if cmdDef:
                     cmdDef.deleteMe()
                     logging.info("Command definition removed")
-            except:
-                logging.warning("Error removing command definition")
-                
-            try:
-                showPaletteCmdDef = ui.commandDefinitions.itemById('ShowSaveToHubPaletteCommand')
-                if showPaletteCmdDef:
-                    showPaletteCmdDef.deleteMe()
-                    logging.info("Show palette command removed")
-            except:
-                logging.warning("Error removing show palette command")
+            except Exception as e:
+                logging.warning(f"Error removing UI elements: {str(e)}")
         
         # Clean up the handlers
         try:
@@ -1064,15 +1010,3 @@ def stop(context):
     except Exception as e:
         error_message = traceback.format_exc()
         logging.error(f"Failed to clean up SaveToHub add-in:\n{error_message}")
-        try:
-            # Try to get UI again if needed for message box
-            app = adsk.core.Application.get()
-            ui = app.userInterface
-            if ui:
-                ui.messageBox(f'Failed to clean up SaveToHub add-in:\n{error_message}',
-                             'SaveToHub Error',
-                             adsk.core.MessageBoxButtonTypes.OKButtonType,
-                             adsk.core.MessageBoxIconTypes.CriticalIconType)
-        except:
-            # If everything fails, just log the error
-            logging.error("Could not show error message box")
