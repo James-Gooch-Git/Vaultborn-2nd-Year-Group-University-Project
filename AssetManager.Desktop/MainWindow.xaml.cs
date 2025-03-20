@@ -4,7 +4,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Windows.Controls;
-using AssetManager.Core;
+//using AssetManager.Core;
 using AssetManager.Infrastructure.Services;
 using Microsoft.Win32;
 using System.Diagnostics;
@@ -30,6 +30,8 @@ using AssetManagement.Infrastructure.Fusion;
 using MongoDB.Bson;
 using AssetManager.Infrastructure.Models;
 using Newtonsoft.Json;
+using AssetManagement.Infrastructure.Services;
+using Azure.Core;
 
 namespace AssetManager.Desktop
 {
@@ -61,25 +63,36 @@ namespace AssetManager.Desktop
         private enum ViewType { Grid, List }
         private ViewType _lastViewType = ViewType.List; // Default to List View
 
-
+  
 
         // Constructor
         public MainWindow()
         {
             InitializeComponent();
-   
+
+
+  
+
             //InitializeWebView2();
             //  ModelDataGrid.SelectionChanged += ModelDataGrid_SelectionChanged;
             Initialize();
           
         }
-   
+        private async void InitialiseFolders()
+        {
+
+            FolderService folderService = new FolderService(_accessToken);
+            await folderService.CreateGameFolders();
+        }
+
         public MainWindow(string userData)
         {
             InitializeComponent();
             _accessToken = TokenManager.GetToken();
             _uploadService = new ModelUpload(_accessToken);
             _filedwnService = new FileDownloadService();
+            //InitializeTreeView();
+            InitialiseFolders();
             Initialize();
         }
 
@@ -159,17 +172,20 @@ namespace AssetManager.Desktop
                 LoadProjectsForHub(hubID);
                 await TestDataManagement();
 
-                FusionManager.InitializePythonEngine();
-
+                //FusionManager.InitializePythonEngine();
+                //InitialiseFolders();
                 Username_TextBlock.Text = await GetUserName(_userId);
                 UserPic_Image.Source = new BitmapImage(new Uri(await GetUserPic(_userId)));
                 //DisplayGridModels();
+               
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"❌ Initialization error: {ex.Message}");
             }
         }
+        
+
 
         private async Task TestDataManagement()
         {
@@ -1375,6 +1391,98 @@ namespace AssetManager.Desktop
                 }
             }
         }
+        /*private void InitializeTreeView()
+        {
+            ProjectTreeView.Items.Clear();
+
+            // ✅ Add Local "Grand Table Top Game" folder
+            string localRoot = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Grand Table Top Game");
+
+            TreeViewItem localRootItem = new TreeViewItem
+            {
+                Header = "💾 Local: Grand Table Top Game",
+                Tag = localRoot,
+                Items = { null } // Placeholder to allow expansion
+            };
+
+            ProjectTreeView.Items.Add(localRootItem);
+
+            // ✅ Load Autodesk Forge Projects (if applicable)
+            LoadProjectsForHub(hubID);
+        }*/
+
+
+        /*  private async void TreeViewItem_Expanded(object sender, RoutedEventArgs e)
+          {
+              if (sender is TreeViewItem item)
+              {
+                  // ✅ Check if this is a Forge Folder (Project ID + Folder ID)
+                  if (item.Tag is (string projectId, string folderId, bool isFolder))
+                  {
+                      if (item.Items.Count == 1 && item.Items[0] == null) // Check if it needs loading
+                      {
+                          item.Items.Clear();
+
+                          var items = await DataManagement.GetProjectItems(projectId, folderId);
+
+                          if (items == null || !items.Any())
+                          {
+                              item.Items.Add(new TreeViewItem { Header = "❌ No items found" });
+                              return;
+                          }
+
+                          foreach (var (itemId, itemName, isFolderItem) in items)
+                          {
+                              TreeViewItem fileItem = new TreeViewItem
+                              {
+                                  Header = isFolderItem ? $"📁 {itemName}" : $"📄 {itemName}",
+                                  Tag = (projectId, itemId, isFolderItem),
+                                  ContextMenu = CreateContextMenu(projectId, itemId, isFolderItem)
+                              };
+
+                              if (isFolderItem)
+                              {
+                                  fileItem.Items.Add(null); // Placeholder for lazy loading
+                              }
+
+                              item.Items.Add(fileItem);
+                          }
+                      }
+                  }
+                  // ✅ Check if this is a LOCAL folder path
+                  else if (item.Tag is string localPath)
+                  {
+                      if (Directory.Exists(localPath))
+                      {
+                          item.Items.Clear(); // Remove placeholder
+
+                          foreach (var dir in Directory.GetDirectories(localPath))
+                          {
+                              TreeViewItem dirItem = new TreeViewItem
+                              {
+                                  Header = $"📂 {Path.GetFileName(dir)}",
+                                  Tag = dir,
+                                  Items = { null } // Placeholder for expansion
+                              };
+
+                              item.Items.Add(dirItem);
+                          }
+
+                          foreach (var file in Directory.GetFiles(localPath))
+                          {
+                              TreeViewItem fileItem = new TreeViewItem
+                              {
+                                  Header = $"📄 {Path.GetFileName(file)}",
+                                  Tag = file
+                              };
+
+                              item.Items.Add(fileItem);
+                          }
+                      }
+                  }
+              }
+          }*/
+
 
         private async Task LoadSubfoldersAsync(TreeViewItem parentFolder, string projectId, string folderId)
         {
@@ -1752,7 +1860,7 @@ namespace AssetManager.Desktop
                     _selectedItemName = modelInfo.Item2;
 
                     // If your method still expects a parameter, pass it
-                    BtnDeleteModel_Click(selectedModelId);
+                    BtnDeleteModel_Click(selectedModelId, _selectedProjectId);
                 }
             };
 
@@ -1959,8 +2067,9 @@ namespace AssetManager.Desktop
 
             try
             {
+                DataManagement dataService = new DataManagement();
                 // Call your existing method to get versions
-                var versionsList = await GetVersionsForItemAsync(_selectedProjectId, modelId);
+                var versionsList = await dataService.GetVersionsForItemAsync(_selectedProjectId, modelId);
 
                 if (versionsList != null && versionsList.Any())
                 {
@@ -3070,29 +3179,66 @@ namespace AssetManager.Desktop
 
         private async void BtnDeleteModel_Click(object sender, RoutedEventArgs e)
         {
-            string itemId = "urn:adsk.wipprod:dm.item:8IKCVBh3Qg-P8lQuCRewaQ";
-            string projectId = _selectedProjectId;
-            Console.WriteLine("Attempting to delete id: " + itemId + " from project: " + projectId);
-            DeleteModel _delMod = new();
-            bool isDeleted = await _delMod.DeleteModelAsync(projectId, itemId);
-            if (!isDeleted)
+            try
             {
-                MessageBox.Show("Failed to delete");
+                string itemId = _selectedItemId; // Replace with dynamic item ID
+                string projectId = _selectedProjectId;
+                string accessToken = _accessToken; // Retrieve this dynamically from your authentication system
+
+                Console.WriteLine($"Attempting to delete item: {itemId} from project: {projectId}");
+
+                DeleteModel deleteModel = new(accessToken);
+                bool isDeleted = await deleteModel.DeleteLatestModelVersionAsync(projectId, itemId);
+
+                if (isDeleted)
+                {
+                    MessageBox.Show("Model deleted successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                else
+                {
+                    MessageBox.Show("Failed to delete the model. Please check the logs.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"An error occurred: {ex.Message}", "Exception", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
-        private async void BtnDeleteModel_Click(string selectedItemId)
+        private async Task BtnDeleteModel_Click(string selectedItemId, string projectId)
         {
-            string itemId = "urn:adsk.wipprod:dm.item:8IKCVBh3Qg-P8lQuCRewaQ";
-            string projectId = _selectedProjectId;
-            Console.WriteLine("Attempting to delete id: " + itemId + " from project: " + projectId);
-            DeleteModel _delMod = new();
-            bool isDeleted = await _delMod.DeleteModelAsync(projectId, itemId);
-            if (!isDeleted)
+            try
             {
-                MessageBox.Show("Failed to delete");
+                if (string.IsNullOrEmpty(selectedItemId))
+                {
+                    MessageBox.Show("No item selected for deletion.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                string itemId = _selectedItemId;
+                projectId = _selectedProjectId;
+                string accessToken = _accessToken; // Retrieve this dynamically from your authentication system
+
+                Console.WriteLine($"Attempting to delete item: {itemId} from project: {projectId}");
+
+                DeleteModel deleteModel = new(accessToken);
+                bool isDeleted = await deleteModel.DeleteLatestModelVersionAsync(projectId, itemId);
+
+                if (isDeleted)
+                {
+                    MessageBox.Show("Model deleted successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                else
+                {
+                    MessageBox.Show("Failed to delete the model. Please check the logs.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"An error occurred: {ex.Message}", "Exception", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
 
         private void BtnLogout_Click(object sender, RoutedEventArgs e)
         {
@@ -3766,72 +3912,14 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             }
         }
 
-        private async Task<List<(string versionId, string versionName, string storageId)>> GetVersionsForItemAsync(string projectId, string itemId)
-        {
-            if (string.IsNullOrEmpty(projectId) || string.IsNullOrEmpty(itemId))
-            {
-                Console.WriteLine("❌ Error: Project ID or Item ID is missing.");
-                return null;
-            }
-
-            string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/items/{itemId}/versions";
-            string accessToken = TokenManager.GetToken();
-
-            using HttpClient httpClient = new HttpClient();
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-
-            try
-            {
-                Console.WriteLine($"🔍 Fetching versions for Item: {itemId}");
-                HttpResponseMessage response = await httpClient.GetAsync(url);
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    Console.WriteLine($"❌ Error retrieving versions. Status Code: {response.StatusCode}");
-                    return null;
-                }
-
-                string jsonResponse = await response.Content.ReadAsStringAsync();
-                using JsonDocument doc = JsonDocument.Parse(jsonResponse);
-                JsonElement root = doc.RootElement;
-
-                List<(string versionId, string versionName, string storageId)> versions = new();
-
-                if (root.TryGetProperty("data", out JsonElement versionsArray))
-                {
-                    foreach (JsonElement versionElement in versionsArray.EnumerateArray())
-                    {
-                        string versionId = versionElement.GetProperty("id").GetString();
-                        string versionName = versionElement.GetProperty("attributes").GetProperty("displayName").GetString();
-
-                        string storageId = null;
-                        if (versionElement.TryGetProperty("relationships", out JsonElement relationships) &&
-                            relationships.TryGetProperty("storage", out JsonElement storage) &&
-                            storage.TryGetProperty("data", out JsonElement storageData) &&
-                            storageData.TryGetProperty("id", out JsonElement storageIdElement))
-                        {
-                            storageId = storageIdElement.GetString();
-                        }
-
-                        Console.WriteLine($"📄 Found Version: {versionName} (ID: {versionId}) - Storage ID: {storageId}");
-                        versions.Add((versionId, versionName, storageId));
-                    }
-                }
-
-                return versions;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"❌ Exception while retrieving versions: {ex.Message}");
-                return null;
-            }
-        }
+   
         public async Task<string> GetItemUrn(string projectId, string itemId)
         {
             try
             {
                 // ✅ Fetch all versions for the item
-                var versions = await GetVersionsForItemAsync(projectId, itemId);
+                DataManagement dataService = new DataManagement();
+                var versions = await dataService.GetVersionsForItemAsync(_selectedProjectId, _selectedItemId);
 
                 if (versions == null || versions.Count == 0)
                 {
