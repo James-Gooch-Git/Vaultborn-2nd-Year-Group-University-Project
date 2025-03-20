@@ -4853,16 +4853,56 @@ namespace AssetManager.Desktop
             SortPopup.IsOpen = true;
         }
 
-        private void SortListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private async void SortListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             ListBoxItem item = SortListBox.SelectedItem as ListBoxItem;
             if (item != null)
             {
                 string option = item.Content.ToString();
                 SortByTextBlock.Text = $"Sort By {option}";
+                SortListedModels(option);
             }
         }
 
+        private async void SortListedModels(string option)
+        {
+            var allListedModels = await GetAllListedModels();
+            switch (option)
+            {
+                case "Default":
+                    MarketplaceDataGrid.ItemsSource = allListedModels;
+                    break;
+                case "Upvotes":
+                    List<Dictionary<string, string>> upvotes = new List<Dictionary<string, string>>();
+                    foreach (var item in allListedModels)
+                    {
+                        int upvoteAmount = await GetModelUpvoteCount(item["Id"]);
+                        item.Add("Upvotes", upvoteAmount.ToString());
+                        upvotes.Add(item);
+                    }
+                    
+                    upvotes = upvotes.OrderByDescending(x => x["Upvotes"]).ToList();
+                    MarketplaceDataGrid.ItemsSource = upvotes;
+                    break;
+                case "Price Lowest":
+                    List<Dictionary<string, string>> lowestPrice = allListedModels.OrderBy(x => x["Price"]).ToList();
+                    MarketplaceDataGrid.ItemsSource = lowestPrice;
+                    break;
+                case "Price Highest":
+                    List<Dictionary<string, string>> highestPrice = allListedModels.OrderByDescending(x => x["Price"]).ToList();
+                    MarketplaceDataGrid.ItemsSource = highestPrice;
+                    break;
+                case "Name A-Z":
+                    List<Dictionary<string, string>> namesAZ = allListedModels.OrderBy(x => x["Name"]).ToList();
+                    MarketplaceDataGrid.ItemsSource = namesAZ;
+                    break;
+                case "Name Z-A":
+                    List<Dictionary<string, string>> namesZA = allListedModels.OrderByDescending(x => x["Name"]).ToList();
+                    MarketplaceDataGrid.ItemsSource = namesZA;
+                    break;
+            }
+        }
+        
         private async void BtnBuy_Click(object sender, RoutedEventArgs e)
         {
             try
