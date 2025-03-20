@@ -4590,7 +4590,7 @@ namespace AssetManager.Desktop
                     { "Description", model.Description },
                     { "Seller", sellerName },
                     { "Id", model.ModelId },
-                    { "Price", model.Price.ToString()},
+                    { "Price", model.Price.ToString("0.00")},
                     { "ProjectId", projectId}
                 });
             }
@@ -4695,8 +4695,22 @@ namespace AssetManager.Desktop
             MarketplaceListBorder.Background = Brushes.Transparent;
             
             var listedModels = await GetAllListedModels();
+            
+            DisplayMarketplaceGrid(listedModels);
+        }
+        
+        private async void MarketplaceList_Click(object sender, MouseButtonEventArgs e)
+        {
+            MarketplaceGridView.Visibility = Visibility.Collapsed;
+            MarketplaceDataGrid.Visibility = Visibility.Visible;
+            MarketplaceListBorder.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
+            MarketplaceGridBorder.Background = Brushes.Transparent;
+        }
+
+        private void DisplayMarketplaceGrid(List<Dictionary<string, string>> models)
+        {
             MarketplaceModelsContainer.Children.Clear();
-            foreach (var model in listedModels)
+            foreach (var model in models)
             {
                 Border modelSquare = new Border()
                 {
@@ -4839,14 +4853,6 @@ namespace AssetManager.Desktop
             }
         }
         
-        private async void MarketplaceList_Click(object sender, MouseButtonEventArgs e)
-        {
-            MarketplaceGridView.Visibility = Visibility.Collapsed;
-            MarketplaceDataGrid.Visibility = Visibility.Visible;
-            MarketplaceListBorder.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
-            MarketplaceGridBorder.Background = Brushes.Transparent;
-        }
-
         private void MarketplaceSort_Click(object sender, MouseButtonEventArgs e)
         {
             SortChevron.Kind = PackIconKind.ChevronUp;
@@ -4871,6 +4877,7 @@ namespace AssetManager.Desktop
             {
                 case "Default":
                     MarketplaceDataGrid.ItemsSource = allListedModels;
+                    DisplayMarketplaceGrid(allListedModels);
                     break;
                 case "Upvotes":
                     List<Dictionary<string, string>> upvotes = new List<Dictionary<string, string>>();
@@ -4883,22 +4890,27 @@ namespace AssetManager.Desktop
                     
                     upvotes = upvotes.OrderByDescending(x => x["Upvotes"]).ToList();
                     MarketplaceDataGrid.ItemsSource = upvotes;
+                    DisplayMarketplaceGrid(upvotes);
                     break;
                 case "Price Lowest":
                     List<Dictionary<string, string>> lowestPrice = allListedModels.OrderBy(x => x["Price"]).ToList();
                     MarketplaceDataGrid.ItemsSource = lowestPrice;
+                    DisplayMarketplaceGrid(lowestPrice);
                     break;
                 case "Price Highest":
                     List<Dictionary<string, string>> highestPrice = allListedModels.OrderByDescending(x => x["Price"]).ToList();
                     MarketplaceDataGrid.ItemsSource = highestPrice;
+                    DisplayMarketplaceGrid(highestPrice);
                     break;
                 case "Name A-Z":
                     List<Dictionary<string, string>> namesAZ = allListedModels.OrderBy(x => x["Name"]).ToList();
                     MarketplaceDataGrid.ItemsSource = namesAZ;
+                    DisplayMarketplaceGrid(namesAZ);
                     break;
                 case "Name Z-A":
                     List<Dictionary<string, string>> namesZA = allListedModels.OrderByDescending(x => x["Name"]).ToList();
                     MarketplaceDataGrid.ItemsSource = namesZA;
+                    DisplayMarketplaceGrid(namesZA);
                     break;
             }
         }
