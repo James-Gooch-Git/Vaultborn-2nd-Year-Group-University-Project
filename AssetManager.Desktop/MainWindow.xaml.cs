@@ -4,7 +4,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Windows.Controls;
-using AssetManager.Core;
+//using AssetManager.Core;
 using AssetManager.Infrastructure.Services;
 using Microsoft.Win32;
 using System.Diagnostics;
@@ -29,6 +29,8 @@ using AssetManagement.Infrastructure.Fusion;
 using MongoDB.Bson;
 using AssetManager.Infrastructure.Models;
 using Newtonsoft.Json;
+using AssetManagement.Infrastructure.Services;
+using Azure.Core;
 
 namespace AssetManager.Desktop
 {
@@ -59,25 +61,36 @@ namespace AssetManager.Desktop
         private enum ViewType { Grid, List }
         private ViewType _lastViewType = ViewType.List; // Default to List View
 
-
+  
 
         // Constructor
         public MainWindow()
         {
             InitializeComponent();
-   
+
+
+  
+
             //InitializeWebView2();
             //  ModelDataGrid.SelectionChanged += ModelDataGrid_SelectionChanged;
             Initialize();
           
         }
-   
+        private async void InitialiseFolders()
+        {
+
+            FolderService folderService = new FolderService(_accessToken);
+            await folderService.CreateGameFolders();
+        }
+
         public MainWindow(string userData)
         {
             InitializeComponent();
             _accessToken = TokenManager.GetToken();
             _uploadService = new ModelUpload(_accessToken);
             _filedwnService = new FileDownloadService();
+            //InitializeTreeView();
+            InitialiseFolders();
             Initialize();
         }
 
@@ -157,17 +170,20 @@ namespace AssetManager.Desktop
                 LoadProjectsForHub(hubID);
                 await TestDataManagement();
 
-                FusionManager.InitializePythonEngine();
-
+                //FusionManager.InitializePythonEngine();
+                //InitialiseFolders();
                 Username_TextBlock.Text = await GetUserName(_userId);
                 UserPic_Image.Source = new BitmapImage(new Uri(await GetUserPic(_userId)));
                 //DisplayGridModels();
+               
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"❌ Initialization error: {ex.Message}");
             }
         }
+        
+
 
         private async Task TestDataManagement()
         {
@@ -1351,6 +1367,98 @@ namespace AssetManager.Desktop
                 }
             }
         }
+        /*private void InitializeTreeView()
+        {
+            ProjectTreeView.Items.Clear();
+
+            // ✅ Add Local "Grand Table Top Game" folder
+            string localRoot = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Grand Table Top Game");
+
+            TreeViewItem localRootItem = new TreeViewItem
+            {
+                Header = "💾 Local: Grand Table Top Game",
+                Tag = localRoot,
+                Items = { null } // Placeholder to allow expansion
+            };
+
+            ProjectTreeView.Items.Add(localRootItem);
+
+            // ✅ Load Autodesk Forge Projects (if applicable)
+            LoadProjectsForHub(hubID);
+        }*/
+
+
+        /*  private async void TreeViewItem_Expanded(object sender, RoutedEventArgs e)
+          {
+              if (sender is TreeViewItem item)
+              {
+                  // ✅ Check if this is a Forge Folder (Project ID + Folder ID)
+                  if (item.Tag is (string projectId, string folderId, bool isFolder))
+                  {
+                      if (item.Items.Count == 1 && item.Items[0] == null) // Check if it needs loading
+                      {
+                          item.Items.Clear();
+
+                          var items = await DataManagement.GetProjectItems(projectId, folderId);
+
+                          if (items == null || !items.Any())
+                          {
+                              item.Items.Add(new TreeViewItem { Header = "❌ No items found" });
+                              return;
+                          }
+
+                          foreach (var (itemId, itemName, isFolderItem) in items)
+                          {
+                              TreeViewItem fileItem = new TreeViewItem
+                              {
+                                  Header = isFolderItem ? $"📁 {itemName}" : $"📄 {itemName}",
+                                  Tag = (projectId, itemId, isFolderItem),
+                                  ContextMenu = CreateContextMenu(projectId, itemId, isFolderItem)
+                              };
+
+                              if (isFolderItem)
+                              {
+                                  fileItem.Items.Add(null); // Placeholder for lazy loading
+                              }
+
+                              item.Items.Add(fileItem);
+                          }
+                      }
+                  }
+                  // ✅ Check if this is a LOCAL folder path
+                  else if (item.Tag is string localPath)
+                  {
+                      if (Directory.Exists(localPath))
+                      {
+                          item.Items.Clear(); // Remove placeholder
+
+                          foreach (var dir in Directory.GetDirectories(localPath))
+                          {
+                              TreeViewItem dirItem = new TreeViewItem
+                              {
+                                  Header = $"📂 {Path.GetFileName(dir)}",
+                                  Tag = dir,
+                                  Items = { null } // Placeholder for expansion
+                              };
+
+                              item.Items.Add(dirItem);
+                          }
+
+                          foreach (var file in Directory.GetFiles(localPath))
+                          {
+                              TreeViewItem fileItem = new TreeViewItem
+                              {
+                                  Header = $"📄 {Path.GetFileName(file)}",
+                                  Tag = file
+                              };
+
+                              item.Items.Add(fileItem);
+                          }
+                      }
+                  }
+              }
+          }*/
+
 
         private async Task LoadSubfoldersAsync(TreeViewItem parentFolder, string projectId, string folderId)
         {

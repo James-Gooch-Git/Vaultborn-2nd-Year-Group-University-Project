@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using AssetManager.Infrastructure.Services;
 using System.Text;
 using Newtonsoft.Json;
+using ForgeViewerApp;
 
 
 namespace AssetManager.Infrastructure.Services
@@ -461,7 +462,7 @@ namespace AssetManager.Infrastructure.Services
             }
         }
 
- 
+      
         //Creates new folder in a specified 
         public static async Task<bool> CreateNewFolder(string projectId, string parentFolderId, string folderName)
         {
@@ -749,6 +750,26 @@ namespace AssetManager.Infrastructure.Services
                 Console.WriteLine($"❌ Exception occurred: {ex.Message}");
                 return hubList;
             }
+        }
+
+        public static async Task<string> GetProjectIdByName(string hubID, string projectName)
+        {
+            var projects = await GetAllProjectsFromHub(hubID);
+
+            foreach (var (id, name) in projects)
+            {
+                if (name.Equals(projectName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return id;
+                }
+            }
+            return null;
+        }
+
+        public static async Task<string> CreateProject(string hubID, string projectName)
+        {
+            string newProjectId = await TokenService.CreateProject(hubID, projectName);
+            return newProjectId;
         }
 
 
