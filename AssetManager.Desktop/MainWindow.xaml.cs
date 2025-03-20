@@ -4814,8 +4814,10 @@ namespace AssetManager.Desktop
                     Width = 50,
                     Height = 20,
                     BorderBrush = Brushes.Green,
-                    BorderThickness = new Thickness(2)
+                    BorderThickness = new Thickness(2),
                 };
+
+                buy.Click += BtnBuy_Click;
 
                 Border buyBorder = new Border
                 {
@@ -4855,6 +4857,16 @@ namespace AssetManager.Desktop
                 string option = item.Content.ToString();
                 SortByTextBlock.Text = $"Sort By {option}";
             }
+        }
+
+        private void BtnBuy_Click(object sender, RoutedEventArgs e)
+        {
+            
+        }
+        
+        private void SortPopup_Closed(object? sender, EventArgs e)
+        {
+            SortChevron.Kind = PackIconKind.ChevronDown;
         }
         
         //COMMENTED OUT FUNCTIONS//
@@ -5053,6 +5065,7 @@ namespace AssetManager.Desktop
         }
 
 */
+
         
     }
 

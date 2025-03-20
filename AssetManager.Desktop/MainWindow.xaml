@@ -944,22 +944,20 @@
                             </StackPanel>
                         </Border>
                         
-                        <Popup x:Name="SortPopup" Placement="Bottom" PlacementTarget="{Binding ElementName=SortChevron}" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade" HorizontalOffset="-105">
-                        <Border x:Name="SortBorder" Background="#5c1c1c" CornerRadius="5"
-                                Width="120" Height="150">
-                            <!-- <Border.Effect>
-                                <DropShadowEffect BlurRadius="50" ShadowDepth="10" Color="Black" Opacity="0.2"/>
-                            </Border.Effect> -->
-                            <ListBox x:Name="SortListBox" SelectionChanged="SortListBox_SelectionChanged" Margin="10" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Disabled">
-                                <ListBoxItem Height="20" Foreground="White" VerticalAlignment="Center" BorderBrush="#98730c" BorderThickness="0,0,0,1">Default</ListBoxItem>
-                                <ListBoxItem Height="20" Foreground="White" VerticalAlignment="Center" BorderBrush="#98730c" BorderThickness="0,0,0,1">Upvotes</ListBoxItem>
-                                <ListBoxItem Height="20" Foreground="White" VerticalAlignment="Center" BorderBrush="#98730c" BorderThickness="0,0,0,1">Price Lowest</ListBoxItem>
-                                <ListBoxItem Height="20" Foreground="White" VerticalAlignment="Center" BorderBrush="#98730c" BorderThickness="0,0,0,1">Price Highest</ListBoxItem>
-                                <ListBoxItem Height="20" Foreground="White" VerticalAlignment="Center" BorderBrush="#98730c" BorderThickness="0,0,0,1">Name A-Z</ListBoxItem>
-                                <ListBoxItem Height="20" Foreground="White" VerticalAlignment="Center" BorderBrush="#98730c" BorderThickness="0,0,0,1">Name Z-A</ListBoxItem>
-                            </ListBox>
-                        </Border>
-                    </Popup>
+                        <Popup x:Name="SortPopup" Placement="Bottom" PlacementTarget="{Binding ElementName=SortChevron}" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade" HorizontalOffset="-105" Closed="SortPopup_Closed">
+                            <Border x:Name="SortBorder" Background="#5c1c1c" CornerRadius="5"
+                                    Width="120" Height="150">
+                                
+                                <ListBox x:Name="SortListBox" SelectionChanged="SortListBox_SelectionChanged" Margin="10" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                                    <ListBoxItem Height="20" Foreground="White" VerticalAlignment="Center" BorderBrush="#98730c" BorderThickness="0,0,0,1">Default</ListBoxItem>
+                                    <ListBoxItem Height="20" Foreground="White" VerticalAlignment="Center" BorderBrush="#98730c" BorderThickness="0,0,0,1">Upvotes</ListBoxItem>
+                                    <ListBoxItem Height="20" Foreground="White" VerticalAlignment="Center" BorderBrush="#98730c" BorderThickness="0,0,0,1">Price Lowest</ListBoxItem>
+                                    <ListBoxItem Height="20" Foreground="White" VerticalAlignment="Center" BorderBrush="#98730c" BorderThickness="0,0,0,1">Price Highest</ListBoxItem>
+                                    <ListBoxItem Height="20" Foreground="White" VerticalAlignment="Center" BorderBrush="#98730c" BorderThickness="0,0,0,1">Name A-Z</ListBoxItem>
+                                    <ListBoxItem Height="20" Foreground="White" VerticalAlignment="Center" BorderBrush="#98730c" BorderThickness="0,0,0,1">Name Z-A</ListBoxItem>
+                                </ListBox>
+                            </Border>
+                        </Popup>
                         
                         <Rectangle Fill="#A3A3A3" Height="20" Width="1" RenderTransformOrigin="0.5,0.5" Margin="0,0,5,0">
                             <Rectangle.RenderTransform>
@@ -1211,7 +1209,7 @@
                                 <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <Border BorderBrush="Green" BorderThickness="4" CornerRadius="4">
-                                        <Button Content="Buy" Background="Green" Foreground="Azure" Width="50" Height="20" BorderBrush="Green" BorderThickness="2"/>
+                                        <Button Click="BtnBuy_Click" Content="Buy" Background="Green" Foreground="Azure" Width="50" Height="20" BorderBrush="Green" BorderThickness="2"/>
                                     </Border>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>

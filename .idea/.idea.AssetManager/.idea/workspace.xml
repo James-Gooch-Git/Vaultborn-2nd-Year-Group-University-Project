@@ -8,7 +8,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="29dceaf0-6b38-45af-9473-223a6fd443eb" name="Changes" comment="grid view for marketplace works!">
+    <list default="true" id="29dceaf0-6b38-45af-9473-223a6fd443eb" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/.idea.AssetManager/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.AssetManager/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml.cs" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml.cs" afterDir="false" />
@@ -136,7 +136,8 @@
       <workItem from="1741786539801" duration="3853000" />
       <workItem from="1742300881251" duration="5090000" />
       <workItem from="1742393210455" duration="71000" />
-      <workItem from="1742393296184" duration="13337000" />
+      <workItem from="1742393296184" duration="13729000" />
+      <workItem from="1742471596910" duration="861000" />
     </task>
     <task id="LOCAL-00001" summary="save main">
       <option name="closed" value="true" />
@@ -210,7 +211,15 @@
       <option name="project" value="LOCAL" />
       <updated>1742401630662</updated>
     </task>
-    <option name="localTasksCounter" value="10" />
+    <task id="LOCAL-00010" summary="added popup that lets you select sort option">
+      <option name="closed" value="true" />
+      <created>1742408502797</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1742408502797</updated>
+    </task>
+    <option name="localTasksCounter" value="11" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -250,6 +259,7 @@
     <MESSAGE value="still merging tags" />
     <MESSAGE value="all listed models appear in list view in marketplace" />
     <MESSAGE value="grid view for marketplace works!" />
-    <option name="LAST_COMMIT_MESSAGE" value="grid view for marketplace works!" />
+    <MESSAGE value="added popup that lets you select sort option" />
+    <option name="LAST_COMMIT_MESSAGE" value="added popup that lets you select sort option" />
   </component>
 </project>
