@@ -1216,6 +1216,14 @@
                         </DataGridTemplateColumn>
                     </DataGrid.Columns>
                 </DataGrid>
+                
+                <Popup x:Name="BuyPopup" Placement="Bottom" PlacementTarget="{Binding ElementName=BtnLibrary}" StaysOpen="True" AllowsTransparency="True" PopupAnimation="Fade" HorizontalOffset="150">
+                    <Border x:Name="BuyBorder" Background="#5c1c1c" CornerRadius="5"
+                            Width="400" Height="400">
+                                
+                        <wv2:WebView2  Name="webView" Source="about:blank" Height="390" Width="390" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                </Popup>
             </Grid>
         </Border>
             
