@@ -1836,7 +1836,7 @@ namespace AssetManager.Desktop
                     _selectedItemName = modelInfo.Item2;
 
                     // If your method still expects a parameter, pass it
-                    BtnDeleteModel_Click(selectedModelId);
+                    BtnDeleteModel_Click(selectedModelId, _selectedProjectId);
                 }
             };
 
@@ -2043,8 +2043,9 @@ namespace AssetManager.Desktop
 
             try
             {
+                DataManagement dataService = new DataManagement();
                 // Call your existing method to get versions
-                var versionsList = await GetVersionsForItemAsync(_selectedProjectId, modelId);
+                var versionsList = await dataService.GetVersionsForItemAsync(_selectedProjectId, modelId);
 
                 if (versionsList != null && versionsList.Any())
                 {
@@ -3154,29 +3155,66 @@ namespace AssetManager.Desktop
 
         private async void BtnDeleteModel_Click(object sender, RoutedEventArgs e)
         {
-            string itemId = "urn:adsk.wipprod:dm.item:8IKCVBh3Qg-P8lQuCRewaQ";
-            string projectId = _selectedProjectId;
-            Console.WriteLine("Attempting to delete id: " + itemId + " from project: " + projectId);
-            DeleteModel _delMod = new();
-            bool isDeleted = await _delMod.DeleteModelAsync(projectId, itemId);
-            if (!isDeleted)
+            try
             {
-                MessageBox.Show("Failed to delete");
+                string itemId = _selectedItemId; // Replace with dynamic item ID
+                string projectId = _selectedProjectId;
+                string accessToken = _accessToken; // Retrieve this dynamically from your authentication system
+
+                Console.WriteLine($"Attempting to delete item: {itemId} from project: {projectId}");
+
+                DeleteModel deleteModel = new(accessToken);
+                bool isDeleted = await deleteModel.DeleteLatestModelVersionAsync(projectId, itemId);
+
+                if (isDeleted)
+                {
+                    MessageBox.Show("Model deleted successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                else
+                {
+                    MessageBox.Show("Failed to delete the model. Please check the logs.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"An error occurred: {ex.Message}", "Exception", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
-        private async void BtnDeleteModel_Click(string selectedItemId)
+        private async Task BtnDeleteModel_Click(string selectedItemId, string projectId)
         {
-            string itemId = "urn:adsk.wipprod:dm.item:8IKCVBh3Qg-P8lQuCRewaQ";
-            string projectId = _selectedProjectId;
-            Console.WriteLine("Attempting to delete id: " + itemId + " from project: " + projectId);
-            DeleteModel _delMod = new();
-            bool isDeleted = await _delMod.DeleteModelAsync(projectId, itemId);
-            if (!isDeleted)
+            try
             {
-                MessageBox.Show("Failed to delete");
+                if (string.IsNullOrEmpty(selectedItemId))
+                {
+                    MessageBox.Show("No item selected for deletion.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                string itemId = _selectedItemId;
+                projectId = _selectedProjectId;
+                string accessToken = _accessToken; // Retrieve this dynamically from your authentication system
+
+                Console.WriteLine($"Attempting to delete item: {itemId} from project: {projectId}");
+
+                DeleteModel deleteModel = new(accessToken);
+                bool isDeleted = await deleteModel.DeleteLatestModelVersionAsync(projectId, itemId);
+
+                if (isDeleted)
+                {
+                    MessageBox.Show("Model deleted successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                else
+                {
+                    MessageBox.Show("Failed to delete the model. Please check the logs.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"An error occurred: {ex.Message}", "Exception", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
 
         private void BtnLogout_Click(object sender, RoutedEventArgs e)
         {
@@ -3850,72 +3888,14 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             }
         }
 
-        private async Task<List<(string versionId, string versionName, string storageId)>> GetVersionsForItemAsync(string projectId, string itemId)
-        {
-            if (string.IsNullOrEmpty(projectId) || string.IsNullOrEmpty(itemId))
-            {
-                Console.WriteLine("❌ Error: Project ID or Item ID is missing.");
-                return null;
-            }
-
-            string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/items/{itemId}/versions";
-            string accessToken = TokenManager.GetToken();
-
-            using HttpClient httpClient = new HttpClient();
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-
-            try
-            {
-                Console.WriteLine($"🔍 Fetching versions for Item: {itemId}");
-                HttpResponseMessage response = await httpClient.GetAsync(url);
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    Console.WriteLine($"❌ Error retrieving versions. Status Code: {response.StatusCode}");
-                    return null;
-                }
-
-                string jsonResponse = await response.Content.ReadAsStringAsync();
-                using JsonDocument doc = JsonDocument.Parse(jsonResponse);
-                JsonElement root = doc.RootElement;
-
-                List<(string versionId, string versionName, string storageId)> versions = new();
-
-                if (root.TryGetProperty("data", out JsonElement versionsArray))
-                {
-                    foreach (JsonElement versionElement in versionsArray.EnumerateArray())
-                    {
-                        string versionId = versionElement.GetProperty("id").GetString();
-                        string versionName = versionElement.GetProperty("attributes").GetProperty("displayName").GetString();
-
-                        string storageId = null;
-                        if (versionElement.TryGetProperty("relationships", out JsonElement relationships) &&
-                            relationships.TryGetProperty("storage", out JsonElement storage) &&
-                            storage.TryGetProperty("data", out JsonElement storageData) &&
-                            storageData.TryGetProperty("id", out JsonElement storageIdElement))
-                        {
-                            storageId = storageIdElement.GetString();
-                        }
-
-                        Console.WriteLine($"📄 Found Version: {versionName} (ID: {versionId}) - Storage ID: {storageId}");
-                        versions.Add((versionId, versionName, storageId));
-                    }
-                }
-
-                return versions;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"❌ Exception while retrieving versions: {ex.Message}");
-                return null;
-            }
-        }
+   
         public async Task<string> GetItemUrn(string projectId, string itemId)
         {
             try
             {
                 // ✅ Fetch all versions for the item
-                var versions = await GetVersionsForItemAsync(projectId, itemId);
+                DataManagement dataService = new DataManagement();
+                var versions = await dataService.GetVersionsForItemAsync(_selectedProjectId, _selectedItemId);
 
                 if (versions == null || versions.Count == 0)
                 {
