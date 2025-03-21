@@ -39,12 +39,10 @@
     </ItemGroup>
     
     <ItemGroup>
-      <Folder Include="Images\" />
-    </ItemGroup>
-    
-    <ItemGroup>
       <Resource Include="orange-wallpaper.jpg" />
       <Resource Include="symbol-1.png" />
+      <None Remove="Images\ornate-gold-frame_1156559-2825.jpg" />
+      <Resource Include="Resources\ornate-gold-frame_1156559-2825.jpg" />
     </ItemGroup>
 
 </Project>
