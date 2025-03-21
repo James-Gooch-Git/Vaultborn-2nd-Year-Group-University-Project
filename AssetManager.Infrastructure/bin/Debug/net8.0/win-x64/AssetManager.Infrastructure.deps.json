@@ -16,16 +16,16 @@
           "Autodesk.Forge": "1.9.9",
           "Autodesk.Oss": "2.0.0",
           "IdentityModel.OidcClient": "6.0.0",
-          "Microsoft.Web.WebView2": "1.0.3124.44",
+          "Microsoft.Web.WebView2": "1.0.3065.39",
           "MongoDB.Bson": "3.1.0",
           "MongoDB.Driver": "3.1.0",
           "Newtonsoft.Json": "13.0.3",
           "RestSharp": "112.1.1-alpha.0.4",
           "System.Collections": "4.3.0",
           "pythonnet": "3.1.0-preview2024-09-06",
-          "Microsoft.Web.WebView2.Core": "1.0.3124.44",
-          "Microsoft.Web.WebView2.WinForms": "1.0.3124.44",
-          "Microsoft.Web.WebView2.Wpf": "1.0.3124.44"
+          "Microsoft.Web.WebView2.Core": "1.0.3065.39",
+          "Microsoft.Web.WebView2.WinForms": "1.0.3065.39",
+          "Microsoft.Web.WebView2.Wpf": "1.0.3065.39"
         },
         "runtime": {
           "AssetManager.Infrastructure.dll": {}
@@ -514,10 +514,10 @@
       },
       "Microsoft.NETCore.Platforms/5.0.0": {},
       "Microsoft.NETCore.Targets/1.1.0": {},
-      "Microsoft.Web.WebView2/1.0.3124.44": {
+      "Microsoft.Web.WebView2/1.0.3065.39": {
         "native": {
           "runtimes/win-x64/native/WebView2Loader.dll": {
-            "fileVersion": "1.0.3124.44"
+            "fileVersion": "1.0.3065.39"
           }
         }
       },
@@ -806,7 +806,7 @@
       "AssetManager.Core/1.0.0": {
         "dependencies": {
           "IdentityModel.OidcClient": "6.0.0",
-          "Microsoft.Web.WebView2": "1.0.3124.44",
+          "Microsoft.Web.WebView2": "1.0.3065.39",
           "RestSharp": "112.1.1-alpha.0.4",
           "python": "3.13.2",
           "pythonnet": "3.1.0-preview2024-09-06"
@@ -818,27 +818,27 @@
           }
         }
       },
-      "Microsoft.Web.WebView2.Core/1.0.3124.44": {
+      "Microsoft.Web.WebView2.Core/1.0.3065.39": {
         "runtime": {
           "Microsoft.Web.WebView2.Core.dll": {
-            "assemblyVersion": "1.0.3124.44",
-            "fileVersion": "1.0.3124.44"
+            "assemblyVersion": "1.0.3065.39",
+            "fileVersion": "1.0.3065.39"
           }
         }
       },
-      "Microsoft.Web.WebView2.WinForms/1.0.3124.44": {
+      "Microsoft.Web.WebView2.WinForms/1.0.3065.39": {
         "runtime": {
           "Microsoft.Web.WebView2.WinForms.dll": {
-            "assemblyVersion": "1.0.3124.44",
-            "fileVersion": "1.0.3124.44"
+            "assemblyVersion": "1.0.3065.39",
+            "fileVersion": "1.0.3065.39"
           }
         }
       },
-      "Microsoft.Web.WebView2.Wpf/1.0.3124.44": {
+      "Microsoft.Web.WebView2.Wpf/1.0.3065.39": {
         "runtime": {
           "Microsoft.Web.WebView2.Wpf.dll": {
-            "assemblyVersion": "1.0.3124.44",
-            "fileVersion": "1.0.3124.44"
+            "assemblyVersion": "1.0.3065.39",
+            "fileVersion": "1.0.3065.39"
           }
         }
       }
@@ -1151,12 +1151,12 @@
       "path": "microsoft.netcore.targets/1.1.0",
       "hashPath": "microsoft.netcore.targets.1.1.0.nupkg.sha512"
     },
-    "Microsoft.Web.WebView2/1.0.3124.44": {
+    "Microsoft.Web.WebView2/1.0.3065.39": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-sQb+ACD3ILvHxztxqCWLbhYmFNf5dH0HPhVKFYg020rpeQPkadH0nkVOSsgfSyBDMLypI9iMBeD6uVcVxsKLkg==",
-      "path": "microsoft.web.webview2/1.0.3124.44",
-      "hashPath": "microsoft.web.webview2.1.0.3124.44.nupkg.sha512"
+      "sha512": "sha512-ww6ToZ2jpHyP4k3DCQJETjKcdVS1cha9pS8dV2NetyfafItxz08wcAyQV0Yl86W7euhI02UJWEaC5sM8WLr0tQ==",
+      "path": "microsoft.web.webview2/1.0.3065.39",
+      "hashPath": "microsoft.web.webview2.1.0.3065.39.nupkg.sha512"
     },
     "Microsoft.Win32.Registry/5.0.0": {
       "type": "package",
@@ -1464,17 +1464,17 @@
       "serviceable": false,
       "sha512": ""
     },
-    "Microsoft.Web.WebView2.Core/1.0.3124.44": {
+    "Microsoft.Web.WebView2.Core/1.0.3065.39": {
       "type": "reference",
       "serviceable": false,
       "sha512": ""
     },
-    "Microsoft.Web.WebView2.WinForms/1.0.3124.44": {
+    "Microsoft.Web.WebView2.WinForms/1.0.3065.39": {
       "type": "reference",
       "serviceable": false,
       "sha512": ""
     },
-    "Microsoft.Web.WebView2.Wpf/1.0.3124.44": {
+    "Microsoft.Web.WebView2.Wpf/1.0.3065.39": {
       "type": "reference",
       "serviceable": false,
       "sha512": ""
