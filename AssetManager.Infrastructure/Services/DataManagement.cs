@@ -818,6 +818,17 @@ namespace AssetManager.Infrastructure.Services
                         {
                             storageId = storageIdElement.GetString();
                         }
+                        versions.Add((versionId, versionName, storageId));
+                    }
+                }
+                return versions;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return null;
+            }
+        }
 
         public static async Task<List<(int VersionNumber, string VersionID, string CreateTime, string CreatedBy, string StorageURN)>> GetItemVersions(string projectId, string itemId)
         {

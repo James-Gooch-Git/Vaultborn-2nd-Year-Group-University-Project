@@ -498,7 +498,7 @@
                     </Border>
                     
                     
-                    <!--
+                    <!-
                     <Button HorizontalAlignment="Left" BorderThickness="0" x:Name="BtnDeleteModel" Width="100" Height="40" Click="BtnDeleteModel_Click" Cursor="Hand" Margin="180,0,0,0">
                         <Button.Style>
                             <Style TargetType="{x:Type Button}">
