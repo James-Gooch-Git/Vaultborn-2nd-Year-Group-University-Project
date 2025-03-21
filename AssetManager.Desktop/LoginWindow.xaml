@@ -13,7 +13,7 @@
 
     <!-- background image -->
     <Window.Background>
-        <ImageBrush Stretch="None" ImageSource="C:\Users\james\Desktop\AssetManagerTom2\AssetManager\AssetManager.Desktop\Assets\Fantasy-login4.png" AlignmentY="Top" AlignmentX="Center"/>
+        <ImageBrush Stretch="None" ImageSource="\Assets\Fantasy-login4.png" AlignmentY="Top" AlignmentX="Center"/>
     </Window.Background>
 
 
@@ -32,7 +32,7 @@
             <!-- Autodesk Logo -->
             <!--<Image Source="C:\Users\james\Desktop\AssetManagerTom2\AssetManager\AssetManager.Desktop\Assets\AppIcon2.png" Width="132" Height="184" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,12,0,0"/>-->
             <!-- Autodesk Logo -->
-            <Image Source="C:\Users\james\Desktop\AssetManagerTom2\AssetManager\AssetManager.Desktop\Assets\AppIcon4.png" Width="132" Height="184" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,18,0,0"/>
+            <Image Source="\Assets\AppIcon4.png" Width="132" Height="184" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,18,0,0"/>
 
             <!-- autodesk assets heading -->
             <TextBlock HorizontalAlignment="Center" FontSize="20" Foreground="White" VerticalAlignment="Top" Margin="0,150,0,0">

@@ -486,7 +486,7 @@
                         </Button.Style>
 
                         <!-- Replace icon and text with an Image -->
-                        <Image Source="C:\Users\james\Desktop\AssetManagerTom2\AssetManager\AssetManager.Desktop\Assets\ImportAssets.png" Width="172" Height="63" RenderTransformOrigin="0.5,0.5">
+                        <Image Source="\Assets\ImportAssets.png" Width="172" Height="63" RenderTransformOrigin="0.5,0.5">
                             <Image.RenderTransform>
                                 <TransformGroup>
                                     <ScaleTransform ScaleY="1"/>
@@ -505,7 +505,7 @@
         Width="160" HorizontalAlignment="Left" Margin="228,0,0,0">
 
                         <!-- Image inside the button -->
-                        <Image Source="C:\Users\james\Desktop\AssetManagerTom2\AssetManager\AssetManager.Desktop\Assets\MarketPlaceButton.png" Stretch="Fill" Width="157" Height="60" RenderTransformOrigin="0.5,0.5">
+                        <Image Source="\Assets\MarketPlaceButton.png" Stretch="Fill" Width="157" Height="60" RenderTransformOrigin="0.5,0.5">
                             <Image.RenderTransform>
                                 <TransformGroup>
                                     <ScaleTransform/>
