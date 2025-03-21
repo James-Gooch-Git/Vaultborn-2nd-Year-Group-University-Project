@@ -2,8 +2,14 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:AssetManager.Desktop"
-             StartupUri="LoginWindow.xaml">
+             StartupUri="LoginWindow.xaml"
+             xmlns:converters="clr-namespace:AssetManager.Desktop.Converters">
+
     <Application.Resources>
-         
+        <converters:ProgressToWidthConverter x:Key="ProgressToWidthConverter"/>
+        <!-- Other application resources -->
     </Application.Resources>
+   
 </Application>
+    
+    

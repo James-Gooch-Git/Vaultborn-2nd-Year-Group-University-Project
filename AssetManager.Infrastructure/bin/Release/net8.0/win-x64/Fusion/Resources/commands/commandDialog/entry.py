@@ -19,7 +19,7 @@ IS_PROMOTED = True
 # command it will be inserted beside. Not providing the command to position it
 # will insert it at the end.
 WORKSPACE_ID = 'FusionSolidEnvironment'
-PANEL_ID = 'SolidScriptsAddinsPanel'
+PANEL_ID = 'MakePanel'
 COMMAND_BESIDE_ID = 'ScriptsManagerCommand'
 
 # Resource location for command icons, here we assume a sub folder in this directory named "resources".

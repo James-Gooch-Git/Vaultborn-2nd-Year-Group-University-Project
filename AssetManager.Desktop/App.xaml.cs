@@ -10,6 +10,8 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 using Microsoft.AspNetCore.Http;
+using System.Windows.Data;
+using System.Globalization;
 
 namespace AssetManager.Desktop
 {
@@ -92,5 +94,6 @@ namespace AssetManager.Desktop
             }
             base.OnExit(e);
         }
+
     }
 }
