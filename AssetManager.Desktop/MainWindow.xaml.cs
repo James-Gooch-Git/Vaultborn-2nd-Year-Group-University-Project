@@ -35,6 +35,7 @@ using Azure.Core;
 using System.Web;
 using Microsoft.WindowsAPICodePack.Taskbar;
 using System.Windows.Controls.Primitives;
+using System.Windows.Media.Media3D;
 
 namespace AssetManager.Desktop
 {
@@ -1703,10 +1704,12 @@ namespace AssetManager.Desktop
                 // Also immediately fetch and set the storage ID for the selected item
                 await FetchAndSetStorageId();
 
-                if (ModelsDataGrid.CurrentColumn.Header.ToString() != "Actions")
-                {
-                    await LoadModelData();
-                }
+                await LoadModelData();
+
+                //if (ModelsDataGrid.CurrentColumn.Header.ToString() != "Actions")
+                //{
+                //    await LoadModelData();
+                //}
             }
             else if (ModelsDataGrid.SelectedItem != null)
             {
@@ -1854,7 +1857,7 @@ namespace AssetManager.Desktop
                     _selectedItemId = selectedModelId;
                     _selectedItemName = modelInfo.Item2;
 
-                    await LoadComments(selectedModelId);
+                    await LoadComments();
                 }
             };
 
@@ -4414,6 +4417,17 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         //        await DisplayTags();
         //}
 
+        private void CloseSidebar_Click(object sender, RoutedEventArgs e)
+        {
+            ModelDataSidebar.Width = new GridLength(0);
+
+
+            //ModelThumbnail.Visibility = Visibility.Collapsed;
+            ModelComments.Visibility = Visibility.Collapsed;
+            ModelInfo.Visibility = Visibility.Collapsed;
+        }
+
+
         private async Task LoadModelData()
         {
             if (ModelDataSidebar.Width.Value != 250)
@@ -4421,6 +4435,8 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 ModelDataSidebar.Width = new GridLength(250);
             }
 
+
+            //ModelThumbnail.Visibility = Visibility.Visible;
             ModelComments.Visibility = Visibility.Collapsed;
             ModelInfo.Visibility = Visibility.Visible;
 
@@ -4435,16 +4451,19 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 Private.IsSelected = true;
             }
 
+            DisplayModelThumb();
+
             await DisplayTags();
         }
 
-        private async Task LoadComments(string modelId)
+        private async Task LoadComments()
         {
             if (ModelDataSidebar.Width.Value != 250)
             {
                 ModelDataSidebar.Width = new GridLength(250);
             }
 
+            //ModelThumbnail.Visibility = Visibility.Visible;
             ModelComments.Visibility = Visibility.Visible;
             ModelInfo.Visibility = Visibility.Collapsed;
 
@@ -4477,6 +4496,15 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
             ClearComments();
 
+            DisplayModelThumb();
+
+            UpvoteTextBlock.Text = upvotes.ToString();
+
+            ListAllComments(_selectedModel["Id"]);
+        }
+
+        private async void DisplayModelThumb()
+        {
             ModelNameText.Text = _selectedModel.ContainsKey("Name") ? _selectedModel["Name"] : "Unknown Model";
 
             if (ModelImage.Parent is Grid gridParent && gridParent.Parent is Border headerBackground)
@@ -4490,10 +4518,6 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             ModelImage.HorizontalAlignment = HorizontalAlignment.Center;
 
             _ = ShowThumbnail(_selectedModel["ProjectId"], _selectedModel["Id"], ModelImage);
-
-            UpvoteTextBlock.Text = upvotes.ToString();
-
-            ListAllComments(modelId);
         }
 
         private StackPanel CreateModelThumbnailUI(Dictionary<string, string> model)
