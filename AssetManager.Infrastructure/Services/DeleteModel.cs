@@ -1,111 +1,76 @@
+using System;
+using System.Net;
+using System.Threading.Tasks;
+using Newtonsoft.Json;
+using AssetManagement.Infrastructure.Services; 
+using RestSharp;
+using AssetManager.Infrastructure.Services;
 using System.Net.Http.Headers;
-using System.Text;
-using AssetManager.Infrastructure.Data;
-using AssetManager.Infrastructure.Models;
-using MongoDB.Driver;
-
-namespace AssetManager.Infrastructure.Services;
-
-public class DeleteModel
+namespace AssetManagement.Infrastructure.Services
 {
-    static readonly string baseApiUrl = "https://developer.api.autodesk.com";
-    MongoConnection database = new MongoConnection();
-    static string accessToken = TokenManager.GetToken();
-
-    public async Task<bool> DeleteModelAsync(string projectId, string itemId)
+    public class DeleteModel
     {
-      if (string.IsNullOrEmpty(projectId) || string.IsNullOrEmpty(itemId) || string.IsNullOrEmpty(accessToken))
-    {
-        Console.WriteLine("❌ Invalid parameters. Project ID, Item ID, and Access Token are required.");
-        return false;
-    }
+        private readonly string _accessToken;
+        private const string ApiBaseUrl = "https://developer.api.autodesk.com";
 
-    string url = $"https://developer.api.autodesk.com/data/v1/projects/{Uri.EscapeDataString(projectId)}/versions";
-    Console.WriteLine($"🔍 Requesting: {url}");  // Debug URL
-
-    string jsonPayload = $@"
-    {{
-        ""jsonapi"": {{ ""version"": ""1.0"" }},
-        ""data"": {{
-            ""type"": ""versions"",
-            ""attributes"": {{
-                ""extension"": {{
-                    ""type"": ""versions:autodesk.core:Deleted"",
-                    ""version"": ""1.0""
-                }}
-            }},
-            ""relationships"": {{
-                ""item"": {{
-                    ""data"": {{
-                        ""type"": ""items"",
-                        ""id"": ""{itemId}""
-                    }}
-                }}
-            }}
-        }}
-    }}";
-
-    try
-    {
-        using (HttpClient client = new HttpClient())
+        public DeleteModel(string accessToken)
         {
-            client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
-            client.DefaultRequestHeaders.Add("Accept", "application/vnd.api+json");
+            TokenService tokenService = new TokenService();
+            _accessToken = TokenManager.GetToken();
+        }
 
-            HttpContent content = new StringContent(jsonPayload, Encoding.UTF8, "application/vnd.api+json");
-
-            HttpResponseMessage response = await client.PostAsync(url, content);
-            string responseBody = await response.Content.ReadAsStringAsync();
-
-            if (response.IsSuccessStatusCode)
+        public async Task<bool> DeleteLatestModelVersionAsync(string projectId, string itemId)
+        {
+            if (string.IsNullOrEmpty(projectId) || string.IsNullOrEmpty(itemId))
             {
-                Console.WriteLine("✅ Model deleted successfully.");
-                return true;
+                Console.WriteLine("❌ Error: Project ID or Item ID is missing.");
+                return false;
             }
-            else
+
+            // ✅ Step 1: Get the correct version ID
+            DataManagement dataService = new DataManagement();
+            List<(string versionId, string versionName, string storageId)> versions = await dataService.GetVersionsForItemAsync(projectId, itemId);
+
+            if (versions == null || versions.Count == 0)
             {
-                Console.WriteLine($"❌ Failed to delete model: {responseBody}");
+                Console.WriteLine("❌ No versions found for this item.");
+                return false;
+            }
+
+            var latestVersion = versions[0]; // First entry is the latest
+            string latestVersionId = latestVersion.versionId;
+
+            // ✅ Step 2: Strip query parameters (Fixes "version=1" issue)
+            latestVersionId = latestVersionId.Split('?')[0];
+
+            Console.WriteLine($"🗑️ Attempting to delete latest version: {latestVersionId}");
+
+            string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/versions/{latestVersionId}";
+            string accessToken = TokenManager.GetToken();
+
+            using HttpClient httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+            try
+            {
+                HttpResponseMessage response = await httpClient.DeleteAsync(url);
+                if (response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine($"✅ Successfully deleted version: {latestVersionId}");
+                    return true;
+                }
+                else
+                {
+                    Console.WriteLine($"❌ Failed to delete model. Status Code: {response.StatusCode} - {await response.Content.ReadAsStringAsync()}");
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Exception while deleting model: {ex.Message}");
                 return false;
             }
         }
-    }
-    catch (HttpRequestException httpEx)
-    {
-        Console.WriteLine($"❌ HTTP Request Error: {httpEx.Message}");
-        return false;
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"❌ Exception occurred: {ex.Message}");
-        return false;
-    }
-    }
-    
-    
-     public async Task<bool> DeleteModelFromDatabaseAsync(string itemId)
-     {
-         try
-         {
-             var collection = database.Models;
-    
-             var filter = MongoDB.Driver.Builders<Model>.Filter.Eq(m => m.ItemId, itemId);
-             var result = await collection.DeleteOneAsync(filter);
-    
-             if (result.DeletedCount > 0)
-             {
-                 Console.WriteLine($"✅ Model with ItemId {itemId} deleted from MongoDB.");
-                 return true;
-             }
-             else
-             {
-                 Console.WriteLine($"⚠️ Model with ItemId {itemId} not found in MongoDB.");
-                 return false;
-             }
-         }
-         catch (Exception ex)
-         {
-             Console.WriteLine($"❌ Error deleting model from MongoDB: {ex.Message}");
-             return false;
-         }
+
     }
 }

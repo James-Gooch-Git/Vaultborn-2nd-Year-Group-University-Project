@@ -8,6 +8,7 @@
         <UseWPF>true</UseWPF>
         <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
         <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+        <ApplicationIcon>AppIcon4.ico</ApplicationIcon>
     </PropertyGroup>
 
     <ItemGroup>
@@ -16,6 +17,11 @@
     </ItemGroup>
 
     <ItemGroup>
+      <Content Include="AppIcon4.ico" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="FuzzySharp" Version="2.0.2" />
       <PackageReference Include="IdentityModel.OidcClient" Version="6.0.0" />
       <PackageReference Include="MaterialDesignThemes" Version="5.2.1" />
       <PackageReference Include="Microsoft-WindowsAPICodePack-Shell" Version="1.1.5" />

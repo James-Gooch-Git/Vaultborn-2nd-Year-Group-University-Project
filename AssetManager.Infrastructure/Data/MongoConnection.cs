@@ -19,6 +19,9 @@ public class MongoConnection
     public IMongoCollection<Model> Models => _database.GetCollection<Model>("Models");
     public IMongoCollection<ModelVersion> ModelVersions => _database.GetCollection<ModelVersion>("Versions");
     public IMongoCollection<Comment> Comments => _database.GetCollection<Comment>("Comments");
+    public IMongoCollection<ModelData> ModelData => _database.GetCollection<ModelData>("ModelData");
+    public IMongoCollection<Upvotes> Upvotes => _database.GetCollection<Upvotes>("Upvotes");
+    public IMongoCollection<ListedModels> ListedModels => _database.GetCollection<ListedModels>("ListedModels");
     
     public IMongoCollection<BsonDocument> GetCollection(string collectionName)
     {

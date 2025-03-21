@@ -7,21 +7,10 @@ import threading
 import time
 
 # Set up logging
-# Set up logging
 log_dir = os.path.dirname(os.path.realpath(__file__))
 log_path = os.path.join(log_dir, 'savetohub_log.txt')
-
-# Force logging to create the file immediately
-try:
-    with open(log_path, 'w') as f:
-        f.write("Log started\n")
-except Exception as e:
-    print(f"Logging error: {e}")
-
 logging.basicConfig(filename=log_path, level=logging.INFO, 
                    format='%(asctime)s - %(levelname)s - %(message)s')
-
-logging.info("SaveToHub add-in started.")
 
 # Global variables
 app = None
@@ -96,96 +85,219 @@ def saveToHub():
                          adsk.core.MessageBoxButtonTypes.OKButtonType,
                          adsk.core.MessageBoxIconTypes.CriticalIconType)
         return False
-def showSaveDialog():
-    try:
-        global ui
-        
-        # Ensure the UI is available
-        if not ui:
-            app = adsk.core.Application.get()
-            ui = app.userInterface
 
-        # Check if the command already exists
-        dialogCmdDef = ui.commandDefinitions.itemById('SaveToHubDialogCommand')
-        if dialogCmdDef:
-            dialogCmdDef.deleteMe()
-        
-        # Create new command definition
-        dialogCmdDef = ui.commandDefinitions.addButtonDefinition(
-            'SaveToHubDialogCommand',
-            'Save To Hub',
-            'Save your design to Autodesk Hub'
+# Create the floating palette
+def showPalette():
+    try:
+        global palette, ui
+
+        # First, check if the palette already exists
+        existingPalette = ui.palettes.itemById(paletteName)
+        if existingPalette:
+            existingPalette.isVisible = True  # Make sure it's visible
+            existingPalette.dockingState = adsk.core.PaletteDockingStates.PaletteDockStateFloating  # Force floating
+            logging.info("Showing existing floating palette")
+            return True
+
+        # Get script directory
+        script_dir = get_current_dir()
+
+        # 🔹 Define the correct HTML content
+        html_content = '''
+        <html>
+        <head>
+            <style>
+                body {
+                    margin: 10px;
+                    font-family: Arial;
+                    background-color: #f0f0f0;
+                }
+                h3 {
+                    text-align: center;
+                    margin-top: 0;
+                }
+                button {
+                    width: 100%;
+                    height: 40px;
+                    background-color: #0078D7;
+                    color: white;
+                    border: none;
+                    border-radius: 5px;
+                    font-size: 16px;
+                    cursor: pointer;
+                    font-weight: bold;
+                }
+            </style>
+        </head>
+        <body>
+            <h3>Save To Hub</h3>
+            <button id="saveButton">Save To Hub</button>
+            <script>
+                document.getElementById("saveButton").addEventListener("click", function() {
+                    window.location.href = "fusion://command/''' + commandId + '''";
+                });
+            </script>
+        </body>
+        </html>
+        '''
+
+        # 🔹 Create a temporary HTML file if it doesn't exist
+        html_file_path = os.path.join(script_dir, 'savetohub_palette.html')
+
+        with open(html_file_path, 'w', encoding='utf-8') as f:
+            f.write(html_content)
+
+        # 🔹 Convert file path to a URL format
+        html_file_url = 'file:///' + html_file_path.replace('\\', '/')
+
+        # 🔹 Create the floating palette
+        palette = ui.palettes.add(
+            id=paletteName,
+            name='Save To Hub',
+            htmlFileURL=html_file_url,  # ✅ Dynamically generated HTML file
+            isVisible=True,
+            showCloseButton=True,
+            isResizable=True,
+            width=300,
+            height=200,
+            useNewWebBrowser=True
         )
 
-        # Connect to the command created event
-        onDialogCreated = SaveDialogCreatedHandler()
-        dialogCmdDef.commandCreated.add(onDialogCreated)
-        handlers.append(onDialogCreated)
+        # Force floating mode
+        palette.dockingState = adsk.core.PaletteDockingStates.PaletteDockStateFloating
 
-        # 🚀 Instead of directly executing, use UI's command execution
-        ui.commandDefinitions.itemById('SaveToHubDialogCommand').execute()
+        # Set position manually
+        try:
+            palette.setPosition(800, 200)
+        except:
+            logging.warning("⚠️ Could not set palette position")
 
-        logging.info("✅ Save dialog command executed")
+        logging.info("✅ Floating palette with dynamically generated HTML created successfully")
         return True
     except:
-        logging.error(traceback.format_exc())
+        error_message = traceback.format_exc()
+        logging.error(f"❌ Failed to create floating palette: {error_message}")
         return False
 
-class SaveDialogCreatedHandler(adsk.core.CommandCreatedEventHandler):
+# Handler for palette HTML events
+class PaletteEventHandler(adsk.core.HTMLEventHandler):
     def __init__(self):
         super().__init__()
+    
+    def notify(self, args):
+        try:
+            htmlArgs = adsk.core.HTMLEventArgs.cast(args)
+            logging.info(f"Received HTML event: {htmlArgs.action}")
+            
+            # If we get any event from the HTML side, we can handle it here
+            if htmlArgs.action == "save":
+                saveToHub()
+        except:
+            error_message = traceback.format_exc()
+            logging.error(f"Failed in palette event: {error_message}")
 
+# Command created event handler
+class CommandCreatedEventHandler(adsk.core.CommandCreatedEventHandler):
+    def __init__(self):
+        super().__init__()
+    
     def notify(self, args):
         try:
             cmd = args.command
-            inputs = cmd.commandInputs
-
-            # ✅ Make sure we register handlers before user input happens
-            onExecute = SaveDialogExecuteHandler()
+            logging.info("Command created event triggered")
+            
+            # Connect to the execute event
+            onExecute = CommandExecuteHandler()
             cmd.execute.add(onExecute)
             handlers.append(onExecute)
-
-            onCancel = SaveDialogCancelHandler()
-            cmd.destroy.add(onCancel)
-            handlers.append(onCancel)
-
-            # ✅ Add UI elements
-            inputs.addTextBoxCommandInput('infoText', '', 'Upload your design to Autodesk Hub', 3, True)
-            inputs.addSeparatorCommandInput('separator', 'Options')
-            inputs.addBoolValueInput('notifyCheckbox', 'Send notification when complete', False)
-
-            logging.info("✅ Save dialog UI created successfully")
         except:
-            logging.error(traceback.format_exc())
+            error_message = traceback.format_exc()
+            logging.error(f"Failed in command created event: {error_message}")
 
-class SaveDialogExecuteHandler(adsk.core.CommandEventHandler):
+# Command execute event handler
+class CommandExecuteHandler(adsk.core.CommandEventHandler):
     def __init__(self):
         super().__init__()
     
     def notify(self, args):
         try:
-            eventArgs = adsk.core.CommandEventArgs.cast(args)
-            inputs = eventArgs.command.commandInputs
-            
-            # Get any input values if needed
-            notifyUser = inputs.itemById('notifyCheckbox').value
-            
-            # Perform the save operation
+            # Execute the save to hub operation
+            logging.info("Command execute event triggered")
             saveToHub()
-            
         except:
-            logging.error(traceback.format_exc())
+            error_message = traceback.format_exc()
+            logging.error(f"Failed in command execute event: {error_message}")
 
-class SaveDialogCancelHandler(adsk.core.CommandEventHandler):
+# Create a command to show the palette
+def createShowPaletteCommand():
+    try:
+        # Check if command already exists
+        showPaletteCmdDef = ui.commandDefinitions.itemById('ShowSaveToHubPaletteCommand')
+        if showPaletteCmdDef:
+            showPaletteCmdDef.deleteMe()
+            
+        # Create command definition
+        showPaletteCmdDef = ui.commandDefinitions.addButtonDefinition(
+            'ShowSaveToHubPaletteCommand',
+            'Show Save To Hub Palette',
+            'Shows the Save To Hub floating palette',
+            ''
+        )
+        
+        # Connect to command created event
+        onShowPaletteCreated = ShowPaletteCommandCreatedHandler()
+        showPaletteCmdDef.commandCreated.add(onShowPaletteCreated)
+        handlers.append(onShowPaletteCreated)
+        
+        # Add to toolbar
+        utilsPanel = ui.allToolbarPanels.itemById('UtilityPanel')  # Try the correct panel name first
+        if not utilsPanel:
+            utilsPanel = ui.allToolbarPanels.itemById('UtilitiesPanel')  # Fallback to original name
+        
+        if utilsPanel:
+            utilsPanel.controls.addCommand(showPaletteCmdDef, '', False)
+            logging.info(f"Command added to panel: {utilsPanel.id}")
+        else:
+            # Log all available panels for debugging
+            panel_ids = [panel.id for panel in ui.allToolbarPanels]
+            logging.info(f"Available panels: {panel_ids}")
+            logging.warning("Could not find Utility panel")
+            
+        return showPaletteCmdDef
+    except:
+        error_message = traceback.format_exc()
+        logging.error(f"Failed to create show palette command: {error_message}")
+        return None
+
+# Handler for show palette command
+class ShowPaletteCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
     def __init__(self):
         super().__init__()
     
     def notify(self, args):
         try:
-            # Handle cancel if needed
-            logging.info("Save operation cancelled")
+            cmd = args.command
+            
+            # Connect to execute event
+            onExecute = ShowPaletteCommandExecuteHandler()
+            cmd.execute.add(onExecute)
+            handlers.append(onExecute)
         except:
-            logging.error(traceback.format_exc())
+            error_message = traceback.format_exc()
+            logging.error(f"Failed in show palette command created: {error_message}")
+
+# Handler for show palette command execute
+class ShowPaletteCommandExecuteHandler(adsk.core.CommandEventHandler):
+    def __init__(self):
+        super().__init__()
+    
+    def notify(self, args):
+        try:
+            # Show the palette
+            showPalette()
+        except:
+            error_message = traceback.format_exc()
+            logging.error(f"Failed to show palette from command: {error_message}")
 
 # Handler for workspace activated event - show palette when design workspace activated
 class WorkspaceActivatedHandler(adsk.core.WorkspaceEventHandler):
@@ -199,7 +311,7 @@ class WorkspaceActivatedHandler(adsk.core.WorkspaceEventHandler):
                 # Wait a moment before showing palette to ensure UI is ready
                 def delayed_show():
                     time.sleep(1)
-                    showSaveDialog()
+                    showPalette()
                 
                 # Run in a separate thread
                 thread = threading.Thread(target=delayed_show)
@@ -209,7 +321,6 @@ class WorkspaceActivatedHandler(adsk.core.WorkspaceEventHandler):
             error_message = traceback.format_exc()
             logging.error(f"Failed in workspace activated: {error_message}")
 
-# Run when Fusion 360 starts
 def run(context):
     try:
         global app, ui
@@ -218,168 +329,92 @@ def run(context):
 
         logging.info("SaveToHub add-in starting...")
 
-        # Register workspace handler
-        onWorkspaceActivated = WorkspaceActivatedHandler()
-        ui.workspaceActivated.add(onWorkspaceActivated)
-        handlers.append(onWorkspaceActivated)
+        # Create a command definition for the SaveToHub command
+        cmdDef = ui.commandDefinitions.addButtonDefinition(
+            commandId, 
+            commandTitle, 
+            'Save your design to Autodesk Hub',
+            ''  # Use empty string for default icon
+        )
 
-        # ✅ 🚀 Show the dialog correctly
-        success = showSaveDialog()
+        # Connect to the command created event
+        onCommandCreated = CommandCreatedEventHandler()
+        cmdDef.commandCreated.add(onCommandCreated)
+        handlers.append(onCommandCreated)
+
+        # 🔹 Add button to the UTILITIES PANEL
+        utilitiesPanel = ui.allToolbarPanels.itemById('UtilitiesPanel')
+
+        if utilitiesPanel:
+            utilitiesPanel.controls.addCommand(cmdDef, '', False)
+            logging.info("✅ Save To Hub button added to the Utilities panel!")
+        else:
+            logging.warning("⚠️ Could not find the Utilities panel. Trying alternative panels...")
+
+            # Try alternative panel IDs
+            for panel in ui.allToolbarPanels:
+                if "UTILITY" in panel.id.upper():
+                    panel.controls.addCommand(cmdDef, '', False)
+                    logging.info(f"✅ Save To Hub added to {panel.id}")
+                    break
+
+        # Show the palette when the add-in starts
+        success = showPalette()
         if not success:
-            ui.messageBox("Could not show Save To Hub dialog.", "SaveToHub",
+            ui.messageBox("Could not show Save To Hub palette. Click the Utilities panel button to show it.",
+                          "SaveToHub",
                           adsk.core.MessageBoxButtonTypes.OKButtonType,
-                          adsk.core.MessageBoxIconTypes.WarningIconType)
+                          adsk.core.MessageBoxIconTypes.InformationIconType)
 
-        logging.info("✅ Add-in initialization completed")
     except Exception as e:
-        logging.error(f"❌ Failed to initialize SaveToHub: {traceback.format_exc()}")
+        error_message = traceback.format_exc()
+        logging.error(f"❌ Failed to initialize SaveToHub add-in:\n{error_message}")
+        if ui:
+            ui.messageBox(f'Failed to initialize SaveToHub add-in:\n{error_message}',
+                          'SaveToHub Error',
+                          adsk.core.MessageBoxButtonTypes.OKButtonType,
+                          adsk.core.MessageBoxIconTypes.CriticalIconType)
 
 # Stop function called when Fusion 360 stops
 def stop(context):
-    # Declare global variables at the beginning of the function
     global palette, handlers
-    
+
     try:
         logging.info("Stopping SaveToHub add-in")
-        
-        # First, try to get a fresh reference to the application and UI
-        try:
-            app = adsk.core.Application.get()
-            if app:
-                ui = app.userInterface
-            else:
-                ui = None
-        except:
-            ui = None
-            logging.warning("Could not get application reference during shutdown")
-        
+
+        app = adsk.core.Application.get()
+        ui = app.userInterface
+
         # Remove the palette if it exists
-        try:
-            if palette is not None:
-                palette.deleteMe()
-                palette = None
-                logging.info("Palette removed")
-            else:
-                logging.info("No palette to remove")
-        except:
-            logging.warning("Error removing palette")
-        
-        # Remove the command definitions if UI is still available
-        if ui:
-            try:
-                cmdDef = ui.commandDefinitions.itemById(commandId)
-                if cmdDef:
-                    cmdDef.deleteMe()
-                    logging.info("Command definition removed")
-            except:
-                logging.warning("Error removing command definition")
-                
-            try:
-                showPaletteCmdDef = ui.commandDefinitions.itemById('ShowSaveToHubPaletteCommand')
-                if showPaletteCmdDef:
-                    showPaletteCmdDef.deleteMe()
-                    logging.info("Show palette command removed")
-            except:
-                logging.warning("Error removing show palette command")
-        
-        # Clean up the handlers
-        try:
-            if handlers:
-                handlers.clear()
-                logging.info("Handlers cleared")
-        except:
-            logging.warning("Error clearing handlers")
-        
-        logging.info("Add-in cleanup completed")
-        
+        if palette:
+            palette.deleteMe()
+            palette = None
+            logging.info("Palette removed")
+
+        # Remove the command definitions
+        cmdDef = ui.commandDefinitions.itemById(commandId)
+        if cmdDef:
+            cmdDef.deleteMe()
+            logging.info("Command definition removed")
+
+        # 🔹 REMOVE FROM UTILITIES PANEL
+        utilitiesPanel = ui.allToolbarPanels.itemById('UtilitiesPanel')
+
+        if utilitiesPanel:
+            control = utilitiesPanel.controls.itemById(commandId)
+            if control:
+                control.deleteMe()
+                logging.info("✅ Save To Hub button removed from the Utilities panel")
+
+        logging.info("✅ Add-in cleanup completed!")
+
     except Exception as e:
         error_message = traceback.format_exc()
-        logging.error(f"Failed to clean up SaveToHub add-in:\n{error_message}")
+        logging.error(f"❌ Failed to clean up SaveToHub add-in:\n{error_message}")
         try:
-            # Try to get UI again if needed for message box
-            app = adsk.core.Application.get()
-            ui = app.userInterface
-            if ui:
-                ui.messageBox(f'Failed to clean up SaveToHub add-in:\n{error_message}',
-                             'SaveToHub Error',
-                             adsk.core.MessageBoxButtonTypes.OKButtonType,
-                             adsk.core.MessageBoxIconTypes.CriticalIconType)
+            ui.messageBox(f'Failed to clean up SaveToHub add-in:\n{error_message}',
+                          'SaveToHub Error',
+                          adsk.core.MessageBoxButtonTypes.OKButtonType,
+                          adsk.core.MessageBoxIconTypes.CriticalIconType)
         except:
-            # If everything fails, just log the error
-            logging.error("Could not show error message box")
-# Helper function to save model to Autodesk Hub
-def saveToHub():
-    try:
-        ui = app.userInterface
-        doc = app.activeDocument
-        
-        if not doc:
-            ui.messageBox("No active document to save.", 
-                         "SaveToHub", 
-                         adsk.core.MessageBoxButtonTypes.OKButtonType,
-                         adsk.core.MessageBoxIconTypes.InformationIconType)
-            return False
-        
-        # Get model file path
-        model_path = doc.dataFile.filePath if doc.dataFile else None
-        
-        if not model_path:
-            ui.messageBox("Document has not been saved yet. Please save it first.",
-                         "SaveToHub", 
-                         adsk.core.MessageBoxButtonTypes.OKButtonType,
-                         adsk.core.MessageBoxIconTypes.InformationIconType)
-            return False
-            
-        model_name = os.path.splitext(os.path.basename(model_path))[0]
-    
-        # Find metadata file
-        metadata_path = os.path.join(os.path.dirname(model_path), f"{model_name}.metadata.json")
-        
-        if not os.path.exists(metadata_path):
-            ui.messageBox(f"Metadata file missing for {model_name}. Cannot save to Autodesk Hub.",
-                         "SaveToHub", 
-                         adsk.core.MessageBoxButtonTypes.OKButtonType,
-                         adsk.core.MessageBoxIconTypes.WarningIconType)
-            return False
-        
-        with open(metadata_path, 'r') as file:
-            metadata = json.load(file)
-    
-        project_id = metadata["projectId"]
-        item_id = metadata["itemId"]
-        folder_id = metadata.get("folderId", "")
-        
-        # Show a progress dialog
-        progress = ui.createProgressDialog()
-        progress.cancelButtonText = "Cancel"
-        progress.isBackgroundTranslucent = False
-        progress.isCancelButtonShown = True
-        progress.show("Save To Hub", "Uploading to Autodesk Hub...", 0, 100, 0)
-        
-        # Perform the upload operation
-        success, message = upload_to_hub(model_path, project_id, item_id, folder_id)
-        
-        # Close the progress dialog
-        progress.hide()
-        
-        if success:
-            ui.messageBox(f"Successfully uploaded {model_name} to Autodesk Hub.",
-                         "SaveToHub", 
-                         adsk.core.MessageBoxButtonTypes.OKButtonType,
-                         adsk.core.MessageBoxIconTypes.InformationIconType)
-            return True
-        else:
-            ui.messageBox(f"Failed to upload {model_name} to Autodesk Hub:\n{message}",
-                         "SaveToHub Error", 
-                         adsk.core.MessageBoxButtonTypes.OKButtonType,
-                         adsk.core.MessageBoxIconTypes.CriticalIconType)
-            return False
-    except:
-        error_message = traceback.format_exc()
-        logging.error(f"Failed in saveToHub: {error_message}")
-        if ui:
-            ui.messageBox(f'Failed in saveToHub: {error_message}',
-                         'SaveToHub Error',
-                         adsk.core.MessageBoxButtonTypes.OKButtonType,
-                         adsk.core.MessageBoxIconTypes.CriticalIconType)
-        return False
+            logging.error("⚠️ Could not show error message box")
