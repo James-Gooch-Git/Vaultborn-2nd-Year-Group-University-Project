@@ -17,6 +17,7 @@ using System.Net;
 using System.Windows.Input;
 using System.Windows.Media.Effects;
 
+
 using System.Text;
 
 using Microsoft.Web.WebView2.Core;
@@ -58,7 +59,9 @@ namespace AssetManager.Desktop
         private static readonly HttpClient client = new HttpClient();
         private string selectedHubName = "Loading..."; // Default value before hubs load
         private bool isModelLoaded = false;
-        
+        private Dictionary<int, (int VersionNumber, string VersionID)> versionsMarkerData = new Dictionary<int, (int, string)>();
+
+
         private List<Dictionary<string, string>> originalResults;
         private readonly PayPalService _payPalService;
         //private List<Dictionary<string, string>> listedModels;
@@ -3384,6 +3387,7 @@ namespace AssetManager.Desktop
             //ForgeViewerWindow forgeViewer = new ForgeViewerWindow(encodedUrn);
             // forgeViewer.Show();
             LoadForgeViewer(encodedUrn);
+            
         }
 
         private async void BtnViewInApp_Click(string selectedItemId)
@@ -3477,6 +3481,11 @@ namespace AssetManager.Desktop
             //ForgeViewerWindow forgeViewer = new ForgeViewerWindow(encodedUrn);
             // forgeViewer.Show();
             LoadForgeViewer(encodedUrn);
+            int numberOfVersions = await GetNumberOfVersions();
+            GenerateMarkers(numberOfVersions);
+
+            Grid versionSlider = VersionSlider;
+            versionSlider.Visibility = Visibility.Visible;
         }
 
         private void Btn_CloseViewer_Click(object sender, RoutedEventArgs e)
@@ -3504,6 +3513,9 @@ namespace AssetManager.Desktop
             Console.WriteLine("🔄 Global variables reset after closing Forge Viewer");
 
             Console.WriteLine($"🔄 Returning to {_lastViewType} view.");
+
+            Grid versionSlider = VersionSlider;
+            versionSlider.Visibility = Visibility.Collapsed;
         }
 
         //Trying the SKybox
@@ -3748,7 +3760,134 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
         #endregion
 
+        //NEEDS MIGRATING TO VERSION CONTROL//
+        #region Version Control
 
+        private async Task<int> GetNumberOfVersions()
+        {
+            var versions = await DataManagement.GetItemVersions(_selectedProjectId, _selectedItemId);
+
+            int numberOfVersions = 0;
+            foreach (var version in versions)
+            {
+                numberOfVersions += 1;
+            }
+            return numberOfVersions;
+        }
+
+        private async void GenerateMarkers(int count)
+        {
+            var versions = await DataManagement.GetItemVersions(_selectedProjectId, _selectedItemId);
+
+            versionsMarkerData.Clear(); // Clear previous markers
+            MarkerContainer.Children.Clear(); // Remove previous marker children
+
+            if (count < 1 || versions.Count == 0) return;
+
+            List<double> tickValues = new List<double>();
+
+            // Loop to create the markers, starting from the rightmost (latest version)
+            for (int i = 0; i < count; i++)
+            {
+                // Calculate marker position in reverse order (start from the rightmost side)
+                double markerValue = (1 - (i / (double)(count - 1))) * 100;  // Invert position for right to left
+                tickValues.Add(markerValue);
+
+                // Access the versions list, starting from the most recent (rightmost marker gets the latest version)
+                var version = versions[i];  // Access the versions in order (latest version first)
+
+                // Round the marker value to the nearest integer before storing it in the dictionary
+                versionsMarkerData[(int)Math.Round(markerValue)] = (version.VersionNumber, version.VersionID);
+
+                // Create the marker as a Border
+                Border marker = new Border
+                {
+                    Width = 16, // Adjust width slightly for better fit
+                    Height = 16, // Adjust height slightly for better fit
+                    Background = new SolidColorBrush(Colors.LightGray),
+                    CornerRadius = new CornerRadius(3),
+                    Child = new TextBlock
+                    {
+                        Text = ((char)('A' + i)).ToString(), // Marker label
+                        HorizontalAlignment = HorizontalAlignment.Center,
+                        VerticalAlignment = VerticalAlignment.Center
+                    }
+                };
+
+                // Calculate the X position of the marker based on the slider width
+                double sliderWidth = MarkerContainer.Width;
+                double markerX = (markerValue / 100.0) * sliderWidth - (marker.Width / 2); // Center the marker
+
+                // Adjust markers based on their relative position to the center of the slider
+                if (markerX < (sliderWidth / 2)) // Markers on the left side of the slider
+                {
+                    markerX += 4; // Move right by 4px
+                }
+                else // Markers on the right side of the slider
+                {
+                    markerX -= 4; // Move left by 4px
+                }
+
+                // Set marker's position on the Canvas
+                Canvas.SetLeft(marker, markerX);
+                Canvas.SetTop(marker, (MarkerContainer.Height / 2) - (marker.Height / 2)); // Center vertically
+
+                MarkerContainer.Children.Add(marker); // Add marker to Canvas
+            }
+
+            // Set slider ticks dynamically
+            slider.Ticks = new DoubleCollection(tickValues);
+            slider.IsSnapToTickEnabled = true;
+
+            // Attach event handler
+            slider.ValueChanged -= Slider_ValueChanged;
+            slider.ValueChanged += Slider_ValueChanged;
+
+            // Initially hide the slider value text (so it doesn't show the default value)
+            sliderValue.Visibility = Visibility.Hidden;
+
+            // Show the latest version number after markers are generated
+            if (versions.Any())
+            {
+                var latestVersion = versions.First();  // First version (newest)
+                sliderValue.Text = $"Version: {latestVersion.VersionNumber}";
+                sliderValue.Visibility = Visibility.Visible; // Make sure version number text is visible
+            }
+        }
+
+
+
+
+
+        private void Slider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            int roundedValue = (int)Math.Round(slider.Value / 5.0) * 5; // Snap to nearest marker step
+
+            if (versionsMarkerData.ContainsKey(roundedValue))
+            {
+                // Retrieve version number and version ID when marker is reached
+                var markerData = versionsMarkerData[roundedValue];
+                OnMarkerReached(markerData); // Call function with marker data
+            }
+        }
+
+        private void OnMarkerReached((int VersionNumber, string VersionID) markerData)
+        {
+            // Display version number above the slider
+            sliderValue.Text = $"Version: {markerData.VersionNumber}";
+
+            // Here you can do something with the VersionID (e.g., load the version or perform any action)
+            Console.WriteLine($"You reached version {markerData.VersionNumber} with ID: {markerData.VersionID}");
+        }
+
+
+
+
+
+
+
+
+        #endregion
 
 
 

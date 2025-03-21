@@ -497,10 +497,6 @@
                         <md:PackIcon x:Name="DownArrow" Kind="ArrowDownBoldOutline" Height="30" Width="30" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                     </Border>
                     
-                    <ComboBox x:Name="PublicPrivateComboBox" SelectionChanged="PublicPrivateComboBox_OnSelectionChangedComboBox_SelectionChanged" Width="100" Height="30" Visibility="Hidden" Margin="250,0,0,0">
-                        <ComboBoxItem x:Name="Public">Public</ComboBoxItem>
-                        <ComboBoxItem x:Name="Private">Private</ComboBoxItem>
-                    </ComboBox> -->
                     
                     <!--
                     <Button HorizontalAlignment="Left" BorderThickness="0" x:Name="BtnDeleteModel" Width="100" Height="40" Click="BtnDeleteModel_Click" Cursor="Hand" Margin="180,0,0,0">
@@ -867,9 +863,9 @@
                                         </Style>
                                     </DataGridTextColumn.CellStyle>
                                 </DataGridTextColumn>
-                                
+
                                 <DataGridTextColumn Header="Id" Binding="{Binding [Id]}" Width="*" Visibility="Collapsed"/>
-                                
+
                                 <!--
                                 <DataGridTemplateColumn Width="70">
                                     <DataGridTemplateColumn.HeaderStyle>
@@ -899,11 +895,50 @@
 
                         </DataGrid>
 
-
-
                     </Grid>
 
                 </Grid>
+
+                <Grid x:Name="VersionSlider" Grid.Row="3" Visibility="Collapsed">
+                    <!-- Slider with Snapping Enabled -->
+                    <Slider Name="slider"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Bottom"
+            Width="1000"
+            Minimum="0"
+            Maximum="100"
+            TickPlacement="BottomRight"
+            IsSnapToTickEnabled="True"
+            Value="100"
+            Margin="0,0,0,25"/>
+
+                    <!-- Display Slider Value (Initially hidden) -->
+                    <TextBlock Name="sliderValue"
+               HorizontalAlignment="Center"
+               VerticalAlignment="Bottom"
+               Margin="0,0,0,60"
+               FontSize="16"
+               Text="Value: 50"
+               Visibility="Collapsed"/>
+                    <!-- Set to Collapsed initially -->
+
+                    <!-- Marker Container (Canvas for precise positioning) -->
+                    <Canvas x:Name="MarkerContainer"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Bottom"
+            Width="1000"
+            Height="40"/>
+                </Grid>
+
+
+
+
+
+
+
+
+
+
 
             </Grid>
 
@@ -1345,8 +1380,10 @@
                     <ComboBoxItem>Newest</ComboBoxItem>
                     <ComboBoxItem>Oldest</ComboBoxItem>
                 </ComboBox>
+								
                 
             </Grid>
+						
         </Border>
 
     </Grid>
