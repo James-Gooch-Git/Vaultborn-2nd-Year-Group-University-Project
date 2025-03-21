@@ -1702,12 +1702,11 @@ namespace AssetManager.Desktop
 
                 // Also immediately fetch and set the storage ID for the selected item
                 await FetchAndSetStorageId();
-                
-                //if (ModelsDataGrid.CurrentColumn.Header.ToString() != "Actions")
-                //{
-                //    ModelInfoSidebar.Width = new GridLength(200);
-                //    await InitializeModelsInfoSidebar();
-                //}
+
+                if (ModelsDataGrid.CurrentColumn.Header.ToString() != "Actions")
+                {
+                    await LoadModelData();
+                }
             }
             else if (ModelsDataGrid.SelectedItem != null)
             {
@@ -1855,7 +1854,7 @@ namespace AssetManager.Desktop
                     _selectedItemId = selectedModelId;
                     _selectedItemName = modelInfo.Item2;
 
-                    LoadComments(selectedModelId);
+                    await LoadComments(selectedModelId);
                 }
             };
 
@@ -4415,11 +4414,66 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         //        await DisplayTags();
         //}
 
-        private void LoadComments(string modelId)
+        private async Task LoadModelData()
         {
-            ModelDataSidebar.Width = new GridLength(250);
+            if (ModelDataSidebar.Width.Value != 250)
+            {
+                ModelDataSidebar.Width = new GridLength(250);
+            }
+
+            ModelComments.Visibility = Visibility.Collapsed;
+            ModelInfo.Visibility = Visibility.Visible;
+
+            string visibility = await GetModelVisibility();
+
+            if (visibility == "Public")
+            {
+                Public.IsSelected = true;
+            }
+            else if (visibility == "Private")
+            {
+                Private.IsSelected = true;
+            }
+
+            await DisplayTags();
+        }
+
+        private async Task LoadComments(string modelId)
+        {
+            if (ModelDataSidebar.Width.Value != 250)
+            {
+                ModelDataSidebar.Width = new GridLength(250);
+            }
+
             ModelComments.Visibility = Visibility.Visible;
             ModelInfo.Visibility = Visibility.Collapsed;
+
+            int upvotes = await GetModelUpvoteCount(_selectedItemId);
+
+            await SetUserModelVote(_selectedItemId, _userId);
+            int vote = await GetUserModelVote(_selectedItemId, _userId);
+
+            if (vote == 1)
+            {
+                UpArrow.Kind = PackIconKind.ArrowTopBold;
+                UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#11d137"));
+                DownArrow.Kind = PackIconKind.ArrowDownBoldOutline;
+                DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+            }
+            else if (vote == -1)
+            {
+                DownArrow.Kind = PackIconKind.ArrowDownBold;
+                DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d11111"));
+                UpArrow.Kind = PackIconKind.ArrowTopBoldOutline;
+                UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+            }
+            else
+            {
+                UpArrow.Kind = PackIconKind.ArrowTopBoldOutline;
+                UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+                DownArrow.Kind = PackIconKind.ArrowDownBoldOutline;
+                DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+            }
 
             ClearComments();
 
@@ -4436,6 +4490,8 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             ModelImage.HorizontalAlignment = HorizontalAlignment.Center;
 
             _ = ShowThumbnail(_selectedModel["ProjectId"], _selectedModel["Id"], ModelImage);
+
+            UpvoteTextBlock.Text = upvotes.ToString();
 
             ListAllComments(modelId);
         }
