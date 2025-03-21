@@ -8,7 +8,7 @@
         <UseWPF>true</UseWPF>
         <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
         <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-        <ApplicationIcon>AppIcon.ico</ApplicationIcon>
+        <ApplicationIcon>AppIcon4.ico</ApplicationIcon>
     </PropertyGroup>
 
     <ItemGroup>
@@ -17,7 +17,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Content Include="AppIcon.ico" />
+      <Content Include="AppIcon4.ico" />
     </ItemGroup>
 
     <ItemGroup>
