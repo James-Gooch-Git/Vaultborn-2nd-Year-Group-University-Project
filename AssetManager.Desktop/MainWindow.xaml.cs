@@ -35,6 +35,7 @@ using AssetManagement.Infrastructure.Services;
 using Azure.Core;
 using System.Web;
 using Microsoft.WindowsAPICodePack.Taskbar;
+using System.Windows.Controls.Primitives;
 
 namespace AssetManager.Desktop
 {
@@ -391,7 +392,18 @@ namespace AssetManager.Desktop
 
         private void ToggleHubsMenu(object sender, MouseButtonEventArgs e)
         {
-            HubsMenuPopup.IsOpen = !HubsMenuPopup.IsOpen;
+            if (HubsMenuPopup.IsOpen)
+            {
+                HubsMenuPopup.IsOpen = false;
+            }
+            else
+            {
+                HubsMenuPopup.PlacementTarget = HubsHeaderTextBlock;
+                HubsMenuPopup.Placement = PlacementMode.Relative;
+                HubsMenuPopup.VerticalOffset = HubsHeaderTextBlock.ActualHeight + 5;
+                HubsMenuPopup.IsOpen = true;
+            }
+            //HubsMenuPopup.IsOpen = !HubsMenuPopup.IsOpen;
         }
         #endregion
 
@@ -1694,11 +1706,11 @@ namespace AssetManager.Desktop
                 // Also immediately fetch and set the storage ID for the selected item
                 await FetchAndSetStorageId();
                 
-                if (ModelsDataGrid.CurrentColumn.Header.ToString() != "Actions")
-                {
-                    ModelInfoSidebar.Width = new GridLength(200);
-                    await InitializeModelsInfoSidebar();
-                }
+                //if (ModelsDataGrid.CurrentColumn.Header.ToString() != "Actions")
+                //{
+                //    ModelInfoSidebar.Width = new GridLength(200);
+                //    await InitializeModelsInfoSidebar();
+                //}
             }
             else if (ModelsDataGrid.SelectedItem != null)
             {
@@ -1835,6 +1847,21 @@ namespace AssetManager.Desktop
                 }
             };
 
+            MenuItem openCommentsItem = new MenuItem { Header = "💬 Open Comments" };
+            openCommentsItem.Tag = new Tuple<string, string>(modelId, modelName);
+            openCommentsItem.Click += async (s, e) =>
+            {
+                if (s is MenuItem menuItem && menuItem.Tag is Tuple<string, string> modelInfo)
+                {
+                    string selectedModelId = modelInfo.Item1;
+                    Console.WriteLine($"💬 Opening Comments for Model: {selectedModelId}");
+                    _selectedItemId = selectedModelId;
+                    _selectedItemName = modelInfo.Item2;
+
+                    LoadComments(selectedModelId);
+                }
+            };
+
             MenuItem downloadItem = new MenuItem { Header = "📥 Download" };
             downloadItem.Tag = new Tuple<string, string>(modelId, modelName);
             downloadItem.Click += (s, e) =>
@@ -1873,6 +1900,7 @@ namespace AssetManager.Desktop
 
             menu.Items.Add(openInFusionItem);
             menu.Items.Add(viewInAppItem);
+            menu.Items.Add(openCommentsItem);
             menu.Items.Add(downloadItem);
             menu.Items.Add(deleteItem);
 
@@ -4479,53 +4507,120 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 MessageBox.Show($"Error filtering: {exception.Message}");
             }
         }
-        
-        //initalise models sidebar
-        private async Task InitializeModelsInfoSidebar()
-        {
-            //display upvotes
-                int upvotes = await GetModelUpvoteCount(_selectedItemId);
-                        
-                await SetUserModelVote(_selectedItemId, _userId);
-                int vote = await GetUserModelVote(_selectedItemId, _userId);
-                if (vote == 1)
-                {
-                    UpArrow.Kind = PackIconKind.ArrowTopBold;
-                    UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#11d137"));
-                    DownArrow.Kind = PackIconKind.ArrowDownBoldOutline;
-                    DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
-                }
-                else if (vote == -1)
-                {
-                    DownArrow.Kind = PackIconKind.ArrowDownBold;
-                    DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d11111"));
-                    UpArrow.Kind = PackIconKind.ArrowTopBoldOutline;
-                    UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
-                }
-                else
-                {
-                    UpArrow.Kind = PackIconKind.ArrowTopBoldOutline;
-                    UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
-                    DownArrow.Kind = PackIconKind.ArrowDownBoldOutline;
-                    DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
-                }
 
-                string visibility = await GetModelVisibility();
-                if (visibility == "Public")
-                {
-                    Public.IsSelected = true;
-                }
-                else if (visibility == "Private")
-                {
-                    Private.IsSelected = true;
-                }
-                        
-                UpvoteTextBlock.Text = upvotes.ToString();
-                ClearComments();
-                ListAllComments();
-                await DisplayTags();
+        //initalise models sidebar
+        //private async Task InitializeModelsInfoSidebar()
+        //{
+        //    //display upvotes
+        //        int upvotes = await GetModelUpvoteCount(_selectedItemId);
+
+        //        await SetUserModelVote(_selectedItemId, _userId);
+        //        int vote = await GetUserModelVote(_selectedItemId, _userId);
+        //        if (vote == 1)
+        //        {
+        //            UpArrow.Kind = PackIconKind.ArrowTopBold;
+        //            UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#11d137"));
+        //            DownArrow.Kind = PackIconKind.ArrowDownBoldOutline;
+        //            DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+        //        }
+        //        else if (vote == -1)
+        //        {
+        //            DownArrow.Kind = PackIconKind.ArrowDownBold;
+        //            DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d11111"));
+        //            UpArrow.Kind = PackIconKind.ArrowTopBoldOutline;
+        //            UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+        //        }
+        //        else
+        //        {
+        //            UpArrow.Kind = PackIconKind.ArrowTopBoldOutline;
+        //            UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+        //            DownArrow.Kind = PackIconKind.ArrowDownBoldOutline;
+        //            DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+        //        }
+
+        //        string visibility = await GetModelVisibility();
+        //        if (visibility == "Public")
+        //        {
+        //            Public.IsSelected = true;
+        //        }
+        //        else if (visibility == "Private")
+        //        {
+        //            Private.IsSelected = true;
+        //        }
+
+        //        UpvoteTextBlock.Text = upvotes.ToString();
+        //        ClearComments();
+        //        //ListAllComments();
+        //        await DisplayTags();
+        //}
+
+        private void LoadComments(string modelId)
+        {
+            ModelDataSidebar.Width = new GridLength(250);
+            ModelComments.Visibility = Visibility.Visible;
+            ModelInfo.Visibility = Visibility.Collapsed;
+
+            ClearComments();
+
+            ModelNameText.Text = _selectedModel.ContainsKey("Name") ? _selectedModel["Name"] : "Unknown Model";
+
+            if (ModelImage.Parent is Grid gridParent && gridParent.Parent is Border headerBackground)
+            {
+                headerBackground.HorizontalAlignment = HorizontalAlignment.Stretch;
+                headerBackground.VerticalAlignment = VerticalAlignment.Top;
+            }
+
+            ModelImage.Width = 120;
+            ModelImage.Height = 120;
+            ModelImage.HorizontalAlignment = HorizontalAlignment.Center;
+
+            _ = ShowThumbnail(_selectedModel["ProjectId"], _selectedModel["Id"], ModelImage);
+
+            ListAllComments(modelId);
         }
-        
+
+        private StackPanel CreateModelThumbnailUI(Dictionary<string, string> model)
+        {
+            // Create StackPanel
+            StackPanel modelThumbnailPanel = new StackPanel
+            {
+                Orientation = Orientation.Vertical,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Margin = new Thickness(0, 0, 0, 10)
+            };
+
+            // Create Image for Thumbnail
+            Image thumbnailImage = new Image
+            {
+                Width = 150,
+                Height = 150,
+                Stretch = Stretch.Uniform,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+
+            // Load thumbnail asynchronously
+            _ = ShowThumbnail(model["ProjectId"], model["Id"], thumbnailImage);
+
+            // Create TextBlock for Model Name
+            TextBlock modelNameText = new TextBlock
+            {
+                Text = model.ContainsKey("Name") ? model["Name"] : "Model Name",
+                FontSize = 18,
+                FontWeight = FontWeights.Bold,
+                TextAlignment = TextAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Margin = new Thickness(0, 5, 0, 0)
+            };
+
+            // Add elements to StackPanel
+            modelThumbnailPanel.Children.Add(thumbnailImage);
+            modelThumbnailPanel.Children.Add(modelNameText);
+
+            return modelThumbnailPanel;
+        }
+
+
         //Upvote system
         private async void UpArrow_Click(object sender, RoutedEventArgs e)
         {
@@ -4858,11 +4953,11 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             }
         }
         
-        private async void ListAllComments()
+        private async void ListAllComments(string modelId)
         {
             try
             {
-                List<Comment> comments = await GetAllComments(_selectedItemId);
+                List<Comment> comments = await GetAllComments(modelId);
                 List<CommentItem> commentItems = new List<CommentItem>();
 
                 foreach (Comment comment in comments)
@@ -4926,43 +5021,98 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 throw;
             }
         }
-        
-        private void SortByComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+
+        private void SortByButton_Click(object sender, RoutedEventArgs e)
         {
-            ComboBox comboBox = sender as ComboBox;
-            var selectedItem = comboBox.SelectedItem as ComboBoxItem;
-            string sortOption = selectedItem.Content.ToString();
-            ClearComments();
-            SortComments(sortOption, _selectedItemId);
+            Button button = sender as Button;
+            if (button != null)
+            {
+                ContextMenu menu = button.Resources["SortMenu"] as ContextMenu;
+                if (menu != null)
+                {
+                    menu.PlacementTarget = button;
+                    menu.IsOpen = true;
+                }
+            }
         }
-        
-        private async void SortComments(string i, string assetId)
+
+        private async void SortByNewest_Click(object sender, RoutedEventArgs e)
         {
+            SortByText.Text = "Newest";
+            await SortComments("Newest", _selectedItemId);
+        }
+
+        private async void SortByOldest_Click(object sender, RoutedEventArgs e)
+        {
+            SortByText.Text = "Oldest";
+            await SortComments("Oldest", _selectedItemId);
+        }
+
+        private async Task SortComments(string sortOption, string assetId)
+        {
+            // Ensure the comments list is cleared before updating
+            ClearComments();
+
             MongoConnection database = new MongoConnection();
             var newest = Builders<Comment>.Sort.Descending(x => x.CreatedDateTime);
             var oldest = Builders<Comment>.Sort.Ascending(x => x.CreatedDateTime);
 
-            switch (i)
+            List<Comment> sortedComments;
+
+            if (sortOption == "Newest")
             {
-                case "Newest":
-                    List<Comment> newestComments = await database.Comments.Find(x => x.AssetId == assetId).Sort(newest).ToListAsync();
-                    foreach (Comment comment in newestComments)
-                    {
-                        string name = await GetUserName(comment.UserId);
-                        ListComments.Items.Add(new CommentItem { User = name, Content = comment.Content, CreatedDateTime = comment.CreatedDateTime });
-                    }
-                    break;
-                case "Oldest":
-                    List<Comment> oldestComments = await database.Comments.Find(x => x.AssetId == assetId).Sort(oldest).ToListAsync();
-                    foreach (Comment comment in oldestComments)
-                    {
-                        string name = await GetUserName(comment.UserId);
-                        ListComments.Items.Add(new CommentItem { User = name, Content = comment.Content, CreatedDateTime = comment.CreatedDateTime });
-                    }
-                    break;
+                sortedComments = await database.Comments.Find(x => x.AssetId == assetId).Sort(newest).ToListAsync();
+            }
+            else // "Oldest"
+            {
+                sortedComments = await database.Comments.Find(x => x.AssetId == assetId).Sort(oldest).ToListAsync();
+            }
+
+            // Populate the comments list
+            foreach (Comment comment in sortedComments)
+            {
+                string name = await GetUserName(comment.UserId);
+                ListComments.Items.Add(new CommentItem { User = name, Content = comment.Content, CreatedDateTime = comment.CreatedDateTime });
             }
         }
-        
+
+
+        //private void SortByComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        //{
+        //    ComboBox comboBox = sender as ComboBox;
+        //    var selectedItem = comboBox.SelectedItem as ComboBoxItem;
+        //    string sortOption = selectedItem.Content.ToString();
+        //    ClearComments();
+        //    SortComments(sortOption, _selectedItemId);
+        //}
+
+        //private async void SortComments(string i, string assetId)
+        //{
+        //    MongoConnection database = new MongoConnection();
+        //    var newest = Builders<Comment>.Sort.Descending(x => x.CreatedDateTime);
+        //    var oldest = Builders<Comment>.Sort.Ascending(x => x.CreatedDateTime);
+
+        //    switch (i)
+        //    {
+        //        case "Newest":
+        //            List<Comment> newestComments = await database.Comments.Find(x => x.AssetId == assetId).Sort(newest).ToListAsync();
+        //            foreach (Comment comment in newestComments)
+        //            {
+        //                string name = await GetUserName(comment.UserId);
+        //                ListComments.Items.Add(new CommentItem { User = name, Content = comment.Content, CreatedDateTime = comment.CreatedDateTime });
+        //            }
+        //            break;
+        //        case "Oldest":
+        //            List<Comment> oldestComments = await database.Comments.Find(x => x.AssetId == assetId).Sort(oldest).ToListAsync();
+        //            foreach (Comment comment in oldestComments)
+        //            {
+        //                string name = await GetUserName(comment.UserId);
+        //                ListComments.Items.Add(new CommentItem { User = name, Content = comment.Content, CreatedDateTime = comment.CreatedDateTime });
+        //            }
+        //            break;
+        //    }
+        //}
+
         private class CommentItem
         {
             public string User { get; set; }

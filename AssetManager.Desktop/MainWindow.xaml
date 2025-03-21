@@ -268,10 +268,10 @@
             <!--<ColumnDefinition Width="5"/>-->
             <ColumnDefinition Width="*"/>
             <!--<ColumnDefinition Width="5"/>-->
-            <ColumnDefinition x:Name="ModelInfoSidebar" Width="0" MaxWidth="175"/>
+            <ColumnDefinition x:Name="ModelDataSidebar" Width="0"/>
         </Grid.ColumnDefinitions>
 
-        <Border Grid.Row="0" Grid.ColumnSpan="3" BorderBrush="#797979" BorderThickness="0,0,0,1">
+        <Border Grid.Row="0" Grid.ColumnSpan="4" BorderBrush="#797979" BorderThickness="0,0,0,1">
 
             <Grid>
 
@@ -320,8 +320,8 @@
                                     <md:PackIcon.ContextMenu>
                                         <ContextMenu Name="ChevronContextMenu" Placement="Bottom">
                                             <MenuItem Header="Logout" Click="BtnLogout_Click" Cursor="Hand"/>
-                                            <Separator/>
-                                            <MenuItem Header="Hubs" Cursor="Hand"/>
+                                            <!--<Separator/>
+                                            <MenuItem Header="Hubs" Cursor="Hand"/>-->
                                         </ContextMenu>
                                     </md:PackIcon.ContextMenu>
 
@@ -368,7 +368,7 @@
                 </Border>
 
                 <!-- Popup for Hubs Selection -->
-                <Popup x:Name="HubsMenuPopup" Height="Auto" Placement="Bottom" StaysOpen="False">
+                <Popup x:Name="HubsMenuPopup" Placement="Relative" PlacementTarget="{Binding ElementName=HubsHeaderTextBlock}" StaysOpen="False" VerticalOffset="5">
                     <Border Background="White" BorderBrush="Gray" BorderThickness="1" Padding="5">
                         <StackPanel x:Name="HubsMenuStackPanel"/>
                     </Border>
@@ -749,10 +749,6 @@
                                   ScrollViewer.VerticalScrollBarVisibility="Hidden"
                                   ScrollViewer.HorizontalScrollBarVisibility="Hidden"
                                   Visibility="Visible">
-
-
-
-
 
                             <DataGrid.Resources>
                                 <Style TargetType="DataGridColumnHeader">
@@ -1263,7 +1259,7 @@
         </Border>
             
         <!-- Model Info Sidebar -->
-        <Border Grid.Row="1" Grid.Column="3" BorderBrush="#797979" BorderThickness="1,0,0,0" Padding="5,0,5,0">
+        <Border x:Name="ModelInfo" Grid.Row="1" Grid.Column="3" BorderBrush="#797979" BorderThickness="1,0,0,0" Padding="5,0,5,0" Visibility="Collapsed">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/> <!-- Metadata -->
@@ -1284,15 +1280,15 @@
                     <ComboBoxItem x:Name="Private">Private</ComboBoxItem>
                 </ComboBox>
                 
-                <Border Grid.Row="3" MouseLeftButtonDown="UpArrow_Click" x:Name="UpArrowBorder" Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" Cursor="Hand" Margin="0,0,5,0">
-                    <md:PackIcon x:Name="UpArrow" Kind="ArrowUpBoldOutline" Height="30" Width="30" VerticalAlignment="Center" HorizontalAlignment="Center"/> <!-- Foreground="#11d137" -->
+                <!--<Border Grid.Row="3" MouseLeftButtonDown="UpArrow_Click" x:Name="UpArrowBorder" Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" Cursor="Hand" Margin="0,0,5,0">
+                    <md:PackIcon x:Name="UpArrow" Kind="ArrowUpBoldOutline" Height="30" Width="30" VerticalAlignment="Center" HorizontalAlignment="Center"/> --><!-- Foreground="#11d137" --><!--
                 </Border>
 
                 <TextBlock Grid.Row="3" x:Name="UpvoteTextBlock" Text="0" Height="30" Width="30" FontSize="20" FontFamily="Arial" Margin="50,10,0,0" TextAlignment="Center"/>
 
                 <Border Grid.Row="3" MouseLeftButtonDown="DownArrow_Click" x:Name="DownArrowBorder" Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" Cursor="Hand" Margin="100,0,5,0">
-                    <md:PackIcon x:Name="DownArrow" Kind="ArrowDownBoldOutline" Height="30" Width="30" VerticalAlignment="Center" HorizontalAlignment="Center"/> <!-- Foreground="Red" -->
-                </Border>
+                    <md:PackIcon x:Name="DownArrow" Kind="ArrowDownBoldOutline" Height="30" Width="30" VerticalAlignment="Center" HorizontalAlignment="Center"/> --><!-- Foreground="Red" --><!--
+                </Border>-->
                 
                 <Button x:Name="BtnListModel"  Content="List Model"  Width="75" Height="30" Click="BtnListModel_Click" Grid.Row="4" />
                 
@@ -1343,9 +1339,9 @@
                 </ListBox> -->
                 
                 <!-- Comments Header -->
-                <TextBlock Grid.Row="5" x:Name="CommentsAmount" Text="All Comments (0)"/>
+                <!--<TextBlock Grid.Row="5" x:Name="CommentsAmount" Text="All Comments (0)"/>
                 
-                <!-- Comments List -->
+                --><!-- Comments List --><!--
                 <ListBox x:Name="ListComments" Width="Auto" Height="Auto" 
                          Grid.Row="8" HorizontalAlignment="Center">
                     <ListBox.ItemTemplate>
@@ -1364,27 +1360,246 @@
                     </ListBox.ItemTemplate>
                 </ListBox>
 
-                <!-- Comment Input -->
+                --><!-- Comment Input --><!--
                 <TextBox x:Name="CommentContent" Text="Add a comment"
                          Width="75" Height="30" Grid.Row="6" HorizontalAlignment="Left"/>
 
-                <!-- Post Comment Button -->
+                --><!-- Post Comment Button --><!--
                 <Button x:Name="BtnAddComment"  
                         Content="Post Comment"  
                         Width="75" Height="30" 
                         Click="BtnAddComment_Click" 
                         Grid.Row="6" HorizontalAlignment="Right"/>
 
-                <!-- Sort By for Comments -->
+                --><!-- Sort By for Comments --><!--
+                <ComboBox Grid.Row="7" Name="SortByComboBox" SelectionChanged="SortByComboBox_SelectionChanged" Width="150" Height="30">
+                    <ComboBoxItem>Newest</ComboBoxItem>
+                    <ComboBoxItem>Oldest</ComboBoxItem>
+                </ComboBox>-->
+                
+            </Grid>
+        </Border>
+
+        <Border x:Name="ModelComments" Grid.Row="1" Grid.Column="3" BorderBrush="#797979" BorderThickness="1,0,0,0" Padding="10" Visibility="Collapsed">
+            <StackPanel Orientation="Vertical">
+
+                <!-- Model Thumbnail and Name -->
+                <StackPanel Orientation="Vertical" HorizontalAlignment="Stretch" Margin="2">
+
+                    <!-- Background Border Behind Image -->
+                    <Border Background="#E6E6E6" HorizontalAlignment="Stretch" Padding="10" CornerRadius="5">
+                        <Grid>
+                            <Image x:Name="ModelImage" Width="120" Height="120" Stretch="UniformToFill" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- Model Name -->
+                    <TextBlock x:Name="ModelNameText" Text="Model Name" Foreground="#4B4b4b" FontSize="18" FontWeight="Bold" TextAlignment="Center" HorizontalAlignment="Center" Margin="0,10,0,5"/>
+
+                </StackPanel>
+
+                <!-- Upvotes Section -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,10">
+                    
+                    <Border MouseLeftButtonDown="UpArrow_Click" x:Name="UpArrowBorder" Background="Transparent" Cursor="Hand">
+                        <md:PackIcon x:Name="UpArrow" Foreground="#4B4b4b" Kind="ArrowUpBoldOutline" Height="25" Width="25"/>
+                    </Border>
+
+                    <TextBlock x:Name="UpvoteTextBlock" Text="0" Foreground="#4B4b4b" FontSize="16" FontWeight="Bold" Margin="10,0,10,0" VerticalAlignment="Center"/>
+                    
+                    <Border MouseLeftButtonDown="DownArrow_Click" x:Name="DownArrowBorder" Background="Transparent" Cursor="Hand">
+                        <md:PackIcon x:Name="DownArrow" Foreground="#4B4b4b" Kind="ArrowDownBoldOutline" Height="25" Width="25"/>
+                    </Border>
+                    
+                </StackPanel>
+
+                <!-- Comments Header -->
+                <TextBlock Text="All Comments (0)" x:Name="CommentsAmount" Foreground="#4B4b4b" FontSize="16" FontWeight="Bold" Margin="0,0,0,10"/>
+
+                <!-- Add Comment Section -->
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,10" Width="Auto">
+
+                    <!-- User Profile Image -->
+                    <Ellipse Width="30" Height="30" Fill="Gray" Margin="0,0,10,0"/>
+
+                    <!-- Comment Input Field with Send Icon -->
+                    <Grid Width="Auto">
+                        <Border Background="White" Padding="2" BorderThickness="1" BorderBrush="#4B4b4b" Width="185" Height="28" VerticalAlignment="Center" HorizontalAlignment="Center">
+                            <!-- Set a fixed height -->
+                            <Grid>
+                                <!-- Text Input -->
+                                <TextBox x:Name="CommentContent" Text="Add a comment..." BorderThickness="0" VerticalContentAlignment="Center" VerticalAlignment="Center" Background="Transparent" Padding="5,0,35,0" Height="24"/>
+                                <!-- Reduced height -->
+
+                                <!-- Send Button (PackIcon inside input field) -->
+                                <Button x:Name="BtnAddComment" Click="BtnAddComment_Click" Width="24" Height="24" Background="Transparent" BorderThickness="0" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                    <md:PackIcon Kind="Send" Width="18" Height="18" Foreground="#4B4B4B"/>
+                                </Button>
+                            </Grid>
+                        </Border>
+                    </Grid>
+
+                </StackPanel>
+
+                <Border HorizontalAlignment="Stretch" VerticalAlignment="Center" BorderBrush="#4B4B4B" BorderThickness="0,1,0,0" Margin="3,5,3,10"/>
+
+                <!-- Sort Comments -->
+                <!--<ComboBox x:Name="SortByComboBox" SelectionChanged="SortByComboBox_SelectionChanged" Width="150" Height="30" Margin="0,0,0,10">
+                    <ComboBoxItem Content="Newest"/>
+                    <ComboBoxItem Content="Oldest"/>
+                </ComboBox>-->
+
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,10">
+
+                    <!-- "Sort By" Text -->
+                    <TextBlock Text="Sort By" FontSize="14" Foreground="Black" VerticalAlignment="Center"/>
+
+                    <!-- Sort Button with Dropdown -->
+                    <Button x:Name="SortByButton" FontSize="14" Foreground="Black" Background="Transparent" BorderThickness="0" Cursor="Hand" Padding="5,2,5,2" Click="SortByButton_Click" VerticalAlignment="Center">
+
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border Background="Transparent" BorderBrush="Transparent" Padding="5">
+                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                                <Setter Property="Background" Value="Transparent"/>
+                                <Setter Property="BorderBrush" Value="Transparent"/>
+                                <Setter Property="Foreground" Value="Black"/>
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="Transparent"/>
+                                        <Setter Property="BorderBrush" Value="Transparent"/>
+                                    </Trigger>
+                                    <Trigger Property="IsPressed" Value="True">
+                                        <Setter Property="Background" Value="Transparent"/>
+                                        <Setter Property="BorderBrush" Value="Transparent"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock x:Name="SortByText" Text="Newest" FontSize="14" VerticalAlignment="Center"/>
+                            <md:PackIcon Kind="ChevronDown" Width="16" Height="16" Foreground="#4B4B4B" Margin="2,-1,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+
+                        <!-- Attach ContextMenu Properly Inside Resources -->
+                        <Button.Resources>
+                            <ContextMenu x:Key="SortMenu">
+                                <MenuItem Header="Newest" Click="SortByNewest_Click"/>
+                                <MenuItem Header="Oldest" Click="SortByOldest_Click"/>
+                            </ContextMenu>
+                        </Button.Resources>
+                    </Button>
+
+                </StackPanel>
+
+                <!-- Comments List -->
+                <ScrollViewer VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Hidden" Background="Transparent" BorderThickness="0" Height="300" Width="225" HorizontalAlignment="Left">
+
+                    <ListBox x:Name="ListComments" Background="Transparent" BorderThickness="0" Padding="0" Margin="0" VerticalAlignment="Stretch" HorizontalAlignment="Left">
+                        
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+
+                                    <!-- User Avatar -->
+                                    <Ellipse Width="40" Height="40" Fill="Gray" Margin="0,0,10,0"/>
+
+                                    <!-- Comment Content -->
+                                    <StackPanel Orientation="Vertical">
+                                        <TextBlock Text="{Binding User}" FontWeight="Bold"/>
+                                        <TextBlock Text="{Binding Content}" TextWrapping="Wrap" Width="163"/>
+                                        <TextBlock Text="{Binding CreatedDateTime}" FontSize="10" Foreground="Gray"/>
+                                    </StackPanel>
+
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </ScrollViewer>
+                
+            </StackPanel>
+            
+        </Border>
+
+
+        <!--<Border Grid.Row="1" Grid.Column="3">
+            <Grid>
+                <Grid.RowDefinitions>
+                    --><!-- Upvotes --><!--
+                    <RowDefinition Height="Auto"/>
+                    --><!-- Comments Header --><!--
+                    <RowDefinition Height="Auto"/>
+                    --><!-- Post Comments --><!--
+                    <RowDefinition Height="Auto"/>
+                    --><!-- Sort Comments --><!--
+                    <RowDefinition Height="*"/>
+                    --><!-- Comments List --><!--
+                </Grid.RowDefinitions>
+
+                <TextBlock Text="Model Info"/>
+
+                <Border Grid.Row="3" MouseLeftButtonDown="UpArrow_Click" x:Name="UpArrowBorder" Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" Cursor="Hand" Margin="0,0,5,0">
+                    <md:PackIcon x:Name="UpArrow" Kind="ArrowUpBoldOutline" Height="30" Width="30" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                    --><!-- Foreground="#11d137" --><!--
+                </Border>
+
+                <TextBlock Grid.Row="3" x:Name="UpvoteTextBlock" Text="0" Height="30" Width="30" FontSize="20" FontFamily="Arial" Margin="50,10,0,0" TextAlignment="Center"/>
+
+                <Border Grid.Row="3" MouseLeftButtonDown="DownArrow_Click" x:Name="DownArrowBorder" Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" Cursor="Hand" Margin="100,0,5,0">
+                    <md:PackIcon x:Name="DownArrow" Kind="ArrowDownBoldOutline" Height="30" Width="30" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                    --><!-- Foreground="Red" --><!--
+                </Border>
+
+                --><!-- Comments Header --><!--
+                <TextBlock Grid.Row="5" x:Name="CommentsAmount" Text="All Comments (0)"/>
+
+                --><!-- Comments List --><!--
+                <ListBox x:Name="ListComments" Width="Auto" Height="Auto" 
+                 Grid.Row="8" HorizontalAlignment="Center">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="20" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="10" />
+                                </Grid.ColumnDefinitions>
+                                <Label Content="{Binding User}" />
+                                <Label Grid.Column="1" Content="{Binding Content}" />
+                                <Label Grid.Column="2" Content="{Binding CreatedDateTime}" />
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+
+                --><!-- Comment Input --><!--
+                <TextBox x:Name="CommentContent" Text="Add a comment"
+                 Width="75" Height="30" Grid.Row="6" HorizontalAlignment="Left"/>
+
+                --><!-- Post Comment Button --><!--
+                <Button x:Name="BtnAddComment"  
+                Content="Post Comment"  
+                Width="75" Height="30" 
+                Click="BtnAddComment_Click" 
+                Grid.Row="6" HorizontalAlignment="Right"/>
+
+                --><!-- Sort By for Comments --><!--
                 <ComboBox Grid.Row="7" Name="SortByComboBox" SelectionChanged="SortByComboBox_SelectionChanged" Width="150" Height="30">
                     <ComboBoxItem>Newest</ComboBoxItem>
                     <ComboBoxItem>Oldest</ComboBoxItem>
                 </ComboBox>
-								
-                
+
             </Grid>
-						
-        </Border>
+            
+        </Border>-->
 
     </Grid>
 
