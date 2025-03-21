@@ -7,6 +7,7 @@ using AssetManager.Infrastructure.Services;
 using System.Text;
 using Newtonsoft.Json;
 using ForgeViewerApp;
+using AssetManager.Infrastructure.Models;
 
 
 namespace AssetManager.Infrastructure.Services
@@ -832,6 +833,98 @@ namespace AssetManager.Infrastructure.Services
                 return null;
             }
         }
+
+        public async Task<ModelData> GetModelMetadataAsync(string projectId, string itemId)
+        {
+            try
+            {
+                string token = TokenManager.GetToken();
+                using (HttpClient client = new HttpClient())
+                {
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+                    // 🔹 STEP 1: Get item metadata
+                    string itemUrl = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/items/{itemId}";
+                    var itemResponse = await client.GetAsync(itemUrl);
+                    string itemJson = await itemResponse.Content.ReadAsStringAsync();
+                    dynamic itemData = JsonConvert.DeserializeObject<dynamic>(itemJson);
+                    dynamic attributes = itemData?.data?.attributes;
+
+                    string creatorId = attributes?.createUserId;
+                    string modifiedById = attributes?.lastModifiedUserId;
+                    string folderId = itemData?.data?.relationships?.parent?.data?.id;
+
+                    // 🔹 STEP 2: Get folder name
+                    string folderName = "N/A";
+                    if (!string.IsNullOrEmpty(folderId))
+                    {
+                        string folderUrl = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/folders/{folderId}";
+                        var folderResponse = await client.GetAsync(folderUrl);
+                        string folderJson = await folderResponse.Content.ReadAsStringAsync();
+                        dynamic folderData = JsonConvert.DeserializeObject<dynamic>(folderJson);
+                        folderName = folderData?.data?.attributes?.displayName ?? "Unknown Folder";
+                    }
+
+                    // 🔹 STEP: Get creator name safely
+                    string creatorName = "N/A";
+                    if (!string.IsNullOrEmpty(creatorId))
+                    {
+                        string userUrl = $"https://developer.api.autodesk.com/userprofile/v1/users/{creatorId}";
+                        var userResponse = await client.GetAsync(userUrl);
+
+                        if (!userResponse.IsSuccessStatusCode)
+                        {
+                            string errorText = await userResponse.Content.ReadAsStringAsync();
+                            Console.WriteLine($"❌ Failed to get user profile: {userResponse.StatusCode} - {errorText}");
+                        }
+                        else
+                        {
+                            string userJson = await userResponse.Content.ReadAsStringAsync();
+
+                            try
+                            {
+                                dynamic userData = JsonConvert.DeserializeObject<dynamic>(userJson);
+                                creatorName = userData?.displayName ?? "Unknown";
+                            }
+                            catch (JsonReaderException jrex)
+                            {
+                                Console.WriteLine("❌ JSON parse error (user profile): " + jrex.Message);
+                                Console.WriteLine("🔎 Raw content: " + userJson);
+                            }
+                        }
+                    }
+
+
+                    // 🔹 STEP 6: Build ModelData
+                    ModelData data = new ModelData
+                    {
+                        Id = itemId,
+                        Name = attributes?.displayName ?? "N/A",
+                        CreatedBy = creatorName,
+                        CreatedDate = attributes?.createTime ?? "N/A",
+                        ModifiedDate = attributes?.lastModifiedTime ?? "N/A",
+                        //ModifiedBy = modifiedById ?? "N/A",
+                        ModifiedBy = "N/A",
+                        FileSize = itemData?["included"]?[0]?["attributes"]?["storageSize"] ?? 0,
+                        Foldername = folderName,
+                        Version = attributes?.versionNumber != null ? attributes.versionNumber.ToString() : "N/A",
+                        Format = attributes?.fileType ?? "N/A",
+                        PolyCount = attributes?.polyCount ?? 0,
+                        Dimensions = (attributes?.dimensions != null)
+                            ? $"{attributes.dimensions.height}cm (H) x {attributes.dimensions.width}cm (W)"
+                            : "N/A"
+                    };
+
+                    return data;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error fetching model metadata: {ex.Message}");
+                return null;
+            }
+        }
+
 
 
 

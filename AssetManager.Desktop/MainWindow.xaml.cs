@@ -36,6 +36,7 @@ using System.Web;
 using Microsoft.WindowsAPICodePack.Taskbar;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media.Media3D;
+using System.Runtime.Serialization;
 
 namespace AssetManager.Desktop
 {
@@ -1704,12 +1705,11 @@ namespace AssetManager.Desktop
                 // Also immediately fetch and set the storage ID for the selected item
                 await FetchAndSetStorageId();
 
-                await LoadModelData();
+                if (ModelsDataGrid.CurrentColumn.Header.ToString() != "Actions" && ModelsDataGrid.CurrentColumn.Header.ToString() != "Versions")
+                {
+                    await LoadModelData();
+                }
 
-                //if (ModelsDataGrid.CurrentColumn.Header.ToString() != "Actions")
-                //{
-                //    await LoadModelData();
-                //}
             }
             else if (ModelsDataGrid.SelectedItem != null)
             {
@@ -4435,7 +4435,6 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 ModelDataSidebar.Width = new GridLength(250);
             }
 
-
             //ModelThumbnail.Visibility = Visibility.Visible;
             ModelComments.Visibility = Visibility.Collapsed;
             ModelInfo.Visibility = Visibility.Visible;
@@ -4444,17 +4443,66 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
             if (visibility == "Public")
             {
-                Public.IsSelected = true;
+                PublicPrivateText.Text = "Public";
             }
             else if (visibility == "Private")
             {
-                Private.IsSelected = true;
+                PublicPrivateText.Text = "Private";
             }
 
             DisplayModelThumb();
 
+            await LoadMetadata();
+
             await DisplayTags();
         }
+
+        private async Task LoadMetadata()
+        {
+            if (_selectedModel == null)
+            {
+                MessageBox.Show("❌ No model selected.");
+                return;
+            }
+
+            DataManagement dataManagement = new DataManagement();
+
+            // Get metadata from API
+            ModelData modelMetadata = await dataManagement.GetModelMetadataAsync(
+                _selectedModel["ProjectId"], _selectedModel["Id"]
+            );
+
+            if (modelMetadata != null)
+            {
+                // ✅ Update UI fields with the full metadata
+                //IdText.Text = modelMetadata.Id;
+                ModelNameText.Text = modelMetadata.Name;
+                //HubIdText.Text = modelMetadata.HubId;
+                //HubNameText.Text = modelMetadata.HubName;
+                CreatedByText.Text = modelMetadata.CreatedBy;
+                CreatedDateText.Text = modelMetadata.CreatedDate;
+                ModifiedDateText.Text = modelMetadata.ModifiedDate;
+                ModifiedByText.Text = modelMetadata.ModifiedBy;
+
+                // Convert bytes to MB with 2 decimal precision
+                FileSizeText.Text = $"{(modelMetadata.FileSize / 1_000_000.0):0.00} MB";
+
+                //PublicPrivateText.Text = modelMetadata.PublicPrivate;
+                FolderNameText.Text = modelMetadata.Foldername;
+                //FolderIdText.Text = modelMetadata.FolderId;
+                //VersionText.Text = modelMetadata.Version;
+                FormatText.Text = modelMetadata.Format;
+                PolyCountText.Text = modelMetadata.PolyCount.ToString();
+                DimensionsText.Text = modelMetadata.Dimensions;
+            }
+            else
+            {
+                MessageBox.Show("❌ Failed to load model metadata.");
+            }
+        }
+
+
+
 
         private async Task LoadComments()
         {
@@ -4677,30 +4725,112 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 return result.Vote;
             }
         }
-        
+
         //Model Visibility
-        private async void PublicPrivateComboBox_OnSelectionChangedComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void PublicPrivateButton_Click(object sender, RoutedEventArgs e)
         {
-            ComboBox comboBox = sender as ComboBox;
-            var selectedItem = comboBox.SelectedItem as ComboBoxItem;
-            string option = selectedItem.Content.ToString();
-            selectedItem.IsEnabled = true;
-            selectedItem.IsSelected = true;
-            
-            MongoConnection database = new MongoConnection();
-            var filter = Builders<ModelData>.Filter.Eq(x => x.Id, _selectedItemId);
-            var update = Builders<ModelData>.Update.Set(x => x.PublicPrivate, option);
-            await database.ModelData.FindOneAndUpdateAsync(filter, update);
-            //MessageBox.Show($"Model updated to {option}");
+            if (PublicPrivateButton.ContextMenu == null)
+            {
+                // ✅ Create ContextMenu dynamically if it's null
+                ContextMenu menu = new ContextMenu();
+                MenuItem publicItem = new MenuItem { Header = "Public" };
+                MenuItem privateItem = new MenuItem { Header = "Private" };
+
+                publicItem.Click += SetPublic_Click;
+                privateItem.Click += SetPrivate_Click;
+
+                menu.Items.Add(publicItem);
+                menu.Items.Add(privateItem);
+
+                // ✅ Assign the ContextMenu to the button
+                PublicPrivateButton.ContextMenu = menu;
+            }
+
+            // ✅ Set PlacementTarget and Open Menu
+            PublicPrivateButton.ContextMenu.PlacementTarget = PublicPrivateButton;
+            PublicPrivateButton.ContextMenu.IsOpen = true;
         }
-        
+
+        private async void SetPublic_Click(object sender, RoutedEventArgs e)
+        {
+            await UpdateModelVisibility("Public");
+        }
+
+        private async void SetPrivate_Click(object sender, RoutedEventArgs e)
+        {
+            await UpdateModelVisibility("Private");
+        }
+
+        private async Task UpdateModelVisibility(string visibility)
+        {
+            try
+            {
+                MongoConnection database = new MongoConnection();
+                var filter = Builders<ModelData>.Filter.Eq(x => x.Id, _selectedItemId);
+                var update = Builders<ModelData>.Update.Set(x => x.PublicPrivate, visibility);
+
+                var result = await database.ModelData.FindOneAndUpdateAsync(filter, update);
+
+                if (result != null)
+                {
+                    PublicPrivateText.Text = visibility; // Update UI
+                                                         // MessageBox.Show($"✅ Model visibility updated to {visibility}");
+                }
+                else
+                {
+                    MessageBox.Show("❌ Failed to update model visibility.");
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"❌ Error updating model visibility: {ex.Message}");
+            }
+        }
+
         private async Task<string> GetModelVisibility()
         {
-            MongoConnection database = new MongoConnection();
-            var result = await database.ModelData.Find(x => x.Id == _selectedItemId).FirstOrDefaultAsync();
-            return result.PublicPrivate;
+            try
+            {
+                MongoConnection database = new MongoConnection();
+                var result = await database.ModelData.Find(x => x.Id == _selectedItemId).FirstOrDefaultAsync();
+
+                if (result != null)
+                {
+                    PublicPrivateText.Text = result.PublicPrivate; // Ensure UI is updated
+                    return result.PublicPrivate;
+                }
+                return "Private"; // Default fallback
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"❌ Error retrieving model visibility: {ex.Message}");
+                return "Private"; // Default value on failure
+            }
         }
-        
+
+        //private async void PublicPrivateComboBox_OnSelectionChangedComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        //{
+        //    ComboBox comboBox = sender as ComboBox;
+        //    var selectedItem = comboBox.SelectedItem as ComboBoxItem;
+        //    string option = selectedItem.Content.ToString();
+        //    selectedItem.IsEnabled = true;
+        //    selectedItem.IsSelected = true;
+
+        //    MongoConnection database = new MongoConnection();
+        //    var filter = Builders<ModelData>.Filter.Eq(x => x.Id, _selectedItemId);
+        //    var update = Builders<ModelData>.Update.Set(x => x.PublicPrivate, option);
+        //    await database.ModelData.FindOneAndUpdateAsync(filter, update);
+        //    //MessageBox.Show($"Model updated to {option}");
+        //}
+
+        //private async Task<string> GetModelVisibility()
+        //{
+        //    MongoConnection database = new MongoConnection();
+        //    var result = await database.ModelData.Find(x => x.Id == _selectedItemId).FirstOrDefaultAsync();
+        //    return result.PublicPrivate;
+        //}
+
+
         //Tags
         private async void AddTags_Click(object sender, MouseButtonEventArgs e)
         {
@@ -4827,11 +4957,11 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 Button tag = new Button
                 {
                     Content = Tag,
-                    Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F25505")),
+                    Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#540754")),
                     Height = 25,
                     Width = 50,
                     Foreground = new SolidColorBrush(Colors.White),
-                    BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F25505")),
+                    BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#98730C")),
                     BorderThickness = new Thickness(2)
                 };
 
@@ -4841,6 +4971,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     BorderBrush = tag.BorderBrush,
                     BorderThickness = tag.BorderThickness,
                     CornerRadius = new CornerRadius(2),
+                    Margin = new Thickness(8, 0, 0, 0),
                     Child = tag,
                 };
                 
@@ -5476,7 +5607,8 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         {
             SortChevron.Kind = PackIconKind.ChevronDown;
         }
-        
+
+
         //COMMENTED OUT FUNCTIONS//
 
         /* private void BtnGenerate3D_Click(object sender, RoutedEventArgs e)
@@ -5674,7 +5806,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
 */
 
-        
+
     }
 
 }
