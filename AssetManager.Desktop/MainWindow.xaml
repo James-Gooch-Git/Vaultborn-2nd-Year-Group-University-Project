@@ -6,12 +6,17 @@
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         xmlns:md="clr-namespace:MaterialDesignThemes.Wpf;assembly=MaterialDesignThemes.Wpf"
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+        
+        WindowState="Maximized"
+        
 
 
         xmlns:local="clr-namespace:AssetManager.Desktop"
         mc:Ignorable="d"
         FontFamily="Helvetica"
         Title="MainWindow" Height="720" Width="1280">
+    <!-- WindowStyle ="None" -->
+
 
 
     <Window.Resources>
@@ -24,7 +29,7 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
-        
+
         <Style x:Key="TextHoverStyle" TargetType="TextBlock">
             <Setter Property="Foreground" Value="#4B4B4B"/>
             <Style.Triggers>
@@ -33,7 +38,7 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
-        
+
         <Style TargetType="Thumb">
             <Setter Property="Width" Value="5"/>
             <Setter Property="Background" Value="Gray"/>
@@ -147,7 +152,7 @@
             <CheckBox Content="Intergalactic Federation"/>
             <CheckBox Content="Hive Mind"/>
         </ContextMenu>
-        
+
         <ContextMenu x:Key="AddTagsContextMenu" Width="200" Height="400">
             <Button x:Name="BtnAddTags" Content="Update Tags" Click="BtnAddTags_Click"/>
             <CheckBox Content="D and D"/>
@@ -263,6 +268,7 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
+
         <Grid.ColumnDefinitions>
             <ColumnDefinition x:Name="ResizeSidebar" MinWidth="200" Width="Auto"/>
             <!--<ColumnDefinition Width="5"/>-->
@@ -270,6 +276,8 @@
             <!--<ColumnDefinition Width="5"/>-->
             <ColumnDefinition x:Name="ModelInfoSidebar" Width="0" MaxWidth="175"/>
         </Grid.ColumnDefinitions>
+       
+
 
         <Border Grid.Row="0" Grid.ColumnSpan="3" BorderBrush="#797979" BorderThickness="0,0,0,1">
 
@@ -479,7 +487,7 @@
                         </StackPanel>
 
                     </Button>
-                    
+
                     <!-- <Border MouseLeftButtonDown="UpArrow_Click" x:Name="UpArrowBorder" Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" Cursor="Hand" Margin="0,0,5,0" Visibility="Hidden">
                         <md:PackIcon x:Name="UpArrow" Kind="ArrowUpBoldOutline" Height="30" Width="30" VerticalAlignment="Center" HorizontalAlignment="Center"/> 
                     </Border>
@@ -494,7 +502,7 @@
                         <ComboBoxItem x:Name="Public">Public</ComboBoxItem>
                         <ComboBoxItem x:Name="Private">Private</ComboBoxItem>
                     </ComboBox> -->
-                    
+
                     <!--
                     <Button HorizontalAlignment="Left" BorderThickness="0" x:Name="BtnDeleteModel" Width="100" Height="40" Click="BtnDeleteModel_Click" Cursor="Hand" Margin="180,0,0,0">
                         <Button.Style>
@@ -705,7 +713,33 @@
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="60"/>
                     </Grid.RowDefinitions>
+                    <Grid Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
 
+                        <!-- Progress Bar -->
+                        <local:FantasyLoadingBar x:Name="LoadingProgressBar" Grid.Row="0" Height="50" Visibility="Collapsed" Progress="0" VerticalAlignment="Center" Margin="20,5" />
+
+                        <!-- Status Text - with gold color but original positioning -->
+                        <TextBlock x:Name="LoadingStatusText" 
+               Grid.Row="1"
+               Visibility="Collapsed" 
+               FontSize="14" 
+               HorizontalAlignment="Center" 
+               VerticalAlignment="Top"
+               TextAlignment="Center"
+               Margin="0,5,0,0">
+                            <TextBlock.Foreground>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                    <GradientStop Color="#FFDF00" Offset="0.0"/>
+                                    <GradientStop Color="#DAA520" Offset="0.5"/>
+                                    <GradientStop Color="#B8860B" Offset="1.0"/>
+                                </LinearGradientBrush>
+                            </TextBlock.Foreground>
+                        </TextBlock>
+                    </Grid>
                     <Grid>
 
                         <Grid x:Name="Grid_View" Visibility="Collapsed">
@@ -860,9 +894,9 @@
                                         </Style>
                                     </DataGridTextColumn.CellStyle>
                                 </DataGridTextColumn>
-                                
+
                                 <DataGridTextColumn Header="Id" Binding="{Binding [Id]}" Width="*" Visibility="Collapsed"/>
-                                
+
                                 <!--
                                 <DataGridTemplateColumn Width="70">
                                     <DataGridTemplateColumn.HeaderStyle>
@@ -901,7 +935,7 @@
             </Grid>
 
         </Border>
-        
+
         <Border Grid.Row="1" Grid.Column="3" BorderBrush="#797979" BorderThickness="1,0,0,0" Padding="5,0,5,0">
             <Grid>
                 <Grid.RowDefinitions>
@@ -919,29 +953,32 @@
                     <!-- Post Comments -->
                     <RowDefinition Height="Auto"/>
                     <!-- Sort Comments -->
-                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="229*"/>
+                    <RowDefinition Height="65*"/>
                     <!-- Comments List -->
                 </Grid.RowDefinitions>
-                
+
                 <TextBlock Text="Model Info"/>
-                
-                <ComboBox Grid.Row="2" x:Name="PublicPrivateComboBox" SelectionChanged="PublicPrivateComboBox_OnSelectionChangedComboBox_SelectionChanged" Width="100" Height="30" Margin="0,0,0,0">
+
+                <ComboBox Grid.Row="1" x:Name="PublicPrivateComboBox" SelectionChanged="PublicPrivateComboBox_OnSelectionChangedComboBox_SelectionChanged" Margin="0,16,-100,0" Grid.RowSpan="2">
                     <ComboBoxItem x:Name="Public">Public</ComboBoxItem>
                     <ComboBoxItem x:Name="Private">Private</ComboBoxItem>
                 </ComboBox>
-                
-                <Border Grid.Row="3" MouseLeftButtonDown="UpArrow_Click" x:Name="UpArrowBorder" Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" Cursor="Hand" Margin="0,0,5,0">
-                    <md:PackIcon x:Name="UpArrow" Kind="ArrowUpBoldOutline" Height="30" Width="30" VerticalAlignment="Center" HorizontalAlignment="Center"/> <!-- Foreground="#11d137" -->
+
+                <Border Grid.Row="3" MouseLeftButtonDown="UpArrow_Click" x:Name="UpArrowBorder" Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" Cursor="Hand" Height="30" Width="2">
+                    <md:PackIcon x:Name="UpArrow" Kind="ArrowUpBoldOutline" Height="30" Width="30" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                    <!-- Foreground="#11d137" -->
                 </Border>
 
-                <TextBlock Grid.Row="3" x:Name="UpvoteTextBlock" Text="0" Height="30" Width="30" FontSize="20" FontFamily="Arial" Margin="50,10,0,0" TextAlignment="Center"/>
+                <TextBlock Grid.Row="3" x:Name="UpvoteTextBlock" Text="0" FontSize="20" FontFamily="Arial" Margin="50,18,-80,7" TextAlignment="Center"/>
 
-                <Border Grid.Row="3" MouseLeftButtonDown="DownArrow_Click" x:Name="DownArrowBorder" Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" Cursor="Hand" Margin="100,0,5,0">
-                    <md:PackIcon x:Name="DownArrow" Kind="ArrowDownBoldOutline" Height="30" Width="30" VerticalAlignment="Center" HorizontalAlignment="Center"/> <!-- Foreground="Red" -->
+                <Border Grid.Row="3" MouseLeftButtonDown="DownArrow_Click" x:Name="DownArrowBorder" Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" HorizontalAlignment="Left" MouseEnter="Border_Enter" MouseLeave="Border_Leave" Cursor="Hand" Margin="48,0,0,0" Height="30" Width="0">
+                    <md:PackIcon x:Name="DownArrow" Kind="ArrowDownBoldOutline" Height="30" Width="30" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                    <!-- Foreground="Red" -->
                 </Border>
-                
+
                 <!-- Tags Check Box -->
-                <ListBox Grid.Row="6" Name="TagsListBox" Width="200" Height="200" Visibility="Hidden" HorizontalAlignment="Left">
+                <ListBox Grid.Row="6" Name="TagsListBox" Width="200" Visibility="Hidden" HorizontalAlignment="Left" Margin="0,4,0,4">
                     <CheckBox Content="D and D"/>
                     <CheckBox Content="Pathfinder"/>
                     <CheckBox Content="Warhammer 40K"/>
@@ -1046,7 +1083,7 @@
                     <CheckBox Content="Intergalactic Federation"/>
                     <CheckBox Content="Hive Mind"/>
                 </ListBox>
-                
+
                 <!-- Add tags button -->
                 <!-- <Button x:Name="BtnAddTags"  
                         Content="Update Selected Tags"
@@ -1054,9 +1091,9 @@
                         Click="BtnAddTags_Click" 
                         Grid.Row="6" HorizontalAlignment="Center" Margin="10"
                         Visibility="Hidden"/> -->
-                
+
                 <!-- Display Tags -->
-                <WrapPanel Grid.Row="1" x:Name="TagsWrapPanel">
+                <WrapPanel x:Name="TagsWrapPanel" Margin="0,14,0,0" Grid.RowSpan="2">
                     <TextBlock x:Name="NoTagsText" Text="No Tags Currently selected"/>
                     <Border Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" 
                             HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" 
@@ -1072,13 +1109,13 @@
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox> -->
-                
+
                 <!-- Comments Header -->
-                <TextBlock Grid.Row="4" x:Name="CommentsAmount" Text="All Comments (0)"/>
-                
+                <TextBlock Grid.Row="3" x:Name="CommentsAmount" Text="All Comments (0)" Margin="0,40,0,8" Grid.RowSpan="2"/>
+
                 <!-- Comments List -->
-                <ListBox x:Name="ListComments" Width="Auto" Height="Auto" 
-                         Grid.Row="7" HorizontalAlignment="Center">
+                <ListBox x:Name="ListComments" Width="0" Height="Auto" 
+                         Grid.Row="7" HorizontalAlignment="Center" Grid.RowSpan="2">
                     <ListBox.ItemTemplate>
                         <DataTemplate>
                             <Grid>
@@ -1097,21 +1134,21 @@
 
                 <!-- Comment Input -->
                 <TextBox x:Name="CommentContent" Text="Add a comment"
-                         Width="75" Height="30" Grid.Row="5" HorizontalAlignment="Left"/>
+                         Width="75" Grid.Row="5" HorizontalAlignment="Left" Margin="0,0,0,200" Grid.RowSpan="2"/>
 
                 <!-- Post Comment Button -->
                 <Button x:Name="BtnAddComment"  
                         Content="Post Comment"  
-                        Width="75" Height="30" 
+                        Width="75" 
                         Click="BtnAddComment_Click" 
-                        Grid.Row="5" HorizontalAlignment="Right"/>
+                        Grid.Row="5" HorizontalAlignment="Left" Margin="-75,0,0,200" Grid.RowSpan="2"/>
 
                 <!-- Sort By for Comments -->
-                <ComboBox Grid.Row="6" Name="SortByComboBox" SelectionChanged="SortByComboBox_SelectionChanged" Width="150" Height="30">
+                <ComboBox Grid.Row="6" Name="SortByComboBox" SelectionChanged="SortByComboBox_SelectionChanged" Margin="0,89,-150,89">
                     <ComboBoxItem>Newest</ComboBoxItem>
                     <ComboBoxItem>Oldest</ComboBoxItem>
                 </ComboBox>
-                
+
             </Grid>
         </Border>
 
