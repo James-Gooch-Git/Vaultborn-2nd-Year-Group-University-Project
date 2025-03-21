@@ -3807,6 +3807,8 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         {
             var versions = await DataManagement.GetItemVersions(_selectedProjectId, _selectedItemId);
 
+            Console.WriteLine($"Number of versions: {versions.Count}");
+
             versionsMarkerData.Clear(); // Clear previous markers
             MarkerContainer.Children.Clear(); // Remove previous marker children
 
@@ -3814,53 +3816,81 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
             List<double> tickValues = new List<double>();
 
-            // Loop to create the markers, starting from the rightmost (latest version)
-            for (int i = 0; i < count; i++)
+            // Handle the case when there's only one version
+            if (versions.Count == 1)
             {
-                // Calculate marker position in reverse order (start from the rightmost side)
-                double markerValue = (1 - (i / (double)(count - 1))) * 100;  // Invert position for right to left
+                double markerValue = 50; // Center the marker when there's only one version
                 tickValues.Add(markerValue);
 
-                // Access the versions list, starting from the most recent (rightmost marker gets the latest version)
-                var version = versions[i];  // Access the versions in order (latest version first)
-
-                // Round the marker value to the nearest integer before storing it in the dictionary
+                var version = versions[0]; // The only version available
                 versionsMarkerData[(int)Math.Round(markerValue)] = (version.VersionNumber, version.VersionID);
 
-                // Create the marker as a Border
                 Border marker = new Border
                 {
-                    Width = 16, // Adjust width slightly for better fit
-                    Height = 16, // Adjust height slightly for better fit
+                    Width = 16,
+                    Height = 16,
                     Background = new SolidColorBrush(Colors.LightGray),
                     CornerRadius = new CornerRadius(3),
                     Child = new TextBlock
                     {
-                        Text = ((char)('A' + i)).ToString(), // Marker label
+                        Text = "A", // Single marker label
                         HorizontalAlignment = HorizontalAlignment.Center,
                         VerticalAlignment = VerticalAlignment.Center
                     }
                 };
 
-                // Calculate the X position of the marker based on the slider width
                 double sliderWidth = MarkerContainer.Width;
                 double markerX = (markerValue / 100.0) * sliderWidth - (marker.Width / 2); // Center the marker
 
-                // Adjust markers based on their relative position to the center of the slider
-                if (markerX < (sliderWidth / 2)) // Markers on the left side of the slider
-                {
-                    markerX += 4; // Move right by 4px
-                }
-                else // Markers on the right side of the slider
-                {
-                    markerX -= 4; // Move left by 4px
-                }
-
-                // Set marker's position on the Canvas
                 Canvas.SetLeft(marker, markerX);
-                Canvas.SetTop(marker, (MarkerContainer.Height / 2) - (marker.Height / 2)); // Center vertically
+                Canvas.SetTop(marker, (MarkerContainer.Height / 2) - (marker.Height / 2));
 
                 MarkerContainer.Children.Add(marker); // Add marker to Canvas
+            }
+            else
+            {
+                // Loop to create the markers, starting from the rightmost (latest version)
+                for (int i = 0; i < count; i++)
+                {
+                    // Calculate marker position in reverse order (start from the rightmost side)
+                    double markerValue = (1 - (i / (double)(count - 1))) * 100;  // Invert position for right to left
+                    tickValues.Add(markerValue);
+
+                    var version = versions[i];  // Access the versions in order (latest version first)
+
+                    versionsMarkerData[(int)Math.Round(markerValue)] = (version.VersionNumber, version.VersionID);
+
+                    Border marker = new Border
+                    {
+                        Width = 16,
+                        Height = 16,
+                        Background = new SolidColorBrush(Colors.LightGray),
+                        CornerRadius = new CornerRadius(3),
+                        Child = new TextBlock
+                        {
+                            Text = ((char)('A' + i)).ToString(),
+                            HorizontalAlignment = HorizontalAlignment.Center,
+                            VerticalAlignment = VerticalAlignment.Center
+                        }
+                    };
+
+                    double sliderWidth = MarkerContainer.Width;
+                    double markerX = (markerValue / 100.0) * sliderWidth - (marker.Width / 2);
+
+                    if (markerX < (sliderWidth / 2))
+                    {
+                        markerX += 4;
+                    }
+                    else
+                    {
+                        markerX -= 4;
+                    }
+
+                    Canvas.SetLeft(marker, markerX);
+                    Canvas.SetTop(marker, (MarkerContainer.Height / 2) - (marker.Height / 2));
+
+                    MarkerContainer.Children.Add(marker); // Add marker to Canvas
+                }
             }
 
             // Set slider ticks dynamically
@@ -3871,7 +3901,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             slider.ValueChanged -= Slider_ValueChanged;
             slider.ValueChanged += Slider_ValueChanged;
 
-            // Initially hide the slider value text (so it doesn't show the default value)
+            // Initially hide the slider value text
             sliderValue.Visibility = Visibility.Hidden;
 
             // Show the latest version number after markers are generated
@@ -3881,6 +3911,8 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 sliderValue.Text = $"Version: {latestVersion.VersionNumber}";
                 sliderValue.Visibility = Visibility.Visible; // Make sure version number text is visible
             }
+
+            Console.WriteLine("Markers generated.");
         }
 
 
