@@ -4,6 +4,6 @@
              xmlns:local="clr-namespace:AssetManager.Desktop"
              StartupUri="LoginWindow.xaml">
     <Application.Resources>
-         
+        <ResourceDictionary Source="/AssetManager.Desktop;component/Resources/FantasyCardTemplates.xaml"/>
     </Application.Resources>
 </Application>

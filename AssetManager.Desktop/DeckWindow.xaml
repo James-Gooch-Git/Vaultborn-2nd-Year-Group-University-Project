@@ -4,6 +4,7 @@
         Title="Arcane Deck Viewer" Height="600" Width="900">
     
     <Window.Resources>
+        
         <!-- Fantasy-themed styles -->
         <LinearGradientBrush x:Key="BackgroundBrush" StartPoint="0,0" EndPoint="0,1">
             <GradientStop Color="#1E0A30" Offset="0"/>
@@ -68,31 +69,60 @@
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="Margin" Value="5,2"/>
         </Style>
+        
+
     </Window.Resources>
     
     <Grid Background="{StaticResource BackgroundBrush}">
         <!-- Main UI Layout -->
         <Grid.RowDefinitions>
             <RowDefinition Height="3*" /> <!-- Enlarged Card Display -->
-            <RowDefinition Height="1*" /> <!-- Card Selection Bar -->
+            <RowDefinition Height="1.2*" /> <!-- Card Selection Bar -->
         </Grid.RowDefinitions>
-        
-        <!-- Background Image -->
-        <!-- <Image Source="pack://application:,,,/Resources/fantasy-parchment-background.jpg"  -->
-        <!--        Stretch="Fill"  -->
-        <!--        Opacity="0.1"/> -->
 
         <!-- Selected Card Display -->
-        <Grid Grid.Row="0" Margin="20">
+        <Grid Grid.Row="0" Margin="30">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="2*" /> <!-- Card Image -->
+                <ColumnDefinition Width="3*" /> <!-- Card Image -->
                 <ColumnDefinition Width="3*" /> <!-- Description -->
             </Grid.ColumnDefinitions>
+            
+            <!-- Button Panel Above Enlarged Image -->
+            <StackPanel Orientation="Horizontal"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Top"
+                        Margin="20,0,0,0"
+                        Panel.ZIndex="5">
+            
+                <!-- View in 3D Button -->
+                <Border Background="#333333" 
+                        Width="36" Height="36" 
+                        CornerRadius="10" 
+                        Margin="0,0,10,0">
+                    <Button Background="Transparent"
+                            ToolTip="View in 3D"
+                            BorderThickness="0"
+                            Click="View3DButton_Click">
+                            <Path Data="M10,5 L20,10 L10,15 Z" Fill="#FFD700"/> <!-- Example 3D Icon -->
+                    </Button>
+                </Border>
 
+                <!-- Expand Fullscreen Button -->
+                <Border Background="#333333" 
+                        Width="36" Height="36" 
+                        CornerRadius="10">
+                    <Button Background="Transparent"
+                            ToolTip="View Fullscreen"
+                            BorderThickness="0">
+                        <Path Data="M5,5 L5,15 L15,15 L15,5 Z" Fill="#FFD700"/> <!-- Example Expand Icon -->
+                    </Button>
+                </Border>
+            </StackPanel>
+            
             <!-- Enlarged Selected Card -->
             <Grid Grid.Column="0">
                 <!-- Magic Circle Behind Card -->
-                <Ellipse Width="280" Height="280" 
+                <Ellipse Width="340" Height="300" 
                          HorizontalAlignment="Center" 
                          VerticalAlignment="Center"
                          Panel.ZIndex="0">
@@ -137,32 +167,21 @@
                 </Canvas>
                 
                 <!-- Card Image -->
-                <Image x:Name="SelectedCardImage"
-                       Width="230" Height="330"
-                       Stretch="Uniform"
-                       HorizontalAlignment="Center"
-                       VerticalAlignment="Center"
-                       Panel.ZIndex="2"/>
-
-                <!-- Ornate Frame -->
-                <!-- <Border Width="250" Height="350" -->
-                <!--         BorderThickness="12" -->
-                <!--         HorizontalAlignment="Center" -->
-                <!--         VerticalAlignment="Center" -->
-                <!--         Panel.ZIndex="3"> -->
-                <!--     <Border.BorderBrush> -->
-                <!--         <ImageBrush ImageSource="pack://application:,,,/Resources/ornate-gold-frame_1156559-2825.jpg"  -->
-                <!--                     Stretch="Fill"  -->
-                <!--                     TileMode="None"/> -->
-                <!--     </Border.BorderBrush> -->
-                <!--     <Border.Effect> -->
-                <!--         <DropShadowEffect Color="#FFD700" ShadowDepth="0" BlurRadius="15" Opacity="0.7"/> -->
-                <!--     </Border.Effect> -->
-                <!-- </Border> -->
+        <!-- Enlarged Fantasy Card -->
+        <ContentControl Style="{StaticResource FantasyCardStyle}"
+                        Width="500" Height="520"
+                        Tag="{Binding SelectedCardName}"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Panel.ZIndex="2">
+            <Image x:Name = "SelectedCardImage"
+                   Stretch="UniformToFill"
+                   RenderOptions.BitmapScalingMode="HighQuality"/>
+        </ContentControl>
             </Grid>
 
             <!-- Card Details -->
-            <Border Grid.Column="1" Margin="20" Panel.ZIndex="2" 
+            <Border Grid.Column="1" Margin="40" Panel.ZIndex="2" 
                     Background="#1A000000" 
                     BorderBrush="#FFD700" 
                     BorderThickness="1" 
@@ -206,9 +225,7 @@
                             CornerRadius="5" 
                             Padding="10">
                         <StackPanel x:Name="SelectedCardStatsPanel">
-                            <!-- <StackPanel.Resources> -->
-                            <!--     <Style TargetType="TextBlock" BasedOn="{StaticResource StatsTextStyle}"/> -->
-                            <!-- </StackPanel.Resources> -->
+                            <!-- Stats will be added dynamically here -->
                         </StackPanel>
                     </Border>
                     
@@ -224,18 +241,41 @@
         </Grid>
 
         <!-- Deck of Cards (Bottom Row) -->
-        <Border Grid.Row="1" 
-                Background="#26000000" 
-                BorderBrush="#FFD700" 
+        <Border Grid.Row="1"
+                Background="#26000000"
+                BorderBrush="#1E0A30"
                 BorderThickness="1,1,1,0">
-            <ScrollViewer HorizontalScrollBarVisibility="Auto">
+            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Height="250">
                 <StackPanel x:Name="CardListPanel"
                             Orientation="Horizontal"
                             HorizontalAlignment="Center"
+                            VerticalAlignment="Bottom"
                             Margin="10">
                     <!-- Cards will be added dynamically here -->
                 </StackPanel>
             </ScrollViewer>
         </Border>
+        
+        
+        <ItemsControl x:Name="DeckRow">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center"/>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+        
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <ContentControl Style="{StaticResource FantasyCardStyle}"
+                                    Tag="{Binding Name}"
+                                    Cursor="Hand">
+                        <Image Source="{Binding ImageSource}"
+                               Stretch="UniformToFill"
+                               RenderOptions.BitmapScalingMode="HighQuality"/>
+                    </ContentControl>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
     </Grid>
 </Window>

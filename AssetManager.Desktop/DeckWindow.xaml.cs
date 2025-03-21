@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using AssetManager.Infrastructure.Data;
 using AssetManager.Infrastructure.DOC;
@@ -14,6 +17,7 @@ namespace AssetManager.Desktop
     {
         private readonly IMongoCollection<BsonDocument> _cardsCollection;
         private readonly string _userId = "Z432FEYUJQNA3AA9"; // Simulating user authentication
+        private BsonDocument _selectedCard;
 
         public DeckView()
         {
@@ -30,14 +34,15 @@ namespace AssetManager.Desktop
         {
             try
             {
-                //ImageProcessor.CombineImages("fire_dragon.png", "ornate-gold-frame.png", "fire_dragon.png");
-
                 if (_cardsCollection == null)
                 {
                     MessageBox.Show("Database connection failed: _cardsCollection is null.", "Error",
                         MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
+
+                // Clear existing cards before adding new ones
+                CardListPanel.Children.Clear();
 
                 // Fetch all cards for the user's deck
                 var userDeckCards = _cardsCollection.Find(new BsonDocument { { "owner_id", _userId } }).ToList();
@@ -48,41 +53,57 @@ namespace AssetManager.Desktop
                     string cardImageUrl = card["snapshot_url"].ToString();
                     string cardDescription = card["description"].ToString();
 
-                    // Create a clickable card preview
+                    // Load the card image
+                    BitmapImage bitmap = new BitmapImage();
+                    bitmap.BeginInit();
+                    bitmap.UriSource = new Uri(cardImageUrl, UriKind.RelativeOrAbsolute);
+                    bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                    bitmap.EndInit();
+
+                    // Create an Image element
                     Image cardImage = new Image
                     {
-                        Width = 100,
-                        Height = 140,
-                        Margin = new Thickness(5),
-                        Stretch = System.Windows.Media.Stretch.Uniform,
-                        Cursor = System.Windows.Input.Cursors.Hand,
-                        Source = new BitmapImage(new Uri(cardImageUrl))
+                        Source = bitmap,
+                        Stretch = System.Windows.Media.Stretch.UniformToFill
                     };
 
-                    // On Click, update the selected card display
-                    cardImage.MouseDown += (s, e) =>
+                    // Apply high-quality bitmap scaling mode
+                    RenderOptions.SetBitmapScalingMode(cardImage, BitmapScalingMode.HighQuality);
+
+                    // Create the ContentControl to apply the FantasyCardStyle
+                    ContentControl cardControl = new ContentControl
+                    {
+                        Style = (Style)FindResource("FantasyCardStyle"),
+                        Tag = cardName,  // Used for binding the card name in the template
+                        Cursor = System.Windows.Input.Cursors.Hand,
+                        Content = cardImage // Set the image as content
+                    };
+
+                    // Handle card click event
+                    cardControl.MouseDown += (s, e) =>
                     {
                         var statsValue = card.GetValue("stats", new BsonDocument());
-
-                        // Ensure stats is a BsonDocument
                         BsonDocument stats = statsValue.IsBsonDocument ? statsValue.AsBsonDocument : new BsonDocument();
-
+                        //_selectedCardId = cardId; !!!!!!!!!!!!!!!!!!!!!!
                         DisplaySelectedCard(cardName, cardImageUrl, cardDescription, stats);
                     };
 
-                    // Add the card preview to the panel
-                    CardListPanel.Children.Add(cardImage);
+
+                    // Add the styled card to panel
+                    CardListPanel.Children.Add(cardControl);
+
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error loading deck cards: {ex.Message}");
             }
-
         }
 
         private void DisplaySelectedCard(string name, string imageUrl, string description, BsonDocument stats)
         {
+            _selectedCard = stats; // Store the selected card for later use
+
             // Set the card name in the nameplate
             SelectedCardName.Text = name;
 
@@ -95,6 +116,7 @@ namespace AssetManager.Desktop
 
             // Assign the card image to the UI
             SelectedCardImage.Source = cardImage;
+            RenderOptions.SetBitmapScalingMode(SelectedCardImage, BitmapScalingMode.HighQuality);
 
             // Update description
             SelectedCardDescription.Text = description;
@@ -112,8 +134,41 @@ namespace AssetManager.Desktop
                     Margin = new Thickness(0, 2, 0, 2)
                 };
                 statText.Style = (Style)FindResource("StatsTextStyle");
+                
                 SelectedCardStatsPanel.Children.Add(statText);
             }
+            
+            // + Add stats
+            SelectedCardStatsPanel.Children.Add(new TextBlock
+            {
+                Style = (Style)FindResource("StatsTextStyle"),
+                Text = $"+ Add Stats for {name}",
+                FontSize = 10,
+                Margin = new Thickness(0, 2, 0, 2)
+            });
+
+        }
+        
+        public class CardModel
+        {
+            public string Name { get; set; }
+            public ImageSource ImageSource { get; set; }
+            // Add other card properties as needed
+        }
+        
+        private void View3DButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_selectedCard  == null || !_selectedCard .Contains("model_urn"))
+            {
+                MessageBox.Show("3D model unavailable for this card.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            string modelUrn = _selectedCard ["model_urn"].ToString();
+
+            // Open the Forge Viewer Window with the model URN
+            ForgeViewerWindow viewerWindow = new ForgeViewerWindow(modelUrn);
+            viewerWindow.Show();
         }
     }
 }
