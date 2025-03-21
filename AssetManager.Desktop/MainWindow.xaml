@@ -710,7 +710,20 @@
                     </Grid.RowDefinitions>
 
                     <Grid>
+                        <Grid Grid.Row="0" Grid.ColumnSpan="3">
+                            <local:FantasyLoadingBar x:Name="LoadingProgressBar"
+                 Height="50"
+                 Visibility="Collapsed"
+                 Progress="0" />
 
+                            <TextBlock x:Name="LoadingStatusText"
+              Visibility="Collapsed"
+              Foreground="#6A0DAD"
+              FontSize="14"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Bottom"
+              Margin="0,55,0,0"/>
+                        </Grid>
                         <Grid x:Name="Grid_View" Visibility="Collapsed">
                             <ScrollViewer VerticalScrollBarVisibility="Auto">
                                 <WrapPanel x:Name="ModelsContainer" HorizontalAlignment="Center" VerticalAlignment="Top" />

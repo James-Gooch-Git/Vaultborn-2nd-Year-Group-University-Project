@@ -8,11 +8,16 @@
         <UseWPF>true</UseWPF>
         <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
         <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+        <ApplicationIcon>AppIcon.ico</ApplicationIcon>
     </PropertyGroup>
 
     <ItemGroup>
       <None Remove="orange-wallpaper.jpg" />
       <None Remove="symbol-1.png" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Include="AppIcon.ico" />
     </ItemGroup>
 
     <ItemGroup>
