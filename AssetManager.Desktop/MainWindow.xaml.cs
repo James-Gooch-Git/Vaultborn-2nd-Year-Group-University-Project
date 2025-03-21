@@ -271,41 +271,68 @@ namespace AssetManager.Desktop
 
         private async void LoadProjectsForHub(string hubID)
         {
+            // Show fantasy loading bar
+            LoadingProgressBar.Visibility = Visibility.Visible;
+            LoadingStatusText.Text = "Loading projects...";
+            LoadingStatusText.Visibility = Visibility.Visible;
+            LoadingProgressBar.Progress = 0.1; // Start with initial progress
+
             try
             {
+                // Load projects
+                LoadingProgressBar.Progress = 0.3;
                 var projects = await DataManagement.GetAllProjectsFromHub(hubID);
                 if (projects == null || !projects.Any())
                 {
                     Console.WriteLine("❌ No projects found or failed to load projects.");
-                    ProjectTreeView.Items.Clear(); // Clear tree if no projects are found
+                    ProjectTreeView.Items.Clear();
                     return;
                 }
 
-                ProjectTreeView.Items.Clear(); // ✅ Clear previous projects before loading new ones
+                ProjectTreeView.Items.Clear(); // Clear previous projects
+                LoadingProgressBar.Progress = 0.6;
+
+                int count = 0;
+                int total = projects.Count();
 
                 foreach (var (projectId, projectName) in projects)
                 {
+                    // Update progress for each project
+                    count++;
+                    double progressValue = 0.6 + (0.4 * count / total);
+                    LoadingProgressBar.Progress = progressValue;
+                    LoadingStatusText.Text = $"Loading project {count} of {total}...";
+
                     var topFolder = await DataManagement.GetTopLevelFolder(hubID, projectId);
                     var folderId = topFolder.Item1;
-
                     TreeViewItem projectItem = new TreeViewItem
                     {
                         Header = $"📁 {projectName}",
                         Tag = (projectId, folderId, true)
                     };
-
                     projectItem.Items.Add(null); // Placeholder for lazy loading
                     projectItem.Expanded += TreeViewItem_Expanded;
-
                     ProjectTreeView.Items.Add(projectItem);
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error loading projects: {ex.Message}");
+                LoadingStatusText.Text = $"Error: {ex.Message}";
+            }
+            finally
+            {
+                // Animate to 100% before hiding
+                LoadingProgressBar.Progress = 1.0;
+
+                // Use a small delay to show completion before hiding
+                await Task.Delay(500);
+
+                // Hide loading bar
+                LoadingProgressBar.Visibility = Visibility.Collapsed;
+                LoadingStatusText.Visibility = Visibility.Collapsed;
             }
         }
-
 
         //NEEDS MIGRATING TO USERSERVICES || USER INFORMATION//
         #region User Services
