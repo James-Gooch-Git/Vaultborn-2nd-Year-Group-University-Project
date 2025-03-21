@@ -4118,6 +4118,13 @@ namespace AssetManager.Desktop
                 {
                     Private.IsSelected = true;
                 }
+                
+                MongoConnection database = new MongoConnection();
+                var findListing = await database.ListedModels.Find(x => x.ModelId == _selectedItemId).FirstOrDefaultAsync();
+                if (findListing != null)
+                {
+                    BtnListModel.Visibility = Visibility.Collapsed;
+                }
                         
                 UpvoteTextBlock.Text = upvotes.ToString();
                 ClearComments();
@@ -4616,15 +4623,8 @@ namespace AssetManager.Desktop
             LibraryBorder.Visibility = Visibility.Visible;
         }
         
-        private async void BtnListModel_Click(object sender, RoutedEventArgs e)
+        private void BtnListModel_Click(object sender, RoutedEventArgs e)
         {
-            MongoConnection database = new MongoConnection();
-            var findListing = await database.ListedModels.Find(x => x.ModelId == _selectedItemId).FirstOrDefaultAsync();
-            if (findListing != null)
-            {
-                MessageBox.Show($"Model already listed");
-                return;
-            }
             ListModelPopup.IsOpen = true;
         }
         
@@ -4837,15 +4837,26 @@ namespace AssetManager.Desktop
                     Height = 20,
                     BorderBrush = Brushes.Green,
                     BorderThickness = new Thickness(2),
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center,
                 };
 
-                buy.Click += BtnBuy_Click;
+                buy.Click += async (s, e) =>
+                {
+                    if (modelSquare.Tag is Dictionary<string, string> models)
+                    {
+                        BuyPopup.IsOpen = true;
+                        await PayPal(models);
+                    }
+                };
 
                 Border buyBorder = new Border
                 {
                     BorderBrush = buy.BorderBrush,
                     BorderThickness = new Thickness(2),
-                    CornerRadius = new CornerRadius(3)
+                    CornerRadius = new CornerRadius(3),
+                    Width = 50,
+                    Height = 20
                 };
                 
                 buyBorder.Child = buy;
@@ -4922,24 +4933,7 @@ namespace AssetManager.Desktop
                 BuyPopup.IsOpen = true;
                 if (MarketplaceDataGrid.SelectedItem is Dictionary<string, string> models)
                 {
-                    _buyItemId = models["Id"];
-                    _buyProjectId = await GetModelProjectId(_buyItemId);
-                    
-                    double price = double.Parse(models["Price"]);
-                    string aT = await _payPalService.GetPayPalAcessToken();
-                    string approvalUrl = await _payPalService.CreateOrder(aT, price);
-                    if (string.IsNullOrEmpty(approvalUrl))
-                    {
-                        MessageBox.Show($"❌ Payment Failed");
-                        BuyPopup.IsOpen = false;
-                    }
-                    else
-                    {
-                        webView.CoreWebView2.NavigationStarting -= Redirected;
-                        webView.CoreWebView2.NavigationStarting += Redirected;
-
-                        webView.CoreWebView2.Navigate(approvalUrl);
-                    }
+                    await PayPal(models);
                 }
             }
             catch (Exception exception)
@@ -4957,7 +4951,7 @@ namespace AssetManager.Desktop
                 Console.WriteLine($"{uri}");
                 string token = HttpUtility.ParseQueryString(uri.Query).Get("token");
                 string payerId = HttpUtility.ParseQueryString(uri.Query).Get("PayerId");
-                string payPalAccessToken = await _payPalService.GetPayPalAcessToken();
+                string payPalAccessToken = await _payPalService.GetPayPalAccessToken();
                 bool approved = await _payPalService.CapturePayment(token, payPalAccessToken);
                 if (approved)
                 {
@@ -4980,6 +4974,30 @@ namespace AssetManager.Desktop
                 MessageBox.Show($"❌ Payment Cancelled");
                 webView.CoreWebView2.Navigate("about:blank");
                 BuyPopup.IsOpen = false;
+            }
+        }
+
+        private async Task PayPal(Dictionary<string, string> models)
+        {
+            _buyItemId = models["Id"];
+            _buyProjectId = await GetModelProjectId(_buyItemId);
+                    
+            double price = double.Parse(models["Price"]);
+            string aT = await _payPalService.GetPayPalAccessToken();
+            MessageBox.Show($"Access Token: {aT}");
+            string approvalUrl = await _payPalService.CreateOrder(aT, price);
+            MessageBox.Show($"Approval Url: {approvalUrl}");
+            if (string.IsNullOrEmpty(approvalUrl))
+            {
+                MessageBox.Show($"❌ Payment Failed");
+                BuyPopup.IsOpen = false;
+            }
+            else
+            {
+                webView.CoreWebView2.NavigationStarting -= Redirected;
+                webView.CoreWebView2.NavigationStarting += Redirected;
+
+                webView.CoreWebView2.Navigate(approvalUrl);
             }
         }
         
