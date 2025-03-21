@@ -939,21 +939,20 @@
 
                         <Border Cursor="Hand" MouseLeftButtonDown="MarketplaceSort_Click">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock x:Name="SortByTextBlock" Text="Sort By Default" Cursor="Hand" FontSize="13" Foreground="#4B4B4B" VerticalAlignment="Center"/>
+                                <TextBlock x:Name="SortByTextBlock" Text="Sort By None" Cursor="Hand" FontSize="13" Foreground="#4B4B4B" VerticalAlignment="Center"/>
                                 <md:PackIcon x:Name="SortChevron" Kind="ChevronDown" Cursor="Hand" Foreground="#4B4B4B" VerticalAlignment="Center" Margin="0,0,5,0"/>
                             </StackPanel>
                         </Border>
                         
                         <Popup x:Name="SortPopup" Placement="Bottom" PlacementTarget="{Binding ElementName=SortChevron}" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade" HorizontalOffset="-105" Closed="SortPopup_Closed">
                             <Border x:Name="SortBorder" Background="#5c1c1c" CornerRadius="5"
-                                    Width="120" Height="150">
+                                    Width="120" Height="130">
                                 
                                 <ListBox x:Name="SortListBox" SelectionChanged="SortListBox_SelectionChanged" Margin="10" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Disabled">
-                                    <ListBoxItem Height="20" Foreground="White" VerticalAlignment="Center" BorderBrush="#98730c" BorderThickness="0,0,0,1">Default</ListBoxItem>
+                                    <ListBoxItem Height="20" Foreground="White" VerticalAlignment="Center" BorderBrush="#98730c" BorderThickness="0,0,0,1">None</ListBoxItem>
                                     <ListBoxItem Height="20" Foreground="White" VerticalAlignment="Center" BorderBrush="#98730c" BorderThickness="0,0,0,1">Upvotes</ListBoxItem>
                                     <ListBoxItem Height="20" Foreground="White" VerticalAlignment="Center" BorderBrush="#98730c" BorderThickness="0,0,0,1">Price Lowest</ListBoxItem>
                                     <ListBoxItem Height="20" Foreground="White" VerticalAlignment="Center" BorderBrush="#98730c" BorderThickness="0,0,0,1">Price Highest</ListBoxItem>
-                                    <ListBoxItem Height="20" Foreground="White" VerticalAlignment="Center" BorderBrush="#98730c" BorderThickness="0,0,0,1">Name A-Z</ListBoxItem>
                                     <ListBoxItem Height="20" Foreground="White" VerticalAlignment="Center" BorderBrush="#98730c" BorderThickness="0,0,0,1">Name Z-A</ListBoxItem>
                                 </ListBox>
                             </Border>
@@ -1126,7 +1125,7 @@
                             </DataGridTextColumn.CellStyle>
                         </DataGridTextColumn>
 
-                        <DataGridTextColumn Header="Price" Binding="{Binding [Price]}" Width="*">
+                        <DataGridTextColumn Header="Price" Binding="{Binding [Price], StringFormat='£'}" Width="*">
                             <DataGridTextColumn.ElementStyle>
                                 <Style TargetType="TextBlock">
                                     <Setter Property="HorizontalAlignment" Value="Center"/>

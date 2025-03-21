@@ -8,10 +8,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="29dceaf0-6b38-45af-9473-223a6fd443eb" name="Changes" comment="sort listed models works for list view">
-      <change beforePath="$PROJECT_DIR$/.idea/.idea.AssetManager/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.AssetManager/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml.cs" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml.cs" afterDir="false" />
-    </list>
+    <list default="true" id="29dceaf0-6b38-45af-9473-223a6fd443eb" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />

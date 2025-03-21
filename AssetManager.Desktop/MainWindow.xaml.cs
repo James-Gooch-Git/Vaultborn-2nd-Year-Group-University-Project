@@ -59,6 +59,8 @@ namespace AssetManager.Desktop
         
         private List<Dictionary<string, string>> originalResults;
         private readonly PayPalService _payPalService;
+        private string _buyItemId;
+        private string _buyProjectId;
         //private List<Dictionary<string, string>> listedModels;
 
         private enum ViewType { Grid, List }
@@ -4572,7 +4574,9 @@ namespace AssetManager.Desktop
         {
             MongoConnection database = new MongoConnection();
             List<Dictionary<string, string>> allListedModels = await GetAllListedModels();
-            MarketplaceDataGrid.ItemsSource = allListedModels;
+            List<Dictionary<string, string>> namesAZ = allListedModels.OrderBy(x => x["Name"]).ToList();
+            MarketplaceDataGrid.ItemsSource = namesAZ;
+            DisplayMarketplaceGrid(namesAZ);
         }
 
         private async Task<List<Dictionary<string, string>>> GetAllListedModels()
@@ -4815,7 +4819,7 @@ namespace AssetManager.Desktop
                 
                 TextBlock price = new TextBlock
                 {
-                    Text = model["Price"],
+                    Text = $"£{model["Price"]}",
                     FontSize = 16,
                     FontWeight = FontWeights.Normal,
                     Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B")),
@@ -4875,9 +4879,10 @@ namespace AssetManager.Desktop
             var allListedModels = await GetAllListedModels();
             switch (option)
             {
-                case "Default":
-                    MarketplaceDataGrid.ItemsSource = allListedModels;
-                    DisplayMarketplaceGrid(allListedModels);
+                case "None":
+                    List<Dictionary<string, string>> namesAZ = allListedModels.OrderBy(x => x["Name"]).ToList();
+                    MarketplaceDataGrid.ItemsSource = namesAZ;
+                    DisplayMarketplaceGrid(namesAZ);
                     break;
                 case "Upvotes":
                     List<Dictionary<string, string>> upvotes = new List<Dictionary<string, string>>();
@@ -4902,11 +4907,6 @@ namespace AssetManager.Desktop
                     MarketplaceDataGrid.ItemsSource = highestPrice;
                     DisplayMarketplaceGrid(highestPrice);
                     break;
-                case "Name A-Z":
-                    List<Dictionary<string, string>> namesAZ = allListedModels.OrderBy(x => x["Name"]).ToList();
-                    MarketplaceDataGrid.ItemsSource = namesAZ;
-                    DisplayMarketplaceGrid(namesAZ);
-                    break;
                 case "Name Z-A":
                     List<Dictionary<string, string>> namesZA = allListedModels.OrderByDescending(x => x["Name"]).ToList();
                     MarketplaceDataGrid.ItemsSource = namesZA;
@@ -4922,6 +4922,9 @@ namespace AssetManager.Desktop
                 BuyPopup.IsOpen = true;
                 if (MarketplaceDataGrid.SelectedItem is Dictionary<string, string> models)
                 {
+                    _buyItemId = models["Id"];
+                    _buyProjectId = await GetModelProjectId(_buyItemId);
+                    
                     double price = double.Parse(models["Price"]);
                     string aT = await _payPalService.GetPayPalAcessToken();
                     string approvalUrl = await _payPalService.CreateOrder(aT, price);
@@ -4958,9 +4961,11 @@ namespace AssetManager.Desktop
                 bool approved = await _payPalService.CapturePayment(token, payPalAccessToken);
                 if (approved)
                 {
-                    MessageBox.Show($"\u2705 Payment Successful");
+                    MessageBox.Show($"\u2705 Payment Successful \n Model download");
                     webView.CoreWebView2.Navigate("about:blank");
                     BuyPopup.IsOpen = false;
+                    FileDownloadService fileDownloadService = new FileDownloadService();
+                    await fileDownloadService.DownloadModelAsync(_buyProjectId, _buyItemId);
                 }
                 else
                 {
