@@ -4962,12 +4962,14 @@ namespace AssetManager.Desktop
         {
             _buyItemId = models["Id"];
             _buyProjectId = await GetModelProjectId(_buyItemId);
-                    
-            double price = double.Parse(models["Price"]);
+
+            string amount = models["Price"].Replace("£", "");
+            Console.WriteLine($"Price: {amount}");
+            double price = double.Parse(amount);
             string aT = await _payPalService.GetPayPalAccessToken();
-            MessageBox.Show($"Access Token: {aT}");
+            //MessageBox.Show($"Access Token: {aT}");
             string approvalUrl = await _payPalService.CreateOrder(aT, price);
-            MessageBox.Show($"Approval Url: {approvalUrl}");
+            //MessageBox.Show($"Approval Url: {approvalUrl}");
             if (string.IsNullOrEmpty(approvalUrl))
             {
                 MessageBox.Show($"❌ Payment Failed");

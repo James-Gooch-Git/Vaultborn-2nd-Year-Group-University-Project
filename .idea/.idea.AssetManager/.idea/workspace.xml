@@ -8,7 +8,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="29dceaf0-6b38-45af-9473-223a6fd443eb" name="Changes" comment="added search for marketplace and made sort work for search results in marketplace">
+    <list default="true" id="29dceaf0-6b38-45af-9473-223a6fd443eb" name="Changes" comment="improved search in asset library">
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.AssetManager/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.AssetManager/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml.cs" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml.cs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -137,7 +138,7 @@
       <workItem from="1742393296184" duration="13729000" />
       <workItem from="1742471596910" duration="861000" />
       <workItem from="1742566843495" duration="3416000" />
-      <workItem from="1742654880113" duration="2524000" />
+      <workItem from="1742654880113" duration="4350000" />
     </task>
     <task id="LOCAL-00001" summary="save main">
       <option name="closed" value="true" />
@@ -259,7 +260,15 @@
       <option name="project" value="LOCAL" />
       <updated>1742657180800</updated>
     </task>
-    <option name="localTasksCounter" value="16" />
+    <task id="LOCAL-00016" summary="improved search in asset library">
+      <option name="closed" value="true" />
+      <created>1742657627539</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1742657627541</updated>
+    </task>
+    <option name="localTasksCounter" value="17" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -305,6 +314,7 @@
     <MESSAGE value="model downloaded on purchase and add £ symbol to price and improved sorting listed models" />
     <MESSAGE value="fixed marketplace grid view buying and fixed button display for marketplace grid view" />
     <MESSAGE value="added search for marketplace and made sort work for search results in marketplace" />
-    <option name="LAST_COMMIT_MESSAGE" value="added search for marketplace and made sort work for search results in marketplace" />
+    <MESSAGE value="improved search in asset library" />
+    <option name="LAST_COMMIT_MESSAGE" value="improved search in asset library" />
   </component>
 </project>
