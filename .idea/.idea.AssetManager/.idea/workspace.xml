@@ -8,7 +8,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="29dceaf0-6b38-45af-9473-223a6fd443eb" name="Changes" comment="" />
+    <list default="true" id="29dceaf0-6b38-45af-9473-223a6fd443eb" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.AssetManager/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.AssetManager/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml.cs" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml.cs" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -134,6 +138,8 @@
       <workItem from="1742393210455" duration="71000" />
       <workItem from="1742393296184" duration="13729000" />
       <workItem from="1742471596910" duration="861000" />
+      <workItem from="1742566843495" duration="3416000" />
+      <workItem from="1742654880113" duration="2137000" />
     </task>
     <task id="LOCAL-00001" summary="save main">
       <option name="closed" value="true" />
@@ -231,7 +237,23 @@
       <option name="project" value="LOCAL" />
       <updated>1742492940742</updated>
     </task>
-    <option name="localTasksCounter" value="13" />
+    <task id="LOCAL-00013" summary="model downloaded on purchase and add £ symbol to price and improved sorting listed models">
+      <option name="closed" value="true" />
+      <created>1742568117718</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1742568117718</updated>
+    </task>
+    <task id="LOCAL-00014" summary="fixed marketplace grid view buying and fixed button display for marketplace grid view">
+      <option name="closed" value="true" />
+      <created>1742570142264</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1742570142264</updated>
+    </task>
+    <option name="localTasksCounter" value="15" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -274,6 +296,8 @@
     <MESSAGE value="added popup that lets you select sort option" />
     <MESSAGE value="paypal sandbox buying works!!!" />
     <MESSAGE value="sort listed models works for list view" />
-    <option name="LAST_COMMIT_MESSAGE" value="sort listed models works for list view" />
+    <MESSAGE value="model downloaded on purchase and add £ symbol to price and improved sorting listed models" />
+    <MESSAGE value="fixed marketplace grid view buying and fixed button display for marketplace grid view" />
+    <option name="LAST_COMMIT_MESSAGE" value="fixed marketplace grid view buying and fixed button display for marketplace grid view" />
   </component>
 </project>

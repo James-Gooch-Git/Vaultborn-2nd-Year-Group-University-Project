@@ -4623,6 +4623,7 @@ namespace AssetManager.Desktop
             LibraryBorder.Visibility = Visibility.Visible;
         }
         
+        //list models
         private void BtnListModel_Click(object sender, RoutedEventArgs e)
         {
             ListModelPopup.IsOpen = true;
@@ -4691,19 +4692,15 @@ namespace AssetManager.Desktop
             
         }
 
-        private async void MarketplaceGrid_Click(object sender, MouseButtonEventArgs e)
+        private void MarketplaceGrid_Click(object sender, MouseButtonEventArgs e)
         {
             MarketplaceDataGrid.Visibility = Visibility.Collapsed;
             MarketplaceGridView.Visibility = Visibility.Visible;
             MarketplaceGridBorder.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
             MarketplaceListBorder.Background = Brushes.Transparent;
-            
-            var listedModels = await GetAllListedModels();
-            
-            DisplayMarketplaceGrid(listedModels);
         }
         
-        private async void MarketplaceList_Click(object sender, MouseButtonEventArgs e)
+        private void MarketplaceList_Click(object sender, MouseButtonEventArgs e)
         {
             MarketplaceGridView.Visibility = Visibility.Collapsed;
             MarketplaceDataGrid.Visibility = Visibility.Visible;
@@ -4819,7 +4816,7 @@ namespace AssetManager.Desktop
                 
                 TextBlock price = new TextBlock
                 {
-                    Text = $"£{model["Price"]}",
+                    Text = $"{model["Price"]}",
                     FontSize = 16,
                     FontWeight = FontWeights.Normal,
                     Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B")),
@@ -4868,6 +4865,7 @@ namespace AssetManager.Desktop
             }
         }
         
+        //sort 
         private void MarketplaceSort_Click(object sender, MouseButtonEventArgs e)
         {
             SortChevron.Kind = PackIconKind.ChevronUp;
@@ -4881,23 +4879,23 @@ namespace AssetManager.Desktop
             {
                 string option = item.Content.ToString();
                 SortByTextBlock.Text = $"Sort By {option}";
-                SortListedModels(option);
+                List<Dictionary<string, string>> models = MarketplaceDataGrid.ItemsSource.Cast<Dictionary<string, string>>().ToList();
+                await SortListedModels(option, models);
             }
         }
 
-        private async void SortListedModels(string option)
+        private async Task SortListedModels(string option, List<Dictionary<string, string>> models)
         {
-            var allListedModels = await GetAllListedModels();
             switch (option)
             {
                 case "None":
-                    List<Dictionary<string, string>> namesAZ = allListedModels.OrderBy(x => x["Name"]).ToList();
+                    List<Dictionary<string, string>> namesAZ = models.OrderBy(x => x["Name"]).ToList();
                     MarketplaceDataGrid.ItemsSource = namesAZ;
                     DisplayMarketplaceGrid(namesAZ);
                     break;
                 case "Upvotes":
                     List<Dictionary<string, string>> upvotes = new List<Dictionary<string, string>>();
-                    foreach (var item in allListedModels)
+                    foreach (var item in models)
                     {
                         int upvoteAmount = await GetModelUpvoteCount(item["Id"]);
                         item.Add("Upvotes", upvoteAmount.ToString());
@@ -4909,23 +4907,24 @@ namespace AssetManager.Desktop
                     DisplayMarketplaceGrid(upvotes);
                     break;
                 case "Price Lowest":
-                    List<Dictionary<string, string>> lowestPrice = allListedModels.OrderBy(x => x["Price"]).ToList();
+                    List<Dictionary<string, string>> lowestPrice = models.OrderBy(x => x["Price"]).ToList();
                     MarketplaceDataGrid.ItemsSource = lowestPrice;
                     DisplayMarketplaceGrid(lowestPrice);
                     break;
                 case "Price Highest":
-                    List<Dictionary<string, string>> highestPrice = allListedModels.OrderByDescending(x => x["Price"]).ToList();
+                    List<Dictionary<string, string>> highestPrice = models.OrderByDescending(x => x["Price"]).ToList();
                     MarketplaceDataGrid.ItemsSource = highestPrice;
                     DisplayMarketplaceGrid(highestPrice);
                     break;
                 case "Name Z-A":
-                    List<Dictionary<string, string>> namesZA = allListedModels.OrderByDescending(x => x["Name"]).ToList();
+                    List<Dictionary<string, string>> namesZA = models.OrderByDescending(x => x["Name"]).ToList();
                     MarketplaceDataGrid.ItemsSource = namesZA;
                     DisplayMarketplaceGrid(namesZA);
                     break;
             }
         }
         
+        //buy
         private async void BtnBuy_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -5004,6 +5003,43 @@ namespace AssetManager.Desktop
         private void SortPopup_Closed(object? sender, EventArgs e)
         {
             SortChevron.Kind = PackIconKind.ChevronDown;
+        }
+        
+        //search
+        private async void MarketplaceSearch_OnKeyDown(object sender, KeyEventArgs e)
+        {
+            List<Dictionary<string, string>> searchResults = new List<Dictionary<string, string>>();
+            if (e.Key == Key.Enter)
+            {
+                MongoConnection database = new MongoConnection();
+                List<ListedModels> result = await database.ListedModels.Find(FilterDefinition<ListedModels>.Empty).ToListAsync();
+        
+                var modelNames = result.Select(x => x.Name).ToList();
+                var topResults = FuzzySharp.Process.ExtractTop(MarkeplaceSearchTextBox.Text, modelNames, limit: 3);
+            
+                foreach (var match in topResults)
+                {
+                    var model = result[match.Index];
+                    Console.WriteLine($"{match.Value}: {model.Name}");
+                    if (model != null)
+                    {
+                        Console.WriteLine($"Found Match: {match.Value}");
+                        string sellerName = await GetUserName(model.SellerId);
+                        string projectId = await GetModelProjectId(model.ModelId);
+                        searchResults.Add(new Dictionary<string, string>
+                        {
+                            { "Name", model.Name },
+                            { "Description", model.Description },
+                            { "Seller", sellerName },
+                            { "Id", model.ModelId },
+                            { "Price" , $"£{model.Price.ToString("0.00")}"} ,
+                            { "ProjectId", projectId}
+                        });
+                    }
+                }
+            }
+            MarketplaceDataGrid.ItemsSource = searchResults;
+            DisplayMarketplaceGrid(searchResults);
         }
         
         //COMMENTED OUT FUNCTIONS//
