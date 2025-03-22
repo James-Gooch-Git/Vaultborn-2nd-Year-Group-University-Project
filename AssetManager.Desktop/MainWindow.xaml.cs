@@ -3919,45 +3919,27 @@ namespace AssetManager.Desktop
                     MongoConnection database = new MongoConnection();
                     List<ModelData> result = await database.ModelData.Find(x => x.PublicPrivate == "Public" || x.HubId == hubID).ToListAsync();
             
-                    string[,] modelsArray = new string[result.Count, 9];
-                    int index = 0;
-                    foreach (ModelData modelData in result)
-                    {
-                        modelsArray[index, 0] = modelData.Id;
-                        modelsArray[index, 1] = modelData.Name;
-                        modelsArray[index, 2] = modelData.HubId;
-                        modelsArray[index, 3] = modelData.CreatedBy;
-                        modelsArray[index, 4] = modelData.CreatedDate;
-                        modelsArray[index, 5] = modelData.ModifiedDate;
-                        modelsArray[index, 6] = modelData.ModifiedBy;
-                        modelsArray[index, 7] = modelData.FileSize.ToString();
-                        modelsArray[index, 8] = modelData.FolderId;
-                        index++;
-                    }
-            
                     var modelNames = result.Select(x => x.Name).ToList();
                     var topResults = FuzzySharp.Process.ExtractTop(SearchText_Box.Text, modelNames, limit: 3);
                 
                     foreach (var match in topResults)
                     {
-                        for (int i = 0; i < modelNames.Count; i++)
+                        var model = result[match.Index];
+                        Console.WriteLine($"{match.Value}: {model.Name}");
+                        if (model != null)
                         {
-                            Console.WriteLine($"{match.Value}: {modelsArray[i, 1]}");
-                            if (match.Value == modelsArray[i, 1])
+                            Console.WriteLine($"Found Match: {match.Value}");
+                            string name = await GetUserName(model.CreatedBy);
+                            //MessageBox.Show($"Result: {match.Value}, Score: {match.Score}");
+                            searchResults.Add(new Dictionary<string, string>
                             {
-                                Console.WriteLine($"Found Match: {match.Value}");
-                                string name = await GetUserName(modelsArray[i,3]);
-                                //MessageBox.Show($"Result: {match.Value}, Score: {match.Score}");
-                                searchResults.Add(new Dictionary<string, string>
-                                {
-                                    { "Name", modelsArray[i, 1] },
-                                    { "Project", name },
-                                    { "LastModified", match.Score.ToString() },
-                                    { "Id", modelsArray[i, 0] },
-                                    { "ProjectId" , modelsArray[i, 8]}
-                                });
-                                break;
-                            }
+                                { "Name", model.Name },
+                                { "Project", name },
+                                { "LastModified", model.ModifiedDate },
+                                { "Id", model.Id },
+                                { "ProjectId" , model.FolderId}
+                            });
+                            break;
                         }
                     }
                 }
@@ -3972,7 +3954,7 @@ namespace AssetManager.Desktop
         private void DisplaySearchResults(List<Dictionary<string, string>> searchResults)
         {
             ModelsDataGrid.Columns[1].Header = "Created By";
-            ModelsDataGrid.Columns[2].Header = "Score";
+            //ModelsDataGrid.Columns[2].Header = "Score";
             ModelsDataGrid.ItemsSource = searchResults;
             originalResults = searchResults;
             Models = searchResults;
