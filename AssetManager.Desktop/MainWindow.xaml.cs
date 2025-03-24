@@ -4561,7 +4561,6 @@ namespace AssetManager.Desktop
         //marketplace
         private async void InitializeMarketplace()
         {
-            MongoConnection database = new MongoConnection();
             List<Dictionary<string, string>> allListedModels = await GetAllListedModels();
             List<Dictionary<string, string>> namesAZ = allListedModels.OrderBy(x => x["Name"]).ToList();
             MarketplaceDataGrid.ItemsSource = namesAZ;
@@ -4999,7 +4998,7 @@ namespace AssetManager.Desktop
                 List<ListedModels> result = await database.ListedModels.Find(FilterDefinition<ListedModels>.Empty).ToListAsync();
         
                 var modelNames = result.Select(x => x.Name).ToList();
-                var topResults = FuzzySharp.Process.ExtractTop(MarkeplaceSearchTextBox.Text, modelNames, limit: 3);
+                var topResults = FuzzySharp.Process.ExtractTop(MarketplaceSearchTextBox.Text, modelNames, limit: 3);
             
                 foreach (var match in topResults)
                 {
@@ -5024,6 +5023,12 @@ namespace AssetManager.Desktop
             }
             MarketplaceDataGrid.ItemsSource = searchResults;
             DisplayMarketplaceGrid(searchResults);
+        }
+
+        private void MarketplaceClearSearch_Click(object sender, MouseButtonEventArgs e)
+        {
+            MarketplaceSearchTextBox.Text = "";
+            InitializeMarketplace();
         }
         
         //COMMENTED OUT FUNCTIONS//

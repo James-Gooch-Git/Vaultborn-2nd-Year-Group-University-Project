@@ -1003,7 +1003,7 @@
                             </Rectangle.RenderTransform>
                         </Rectangle>
 
-                        <Button Cursor="IBeam" Focusable="False"  Width="115" Height="24" Background="Transparent" BorderBrush="#4B4B4B" Margin="0,0,20,0">
+                        <Button Cursor="IBeam" Focusable="False"  Width="130" Height="24" Background="Transparent" BorderBrush="#4B4B4B" Margin="0,0,20,0">
 
                             <Button.Resources>
                                 <Style TargetType="Border">
@@ -1013,8 +1013,9 @@
 
                             <StackPanel Orientation="Horizontal">
                                 <md:PackIcon Kind="Magnify" Width="14" Height="14" VerticalAlignment="Center" Foreground="#4B4B4B" Margin="0,0,0,0"/>
-                                <TextBox x:Name="MarkeplaceSearchTextBox" VerticalAlignment="Center" VerticalContentAlignment="Center" Width="89" FontSize="10" Height="19" Margin="3,0,0,0" KeyDown="MarketplaceSearch_OnKeyDown"/>
-                                <TextBlock Text="Search By Name..." Foreground="#A3A3A3" FontSize="10" Margin="3,0,0,0" VerticalAlignment="Center"/>
+                                <TextBox x:Name="MarketplaceSearchTextBox" VerticalAlignment="Center" VerticalContentAlignment="Center" Width="89" FontSize="10" Height="19" Margin="3,0,0,0" KeyDown="MarketplaceSearch_OnKeyDown"/>
+                                <!-- <TextBlock Text="Search By Name..." Foreground="#A3A3A3" FontSize="10" Margin="3,0,0,0" VerticalAlignment="Center"/> -->
+                                <md:PackIcon Kind="Close" Cursor="Hand" MouseLeftButtonDown="MarketplaceClearSearch_Click" Width="14" Height="14" VerticalAlignment="Center" Foreground="#4B4B4B" Margin="3,0,0,0"/>
                             </StackPanel>
 
                         </Button>
