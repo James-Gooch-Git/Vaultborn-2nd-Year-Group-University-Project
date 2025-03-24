@@ -282,9 +282,9 @@
 
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
 
-                    <Image Source="C:\Users\james\Desktop\AssetManagerTom2\AssetManager\AssetManager.Desktop\Assets\AppIcon4.png" Width="62" Height="45" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="-5,0,0,0"/>
+                    <Image Source="C:\Users\james\Desktop\AssetManagerTom2\AssetManager\AssetManager.Desktop\Assets\AppIcon4.png" Width="62" Height="45"/>
 
-                    <TextBlock FontSize="16" Foreground="#4B4b4b" VerticalAlignment="Center" Height="18" Margin="-10,0,0,0"> <Run Text="VAULTBORN"/> <Bold> <Run Text="TREASURES"/> </Bold></TextBlock>
+                    <TextBlock FontSize="16" Foreground="#4B4b4b" VerticalAlignment="Center" Height="18" Margin="-10,0,0,0"><Run Text="VAULT"/><Run Text="BORN"/><Bold><Run Text=""/></Bold></TextBlock>
 
                 </StackPanel>
 

@@ -36,9 +36,9 @@
 
             <!-- autodesk assets heading -->
             <TextBlock HorizontalAlignment="Center" FontSize="20" Foreground="White" VerticalAlignment="Top" Margin="0,150,0,0">
-    <Run Text="VAULTBORN" />
+    <Run Text="VAULT" />
     <Bold>
-        <Run Text="TREASURES" Foreground="Black" />
+        <Run Text="BORN" Foreground="Black" />
     </Bold>
             </TextBlock>
 
