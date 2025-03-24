@@ -4,7 +4,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Windows.Controls;
-using AssetManager.Core;
+//using AssetManager.Core;
 using AssetManager.Infrastructure.Services;
 using Microsoft.Win32;
 using System.Diagnostics;
@@ -24,12 +24,18 @@ using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Wpf;
 using System.Windows.Data; // Fix for Binding issue
 using System.Windows.Controls;
+using System.Windows.Documents;
 using ForgeViewerApp; // Ensure we use WPF DataGrid
 using AssetManagement.Infrastructure.Fusion;
 
 using MongoDB.Bson;
 using AssetManager.Infrastructure.Models;
 using Newtonsoft.Json;
+using AssetManagement.Infrastructure.Services;
+using Azure.Core;
+using System.Web;
+using Microsoft.WindowsAPICodePack.Taskbar;
+using System.Windows.Controls.Primitives;
 
 namespace AssetManager.Desktop
 {
@@ -58,29 +64,43 @@ namespace AssetManager.Desktop
 
 
         private List<Dictionary<string, string>> originalResults;
+        private readonly PayPalService _payPalService;
+        //private List<Dictionary<string, string>> listedModels;
 
         private enum ViewType { Grid, List }
         private ViewType _lastViewType = ViewType.List; // Default to List View
 
-
+  
 
         // Constructor
         public MainWindow()
         {
             InitializeComponent();
-   
+
+
+  
+
             //InitializeWebView2();
             //  ModelDataGrid.SelectionChanged += ModelDataGrid_SelectionChanged;
             Initialize();
           
         }
-   
+        private async void InitialiseFolders()
+        {
+
+            FolderService folderService = new FolderService(_accessToken);
+            await folderService.CreateGameFolders();
+        }
+
         public MainWindow(string userData)
         {
             InitializeComponent();
             _accessToken = TokenManager.GetToken();
             _uploadService = new ModelUpload(_accessToken);
             _filedwnService = new FileDownloadService();
+            //InitializeTreeView();
+            InitialiseFolders();
+            _payPalService = new PayPalService();
             Initialize();
         }
 
@@ -105,7 +125,7 @@ namespace AssetManager.Desktop
                 FusionAddinInstaller.InstallFusionAddin(_accessToken);
                 // 🔹 Initialize data
                 LoadHubsAsync();
-                await LoadAllModels();
+               /* await LoadAllModels();
                 if (!ModelsDataGrid.Columns.Any(col => col.Header?.ToString() == "Actions"))
                 {
                     var actionsColumn = new DataGridTemplateColumn
@@ -138,7 +158,7 @@ namespace AssetManager.Desktop
 
                     ModelsDataGrid.Columns.Add(actionsColumn);
                 }
-
+*/
                 var hubDetails = await DataManagement.GetPersonalHubDetails();
 
                 if (hubDetails == null)
@@ -160,17 +180,20 @@ namespace AssetManager.Desktop
                 LoadProjectsForHub(hubID);
                 await TestDataManagement();
 
-                FusionManager.InitializePythonEngine();
-
+                //FusionManager.InitializePythonEngine();
+                //InitialiseFolders();
                 Username_TextBlock.Text = await GetUserName(_userId);
                 UserPic_Image.Source = new BitmapImage(new Uri(await GetUserPic(_userId)));
                 //DisplayGridModels();
+               
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"❌ Initialization error: {ex.Message}");
             }
         }
+        
+
 
         private async Task TestDataManagement()
         {
@@ -189,7 +212,7 @@ namespace AssetManager.Desktop
 
             foreach (var (projectId, projectName) in projects)
             {
-                Console.WriteLine($"\n📌 Project ID: {projectId}, Name: {projectName}\n");
+                Console.WriteLine($"📌 Project ID: {projectId}, Name: {projectName}");
                 if (projectName == "Default Project")
                 {
                     projectid = projectId;
@@ -200,12 +223,18 @@ namespace AssetManager.Desktop
 
             var items = await DataManagement.GetItemsInFolder(projectid, folderId);
 
-            foreach (var (itemId, itemName) in items)
+            /*foreach (var (itemId, itemName) in items)
             {
-                Console.WriteLine($"\nItem Name: {itemName}\t Item ID: {itemId}\n");
-            }
+                Console.WriteLine($"Item Name: {itemName}\t Item ID: {itemId}");
+            }*/
 
             string itemid = "urn: adsk.wipprod:dm.lineage:pwGqGrbgRx6IUlR4Wtskdg";
+            Image tempImage = new Image();
+
+            //Console.WriteLine("\n\nShowing example thumbnail\n\n");
+            await ShowThumbnail(projectid, itemid, tempImage);
+
+
         }
 
         private async void LoadHubsAsync()
@@ -242,41 +271,68 @@ namespace AssetManager.Desktop
 
         private async void LoadProjectsForHub(string hubID)
         {
+            // Show fantasy loading bar
+            LoadingProgressBar.Visibility = Visibility.Visible;
+            LoadingStatusText.Text = "Loading projects...";
+            LoadingStatusText.Visibility = Visibility.Visible;
+            LoadingProgressBar.Progress = 0.1; // Start with initial progress
+
             try
             {
+                // Load projects
+                LoadingProgressBar.Progress = 0.3;
                 var projects = await DataManagement.GetAllProjectsFromHub(hubID);
                 if (projects == null || !projects.Any())
                 {
                     Console.WriteLine("❌ No projects found or failed to load projects.");
-                    ProjectTreeView.Items.Clear(); // Clear tree if no projects are found
+                    ProjectTreeView.Items.Clear();
                     return;
                 }
 
-                ProjectTreeView.Items.Clear(); // ✅ Clear previous projects before loading new ones
+                ProjectTreeView.Items.Clear(); // Clear previous projects
+                LoadingProgressBar.Progress = 0.6;
+
+                int count = 0;
+                int total = projects.Count();
 
                 foreach (var (projectId, projectName) in projects)
                 {
+                    // Update progress for each project
+                    count++;
+                    double progressValue = 0.6 + (0.4 * count / total);
+                    LoadingProgressBar.Progress = progressValue;
+                    LoadingStatusText.Text = $"Loading project {count} of {total}...";
+
                     var topFolder = await DataManagement.GetTopLevelFolder(hubID, projectId);
                     var folderId = topFolder.Item1;
-
                     TreeViewItem projectItem = new TreeViewItem
                     {
                         Header = $"📁 {projectName}",
                         Tag = (projectId, folderId, true)
                     };
-
                     projectItem.Items.Add(null); // Placeholder for lazy loading
                     projectItem.Expanded += TreeViewItem_Expanded;
-
                     ProjectTreeView.Items.Add(projectItem);
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error loading projects: {ex.Message}");
+                LoadingStatusText.Text = $"Error: {ex.Message}";
+            }
+            finally
+            {
+                // Animate to 100% before hiding
+                LoadingProgressBar.Progress = 1.0;
+
+                // Use a small delay to show completion before hiding
+                await Task.Delay(500);
+
+                // Hide loading bar
+                LoadingProgressBar.Visibility = Visibility.Collapsed;
+                LoadingStatusText.Visibility = Visibility.Collapsed;
             }
         }
-
 
         //NEEDS MIGRATING TO USERSERVICES || USER INFORMATION//
         #region User Services
@@ -296,6 +352,28 @@ namespace AssetManager.Desktop
             MongoConnection database = new MongoConnection();
             var userData = await database.Users.Find(x => x.Id == userId).FirstOrDefaultAsync();
             return userData.ProfilePic;
+        }
+        
+        private async Task<string> GetModelName(string modelId)
+        {
+            MongoConnection database = new MongoConnection();
+            var userData = await database.ModelData.Find(x => x.Id == modelId).FirstOrDefaultAsync();
+            if (userData == null)
+            {
+                return "Unknown Name";
+            }
+            return userData.Name;
+        }
+        
+        private async Task<string> GetModelProjectId(string modelId)
+        {
+            MongoConnection database = new MongoConnection();
+            var userData = await database.ModelData.Find(x => x.Id == modelId).FirstOrDefaultAsync();
+            if (userData == null)
+            {
+                return "Unknown Project";
+            }
+            return userData.FolderId;
         }
         #endregion
 
@@ -341,7 +419,18 @@ namespace AssetManager.Desktop
 
         private void ToggleHubsMenu(object sender, MouseButtonEventArgs e)
         {
-            HubsMenuPopup.IsOpen = !HubsMenuPopup.IsOpen;
+            if (HubsMenuPopup.IsOpen)
+            {
+                HubsMenuPopup.IsOpen = false;
+            }
+            else
+            {
+                HubsMenuPopup.PlacementTarget = HubsHeaderTextBlock;
+                HubsMenuPopup.Placement = PlacementMode.Relative;
+                HubsMenuPopup.VerticalOffset = HubsHeaderTextBlock.ActualHeight + 5;
+                HubsMenuPopup.IsOpen = true;
+            }
+            //HubsMenuPopup.IsOpen = !HubsMenuPopup.IsOpen;
         }
         #endregion
 
@@ -1348,6 +1437,98 @@ namespace AssetManager.Desktop
                 }
             }
         }
+        /*private void InitializeTreeView()
+        {
+            ProjectTreeView.Items.Clear();
+
+            // ✅ Add Local "Grand Table Top Game" folder
+            string localRoot = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Grand Table Top Game");
+
+            TreeViewItem localRootItem = new TreeViewItem
+            {
+                Header = "💾 Local: Grand Table Top Game",
+                Tag = localRoot,
+                Items = { null } // Placeholder to allow expansion
+            };
+
+            ProjectTreeView.Items.Add(localRootItem);
+
+            // ✅ Load Autodesk Forge Projects (if applicable)
+            LoadProjectsForHub(hubID);
+        }*/
+
+
+        /*  private async void TreeViewItem_Expanded(object sender, RoutedEventArgs e)
+          {
+              if (sender is TreeViewItem item)
+              {
+                  // ✅ Check if this is a Forge Folder (Project ID + Folder ID)
+                  if (item.Tag is (string projectId, string folderId, bool isFolder))
+                  {
+                      if (item.Items.Count == 1 && item.Items[0] == null) // Check if it needs loading
+                      {
+                          item.Items.Clear();
+
+                          var items = await DataManagement.GetProjectItems(projectId, folderId);
+
+                          if (items == null || !items.Any())
+                          {
+                              item.Items.Add(new TreeViewItem { Header = "❌ No items found" });
+                              return;
+                          }
+
+                          foreach (var (itemId, itemName, isFolderItem) in items)
+                          {
+                              TreeViewItem fileItem = new TreeViewItem
+                              {
+                                  Header = isFolderItem ? $"📁 {itemName}" : $"📄 {itemName}",
+                                  Tag = (projectId, itemId, isFolderItem),
+                                  ContextMenu = CreateContextMenu(projectId, itemId, isFolderItem)
+                              };
+
+                              if (isFolderItem)
+                              {
+                                  fileItem.Items.Add(null); // Placeholder for lazy loading
+                              }
+
+                              item.Items.Add(fileItem);
+                          }
+                      }
+                  }
+                  // ✅ Check if this is a LOCAL folder path
+                  else if (item.Tag is string localPath)
+                  {
+                      if (Directory.Exists(localPath))
+                      {
+                          item.Items.Clear(); // Remove placeholder
+
+                          foreach (var dir in Directory.GetDirectories(localPath))
+                          {
+                              TreeViewItem dirItem = new TreeViewItem
+                              {
+                                  Header = $"📂 {Path.GetFileName(dir)}",
+                                  Tag = dir,
+                                  Items = { null } // Placeholder for expansion
+                              };
+
+                              item.Items.Add(dirItem);
+                          }
+
+                          foreach (var file in Directory.GetFiles(localPath))
+                          {
+                              TreeViewItem fileItem = new TreeViewItem
+                              {
+                                  Header = $"📄 {Path.GetFileName(file)}",
+                                  Tag = file
+                              };
+
+                              item.Items.Add(fileItem);
+                          }
+                      }
+                  }
+              }
+          }*/
+
 
         private async Task LoadSubfoldersAsync(TreeViewItem parentFolder, string projectId, string folderId)
         {
@@ -1552,11 +1733,11 @@ namespace AssetManager.Desktop
                 // Also immediately fetch and set the storage ID for the selected item
                 await FetchAndSetStorageId();
                 
-                if (ModelsDataGrid.CurrentColumn.Header.ToString() != "Actions")
-                {
-                    ModelInfoSidebar.Width = new GridLength(200);
-                    await InitializeModelsInfoSidebar();
-                }
+                //if (ModelsDataGrid.CurrentColumn.Header.ToString() != "Actions")
+                //{
+                //    ModelInfoSidebar.Width = new GridLength(200);
+                //    await InitializeModelsInfoSidebar();
+                //}
             }
             else if (ModelsDataGrid.SelectedItem != null)
             {
@@ -1693,6 +1874,21 @@ namespace AssetManager.Desktop
                 }
             };
 
+            MenuItem openCommentsItem = new MenuItem { Header = "💬 Open Comments" };
+            openCommentsItem.Tag = new Tuple<string, string>(modelId, modelName);
+            openCommentsItem.Click += async (s, e) =>
+            {
+                if (s is MenuItem menuItem && menuItem.Tag is Tuple<string, string> modelInfo)
+                {
+                    string selectedModelId = modelInfo.Item1;
+                    Console.WriteLine($"💬 Opening Comments for Model: {selectedModelId}");
+                    _selectedItemId = selectedModelId;
+                    _selectedItemName = modelInfo.Item2;
+
+                    LoadComments(selectedModelId);
+                }
+            };
+
             MenuItem downloadItem = new MenuItem { Header = "📥 Download" };
             downloadItem.Tag = new Tuple<string, string>(modelId, modelName);
             downloadItem.Click += (s, e) =>
@@ -1725,12 +1921,13 @@ namespace AssetManager.Desktop
                     _selectedItemName = modelInfo.Item2;
 
                     // If your method still expects a parameter, pass it
-                    BtnDeleteModel_Click(selectedModelId);
+                    BtnDeleteModel_Click(selectedModelId, _selectedProjectId);
                 }
             };
 
             menu.Items.Add(openInFusionItem);
             menu.Items.Add(viewInAppItem);
+            menu.Items.Add(openCommentsItem);
             menu.Items.Add(downloadItem);
             menu.Items.Add(deleteItem);
 
@@ -1932,8 +2129,9 @@ namespace AssetManager.Desktop
 
             try
             {
+                DataManagement dataService = new DataManagement();
                 // Call your existing method to get versions
-                var versionsList = await GetVersionsForItemAsync(_selectedProjectId, modelId);
+                var versionsList = await dataService.GetVersionsForItemAsync(_selectedProjectId, modelId);
 
                 if (versionsList != null && versionsList.Any())
                 {
@@ -3043,29 +3241,66 @@ namespace AssetManager.Desktop
 
         private async void BtnDeleteModel_Click(object sender, RoutedEventArgs e)
         {
-            string itemId = "urn:adsk.wipprod:dm.item:8IKCVBh3Qg-P8lQuCRewaQ";
-            string projectId = _selectedProjectId;
-            Console.WriteLine("Attempting to delete id: " + itemId + " from project: " + projectId);
-            DeleteModel _delMod = new();
-            bool isDeleted = await _delMod.DeleteModelAsync(projectId, itemId);
-            if (!isDeleted)
+            try
             {
-                MessageBox.Show("Failed to delete");
+                string itemId = _selectedItemId; // Replace with dynamic item ID
+                string projectId = _selectedProjectId;
+                string accessToken = _accessToken; // Retrieve this dynamically from your authentication system
+
+                Console.WriteLine($"Attempting to delete item: {itemId} from project: {projectId}");
+
+                DeleteModel deleteModel = new(accessToken);
+                bool isDeleted = await deleteModel.DeleteLatestModelVersionAsync(projectId, itemId);
+
+                if (isDeleted)
+                {
+                    MessageBox.Show("Model deleted successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                else
+                {
+                    MessageBox.Show("Failed to delete the model. Please check the logs.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"An error occurred: {ex.Message}", "Exception", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
-        private async void BtnDeleteModel_Click(string selectedItemId)
+        private async Task BtnDeleteModel_Click(string selectedItemId, string projectId)
         {
-            string itemId = "urn:adsk.wipprod:dm.item:8IKCVBh3Qg-P8lQuCRewaQ";
-            string projectId = _selectedProjectId;
-            Console.WriteLine("Attempting to delete id: " + itemId + " from project: " + projectId);
-            DeleteModel _delMod = new();
-            bool isDeleted = await _delMod.DeleteModelAsync(projectId, itemId);
-            if (!isDeleted)
+            try
             {
-                MessageBox.Show("Failed to delete");
+                if (string.IsNullOrEmpty(selectedItemId))
+                {
+                    MessageBox.Show("No item selected for deletion.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                string itemId = _selectedItemId;
+                projectId = _selectedProjectId;
+                string accessToken = _accessToken; // Retrieve this dynamically from your authentication system
+
+                Console.WriteLine($"Attempting to delete item: {itemId} from project: {projectId}");
+
+                DeleteModel deleteModel = new(accessToken);
+                bool isDeleted = await deleteModel.DeleteLatestModelVersionAsync(projectId, itemId);
+
+                if (isDeleted)
+                {
+                    MessageBox.Show("Model deleted successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                else
+                {
+                    MessageBox.Show("Failed to delete the model. Please check the logs.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"An error occurred: {ex.Message}", "Exception", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
 
         private void BtnLogout_Click(object sender, RoutedEventArgs e)
         {
@@ -3338,17 +3573,21 @@ namespace AssetManager.Desktop
             versionSlider.Visibility = Visibility.Collapsed;
         }
 
-        private async void LoadForgeViewer(string encodedUrn)
+        //Trying the SKybox
+        /* private async void LoadForgeViewer(string encodedUrn)
         {
             try
             {
                 ForgeWebView.Visibility = Visibility.Visible;
 
-                // Initialize WebView2
+                // Initialize WebView2 if not already initialized
                 if (ForgeWebView.CoreWebView2 == null)
                 {
                     await ForgeWebView.EnsureCoreWebView2Async();
+                    ForgeWebView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false;
+                    ForgeWebView.CoreWebView2.Settings.AreDefaultScriptDialogsEnabled = true;
                 }
+
                 string accessToken = TokenManager.GetToken();
                 if (string.IsNullOrEmpty(accessToken))
                 {
@@ -3361,6 +3600,7 @@ namespace AssetManager.Desktop
                 await ForgeWebView.EnsureCoreWebView2Async();
                 Console.WriteLine("✅ WebView2 initialized successfully.");
 
+                // HTML Content with Forge Viewer integration
                 string htmlContent = $@"<!DOCTYPE html>
 <html>
 <head>
@@ -3372,28 +3612,197 @@ namespace AssetManager.Desktop
 </head>
 <body>
     <div id='forgeViewer' style='width: 100%; height: 100vh;'></div>
+
+    <!-- Log Display Area -->
+    <div id=""logConsole"" 
+        style=""position: absolute; bottom: 10px; left: 10px; width: 95%; max-height: 200px; overflow-y: auto; 
+        background: rgba(0, 0, 0, 0.7); color: white; padding: 10px; font-family: monospace;"">
+        <strong>Logs:</strong><br>
+    </div>
+
     <script>
+        function logMessage(message) {{
+            console.log(message);  // Standard Console Log
+            let logDiv = document.getElementById(""logConsole"");
+            logDiv.innerHTML += message + ""<br>""; // Append log to UI
+            logDiv.scrollTop = logDiv.scrollHeight; // Auto-scroll to latest log
+        }}
+
+        Autodesk.Viewing.Private.env = {{ DISABLE_MIXPANEL_TRACKING: true }};
+        Autodesk.Viewing.Private.trackUsage = function() {{}};
+
         var options = {{
             env: 'AutodeskProduction',
             getAccessToken: function(onTokenReady) {{
-                onTokenReady('{accessToken}', 3599);
+                onTokenReady('{{accessToken}}', 3599);
             }}
         }};
-        var documentId = 'urn:{encodedUrn}';
+
+        var documentId = 'urn:{{encodedUrn}}';
         Autodesk.Viewing.Initializer(options, function() {{
+            logMessage('✅ Viewer initialized.');
             var viewerDiv = document.getElementById('forgeViewer');
-            var viewer = new Autodesk.Viewing.GuiViewer3D(viewerDiv);
+            window.viewer = new Autodesk.Viewing.GuiViewer3D(viewerDiv);
             viewer.start();
+
             Autodesk.Viewing.Document.load(documentId, function(doc) {{
                 var defaultModel = doc.getRoot().getDefaultGeometry();
-                viewer.loadDocumentNode(doc, defaultModel);
+                viewer.loadDocumentNode(doc, defaultModel).then(function() {{
+                    logMessage('✅ Model loaded successfully.');
+                    
+                    viewer.loadExtension('CustomSkyboxExtension').then(() => {{
+                        logMessage('✅ CustomSkyboxExtension successfully loaded');
+                    }}).catch(err => {{
+                        logMessage('❌ Error loading CustomSkyboxExtension: ' + err);
+                    }});
+
+                }});
             }}, function(errorMsg) {{
-                console.error('Error loading document: ' + errorMsg);
+                logMessage('❌ Error loading document: ' + errorMsg);
             }});
         }});
     </script>
 </body>
+
 </html>";
+
+                ForgeWebView.NavigateToString(htmlContent);
+
+                // Inject the Skybox extension JavaScript after WebView2 loads
+                ForgeWebView.CoreWebView2.NavigationCompleted += async (sender, args) =>
+                {
+                    string jsScript = @"
+class CustomSkyboxExtension extends Autodesk.Viewing.Extension {
+    constructor(viewer, options) {
+        super(viewer, options);
+    }
+
+    load() {
+        console.log('✅ CustomSkyboxExtension loaded');
+
+               let envMapUrls = [
+            ""https://my-skybox-images.s3.eu-north-1.amazonaws.com/px.png"", // Right (+X)
+            ""https://my-skybox-images.s3.eu-north-1.amazonaws.com/nx.png"", // Left (-X)
+            ""https://my-skybox-images.s3.eu-north-1.amazonaws.com/py.png"", // Top (+Y)
+            ""https://my-skybox-images.s3.eu-north-1.amazonaws.com/ny.png"", // Bottom (-Y)
+            ""https://my-skybox-images.s3.eu-north-1.amazonaws.com/pz.png"", // Front (+Z)
+            ""https://my-skybox-images.s3.eu-north-1.amazonaws.com/nz.png""  // Back (-Z)
+        ];
+
+
+        viewer.impl.setLightPreset(0); // Disable Autodesk default lighting
+        viewer.impl.createCubeMapFromUrls(envMapUrls, function(cubeMap) {
+            if (cubeMap) {
+                viewer.impl.setBackgroundCubeMap(cubeMap);
+                viewer.impl.setUseCubeMap(true);
+                console.log('✅ Skybox Applied Successfully');
+            } else {
+                console.error('❌ Failed to load skybox cube map');
+            }
+        });
+
+        viewer.impl.invalidate(true, true, false);
+        return true;
+    }
+
+    unload() {
+        console.log('❌ CustomSkyboxExtension unloaded');
+        return true;
+    }
+}
+
+Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', CustomSkyboxExtension);
+";
+
+                    await ForgeWebView.CoreWebView2.ExecuteScriptAsync(jsScript);
+                };
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ WebView2 initialization failed: {ex.Message}");
+            }
+        }*/
+
+        private async void LoadForgeViewer(string encodedUrn)
+        {
+            try
+            {
+                ForgeWebView.Visibility = Visibility.Visible;
+
+                // Initialize WebView2
+                if (ForgeWebView.CoreWebView2 == null)
+                {
+                    await ForgeWebView.EnsureCoreWebView2Async();
+                }
+
+                string accessToken = TokenManager.GetToken();
+                if (string.IsNullOrEmpty(accessToken))
+                {
+                    Console.WriteLine("❌ Access token is missing.");
+                    MessageBox.Show("Authentication error. Please log in again.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                Console.WriteLine("🔄 Initializing WebView2...");
+                await ForgeWebView.EnsureCoreWebView2Async();
+                Console.WriteLine("✅ WebView2 initialized successfully.");
+
+                // ✅ Correct HDRI URL (must be .hdr or .dds, hosted with a direct link)
+                string hdriUrl = "https://www.dropbox.com/scl/fi/xb0pph37hni7q1qoa1inq/rogland_clear_night_4k.hdr?rlkey=mik14m29cyr3uzzj8guakwzxf&raw=1";
+
+                string htmlContent = $@"<!DOCTYPE html>
+ <html>
+ <head>
+     <meta charset='UTF-8'>
+     <meta http-equiv='X-UA-Compatible' content='IE=Edge' />
+     <title>Forge Viewer</title>
+     <script src='https://developer.api.autodesk.com/modelderivative/v2/viewers/7.52/viewer3D.min.js'></script>
+     <link rel='stylesheet' href='https://developer.api.autodesk.com/modelderivative/v2/viewers/7.52/style.min.css' type='text/css'>
+ </head>
+ <body>
+     <div id='forgeViewer' style='width: 100%; height: 100vh;'></div>
+     <script>
+         var options = {{
+             env: 'AutodeskProduction',
+             getAccessToken: function(onTokenReady) {{
+                 onTokenReady('{accessToken}', 3599);
+             }}
+         }};
+         var documentId = 'urn:{encodedUrn}';
+         Autodesk.Viewing.Initializer(options, function() {{
+             var viewerDiv = document.getElementById('forgeViewer');
+             var viewer = new Autodesk.Viewing.GuiViewer3D(viewerDiv);
+             viewer.start();
+
+             viewer.loadExtension('Autodesk.Viewing.EnvironmentSettings')
+                 .then(() => {{
+                     console.log('🌌 EnvironmentSettings Extension Loaded!');
+
+                     // ✅ Register the HDRI as a Forge Viewer environment
+                     Autodesk.Viewing.Private.EnvSettings.addCustomEnvironment('Custom_Fantasy_HDRI', {{
+                         path: '{hdriUrl}',
+                         type: 'equirectangular', // Must be 'equirectangular' for HDRI
+                         displayName: 'Fantasy Night Sky',
+                     }});
+
+                     // ✅ Apply the HDRI as an available environment
+                     viewer.setEnvironment('Custom_Fantasy_HDRI');
+                     console.log('✅ Custom HDRI added to Environments List!');
+
+                     // ✅ Ensure the HDRI is visible
+                     viewer.setEnvMapBackground(true);
+                 }});
+
+             Autodesk.Viewing.Document.load(documentId, function(doc) {{
+                 var defaultModel = doc.getRoot().getDefaultGeometry();
+                 viewer.loadDocumentNode(doc, defaultModel);
+             }}, function(errorMsg) {{
+                 console.error('Error loading document: ' + errorMsg);
+             }});
+         }});
+     </script>
+ </body>
+ </html>";
 
                 ForgeWebView.NavigateToString(htmlContent);
             }
@@ -3402,6 +3811,8 @@ namespace AssetManager.Desktop
                 Console.WriteLine($"❌ WebView2 initialization failed: {ex.Message}");
             }
         }
+
+
         #endregion
 
         //NEEDS MIGRATING TO VERSION CONTROL//
@@ -3732,72 +4143,14 @@ namespace AssetManager.Desktop
             }
         }
 
-        private async Task<List<(string versionId, string versionName, string storageId)>> GetVersionsForItemAsync(string projectId, string itemId)
-        {
-            if (string.IsNullOrEmpty(projectId) || string.IsNullOrEmpty(itemId))
-            {
-                Console.WriteLine("❌ Error: Project ID or Item ID is missing.");
-                return null;
-            }
-
-            string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/items/{itemId}/versions";
-            string accessToken = TokenManager.GetToken();
-
-            using HttpClient httpClient = new HttpClient();
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-
-            try
-            {
-                Console.WriteLine($"🔍 Fetching versions for Item: {itemId}");
-                HttpResponseMessage response = await httpClient.GetAsync(url);
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    Console.WriteLine($"❌ Error retrieving versions. Status Code: {response.StatusCode}");
-                    return null;
-                }
-
-                string jsonResponse = await response.Content.ReadAsStringAsync();
-                using JsonDocument doc = JsonDocument.Parse(jsonResponse);
-                JsonElement root = doc.RootElement;
-
-                List<(string versionId, string versionName, string storageId)> versions = new();
-
-                if (root.TryGetProperty("data", out JsonElement versionsArray))
-                {
-                    foreach (JsonElement versionElement in versionsArray.EnumerateArray())
-                    {
-                        string versionId = versionElement.GetProperty("id").GetString();
-                        string versionName = versionElement.GetProperty("attributes").GetProperty("displayName").GetString();
-
-                        string storageId = null;
-                        if (versionElement.TryGetProperty("relationships", out JsonElement relationships) &&
-                            relationships.TryGetProperty("storage", out JsonElement storage) &&
-                            storage.TryGetProperty("data", out JsonElement storageData) &&
-                            storageData.TryGetProperty("id", out JsonElement storageIdElement))
-                        {
-                            storageId = storageIdElement.GetString();
-                        }
-
-                        Console.WriteLine($"📄 Found Version: {versionName} (ID: {versionId}) - Storage ID: {storageId}");
-                        versions.Add((versionId, versionName, storageId));
-                    }
-                }
-
-                return versions;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"❌ Exception while retrieving versions: {ex.Message}");
-                return null;
-            }
-        }
+   
         public async Task<string> GetItemUrn(string projectId, string itemId)
         {
             try
             {
                 // ✅ Fetch all versions for the item
-                var versions = await GetVersionsForItemAsync(projectId, itemId);
+                DataManagement dataService = new DataManagement();
+                var versions = await dataService.GetVersionsForItemAsync(_selectedProjectId, _selectedItemId);
 
                 if (versions == null || versions.Count == 0)
                 {
@@ -4214,53 +4567,120 @@ namespace AssetManager.Desktop
                 MessageBox.Show($"Error filtering: {exception.Message}");
             }
         }
-        
-        //initalise models sidebar
-        private async Task InitializeModelsInfoSidebar()
-        {
-            //display upvotes
-                int upvotes = await GetModelUpvoteCount(_selectedItemId);
-                        
-                await SetUserModelVote(_selectedItemId, _userId);
-                int vote = await GetUserModelVote(_selectedItemId, _userId);
-                if (vote == 1)
-                {
-                    UpArrow.Kind = PackIconKind.ArrowTopBold;
-                    UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#11d137"));
-                    DownArrow.Kind = PackIconKind.ArrowDownBoldOutline;
-                    DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
-                }
-                else if (vote == -1)
-                {
-                    DownArrow.Kind = PackIconKind.ArrowDownBold;
-                    DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d11111"));
-                    UpArrow.Kind = PackIconKind.ArrowTopBoldOutline;
-                    UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
-                }
-                else
-                {
-                    UpArrow.Kind = PackIconKind.ArrowTopBoldOutline;
-                    UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
-                    DownArrow.Kind = PackIconKind.ArrowDownBoldOutline;
-                    DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
-                }
 
-                string visibility = await GetModelVisibility();
-                if (visibility == "Public")
-                {
-                    Public.IsSelected = true;
-                }
-                else if (visibility == "Private")
-                {
-                    Private.IsSelected = true;
-                }
-                        
-                UpvoteTextBlock.Text = upvotes.ToString();
-                ClearComments();
-                ListAllComments();
-                await DisplayTags();
+        //initalise models sidebar
+        //private async Task InitializeModelsInfoSidebar()
+        //{
+        //    //display upvotes
+        //        int upvotes = await GetModelUpvoteCount(_selectedItemId);
+
+        //        await SetUserModelVote(_selectedItemId, _userId);
+        //        int vote = await GetUserModelVote(_selectedItemId, _userId);
+        //        if (vote == 1)
+        //        {
+        //            UpArrow.Kind = PackIconKind.ArrowTopBold;
+        //            UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#11d137"));
+        //            DownArrow.Kind = PackIconKind.ArrowDownBoldOutline;
+        //            DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+        //        }
+        //        else if (vote == -1)
+        //        {
+        //            DownArrow.Kind = PackIconKind.ArrowDownBold;
+        //            DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d11111"));
+        //            UpArrow.Kind = PackIconKind.ArrowTopBoldOutline;
+        //            UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+        //        }
+        //        else
+        //        {
+        //            UpArrow.Kind = PackIconKind.ArrowTopBoldOutline;
+        //            UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+        //            DownArrow.Kind = PackIconKind.ArrowDownBoldOutline;
+        //            DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+        //        }
+
+        //        string visibility = await GetModelVisibility();
+        //        if (visibility == "Public")
+        //        {
+        //            Public.IsSelected = true;
+        //        }
+        //        else if (visibility == "Private")
+        //        {
+        //            Private.IsSelected = true;
+        //        }
+
+        //        UpvoteTextBlock.Text = upvotes.ToString();
+        //        ClearComments();
+        //        //ListAllComments();
+        //        await DisplayTags();
+        //}
+
+        private void LoadComments(string modelId)
+        {
+            ModelDataSidebar.Width = new GridLength(250);
+            ModelComments.Visibility = Visibility.Visible;
+            ModelInfo.Visibility = Visibility.Collapsed;
+
+            ClearComments();
+
+            ModelNameText.Text = _selectedModel.ContainsKey("Name") ? _selectedModel["Name"] : "Unknown Model";
+
+            if (ModelImage.Parent is Grid gridParent && gridParent.Parent is Border headerBackground)
+            {
+                headerBackground.HorizontalAlignment = HorizontalAlignment.Stretch;
+                headerBackground.VerticalAlignment = VerticalAlignment.Top;
+            }
+
+            ModelImage.Width = 120;
+            ModelImage.Height = 120;
+            ModelImage.HorizontalAlignment = HorizontalAlignment.Center;
+
+            _ = ShowThumbnail(_selectedModel["ProjectId"], _selectedModel["Id"], ModelImage);
+
+            ListAllComments(modelId);
         }
-        
+
+        private StackPanel CreateModelThumbnailUI(Dictionary<string, string> model)
+        {
+            // Create StackPanel
+            StackPanel modelThumbnailPanel = new StackPanel
+            {
+                Orientation = Orientation.Vertical,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Margin = new Thickness(0, 0, 0, 10)
+            };
+
+            // Create Image for Thumbnail
+            Image thumbnailImage = new Image
+            {
+                Width = 150,
+                Height = 150,
+                Stretch = Stretch.Uniform,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+
+            // Load thumbnail asynchronously
+            _ = ShowThumbnail(model["ProjectId"], model["Id"], thumbnailImage);
+
+            // Create TextBlock for Model Name
+            TextBlock modelNameText = new TextBlock
+            {
+                Text = model.ContainsKey("Name") ? model["Name"] : "Model Name",
+                FontSize = 18,
+                FontWeight = FontWeights.Bold,
+                TextAlignment = TextAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                Margin = new Thickness(0, 5, 0, 0)
+            };
+
+            // Add elements to StackPanel
+            modelThumbnailPanel.Children.Add(thumbnailImage);
+            modelThumbnailPanel.Children.Add(modelNameText);
+
+            return modelThumbnailPanel;
+        }
+
+
         //Upvote system
         private async void UpArrow_Click(object sender, RoutedEventArgs e)
         {
@@ -4593,11 +5013,11 @@ namespace AssetManager.Desktop
             }
         }
         
-        private async void ListAllComments()
+        private async void ListAllComments(string modelId)
         {
             try
             {
-                List<Comment> comments = await GetAllComments(_selectedItemId);
+                List<Comment> comments = await GetAllComments(modelId);
                 List<CommentItem> commentItems = new List<CommentItem>();
 
                 foreach (Comment comment in comments)
@@ -4661,43 +5081,98 @@ namespace AssetManager.Desktop
                 throw;
             }
         }
-        
-        private void SortByComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+
+        private void SortByButton_Click(object sender, RoutedEventArgs e)
         {
-            ComboBox comboBox = sender as ComboBox;
-            var selectedItem = comboBox.SelectedItem as ComboBoxItem;
-            string sortOption = selectedItem.Content.ToString();
-            ClearComments();
-            SortComments(sortOption, _selectedItemId);
+            Button button = sender as Button;
+            if (button != null)
+            {
+                ContextMenu menu = button.Resources["SortMenu"] as ContextMenu;
+                if (menu != null)
+                {
+                    menu.PlacementTarget = button;
+                    menu.IsOpen = true;
+                }
+            }
         }
-        
-        private async void SortComments(string i, string assetId)
+
+        private async void SortByNewest_Click(object sender, RoutedEventArgs e)
         {
+            SortByText.Text = "Newest";
+            await SortComments("Newest", _selectedItemId);
+        }
+
+        private async void SortByOldest_Click(object sender, RoutedEventArgs e)
+        {
+            SortByText.Text = "Oldest";
+            await SortComments("Oldest", _selectedItemId);
+        }
+
+        private async Task SortComments(string sortOption, string assetId)
+        {
+            // Ensure the comments list is cleared before updating
+            ClearComments();
+
             MongoConnection database = new MongoConnection();
             var newest = Builders<Comment>.Sort.Descending(x => x.CreatedDateTime);
             var oldest = Builders<Comment>.Sort.Ascending(x => x.CreatedDateTime);
 
-            switch (i)
+            List<Comment> sortedComments;
+
+            if (sortOption == "Newest")
             {
-                case "Newest":
-                    List<Comment> newestComments = await database.Comments.Find(x => x.AssetId == assetId).Sort(newest).ToListAsync();
-                    foreach (Comment comment in newestComments)
-                    {
-                        string name = await GetUserName(comment.UserId);
-                        ListComments.Items.Add(new CommentItem { User = name, Content = comment.Content, CreatedDateTime = comment.CreatedDateTime });
-                    }
-                    break;
-                case "Oldest":
-                    List<Comment> oldestComments = await database.Comments.Find(x => x.AssetId == assetId).Sort(oldest).ToListAsync();
-                    foreach (Comment comment in oldestComments)
-                    {
-                        string name = await GetUserName(comment.UserId);
-                        ListComments.Items.Add(new CommentItem { User = name, Content = comment.Content, CreatedDateTime = comment.CreatedDateTime });
-                    }
-                    break;
+                sortedComments = await database.Comments.Find(x => x.AssetId == assetId).Sort(newest).ToListAsync();
+            }
+            else // "Oldest"
+            {
+                sortedComments = await database.Comments.Find(x => x.AssetId == assetId).Sort(oldest).ToListAsync();
+            }
+
+            // Populate the comments list
+            foreach (Comment comment in sortedComments)
+            {
+                string name = await GetUserName(comment.UserId);
+                ListComments.Items.Add(new CommentItem { User = name, Content = comment.Content, CreatedDateTime = comment.CreatedDateTime });
             }
         }
-        
+
+
+        //private void SortByComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        //{
+        //    ComboBox comboBox = sender as ComboBox;
+        //    var selectedItem = comboBox.SelectedItem as ComboBoxItem;
+        //    string sortOption = selectedItem.Content.ToString();
+        //    ClearComments();
+        //    SortComments(sortOption, _selectedItemId);
+        //}
+
+        //private async void SortComments(string i, string assetId)
+        //{
+        //    MongoConnection database = new MongoConnection();
+        //    var newest = Builders<Comment>.Sort.Descending(x => x.CreatedDateTime);
+        //    var oldest = Builders<Comment>.Sort.Ascending(x => x.CreatedDateTime);
+
+        //    switch (i)
+        //    {
+        //        case "Newest":
+        //            List<Comment> newestComments = await database.Comments.Find(x => x.AssetId == assetId).Sort(newest).ToListAsync();
+        //            foreach (Comment comment in newestComments)
+        //            {
+        //                string name = await GetUserName(comment.UserId);
+        //                ListComments.Items.Add(new CommentItem { User = name, Content = comment.Content, CreatedDateTime = comment.CreatedDateTime });
+        //            }
+        //            break;
+        //        case "Oldest":
+        //            List<Comment> oldestComments = await database.Comments.Find(x => x.AssetId == assetId).Sort(oldest).ToListAsync();
+        //            foreach (Comment comment in oldestComments)
+        //            {
+        //                string name = await GetUserName(comment.UserId);
+        //                ListComments.Items.Add(new CommentItem { User = name, Content = comment.Content, CreatedDateTime = comment.CreatedDateTime });
+        //            }
+        //            break;
+        //    }
+        //}
+
         private class CommentItem
         {
             public string User { get; set; }
@@ -4705,6 +5180,421 @@ namespace AssetManager.Desktop
             public DateTime CreatedDateTime { get; set; }
         }
         
+        //marketplace
+        private async void InitializeMarketplace()
+        {
+            MongoConnection database = new MongoConnection();
+            List<Dictionary<string, string>> allListedModels = await GetAllListedModels();
+            MarketplaceDataGrid.ItemsSource = allListedModels;
+        }
+
+        private async Task<List<Dictionary<string, string>>> GetAllListedModels()
+        {
+            MongoConnection database = new MongoConnection();
+            List<Dictionary<string, string>> allListedModels = new List<Dictionary<string, string>>();
+            var listedModels = await database.ListedModels.Find(FilterDefinition<ListedModels>.Empty).ToListAsync();
+            foreach (var model in listedModels)
+            {
+                string projectId = await GetModelProjectId(model.ModelId);
+                string sellerName = await GetUserName(model.SellerId);
+                allListedModels.Add(new Dictionary<string, string>
+                {
+                    { "Name", model.Name },
+                    { "Description", model.Description },
+                    { "Seller", sellerName },
+                    { "Id", model.ModelId },
+                    { "Price", model.Price.ToString("0.00")},
+                    { "ProjectId", projectId}
+                });
+            }
+            return allListedModels;
+        }
+        
+        private async void BtnMarketplace_Click(object sender, RoutedEventArgs e)
+        {
+            MarketplaceBorder.Visibility = Visibility.Visible;
+            ProjectsBorder.Visibility = Visibility.Collapsed;
+            LibraryBorder.Visibility = Visibility.Collapsed;
+            InitializeMarketplace();
+        }
+        
+        private void BtnLibrary_Click(object sender, RoutedEventArgs e)
+        {
+            MarketplaceBorder.Visibility = Visibility.Collapsed;
+            ProjectsBorder.Visibility = Visibility.Visible;
+            LibraryBorder.Visibility = Visibility.Visible;
+        }
+        
+        private async void BtnListModel_Click(object sender, RoutedEventArgs e)
+        {
+            MongoConnection database = new MongoConnection();
+            var findListing = await database.ListedModels.Find(x => x.ModelId == _selectedItemId).FirstOrDefaultAsync();
+            if (findListing != null)
+            {
+                MessageBox.Show($"Model already listed");
+                return;
+            }
+            ListModelPopup.IsOpen = true;
+        }
+        
+        private async void BtnList_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                MongoConnection database = new MongoConnection();
+                
+                if ((PriceTextBox.Text == "Enter Price" || string.IsNullOrEmpty(PriceTextBox.Text)) ||
+                    (DescriptionTextBox.Text == "Enter Description") || string.IsNullOrEmpty(DescriptionTextBox.Text))
+                {
+                    MessageBox.Show("Please enter a price or description");
+                    return;
+                }
+
+                if (double.TryParse(PriceTextBox.Text, out double price))
+                {
+                    string[] part = PriceTextBox.Text.Split('.');
+                    if (part.Length != 2 )
+                    {
+                        MessageBox.Show("Please enter a valid price");
+                        return;
+                    }
+
+                    if (part[1].Length != 2)
+                    {
+                        MessageBox.Show("Please enter a valid price");
+                        return;
+                    }
+                }
+                else
+                {
+                    MessageBox.Show("Please enter a valid price");
+                    return;
+                }
+
+                var modelTags = await GetModelTags();
+                List<string> tags = new List<string>();
+                foreach (var tag in modelTags.Tags)
+                {
+                    tags.Add(tag);
+                }
+
+                string modelName = await GetModelName(_selectedItemId);
+                
+                ListedModels models = new ListedModels()
+                {
+                    ModelId = _selectedItemId,
+                    Name = modelName,
+                    SellerId = _userId,
+                    Price = price,
+                    Tags = tags,
+                    Description = DescriptionTextBox.Text
+                };
+                await database.ListedModels.InsertOneAsync(models);
+                
+                MessageBox.Show($"Model listing successful!");
+            }
+            catch (Exception exception)
+            {
+                MessageBox.Show($"Error: {exception.Message}");
+            }
+            
+        }
+
+        private async void MarketplaceGrid_Click(object sender, MouseButtonEventArgs e)
+        {
+            MarketplaceDataGrid.Visibility = Visibility.Collapsed;
+            MarketplaceGridView.Visibility = Visibility.Visible;
+            MarketplaceGridBorder.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
+            MarketplaceListBorder.Background = Brushes.Transparent;
+            
+            var listedModels = await GetAllListedModels();
+            
+            DisplayMarketplaceGrid(listedModels);
+        }
+        
+        private async void MarketplaceList_Click(object sender, MouseButtonEventArgs e)
+        {
+            MarketplaceGridView.Visibility = Visibility.Collapsed;
+            MarketplaceDataGrid.Visibility = Visibility.Visible;
+            MarketplaceListBorder.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
+            MarketplaceGridBorder.Background = Brushes.Transparent;
+        }
+
+        private void DisplayMarketplaceGrid(List<Dictionary<string, string>> models)
+        {
+            MarketplaceModelsContainer.Children.Clear();
+            foreach (var model in models)
+            {
+                Border modelSquare = new Border()
+                {
+                    Width = 263,
+                    Height = 253,
+                    CornerRadius = new CornerRadius(5),
+                    Background = Brushes.White,
+                    BorderBrush = Brushes.LightGray,
+                    BorderThickness = new Thickness(1),
+                    Margin = new Thickness(10),
+                    Effect = new DropShadowEffect
+                    {
+                        Color = Colors.Black,
+                        Opacity = 0.1,
+                        BlurRadius = 10,
+                        ShadowDepth = 2
+                    },
+                    Tag = model, // Store the model data in the Tag for easy access
+                    Cursor = Cursors.Hand // Change cursor to indicate
+                };
+
+                Grid grid = new Grid();
+                grid.RowDefinitions.Add(new RowDefinition{ Height = new GridLength(170)});
+                grid.RowDefinitions.Add(new RowDefinition{ Height = GridLength.Auto });
+                
+                Border headerBackground = new Border
+                {
+                    Background = new SolidColorBrush(Color.FromRgb(230,230,230)),
+                    HorizontalAlignment = HorizontalAlignment.Stretch,
+                    Margin = new Thickness(5)
+                };
+                
+                Grid.SetRow(headerBackground, 0);
+                grid.Children.Add(headerBackground);
+
+                Image thumbnailImage = new Image
+                {
+                    Width = 150,
+                    Height = 150,
+                    Stretch = Stretch.Uniform,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center,
+                };
+                
+                _ = ShowThumbnail(model["ProjectId"], model["Id"], thumbnailImage);
+                Grid.SetRow(thumbnailImage, 0);
+                grid.Children.Add(thumbnailImage);
+
+                Grid infoGrid = new Grid();
+                Grid.SetRow(infoGrid, 1);
+                grid.Children.Add(infoGrid);
+                
+                infoGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(125) });
+                infoGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(125) });
+
+                StackPanel textContent = new StackPanel
+                {
+                    Orientation = Orientation.Vertical,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    Margin = new Thickness(8,5,5,2)
+                };
+                
+                Grid.SetColumn(textContent, 0);
+                infoGrid.Children.Add(textContent);
+
+                TextBlock name = new TextBlock
+                {
+                    Text = model["Name"],
+                    FontSize = 16,
+                    FontWeight = FontWeights.Normal,
+                    Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B")),
+                    TextAlignment = TextAlignment.Center,
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    TextWrapping = TextWrapping.Wrap
+                };
+
+                TextBlock description = new TextBlock
+                {
+                    Text = model["Description"],
+                    FontSize = 14,
+                    FontWeight = FontWeights.Normal,
+                    Foreground = Brushes.Gray,
+                    TextAlignment = TextAlignment.Center,
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    TextWrapping = TextWrapping.Wrap
+                };
+                
+                textContent.Children.Add(name);
+                textContent.Children.Add(description);
+                
+                StackPanel priceContent = new StackPanel
+                {
+                    Orientation = Orientation.Vertical,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    Margin = new Thickness(8,5,5,2)
+                };
+                
+                Grid.SetColumn(priceContent, 1);
+                infoGrid.Children.Add(priceContent);
+                
+                TextBlock price = new TextBlock
+                {
+                    Text = model["Price"],
+                    FontSize = 16,
+                    FontWeight = FontWeights.Normal,
+                    Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B")),
+                    TextAlignment = TextAlignment.Center,
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    TextWrapping = TextWrapping.Wrap
+                };
+
+                Button buy = new Button
+                {
+                    Content = "Buy",
+                    Background = Brushes.Green,
+                    Foreground = Brushes.Azure,
+                    Width = 50,
+                    Height = 20,
+                    BorderBrush = Brushes.Green,
+                    BorderThickness = new Thickness(2),
+                };
+
+                buy.Click += BtnBuy_Click;
+
+                Border buyBorder = new Border
+                {
+                    BorderBrush = buy.BorderBrush,
+                    BorderThickness = new Thickness(2),
+                    CornerRadius = new CornerRadius(3)
+                };
+                
+                buyBorder.Child = buy;
+                priceContent.Children.Add(price);
+                priceContent.Children.Add(buyBorder);
+
+                modelSquare.Child = grid;
+                MarketplaceModelsContainer.Children.Add(modelSquare);
+            }
+        }
+        
+        private void MarketplaceSort_Click(object sender, MouseButtonEventArgs e)
+        {
+            SortChevron.Kind = PackIconKind.ChevronUp;
+            SortPopup.IsOpen = true;
+        }
+
+        private async void SortListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            ListBoxItem item = SortListBox.SelectedItem as ListBoxItem;
+            if (item != null)
+            {
+                string option = item.Content.ToString();
+                SortByTextBlock.Text = $"Sort By {option}";
+                SortListedModels(option);
+            }
+        }
+
+        private async void SortListedModels(string option)
+        {
+            var allListedModels = await GetAllListedModels();
+            switch (option)
+            {
+                case "Default":
+                    MarketplaceDataGrid.ItemsSource = allListedModels;
+                    DisplayMarketplaceGrid(allListedModels);
+                    break;
+                case "Upvotes":
+                    List<Dictionary<string, string>> upvotes = new List<Dictionary<string, string>>();
+                    foreach (var item in allListedModels)
+                    {
+                        int upvoteAmount = await GetModelUpvoteCount(item["Id"]);
+                        item.Add("Upvotes", upvoteAmount.ToString());
+                        upvotes.Add(item);
+                    }
+                    
+                    upvotes = upvotes.OrderByDescending(x => x["Upvotes"]).ToList();
+                    MarketplaceDataGrid.ItemsSource = upvotes;
+                    DisplayMarketplaceGrid(upvotes);
+                    break;
+                case "Price Lowest":
+                    List<Dictionary<string, string>> lowestPrice = allListedModels.OrderBy(x => x["Price"]).ToList();
+                    MarketplaceDataGrid.ItemsSource = lowestPrice;
+                    DisplayMarketplaceGrid(lowestPrice);
+                    break;
+                case "Price Highest":
+                    List<Dictionary<string, string>> highestPrice = allListedModels.OrderByDescending(x => x["Price"]).ToList();
+                    MarketplaceDataGrid.ItemsSource = highestPrice;
+                    DisplayMarketplaceGrid(highestPrice);
+                    break;
+                case "Name A-Z":
+                    List<Dictionary<string, string>> namesAZ = allListedModels.OrderBy(x => x["Name"]).ToList();
+                    MarketplaceDataGrid.ItemsSource = namesAZ;
+                    DisplayMarketplaceGrid(namesAZ);
+                    break;
+                case "Name Z-A":
+                    List<Dictionary<string, string>> namesZA = allListedModels.OrderByDescending(x => x["Name"]).ToList();
+                    MarketplaceDataGrid.ItemsSource = namesZA;
+                    DisplayMarketplaceGrid(namesZA);
+                    break;
+            }
+        }
+        
+        private async void BtnBuy_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                BuyPopup.IsOpen = true;
+                if (MarketplaceDataGrid.SelectedItem is Dictionary<string, string> models)
+                {
+                    double price = double.Parse(models["Price"]);
+                    string aT = await _payPalService.GetPayPalAcessToken();
+                    string approvalUrl = await _payPalService.CreateOrder(aT, price);
+                    if (string.IsNullOrEmpty(approvalUrl))
+                    {
+                        MessageBox.Show($"❌ Payment Failed");
+                        BuyPopup.IsOpen = false;
+                    }
+                    else
+                    {
+                        webView.CoreWebView2.NavigationStarting -= Redirected;
+                        webView.CoreWebView2.NavigationStarting += Redirected;
+
+                        webView.CoreWebView2.Navigate(approvalUrl);
+                    }
+                }
+            }
+            catch (Exception exception)
+            {
+                MessageBox.Show($"Error: {exception.Message}");
+            }
+        }
+        
+        private async void Redirected(object sender, CoreWebView2NavigationStartingEventArgs args)
+        {
+            if (args.Uri.StartsWith("https://localhost:8080/return"))
+            {
+                args.Cancel = true;
+                Uri uri = new Uri(args.Uri);
+                Console.WriteLine($"{uri}");
+                string token = HttpUtility.ParseQueryString(uri.Query).Get("token");
+                string payerId = HttpUtility.ParseQueryString(uri.Query).Get("PayerId");
+                string payPalAccessToken = await _payPalService.GetPayPalAcessToken();
+                bool approved = await _payPalService.CapturePayment(token, payPalAccessToken);
+                if (approved)
+                {
+                    MessageBox.Show($"\u2705 Payment Successful");
+                    webView.CoreWebView2.Navigate("about:blank");
+                    BuyPopup.IsOpen = false;
+                }
+                else
+                {
+                    MessageBox.Show($"❌ Payment Failed");
+                    webView.CoreWebView2.Navigate("about:blank");
+                    BuyPopup.IsOpen = false;
+                }
+            }
+            else if (args.Uri.StartsWith("https://localhost:8080/cancel"))
+            {
+                args.Cancel = true;
+                MessageBox.Show($"❌ Payment Cancelled");
+                webView.CoreWebView2.Navigate("about:blank");
+                BuyPopup.IsOpen = false;
+            }
+        }
+        
+        private void SortPopup_Closed(object? sender, EventArgs e)
+        {
+            SortChevron.Kind = PackIconKind.ChevronDown;
+        }
         
         //COMMENTED OUT FUNCTIONS//
 
@@ -4903,7 +5793,7 @@ namespace AssetManager.Desktop
 
 */
 
-
+        
     }
 
 }

@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using AssetManager.Infrastructure.Services;
 using System.Text;
 using Newtonsoft.Json;
+using ForgeViewerApp;
 
 
 namespace AssetManager.Infrastructure.Services
@@ -461,7 +462,7 @@ namespace AssetManager.Infrastructure.Services
             }
         }
 
- 
+      
         //Creates new folder in a specified 
         public static async Task<bool> CreateNewFolder(string projectId, string parentFolderId, string folderName)
         {
@@ -633,7 +634,7 @@ namespace AssetManager.Infrastructure.Services
                     }
 
                     string jsonResponse = await response.Content.ReadAsStringAsync();
-                    Console.WriteLine($"JSON Response: {jsonResponse}");
+                    //Console.WriteLine($"JSON Response: {jsonResponse}");
 
                     using JsonDocument doc = JsonDocument.Parse(jsonResponse);
                     JsonElement root = doc.RootElement;
@@ -748,6 +749,84 @@ namespace AssetManager.Infrastructure.Services
             {
                 Console.WriteLine($"❌ Exception occurred: {ex.Message}");
                 return hubList;
+            }
+        }
+
+        public static async Task<string> GetProjectIdByName(string hubID, string projectName)
+        {
+            var projects = await GetAllProjectsFromHub(hubID);
+
+            foreach (var (id, name) in projects)
+            {
+                if (name.Equals(projectName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return id;
+                }
+            }
+            return null;
+        }
+
+        public static async Task<string> CreateProject(string hubID, string projectName)
+        {
+            string newProjectId = await TokenService.CreateProject(hubID, projectName);
+            return newProjectId;
+        }
+
+        public async Task<List<(string versionId, string versionName, string storageId)>> GetVersionsForItemAsync(string projectId, string itemId)
+        {
+            if (string.IsNullOrEmpty(projectId) || string.IsNullOrEmpty(itemId))
+            {
+                Console.WriteLine("❌ Error: Project ID or Item ID is missing.");
+                return null;
+            }
+
+            string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/items/{itemId}/versions";
+            string accessToken = TokenManager.GetToken();
+
+            using HttpClient httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+            try
+            {
+                Console.WriteLine($"🔍 Fetching versions for Item: {itemId}");
+                HttpResponseMessage response = await httpClient.GetAsync(url);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine($"❌ Error retrieving versions. Status Code: {response.StatusCode}");
+                    return null;
+                }
+
+                string jsonResponse = await response.Content.ReadAsStringAsync();
+                using JsonDocument doc = JsonDocument.Parse(jsonResponse);
+                JsonElement root = doc.RootElement;
+
+                List<(string versionId, string versionName, string storageId)> versions = new();
+
+                if (root.TryGetProperty("data", out JsonElement versionsArray))
+                {
+                    foreach (JsonElement versionElement in versionsArray.EnumerateArray())
+                    {
+                        string versionId = versionElement.GetProperty("id").GetString();
+                        string versionName = versionElement.GetProperty("attributes").GetProperty("displayName").GetString();
+
+                        string storageId = null;
+                        if (versionElement.TryGetProperty("relationships", out JsonElement relationships) &&
+                            relationships.TryGetProperty("storage", out JsonElement storage) &&
+                            storage.TryGetProperty("data", out JsonElement storageData) &&
+                            storageData.TryGetProperty("id", out JsonElement storageIdElement))
+                        {
+                            storageId = storageIdElement.GetString();
+                        }
+                        versions.Add((versionId, versionName, storageId));
+                    }
+                }
+                return versions;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return null;
             }
         }
 

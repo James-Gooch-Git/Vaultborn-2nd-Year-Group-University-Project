@@ -10,8 +10,11 @@
 
     <ItemGroup>
       <Compile Remove="Fusion\FusionAddinFiles\**" />
+      <Compile Remove="Fusion\Resources\packages\**" />
       <EmbeddedResource Remove="Fusion\FusionAddinFiles\**" />
+      <EmbeddedResource Remove="Fusion\Resources\packages\**" />
       <None Remove="Fusion\FusionAddinFiles\**" />
+      <None Remove="Fusion\Resources\packages\**" />
     </ItemGroup>
 
 	<ItemGroup>
@@ -133,6 +136,7 @@
     </ItemGroup>
 
 	<ItemGroup>
+    		<PackageReference Include="SkiaSharp" Version="3.116.1" />
     		<PackageReference Include="System.Collections" Version="4.3.0" />
 	</ItemGroup>
 	<ItemGroup>
@@ -181,7 +185,7 @@
 
 
 	<ItemGroup>
-	  <Folder Include="Fusion\Resources\packages\" />
+	  <Folder Include="NewFolder\" />
 	</ItemGroup>
 
 </Project>

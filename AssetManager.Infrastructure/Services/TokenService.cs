@@ -1,7 +1,11 @@
-//using Newtonsoft.Json;
+﻿//using Newtonsoft.Json;
+using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Text;
+using System.Threading.Tasks;
+using Newtonsoft.Json;
 
 namespace AssetManager.Infrastructure.Services;
 
@@ -43,11 +47,64 @@ public class TokenService
         response.EnsureSuccessStatusCode();
 
         string jsonResponse = await response.Content.ReadAsStringAsync();
-        TokenResponse tokenResponse = JsonSerializer.Deserialize<TokenResponse>(jsonResponse);
+        TokenResponse tokenResponse = System.Text.Json.JsonSerializer.Deserialize<TokenResponse>(jsonResponse);
         return tokenResponse.access_token;
     }
 
+    public static async Task<string> CreateProject(string hubId, string projectName)
+    {
+        try
+        {
+            string url = $"https://developer.api.autodesk.com/project/v1/hubs/{hubId}/projects";
 
+            var payload = new
+            {
+                data = new
+                {
+                    type = "projects",
+                    attributes = new
+                    {
+                        name = projectName,
+                        description = "Automatically generated project for asset management.",
+                        extension = new
+                        {
+                            type = "projects:autodesk.core:Project",
+                            version = "1.0"
+                        }
+                    }
+                }
+            };
+
+            string jsonPayload = JsonConvert.SerializeObject(payload);
+            var request = new HttpRequestMessage(HttpMethod.Post, url)
+            {
+                Content = new StringContent(jsonPayload, Encoding.UTF8, "application/json")
+            };
+
+            request.Headers.Add("Authorization", $"Bearer {TokenManager.GetToken()}");
+            HttpClient _httpClient = new HttpClient();
+            HttpResponseMessage response = await _httpClient.SendAsync(request);
+            string responseContent = await response.Content.ReadAsStringAsync();
+
+            if (response.IsSuccessStatusCode)
+            {
+                dynamic jsonResponse = JsonConvert.DeserializeObject(responseContent);
+                string projectId = jsonResponse.data.id;
+                Console.WriteLine($"✅ Created Project: {projectName} (ID: {projectId})");
+                return projectId;
+            }
+            else
+            {
+                Console.WriteLine($"❌ Error creating project '{projectName}': {responseContent}");
+                return null;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Exception in CreateProject: {ex.Message}");
+            return null;
+        }
+    }
     // This is the primary method for getting a token with specific scopes
     public async Task<string> Get2LeggedTokenAsync(string[] scopes)
     {

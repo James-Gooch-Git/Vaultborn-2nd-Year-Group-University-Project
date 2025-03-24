@@ -29,6 +29,8 @@ namespace AssetManagement.Infrastructure.Fusion
                 );
 
                 CopyAddinToPath(tempAddinPath, userAddinsPath);
+                InstallPythonRequests();
+
 
                 // Clean up temp directory
                 Directory.Delete(tempAddinPath, true);
@@ -51,7 +53,7 @@ namespace AssetManagement.Infrastructure.Fusion
 
             string[] directories = {
         ".vscode", "commands/commandDialog/resources", "commands/paletteSend/resources",
-        "commands/paletteShow/resources/html/static", "lib/fusionAddInUtils"
+        "commands/paletteShow/resources/html/static", "lib/fusionAddInUtils", "requests"
     };
 
             string[] embeddedResources = {
@@ -99,6 +101,21 @@ namespace AssetManagement.Infrastructure.Fusion
             {
                 File.WriteAllText(Path.Combine(addinPath, "auth_token.txt"), accessToken);
             }
+            // Define the source and destination paths for the 'requests' directory
+            string sourceRequestsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "requests");
+            string destinationRequestsPath = Path.Combine(addinPath, "requests");
+
+            // Check if the 'requests' directory exists and copy it
+            if (Directory.Exists(sourceRequestsPath))
+            {
+                CopyDirectory(sourceRequestsPath, destinationRequestsPath);
+                Console.WriteLine($"✅ Copied 'requests' directory from: {sourceRequestsPath}");
+            }
+            else
+            {
+                Console.WriteLine($"⚠️ Warning: 'requests' directory not found at {sourceRequestsPath}");
+            }
+
         }
 
         private static void CopyDirectory(string sourceDir, string destinationDir)
@@ -175,6 +192,92 @@ namespace AssetManagement.Infrastructure.Fusion
             }
 
             Console.WriteLine($"✅ Add-in installed at: {targetPath}");
+
         }
+
+        private static void InstallPythonRequests()
+        {
+            try
+            {
+                // Locate Fusion 360's Python installation directory
+                string fusionPythonBasePath = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "Autodesk", "webdeploy", "production"
+                );
+
+                // Find the correct Python folder inside Fusion 360
+                string[] pythonDirs = Directory.GetDirectories(fusionPythonBasePath, "Python", SearchOption.AllDirectories);
+                if (pythonDirs.Length == 0)
+                {
+                    Console.WriteLine("⚠️ Warning: Could not find Fusion 360’s Python environment.");
+                    return;
+                }
+
+                // Get the Python executable path
+                string pythonExePath = Path.Combine(pythonDirs[0], "python.exe");
+
+                // 🔹 Step 1: Check if `requests` is already installed
+                ProcessStartInfo checkInfo = new ProcessStartInfo
+                {
+                    FileName = pythonExePath,
+                    Arguments = "-c \"import requests\"",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+
+                using (Process checkProcess = new Process { StartInfo = checkInfo })
+                {
+                    checkProcess.Start();
+                    checkProcess.WaitForExit();
+
+                    if (checkProcess.ExitCode == 0)
+                    {
+                        Console.WriteLine("✅ 'requests' is already installed in Fusion 360’s Python environment.");
+                        return;
+                    }
+                    Console.WriteLine("⚠️ 'requests' is missing. Installing in an isolated environment...");
+                }
+
+                // 🔹 Step 2: Install `requests` in Fusion 360’s local site-packages (not global)
+                ProcessStartInfo installInfo = new ProcessStartInfo
+                {
+                    FileName = pythonExePath,
+                    Arguments = "-m pip install requests --target \"Lib\\site-packages\"",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+
+                using (Process installProcess = new Process { StartInfo = installInfo })
+                {
+                    installProcess.Start();
+                    string output = installProcess.StandardOutput.ReadToEnd();
+                    string error = installProcess.StandardError.ReadToEnd();
+                    installProcess.WaitForExit();
+
+                    Console.WriteLine($"✅ Pip Output: {output}");
+                    if (!string.IsNullOrEmpty(error))
+                    {
+                        Console.WriteLine($"⚠️ Pip Error: {error}");
+                    }
+                }
+
+                Console.WriteLine("✅ Successfully installed 'requests' in Fusion 360’s local site-packages.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error installing 'requests' module: {ex.Message}");
+            }
+        }
+
+
+
+
+
+
+
     }
 }
