@@ -12,12 +12,61 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <None Remove="Assets\AppIcon.ico" />
+      <None Remove="Assets\AppIcon2.ico" />
+      <None Remove="Assets\AppIcon2.png" />
+      <None Remove="Assets\AppIcon3.ico" />
+      <None Remove="Assets\AppIcon3.png" />
+      <None Remove="Assets\AppIcon4.ico" />
+      <None Remove="Assets\AppIcon4.png" />
+      <None Remove="Assets\Fantasy-background-login.png" />
+      <None Remove="Assets\Fantasy-login2.png" />
+      <None Remove="Assets\Fantasy-login3.png" />
+      <None Remove="Assets\fantasy-login4.png" />
+      <None Remove="Assets\ImportAssets.png" />
+      <None Remove="Assets\MarketPlaceButton.png" />
       <None Remove="orange-wallpaper.jpg" />
       <None Remove="symbol-1.png" />
     </ItemGroup>
 
     <ItemGroup>
       <Content Include="AppIcon4.ico" />
+      <Content Include="Assets\AppIcon.ico">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <Content Include="Assets\AppIcon2.ico">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <Content Include="Assets\AppIcon3.ico">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <Content Include="Assets\AppIcon3.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <Content Include="Assets\AppIcon4.ico">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <Content Include="Assets\AppIcon4.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <Content Include="Assets\Fantasy-background-login.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <Content Include="Assets\Fantasy-login2.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <Content Include="Assets\Fantasy-login3.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <Content Include="Assets\fantasy-login4.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <Content Include="Assets\ImportAssets.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <Content Include="Assets\MarketPlaceButton.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
     </ItemGroup>
 
     <ItemGroup>
