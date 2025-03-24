@@ -134,6 +134,14 @@
       <Resource Include="symbol-1.png" />
       <None Remove="Images\ornate-gold-frame_1156559-2825.jpg" />
       <Resource Include="Resources\ornate-gold-frame_1156559-2825.jpg" />
+      <None Remove="Assets\fantasy-login4.png" />
+      <Resource Include="Assets\fantasy-login4.png" />
+    </ItemGroup>
+    
+    <ItemGroup>
+      <Page Update="AddCardWindow.xaml">
+        <Generator>MSBuild:Compile</Generator>
+      </Page>
     </ItemGroup>
 
 </Project>

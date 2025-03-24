@@ -4,9 +4,12 @@ using System.Text.Json;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using AssetManager.Infrastructure.Services;
+using AssetManager.Infrastructure.Data;
 using System.Text;
 using Newtonsoft.Json;
 using ForgeViewerApp;
+using MongoDB.Bson;
+using MongoDB.Driver;
 
 
 namespace AssetManager.Infrastructure.Services
@@ -662,7 +665,7 @@ namespace AssetManager.Infrastructure.Services
 
                             Console.WriteLine($"✅ Encoded URN: {encodedUrn}");
 
-                            return await FetchThumbnailUrl(encodedUrn, accessToken);
+                            return await FetchThumbnailUrl(encodedUrn, accessToken, projectId, itemId);
                         }
                         else
                         {
@@ -683,7 +686,7 @@ namespace AssetManager.Infrastructure.Services
             return null;
         }
 
-        public static async Task<string> FetchThumbnailUrl(string encodedUrn, string accessToken)
+        public static async Task<string> FetchThumbnailUrl(string encodedUrn, string accessToken, string projectId, string itemId)
         {
             string thumbnailUrl = $"https://developer.api.autodesk.com/modelderivative/v2/designdata/{encodedUrn}/thumbnail";
 
@@ -697,6 +700,45 @@ namespace AssetManager.Infrastructure.Services
                 {
                     Console.WriteLine($"❌ Thumbnail not found or model not translated yet: {response.StatusCode}");
                     return null;
+                }
+
+                else
+                {
+
+                    var mongo = new MongoConnection();
+                    var _models = mongo.GetCollection("ModelData");
+
+                    byte[] imageData = await response.Content.ReadAsByteArrayAsync();
+
+                    // ✅ Convert the image to a Base64 string (for storage in MongoDB)
+                    string base64Image = Convert.ToBase64String(imageData);
+
+                    // ✅ Update the existing model document using projectId & itemId
+                    var filter = Builders<BsonDocument>.Filter.And(
+                        Builders<BsonDocument>.Filter.Eq("_folderid", projectId),
+                        Builders<BsonDocument>.Filter.Eq("_id", itemId)
+                    );
+
+                    var update = Builders<BsonDocument>.Update.Set("thumbnail_url", base64Image);
+
+                    try
+                    {
+                        var result = await _models.UpdateOneAsync(filter, update);
+                        if (result.MatchedCount == 0)
+                        {
+                            Console.WriteLine(
+                                $"⚠️ No matching model found to update for Project: {projectId}, Item: {itemId}");
+                        }
+                        else
+                        {
+                            Console.WriteLine($"✅ Thumbnail image updated for Project: {projectId}, Item: {itemId}");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"❌ Error updating model thumbnail in MongoDB: {ex.Message}");
+                        return null;
+                    }
                 }
 
                 return thumbnailUrl;

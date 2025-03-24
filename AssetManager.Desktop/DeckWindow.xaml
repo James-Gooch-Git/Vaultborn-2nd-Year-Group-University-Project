@@ -277,5 +277,37 @@
             </ItemsControl.ItemTemplate>
         </ItemsControl>
 
+        <Grid Grid.Row="1" HorizontalAlignment="Right" Margin="10,0,30,0">
+            <Button x:Name="AddCardButton"
+                    Width="150" Height="210"
+                    Cursor="Hand"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Click="AddCardButton_Click">
+                <Grid>
+                    <!-- Card Background -->
+                    <Border CornerRadius="7" Background="#0F0F1A" Width="150" Height="210">
+                        <Border.Effect>
+                            <DropShadowEffect ShadowDepth="2" BlurRadius="5" Opacity="0.7" Color="Black"/>
+                        </Border.Effect>
+                    </Border>
+
+                    <!-- Inner Card -->
+                    <Border Margin="5" CornerRadius="5" Background="#1A1A2E" Width="140" Height="200">
+                        <Border.Effect>
+                            <DropShadowEffect ShadowDepth="1" BlurRadius="2" Opacity="0.5" Color="Black"/>
+                        </Border.Effect>
+                    </Border>
+
+                    <!-- Plus Symbol -->
+                    <TextBlock Text="+" 
+                               FontSize="48" FontWeight="Bold"
+                               Foreground="#C0A062"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"/>
+                </Grid>
+            </Button>
+        </Grid>
+
     </Grid>
 </Window>

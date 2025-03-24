@@ -5,7 +5,6 @@
              xmlns:converters="clr-namespace:AssetManager.Desktop.Converters"
              StartupUri="LoginWindow.xaml">
     <Application.Resources>
-        <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="/AssetManager.Desktop;component/Resources/FantasyCardTemplates.xaml"/>
                 
@@ -186,6 +185,7 @@ Height="{TemplateBinding Height}" />
 
             <converters:ProgressToWidthConverter x:Key="ProgressToWidthConverterr"/>
             <!-- Other application resources -->
+
         </ResourceDictionary>
         
     </Application.Resources>
