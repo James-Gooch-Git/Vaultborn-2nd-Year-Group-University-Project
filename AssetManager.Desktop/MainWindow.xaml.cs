@@ -16,7 +16,7 @@ using System.Windows.Media.Imaging;
 using System.Net;
 using System.Windows.Input;
 using System.Windows.Media.Effects;
-
+using System.Timers;
 
 using System.Text;
 
@@ -63,6 +63,9 @@ namespace AssetManager.Desktop
         private string selectedHubName = "Loading..."; // Default value before hubs load
         private bool isModelLoaded = false;
         private Dictionary<int, (int VersionNumber, string VersionID)> versionsMarkerData = new Dictionary<int, (int, string)>();
+        private System.Timers.Timer _refreshTimer;
+        private const int REFRESH_INTERVAL_MINUTES = 15;
+        private bool _isRefreshing = false;
 
 
         private List<Dictionary<string, string>> originalResults;
@@ -80,8 +83,8 @@ namespace AssetManager.Desktop
             InitializeComponent();
 
 
-  
 
+       
             //InitializeWebView2();
             //  ModelDataGrid.SelectionChanged += ModelDataGrid_SelectionChanged;
             Initialize();
@@ -101,6 +104,7 @@ namespace AssetManager.Desktop
             _uploadService = new ModelUpload(_accessToken);
             _filedwnService = new FileDownloadService();
             //InitializeTreeView();
+            InitializeBackgroundRefresh();
             InitialiseFolders();
             _payPalService = new PayPalService();
             Initialize();
@@ -181,7 +185,7 @@ namespace AssetManager.Desktop
 
                 LoadProjectsForHub(hubID);
                 await TestDataManagement();
-
+                await RefreshHubs();
                 //FusionManager.InitializePythonEngine();
                 //InitialiseFolders();
                 Username_TextBlock.Text = await GetUserName(_userId);
@@ -4210,6 +4214,204 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
         #endregion
 
+        #region Refresh Service
+        // Initialize the timer in your MainWindow constructor or Initialize() method
+        private void InitializeBackgroundRefresh()
+        {
+            _refreshTimer = new System.Timers.Timer();
+            _refreshTimer.Interval = TimeSpan.FromMinutes(REFRESH_INTERVAL_MINUTES).TotalMilliseconds;
+            _refreshTimer.Elapsed += OnRefreshTimerElapsed;
+            _refreshTimer.AutoReset = true;
+            _refreshTimer.Start();
+
+            Console.WriteLine($"🔄 Background refresh initialized. Will refresh every {REFRESH_INTERVAL_MINUTES} minutes.");
+        }
+
+        // This method will be called when the timer elapses
+        private async void OnRefreshTimerElapsed(object sender, ElapsedEventArgs e)
+        {
+            // Prevent concurrent refreshes
+            if (_isRefreshing)
+            {
+                Console.WriteLine("⚠️ Previous refresh operation still in progress. Skipping this refresh cycle.");
+                return;
+            }
+
+            _isRefreshing = true;
+
+            try
+            {
+                Console.WriteLine($"🔄 Starting background refresh at {DateTime.Now}");
+
+                await Dispatcher.InvokeAsync(async () =>
+                {
+                    try
+                    {
+                        // Refresh the access token if needed
+                        string accessToken = TokenManager.GetToken();
+                        if (string.IsNullOrEmpty(accessToken))
+                        {
+                            accessToken = TokenManager.GetToken();
+                            _accessToken = accessToken;
+                        }
+
+                        // Refresh hubs
+                        await RefreshHubs();
+
+                        // Refresh current project data if a project is selected
+                        if (!string.IsNullOrEmpty(_selectedProjectId) && !string.IsNullOrEmpty(_folderId))
+                        {
+                            await RefreshCurrentProject();
+                        }
+
+                        // Refresh model data if a model is selected
+                        if (!string.IsNullOrEmpty(_selectedItemId))
+                        {
+                            await RefreshCurrentModel();
+                        }
+
+                        Console.WriteLine($"✅ Background refresh completed successfully at {DateTime.Now}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"❌ Error during background refresh: {ex.Message}");
+                    }
+                });
+            }
+            finally
+            {
+                _isRefreshing = false;
+            }
+        }
+
+        // Refresh hubs data
+        private async Task RefreshHubs()
+        {
+            try
+            {
+                var hubDetails = await DataManagement.GetAllHubs();
+
+                if (hubDetails != null && hubDetails.Count > 0)
+                {
+                    hubs.Clear();
+                    hubs.AddRange(hubDetails);
+
+                    // Keep the currently selected hub if it still exists
+                    bool selectedHubExists = hubs.Any(h => h.HubID == selectedHubID);
+                    if (!selectedHubExists && hubs.Count > 0)
+                    {
+                        selectedHubID = hubs[0].HubID;
+                        selectedHubName = hubs[0].HubName;
+
+                        // Update UI
+                        await Dispatcher.InvokeAsync(() =>
+                        {
+                            HubsHeaderTextBlock.Text = $"Hubs - {selectedHubName}";
+                            PopulateHubMenu();
+                        });
+                    }
+
+                    Console.WriteLine($"✅ Refreshed {hubs.Count} hubs");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error refreshing hubs: {ex.Message}");
+            }
+        }
+
+        // Refresh current project data
+        private async Task RefreshCurrentProject()
+        {
+            try
+            {
+                var models = await GetModelsFromProject(_selectedProjectId, _folderId);
+
+                if (models != null)
+                {
+                    await Dispatcher.InvokeAsync(() =>
+                    {
+                        // Update the DataGrid if it's visible
+                        if (ModelsDataGrid.Visibility == Visibility.Visible)
+                        {
+                            ModelsDataGrid.ItemsSource = null;
+                            ModelsDataGrid.ItemsSource = models;
+                            originalResults = models;
+                            Models = models;
+                        }
+
+                        // Update the Grid view if it's visible
+                        if (Grid_View.Visibility == Visibility.Visible)
+                        {
+                            ModelsContainer.Children.Clear();
+                            isModelLoaded = false;
+                            DisplayGridModels();
+                        }
+                    });
+
+                    Console.WriteLine($"✅ Refreshed {models.Count} models for project {_selectedProjectId}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error refreshing project data: {ex.Message}");
+            }
+        }
+
+        // Refresh current model data
+        private async Task RefreshCurrentModel()
+        {
+            try
+            {
+                // Refresh storage ID for the currently selected model
+                await FetchAndSetStorageId();
+
+                // Refresh model metadata
+                if (ModelInfo.Visibility == Visibility.Visible)
+                {
+                    await LoadMetadata();
+                    Console.WriteLine($"✅ Refreshed metadata for model {_selectedItemId}");
+                }
+
+                // Refresh comments if they're visible
+                if (ModelComments.Visibility == Visibility.Visible)
+                {
+                    ClearComments();
+                    ListAllComments(_selectedItemId);
+                    Console.WriteLine($"✅ Refreshed comments for model {_selectedItemId}");
+                }
+
+                // Refresh model thumbnail
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    DisplayModelThumb();
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error refreshing model data: {ex.Message}");
+            }
+        }
+
+        // Call this method to clean up the timer when the window is closed
+        private void CleanupBackgroundRefresh()
+        {
+            if (_refreshTimer != null)
+            {
+                _refreshTimer.Stop();
+                _refreshTimer.Elapsed -= OnRefreshTimerElapsed;
+                _refreshTimer.Dispose();
+                _refreshTimer = null;
+                Console.WriteLine("✅ Background refresh timer cleaned up");
+            }
+        }
+
+        // Add this to your window's Closing event or Closed event
+        private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            CleanupBackgroundRefresh();
+        }
+        #endregion
 
 
         //ZERO REFERENCES FUNCTIONS//
