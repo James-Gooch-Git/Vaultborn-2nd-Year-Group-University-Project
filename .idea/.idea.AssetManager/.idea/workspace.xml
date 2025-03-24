@@ -8,9 +8,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="29dceaf0-6b38-45af-9473-223a6fd443eb" name="Changes" comment="improved search in asset library">
+    <list default="true" id="29dceaf0-6b38-45af-9473-223a6fd443eb" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/.idea.AssetManager/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.AssetManager/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml.cs" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml.cs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -138,7 +137,7 @@
       <workItem from="1742393296184" duration="13729000" />
       <workItem from="1742471596910" duration="861000" />
       <workItem from="1742566843495" duration="3416000" />
-      <workItem from="1742654880113" duration="4350000" />
+      <workItem from="1742654880113" duration="6022000" />
     </task>
     <task id="LOCAL-00001" summary="save main">
       <option name="closed" value="true" />
@@ -268,7 +267,15 @@
       <option name="project" value="LOCAL" />
       <updated>1742657627541</updated>
     </task>
-    <option name="localTasksCounter" value="17" />
+    <task id="LOCAL-00017" summary="fixed error with £ symbol in price stopping paypal from working">
+      <option name="closed" value="true" />
+      <created>1742659646250</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1742659646250</updated>
+    </task>
+    <option name="localTasksCounter" value="18" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -315,6 +322,7 @@
     <MESSAGE value="fixed marketplace grid view buying and fixed button display for marketplace grid view" />
     <MESSAGE value="added search for marketplace and made sort work for search results in marketplace" />
     <MESSAGE value="improved search in asset library" />
-    <option name="LAST_COMMIT_MESSAGE" value="improved search in asset library" />
+    <MESSAGE value="fixed error with £ symbol in price stopping paypal from working" />
+    <option name="LAST_COMMIT_MESSAGE" value="fixed error with £ symbol in price stopping paypal from working" />
   </component>
 </project>

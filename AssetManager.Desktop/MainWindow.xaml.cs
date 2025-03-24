@@ -4870,7 +4870,7 @@ namespace AssetManager.Desktop
         {
             switch (option)
             {
-                case "None":
+                case "Names A-Z":
                     List<Dictionary<string, string>> namesAZ = models.OrderBy(x => x["Name"]).ToList();
                     MarketplaceDataGrid.ItemsSource = namesAZ;
                     DisplayMarketplaceGrid(namesAZ);
