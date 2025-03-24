@@ -988,33 +988,38 @@
                 <Grid x:Name="VersionSlider" Grid.Row="3" Visibility="Collapsed">
                     <!-- Slider with Snapping Enabled -->
                     <Slider Name="slider"
-            HorizontalAlignment="Center"
-            VerticalAlignment="Bottom"
-            Width="1000"
-            Minimum="0"
-            Maximum="100"
-            TickPlacement="BottomRight"
-            IsSnapToTickEnabled="True"
-            Value="100"
-            Margin="0,0,0,25"/>
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Bottom"
+                        Width="1000"
+                        Minimum="0"
+                        Maximum="100"
+                        TickPlacement="BottomRight"
+                        IsSnapToTickEnabled="True"
+                        Value="100"
+                        Margin="0,0,0,25"/>
 
-                    <!-- Display Slider Value (Initially hidden) -->
                     <TextBlock Name="sliderValue"
-               HorizontalAlignment="Center"
-               VerticalAlignment="Bottom"
-               Margin="0,0,0,60"
-               FontSize="16"
-               Text="Value: 50"
-               Visibility="Collapsed"/>
-                    <!-- Set to Collapsed initially -->
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Bottom"
+                        Margin="0,0,0,60"
+                        FontSize="16"
+                        Text="Value: 50"
+                        Visibility="Collapsed"/>
 
                     <!-- Marker Container (Canvas for precise positioning) -->
                     <Canvas x:Name="MarkerContainer"
-            HorizontalAlignment="Center"
-            VerticalAlignment="Bottom"
-            Width="1000"
-            Height="40"/>
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Bottom"
+                        Width="1000"
+                        Height="40"/>
                 </Grid>
+                <Button x:Name="VersionsSelectButton" Visibility="Collapsed" 
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Bottom"
+                    Width="150" Height="60" 
+                    Margin="0,0,100,20" 
+                    Content="Show First Versions" 
+                    Click="VersionSliderButton_Click" Grid.Row="2" />
 
 
 
