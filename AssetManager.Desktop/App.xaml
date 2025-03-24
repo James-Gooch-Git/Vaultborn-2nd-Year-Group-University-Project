@@ -8,9 +8,186 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="/AssetManager.Desktop;component/Resources/FantasyCardTemplates.xaml"/>
+                
             </ResourceDictionary.MergedDictionaries>
+            <ControlTemplate x:Key="FirstButtonTemplate" TargetType="Button">
+                <Grid>
+                    <!-- Image Background -->
+                    <Image x:Name="bgImage"
+               Source="/Assets/Button3DarkerBlueFirstRow.png"
+               Stretch="Fill"
+               Width="{TemplateBinding Width}"
+               Height="{TemplateBinding Height}" />
+
+                    <!-- Glow Overlay -->
+                    <Rectangle x:Name="glowOverlay"
+                   Fill="#FFF5DEB3"
+                   Opacity="0"
+                   RadiusX="8" RadiusY="8"/>
+
+                    <!-- Button Text -->
+                    <ContentPresenter HorizontalAlignment="Center"
+                          VerticalAlignment="Center"
+                                      Margin="-30,-4,0,0" 
+                          RecognizesAccessKey="True"/>
+                </Grid>
+
+                <!-- Interaction Triggers -->
+                <ControlTemplate.Triggers>
+                    <Trigger Property="IsMouseOver" Value="True">
+                        <Setter TargetName="glowOverlay" Property="Opacity" Value="0.08"/>
+                        <Setter TargetName="bgImage" Property="Source" Value="/Assets/Button3DarkerBlueFirstRowHover.png"/>
+                    </Trigger>
+
+                    <Trigger Property="IsPressed" Value="True">
+                        <Setter TargetName="glowOverlay" Property="Opacity" Value="0.15"/>
+                        <Setter TargetName="bgImage" Property="RenderTransform">
+                            <Setter.Value>
+                                <TranslateTransform Y="2"/>
+                            </Setter.Value>
+                        </Setter>
+                    </Trigger>
+
+                    <Trigger Property="IsEnabled" Value="False">
+                        <Setter Property="Opacity" Value="0.4"/>
+                    </Trigger>
+                </ControlTemplate.Triggers>
+            </ControlTemplate>
+
+            <ControlTemplate x:Key="MiddleButtonTemplate" TargetType="Button">
+                <Grid>
+                    <!-- Image Background -->
+                    <Image x:Name="bgImage"
+   Source="/Assets/BlendedButton.png"
+   Stretch="Fill"
+   Width="{TemplateBinding Width}"
+   Height="{TemplateBinding Height}" />
+
+                    <!-- Glow Overlay -->
+                    <Rectangle x:Name="glowOverlay"
+       Fill="#FFF5DEB3"
+       Opacity="0"
+       RadiusX="8" RadiusY="8"/>
+
+                    <!-- Button Text -->
+                    <ContentPresenter HorizontalAlignment="Center"
+              VerticalAlignment="Center"
+                                       Margin="-30,-4,0,0" 
+              RecognizesAccessKey="True"/>
+                </Grid>
+
+                <!-- Interaction Triggers -->
+                <ControlTemplate.Triggers>
+                    <Trigger Property="IsMouseOver" Value="True">
+                        <Setter TargetName="glowOverlay" Property="Opacity" Value="0.08"/>
+                        <Setter TargetName="bgImage" Property="Source" Value="/Assets/BlendedButtonHover.png"/>
+                    </Trigger>
+
+                    <Trigger Property="IsPressed" Value="True">
+                        <Setter TargetName="glowOverlay" Property="Opacity" Value="0.15"/>
+                        <Setter TargetName="bgImage" Property="RenderTransform">
+                            <Setter.Value>
+                                <TranslateTransform Y="2"/>
+                            </Setter.Value>
+                        </Setter>
+                    </Trigger>
+
+                    <Trigger Property="IsEnabled" Value="False">
+                        <Setter Property="Opacity" Value="0.4"/>
+                    </Trigger>
+                </ControlTemplate.Triggers>
+            </ControlTemplate>
+            <ControlTemplate x:Key="MiddleButton2Template" TargetType="Button">
+                <Grid>
+                    <!-- Image Background -->
+                    <Image x:Name="bgImage"
+Source="/Assets/MiddleButton2.png"
+Stretch="Fill"
+Width="{TemplateBinding Width}"
+Height="{TemplateBinding Height}" />
+
+                    <!-- Glow Overlay -->
+                    <Rectangle x:Name="glowOverlay"
+    Fill="#FFF5DEB3"
+    Opacity="0"
+    RadiusX="8" RadiusY="8"/>
+
+                    <!-- Button Text -->
+                    <ContentPresenter HorizontalAlignment="Center"
+           VerticalAlignment="Center"
+                                    Margin="-30,-4,0,0" 
+           RecognizesAccessKey="True"/>
+                </Grid>
+
+                <!-- Interaction Triggers -->
+                <ControlTemplate.Triggers>
+                    <Trigger Property="IsMouseOver" Value="True">
+                        <Setter TargetName="glowOverlay" Property="Opacity" Value="0.08"/>
+                        <Setter TargetName="bgImage" Property="Source" Value="/Assets/MiddleButton2Hover.png"/>
+                    </Trigger>
+
+                    <Trigger Property="IsPressed" Value="True">
+                        <Setter TargetName="glowOverlay" Property="Opacity" Value="0.15"/>
+                        <Setter TargetName="bgImage" Property="RenderTransform">
+                            <Setter.Value>
+                                <TranslateTransform Y="2"/>
+                            </Setter.Value>
+                        </Setter>
+                    </Trigger>
+
+                    <Trigger Property="IsEnabled" Value="False">
+                        <Setter Property="Opacity" Value="0.4"/>
+                    </Trigger>
+                </ControlTemplate.Triggers>
+            </ControlTemplate>
+            <ControlTemplate x:Key="LastButtonTemplate" TargetType="Button">
+                <Grid>
+                    <!-- Image Background -->
+                    <Image x:Name="bgImage"
+   Source="/Assets/Button3DarkerBlueLastRowAlternate.png"
+   Stretch="Fill"
+   Width="{TemplateBinding Width}"
+   Height="{TemplateBinding Height}" />
+
+                    <!-- Glow Overlay -->
+                    <Rectangle x:Name="glowOverlay"
+       Fill="#FFF5DEB3"
+       Opacity="0"
+       RadiusX="8" RadiusY="8"/>
+
+                    <!-- Button Text -->
+                    <ContentPresenter HorizontalAlignment="Center"
+              VerticalAlignment="Center"
+                                       Margin="-30,-4,0,0" 
+              RecognizesAccessKey="True"/>
+                </Grid>
+
+                <!-- Interaction Triggers -->
+                <ControlTemplate.Triggers>
+                    <Trigger Property="IsMouseOver" Value="True">
+                        <Setter TargetName="glowOverlay" Property="Opacity" Value="0.08"/>
+                        <Setter TargetName="bgImage" Property="Source" Value="/Assets/Button3DarkerBlueLastRowHoverAlternate.png"/>
+                    </Trigger>
+
+                    <Trigger Property="IsPressed" Value="True">
+                        <Setter TargetName="glowOverlay" Property="Opacity" Value="0.15"/>
+                        <Setter TargetName="bgImage" Property="RenderTransform">
+                            <Setter.Value>
+                                <TranslateTransform Y="2"/>
+                            </Setter.Value>
+                        </Setter>
+                    </Trigger>
+
+                    <Trigger Property="IsEnabled" Value="False">
+                        <Setter Property="Opacity" Value="0.4"/>
+                    </Trigger>
+                </ControlTemplate.Triggers>
+            </ControlTemplate>
+
             <converters:ProgressToWidthConverter x:Key="ProgressToWidthConverterr"/>
             <!-- Other application resources -->
         </ResourceDictionary>
+        
     </Application.Resources>
+    
 </Application>
