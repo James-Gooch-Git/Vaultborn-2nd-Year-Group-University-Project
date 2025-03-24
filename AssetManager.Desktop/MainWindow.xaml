@@ -988,31 +988,83 @@
                 <Grid x:Name="VersionSlider" Grid.Row="3" Visibility="Visible">
                     <!-- Slider with Snapping Enabled -->
                     <Slider Name="slider"
-                        HorizontalAlignment="Center"
-                        VerticalAlignment="Bottom"
-                        Width="1000"
-                        Minimum="0"
-                        Maximum="100"
-                        TickPlacement="BottomRight"
-                        IsSnapToTickEnabled="True"
-                        Value="100"
-                        Margin="0,0,0,25"/>
+            HorizontalAlignment="Center"
+            VerticalAlignment="Bottom"
+            Width="1030"
+            Minimum="0"
+            Maximum="100"
+            TickPlacement="BottomRight"
+            IsSnapToTickEnabled="True"
+            Value="100"
+            Margin="0,0,0,35">
+                        <Slider.Resources>
+                            <Style TargetType="Slider">
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="Slider">
+                                            <Grid>
+                                                <!-- Full Track Background -->
+                                                <Rectangle Height="6"
+                                           Fill="LightGray"
+                                           VerticalAlignment="Center"
+                                           Width="1030" 
+                                                    RadiusX="3" RadiusY="3"/>
+
+                                                    <!-- Track -->
+                                                    <Track x:Name="PART_Track">
+                                                        <Track.Thumb>
+                                                            <Thumb Width="30" Height="30" BorderThickness="0">
+                                                                <Thumb.Template>
+                                                                    <ControlTemplate TargetType="Thumb">
+                                                                        <Grid>
+                                                                            <!-- Teardrop Shape -->
+                                                                            <Path Fill="Blue" 
+                                                              Stretch="Uniform"
+                                                              Data="M 10,0 
+                                                                    C 20,0, 20,10, 10,20
+                                                                    C 0,10, 0,0, 10,0 
+                                                                    Z" />
+                                                                        </Grid>
+                                                                    </ControlTemplate>
+                                                                </Thumb.Template>
+                                                            </Thumb>
+                                                        </Track.Thumb>
+
+                                                        <Track.IncreaseRepeatButton>
+                                                            <RepeatButton Width="0" Background="Transparent"/>
+                                                        </Track.IncreaseRepeatButton>
+
+                                                        <Track.DecreaseRepeatButton>
+                                                            <RepeatButton Width="0" Background="Transparent"/>
+                                                        </Track.DecreaseRepeatButton>
+                                                    </Track>
+                                            </Grid>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </Slider.Resources>
+                    </Slider>
 
                     <TextBlock Name="sliderValue"
-                        HorizontalAlignment="Center"
-                        VerticalAlignment="Bottom"
-                        Margin="0,0,0,60"
-                        FontSize="16"
-                        Text="Value: 50"
-                        Visibility="Collapsed"/>
+               HorizontalAlignment="Center"
+               VerticalAlignment="Bottom"
+               Margin="0,0,0,60"
+               FontSize="16"
+               Text="Value: 50"
+               Visibility="Collapsed"/>
 
                     <!-- Marker Container (Canvas for precise positioning) -->
                     <Canvas x:Name="MarkerContainer"
-                        HorizontalAlignment="Center"
-                        VerticalAlignment="Bottom"
-                        Width="1000"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Bottom"
+            Width="1000"
                         Height="40"/>
                 </Grid>
+
+
+
+
                 <Button x:Name="VersionsSelectButton" Visibility="Visible" 
                     Template="{StaticResource MiddleButton2Template}"
                     FontFamily="Georgia"
@@ -1026,7 +1078,18 @@
                     Content="Show First Versions" 
                     Click="VersionSliderButton_Click" Grid.Row="2"
                     Cursor="Hand"/>
-
+                <Popup Name="VersionError" IsOpen="False" Placement="Center" StaysOpen="True">
+                    <Border Background="LightBlue" BorderBrush="Black" BorderThickness="1" Padding="10" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <StackPanel>
+                            <TextBlock Name="popupMessageText" 
+                           Text="Model translation is still in progress or failed. Please try again later." 
+                           TextWrapping="Wrap" 
+                           HorizontalAlignment="Center" 
+                           VerticalAlignment="Center" />
+                            <Button Content="OK" HorizontalAlignment="Center" VerticalAlignment="Center" Click="CloseVersionPopup" Margin="0,10,0,0" />
+                        </StackPanel>
+                    </Border>
+                </Popup>
 
 
 
