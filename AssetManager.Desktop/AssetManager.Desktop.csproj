@@ -8,11 +8,91 @@
         <UseWPF>true</UseWPF>
         <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
         <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+        <ApplicationIcon>AppIcon4.ico</ApplicationIcon>
     </PropertyGroup>
 
     <ItemGroup>
+      <None Remove="Assets\AppIcon.ico" />
+      <None Remove="Assets\AppIcon2.ico" />
+      <None Remove="Assets\AppIcon2.png" />
+      <None Remove="Assets\AppIcon3.ico" />
+      <None Remove="Assets\AppIcon3.png" />
+      <None Remove="Assets\AppIcon4.ico" />
+      <None Remove="Assets\AppIcon4.png" />
+      <None Remove="Assets\BlendedButton.png" />
+      <None Remove="Assets\BlendedButtonHover.png" />
+      <None Remove="Assets\Button2.png" />
+      <None Remove="Assets\Button3.png" />
+      <None Remove="Assets\Button3DarkerBlueFirstRow.png" />
+      <None Remove="Assets\Button3DarkerBlueFirstRowHover.png" />
+      <None Remove="Assets\Button3DarkerBlueLastRow.png" />
+      <None Remove="Assets\Button3DarkerBlueLastRowAlternate.png" />
+      <None Remove="Assets\Button3DarkerBlueLastRowHover.png" />
+      <None Remove="Assets\Button3DarkerBlueLastRowHoverAlternate.png" />
+      <None Remove="Assets\Button3Purple.png" />
+      <None Remove="Assets\Fantasy-background-login.png" />
+      <None Remove="Assets\Fantasy-login2.png" />
+      <None Remove="Assets\Fantasy-login3.png" />
+      <None Remove="Assets\fantasy-login4.png" />
+      <None Remove="Assets\ImportAssets.png" />
+      <None Remove="Assets\jaygooch_00588_Rectangular_metallic_button_Weathered_teal-blu_bb98eef2-55af-4214-84d9-1985d08977bf_3.png" />
+      <None Remove="Assets\MarketPlaceButton.png" />
+      <None Remove="Assets\MiddleButton2.png" />
+      <None Remove="Assets\MiddleButton2Hover.png" />
+      <None Remove="Assets\ScaleBackground.png" />
       <None Remove="orange-wallpaper.jpg" />
       <None Remove="symbol-1.png" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Include="AppIcon4.ico" />
+      <Content Include="Assets\AppIcon.ico">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <Content Include="Assets\AppIcon2.ico">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <Content Include="Assets\AppIcon3.ico">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <Content Include="Assets\AppIcon3.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <Content Include="Assets\AppIcon4.ico">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <Content Include="Assets\AppIcon4.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <Resource Include="Assets\BlendedButton.png" />
+      <Resource Include="Assets\BlendedButtonHover.png" />
+      <Resource Include="Assets\Button3.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Resource>
+      <Content Include="Assets\Fantasy-background-login.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <Content Include="Assets\Fantasy-login2.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <Content Include="Assets\Fantasy-login3.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <Content Include="Assets\fantasy-login4.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <Content Include="Assets\ImportAssets.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <Content Include="Assets\jaygooch_00588_Rectangular_metallic_button_Weathered_teal-blu_bb98eef2-55af-4214-84d9-1985d08977bf_3.png">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
+      <Content Include="Assets\MarketPlaceButton.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <Content Include="Assets\ScaleBackground.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
     </ItemGroup>
 
     <ItemGroup>
@@ -34,12 +114,34 @@
     </ItemGroup>
     
     <ItemGroup>
-      <Folder Include="Images\" />
+      <Resource Include="Assets\Button2.png">
+        <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      </Resource>
+      <Resource Include="Assets\Button3DarkerBlueFirstRow.png">
+        <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      </Resource>
+      <Resource Include="Assets\Button3DarkerBlueFirstRowHover.png" />
+      <Resource Include="Assets\Button3DarkerBlueLastRow.png" />
+      <Resource Include="Assets\Button3DarkerBlueLastRowAlternate.png" />
+      <Resource Include="Assets\Button3DarkerBlueLastRowHover.png" />
+      <Resource Include="Assets\Button3DarkerBlueLastRowHoverAlternate.png" />
+      <Resource Include="Assets\Button3Purple.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Resource>
+      <Resource Include="Assets\MiddleButton2.png" />
+      <Resource Include="Assets\MiddleButton2Hover.png" />
+      <Resource Include="orange-wallpaper.jpg" />
+      <Resource Include="symbol-1.png" />
+      <None Remove="Images\ornate-gold-frame_1156559-2825.jpg" />
+      <Resource Include="Resources\ornate-gold-frame_1156559-2825.jpg" />
+      <None Remove="Assets\fantasy-login4.png" />
+      <Resource Include="Assets\fantasy-login4.png" />
     </ItemGroup>
     
     <ItemGroup>
-      <Resource Include="orange-wallpaper.jpg" />
-      <Resource Include="symbol-1.png" />
+      <Page Update="AddCardWindow.xaml">
+        <Generator>MSBuild:Compile</Generator>
+      </Page>
     </ItemGroup>
 
 </Project>

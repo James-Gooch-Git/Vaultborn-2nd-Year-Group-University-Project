@@ -17,6 +17,7 @@ using System.Net;
 using System.Windows.Input;
 using System.Windows.Media.Effects;
 
+
 using System.Text;
 
 using Microsoft.Web.WebView2.Core;
@@ -61,7 +62,9 @@ namespace AssetManager.Desktop
         private static readonly HttpClient client = new HttpClient();
         private string selectedHubName = "Loading..."; // Default value before hubs load
         private bool isModelLoaded = false;
-        
+        private Dictionary<int, (int VersionNumber, string VersionID)> versionsMarkerData = new Dictionary<int, (int, string)>();
+
+
         private List<Dictionary<string, string>> originalResults;
         private readonly PayPalService _payPalService;
         //private List<Dictionary<string, string>> listedModels;
@@ -270,41 +273,68 @@ namespace AssetManager.Desktop
 
         private async void LoadProjectsForHub(string hubID)
         {
+            // Show fantasy loading bar
+            LoadingProgressBar.Visibility = Visibility.Visible;
+            LoadingStatusText.Text = "Loading projects...";
+            LoadingStatusText.Visibility = Visibility.Visible;
+            LoadingProgressBar.Progress = 0.1; // Start with initial progress
+
             try
             {
+                // Load projects
+                LoadingProgressBar.Progress = 0.3;
                 var projects = await DataManagement.GetAllProjectsFromHub(hubID);
                 if (projects == null || !projects.Any())
                 {
                     Console.WriteLine("❌ No projects found or failed to load projects.");
-                    ProjectTreeView.Items.Clear(); // Clear tree if no projects are found
+                    ProjectTreeView.Items.Clear();
                     return;
                 }
 
-                ProjectTreeView.Items.Clear(); // ✅ Clear previous projects before loading new ones
+                ProjectTreeView.Items.Clear(); // Clear previous projects
+                LoadingProgressBar.Progress = 0.6;
+
+                int count = 0;
+                int total = projects.Count();
 
                 foreach (var (projectId, projectName) in projects)
                 {
+                    // Update progress for each project
+                    count++;
+                    double progressValue = 0.6 + (0.4 * count / total);
+                    LoadingProgressBar.Progress = progressValue;
+                    LoadingStatusText.Text = $"Loading project {count} of {total}...";
+
                     var topFolder = await DataManagement.GetTopLevelFolder(hubID, projectId);
                     var folderId = topFolder.Item1;
-
                     TreeViewItem projectItem = new TreeViewItem
                     {
                         Header = $"📁 {projectName}",
                         Tag = (projectId, folderId, true)
                     };
-
                     projectItem.Items.Add(null); // Placeholder for lazy loading
                     projectItem.Expanded += TreeViewItem_Expanded;
-
                     ProjectTreeView.Items.Add(projectItem);
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error loading projects: {ex.Message}");
+                LoadingStatusText.Text = $"Error: {ex.Message}";
+            }
+            finally
+            {
+                // Animate to 100% before hiding
+                LoadingProgressBar.Progress = 1.0;
+
+                // Use a small delay to show completion before hiding
+                await Task.Delay(500);
+
+                // Hide loading bar
+                LoadingProgressBar.Visibility = Visibility.Collapsed;
+                LoadingStatusText.Visibility = Visibility.Collapsed;
             }
         }
-
 
         //NEEDS MIGRATING TO USERSERVICES || USER INFORMATION//
         #region User Services
@@ -3646,6 +3676,7 @@ namespace AssetManager.Desktop
             //ForgeViewerWindow forgeViewer = new ForgeViewerWindow(encodedUrn);
             // forgeViewer.Show();
             LoadForgeViewer(encodedUrn);
+            
         }
 
         private async void BtnViewInApp_Click(string selectedItemId)
@@ -3739,6 +3770,11 @@ namespace AssetManager.Desktop
             //ForgeViewerWindow forgeViewer = new ForgeViewerWindow(encodedUrn);
             // forgeViewer.Show();
             LoadForgeViewer(encodedUrn);
+            int numberOfVersions = await GetNumberOfVersions();
+            GenerateMarkers(numberOfVersions);
+
+            Grid versionSlider = VersionSlider;
+            versionSlider.Visibility = Visibility.Visible;
         }
 
         private void Btn_CloseViewer_Click(object sender, RoutedEventArgs e)
@@ -3766,6 +3802,9 @@ namespace AssetManager.Desktop
             Console.WriteLine("🔄 Global variables reset after closing Forge Viewer");
 
             Console.WriteLine($"🔄 Returning to {_lastViewType} view.");
+
+            Grid versionSlider = VersionSlider;
+            versionSlider.Visibility = Visibility.Collapsed;
         }
 
         //Trying the SKybox
@@ -4010,7 +4049,166 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
         #endregion
 
+        //NEEDS MIGRATING TO VERSION CONTROL//
+        #region Version Control
 
+        private async Task<int> GetNumberOfVersions()
+        {
+            var versions = await DataManagement.GetItemVersions(_selectedProjectId, _selectedItemId);
+
+            int numberOfVersions = 0;
+            foreach (var version in versions)
+            {
+                numberOfVersions += 1;
+            }
+            return numberOfVersions;
+        }
+
+        private async void GenerateMarkers(int count)
+        {
+            var versions = await DataManagement.GetItemVersions(_selectedProjectId, _selectedItemId);
+
+            Console.WriteLine($"Number of versions: {versions.Count}");
+
+            versionsMarkerData.Clear(); // Clear previous markers
+            MarkerContainer.Children.Clear(); // Remove previous marker children
+
+            if (count < 1 || versions.Count == 0) return;
+
+            List<double> tickValues = new List<double>();
+
+            // Handle the case when there's only one version
+            if (versions.Count == 1)
+            {
+                double markerValue = 50; // Center the marker when there's only one version
+                tickValues.Add(markerValue);
+
+                var version = versions[0]; // The only version available
+                versionsMarkerData[(int)Math.Round(markerValue)] = (version.VersionNumber, version.VersionID);
+
+                Border marker = new Border
+                {
+                    Width = 16,
+                    Height = 16,
+                    Background = new SolidColorBrush(Colors.LightGray),
+                    CornerRadius = new CornerRadius(3),
+                    Child = new TextBlock
+                    {
+                        Text = "A", // Single marker label
+                        HorizontalAlignment = HorizontalAlignment.Center,
+                        VerticalAlignment = VerticalAlignment.Center
+                    }
+                };
+
+                double sliderWidth = MarkerContainer.Width;
+                double markerX = (markerValue / 100.0) * sliderWidth - (marker.Width / 2); // Center the marker
+
+                Canvas.SetLeft(marker, markerX);
+                Canvas.SetTop(marker, (MarkerContainer.Height / 2) - (marker.Height / 2));
+
+                MarkerContainer.Children.Add(marker); // Add marker to Canvas
+            }
+            else
+            {
+                // Loop to create the markers, starting from the rightmost (latest version)
+                for (int i = 0; i < count; i++)
+                {
+                    // Calculate marker position in reverse order (start from the rightmost side)
+                    double markerValue = (1 - (i / (double)(count - 1))) * 100;  // Invert position for right to left
+                    tickValues.Add(markerValue);
+
+                    var version = versions[i];  // Access the versions in order (latest version first)
+
+                    versionsMarkerData[(int)Math.Round(markerValue)] = (version.VersionNumber, version.VersionID);
+
+                    Border marker = new Border
+                    {
+                        Width = 16,
+                        Height = 16,
+                        Background = new SolidColorBrush(Colors.LightGray),
+                        CornerRadius = new CornerRadius(3),
+                        Child = new TextBlock
+                        {
+                            Text = ((char)('A' + i)).ToString(),
+                            HorizontalAlignment = HorizontalAlignment.Center,
+                            VerticalAlignment = VerticalAlignment.Center
+                        }
+                    };
+
+                    double sliderWidth = MarkerContainer.Width;
+                    double markerX = (markerValue / 100.0) * sliderWidth - (marker.Width / 2);
+
+                    if (markerX < (sliderWidth / 2))
+                    {
+                        markerX += 4;
+                    }
+                    else
+                    {
+                        markerX -= 4;
+                    }
+
+                    Canvas.SetLeft(marker, markerX);
+                    Canvas.SetTop(marker, (MarkerContainer.Height / 2) - (marker.Height / 2));
+
+                    MarkerContainer.Children.Add(marker); // Add marker to Canvas
+                }
+            }
+
+            // Set slider ticks dynamically
+            slider.Ticks = new DoubleCollection(tickValues);
+            slider.IsSnapToTickEnabled = true;
+
+            // Attach event handler
+            slider.ValueChanged -= Slider_ValueChanged;
+            slider.ValueChanged += Slider_ValueChanged;
+
+            // Initially hide the slider value text
+            sliderValue.Visibility = Visibility.Hidden;
+
+            // Show the latest version number after markers are generated
+            if (versions.Any())
+            {
+                var latestVersion = versions.First();  // First version (newest)
+                sliderValue.Text = $"Version: {latestVersion.VersionNumber}";
+                sliderValue.Visibility = Visibility.Visible; // Make sure version number text is visible
+            }
+
+            Console.WriteLine("Markers generated.");
+        }
+
+
+
+
+
+        private void Slider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            int roundedValue = (int)Math.Round(slider.Value / 5.0) * 5; // Snap to nearest marker step
+
+            if (versionsMarkerData.ContainsKey(roundedValue))
+            {
+                // Retrieve version number and version ID when marker is reached
+                var markerData = versionsMarkerData[roundedValue];
+                OnMarkerReached(markerData); // Call function with marker data
+            }
+        }
+
+        private void OnMarkerReached((int VersionNumber, string VersionID) markerData)
+        {
+            // Display version number above the slider
+            sliderValue.Text = $"Version: {markerData.VersionNumber}";
+
+            // Here you can do something with the VersionID (e.g., load the version or perform any action)
+            Console.WriteLine($"You reached version {markerData.VersionNumber} with ID: {markerData.VersionID}");
+        }
+
+
+
+
+
+
+
+
+        #endregion
 
 
 
@@ -4302,7 +4500,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
         private async Task LoadThumbnailAsync(string projectId, string itemId, Image thumbnailImage)
         {
-            string thumbnailUrl = await DataManagement.FetchThumbnailUrl(_objectId, _accessToken);
+            string thumbnailUrl = await DataManagement.FetchThumbnailUrl(_objectId, _accessToken, projectId, itemId);
 
             if (string.IsNullOrEmpty(thumbnailUrl))
             {
@@ -5903,6 +6101,10 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             SortChevron.Kind = PackIconKind.ChevronDown;
         }
 
+        private void BtnFantasy_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
 
         //COMMENTED OUT FUNCTIONS//
 
@@ -6101,6 +6303,14 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
 */
 
+
+
+        private void OpenDeckView_Click(object sender, RoutedEventArgs e)
+        {
+            DeckView dv = new DeckView();
+            dv.Show();
+            
+        }
 
     }
 

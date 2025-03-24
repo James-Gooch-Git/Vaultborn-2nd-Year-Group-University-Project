@@ -4,9 +4,12 @@ using System.Text.Json;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using AssetManager.Infrastructure.Services;
+using AssetManager.Infrastructure.Data;
 using System.Text;
 using Newtonsoft.Json;
 using ForgeViewerApp;
+using MongoDB.Bson;
+using MongoDB.Driver;
 using AssetManager.Infrastructure.Models;
 
 
@@ -663,7 +666,7 @@ namespace AssetManager.Infrastructure.Services
 
                             Console.WriteLine($"✅ Encoded URN: {encodedUrn}");
 
-                            return await FetchThumbnailUrl(encodedUrn, accessToken);
+                            return await FetchThumbnailUrl(encodedUrn, accessToken, projectId, itemId);
                         }
                         else
                         {
@@ -684,7 +687,7 @@ namespace AssetManager.Infrastructure.Services
             return null;
         }
 
-        public static async Task<string> FetchThumbnailUrl(string encodedUrn, string accessToken)
+        public static async Task<string> FetchThumbnailUrl(string encodedUrn, string accessToken, string projectId, string itemId)
         {
             string thumbnailUrl = $"https://developer.api.autodesk.com/modelderivative/v2/designdata/{encodedUrn}/thumbnail";
 
@@ -698,6 +701,45 @@ namespace AssetManager.Infrastructure.Services
                 {
                     Console.WriteLine($"❌ Thumbnail not found or model not translated yet: {response.StatusCode}");
                     return null;
+                }
+
+                else
+                {
+
+                    var mongo = new MongoConnection();
+                    var _models = mongo.GetCollection("ModelData");
+
+                    byte[] imageData = await response.Content.ReadAsByteArrayAsync();
+
+                    // ✅ Convert the image to a Base64 string (for storage in MongoDB)
+                    string base64Image = Convert.ToBase64String(imageData);
+
+                    // ✅ Update the existing model document using projectId & itemId
+                    var filter = Builders<BsonDocument>.Filter.And(
+                        Builders<BsonDocument>.Filter.Eq("_folderid", projectId),
+                        Builders<BsonDocument>.Filter.Eq("_id", itemId)
+                    );
+
+                    var update = Builders<BsonDocument>.Update.Set("thumbnail_url", base64Image);
+
+                    try
+                    {
+                        var result = await _models.UpdateOneAsync(filter, update);
+                        if (result.MatchedCount == 0)
+                        {
+                            Console.WriteLine(
+                                $"⚠️ No matching model found to update for Project: {projectId}, Item: {itemId}");
+                        }
+                        else
+                        {
+                            Console.WriteLine($"✅ Thumbnail image updated for Project: {projectId}, Item: {itemId}");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"❌ Error updating model thumbnail in MongoDB: {ex.Message}");
+                        return null;
+                    }
                 }
 
                 return thumbnailUrl;
@@ -819,18 +861,65 @@ namespace AssetManager.Infrastructure.Services
                         {
                             storageId = storageIdElement.GetString();
                         }
-
-                        Console.WriteLine($"📄 Found Version: {versionName} (ID: {versionId}) - Storage ID: {storageId}");
                         versions.Add((versionId, versionName, storageId));
                     }
                 }
-
                 return versions;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ Exception while retrieving versions: {ex.Message}");
+                Console.WriteLine(ex.Message);
                 return null;
+            }
+        }
+
+        public static async Task<List<(int VersionNumber, string VersionID, string CreateTime, string CreatedBy, string StorageURN)>> GetItemVersions(string projectId, string itemId)
+        {
+            string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/items/{itemId}/versions";
+            string _accessToken = TokenManager.GetToken();
+            var versionList = new List<(int, string, string, string, string)>();
+
+            if (string.IsNullOrEmpty(_accessToken))
+            {
+                Console.WriteLine("❌ Error: Access token is missing or invalid.");
+                return versionList;
+            }
+
+            try
+            {
+                client.DefaultRequestHeaders.Clear();
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
+                HttpResponseMessage response = await client.GetAsync(url);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine($"❌ Error: {response.StatusCode} - {response.ReasonPhrase}");
+                    return versionList;
+                }
+
+                string jsonResponse = await response.Content.ReadAsStringAsync();
+                using JsonDocument doc = JsonDocument.Parse(jsonResponse);
+                JsonElement root = doc.RootElement;
+
+                foreach (JsonElement version in root.GetProperty("data").EnumerateArray())
+                {
+                    int versionNumber = version.GetProperty("attributes").GetProperty("versionNumber").GetInt32();
+                    string versionID = version.GetProperty("id").GetString();
+                    string createTime = version.GetProperty("attributes").GetProperty("createTime").GetString();
+                    string createdBy = version.GetProperty("attributes").GetProperty("createUserName").GetString();
+                    string storageURN = version.GetProperty("relationships").GetProperty("storage").GetProperty("data").GetProperty("id").GetString();
+
+                    Console.WriteLine($"📄 Found Version: Number={versionNumber}, ID={versionID}, Created={createTime} by {createdBy}");
+
+                    versionList.Add((versionNumber, versionID, createTime, createdBy, storageURN));
+                }
+
+                return versionList;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Exception occurred: {ex.Message}");
+                return versionList;
             }
         }
 
