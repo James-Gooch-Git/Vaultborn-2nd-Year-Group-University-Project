@@ -170,5 +170,12 @@ namespace AssetManager.Desktop
             ForgeViewerWindow viewerWindow = new ForgeViewerWindow(modelUrn);
             viewerWindow.Show();
         }
+
+        private void AddCardButton_Click(object sender, RoutedEventArgs e)
+        { 
+            AddCardWindow addCardWindow = new AddCardWindow();
+            addCardWindow.Owner = this;  // Set the owner to the deck (this) window
+            addCardWindow.ShowDialog();
+        }
     }
 }
