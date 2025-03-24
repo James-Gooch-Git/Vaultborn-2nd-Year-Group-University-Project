@@ -20,4 +20,7 @@ public class Comment
     
     [BsonElement("_dateCreated")]
     public DateTime CreatedDateTime { get; set; }
+    
+    [BsonElement("_versionNumber")]
+    public int VersionNumber { get; set; }
 }

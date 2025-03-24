@@ -73,6 +73,7 @@ namespace AssetManager.Desktop
         private readonly PayPalService _payPalService;
         private string _buyItemId;
         private string _buyProjectId;
+        private string _selectedVersionNum;
         //private List<Dictionary<string, string>> listedModels;
 
         private enum ViewType { Grid, List }
@@ -2108,6 +2109,7 @@ namespace AssetManager.Desktop
                                 // Handle version selection
                                 string versionId = (string)((MenuItem)s).Tag;
                                 LoadModelVersion(modelId, versionId);
+                                _selectedVersionNum = version["VersionNumber"];
                             };
 
                             versionsMenu.Items.Add(versionItem);
@@ -5225,6 +5227,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 string latestVersion = $"Version {latestVersionNumber}";
                 ModelVersionText.Text = latestVersion;
                 ModelVersionText.Tag = latestVersionNumber;
+                _selectedVersionNum = latestVersionNumber;
 
                 // ✅ Update UI fields with the full metadata
                 //IdText.Text = modelMetadata.Id;
@@ -5779,6 +5782,16 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
                 if (!string.IsNullOrEmpty(comment) && !comment.StartsWith("Add a comment"))
                 {
+                    int verNum;
+                    if (_selectedVersionNum == null)
+                    {
+                        verNum = 1;
+                    }
+                    else
+                    {
+                        verNum = int.Parse(_selectedVersionNum);
+                    }
+                    
                     MongoConnection database = new MongoConnection();
                     Comment commentContent = new Comment
                     {
@@ -5786,7 +5799,8 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                         AssetId = _selectedItemId,
                         UserId = Environment.GetEnvironmentVariable("userId", EnvironmentVariableTarget.User),
                         Content = comment,
-                        CreatedDateTime = DateTime.Now
+                        CreatedDateTime = DateTime.Now,
+                        VersionNumber = verNum
                     };
 
                     await database.Comments.InsertOneAsync(commentContent);
