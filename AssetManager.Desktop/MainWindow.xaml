@@ -1632,22 +1632,22 @@
                                 <Grid>
                                     <!-- Text Input -->
                                     <TextBox x:Name="CommentContent" BorderThickness="0" VerticalContentAlignment="Center" VerticalAlignment="Center" Background="Transparent" Padding="5,0,35,0" Height="24">
-                                        <TextBox.Style>
+                                        <!--<TextBox.Style>
                                             <Style TargetType="TextBox">
-                                                <Setter Property="Foreground" Value="Gray"/>
-                                                <Setter Property="Text" Value="Add a comment..."/>
+                                                ~1~<Setter Property="Foreground" Value="Gray"/>
+                                                <Setter Property="Text" Value="Add a comment..."/>@1@
                                                 <Style.Triggers>
                                                     <Trigger Property="IsKeyboardFocused" Value="True">
                                                         <Setter Property="Text" Value=""/>
                                                         <Setter Property="Foreground" Value="Black"/>
                                                     </Trigger>
-                                                    <Trigger Property="IsKeyboardFocused" Value="False">
+                                                    ~1~<Trigger Property="IsKeyboardFocused" Value="False">
                                                         <Setter Property="Foreground" Value="Gray"/>
                                                         <Setter Property="Text" Value="Add a comment..."/>
-                                                    </Trigger>
+                                                    </Trigger>@1@
                                                 </Style.Triggers>
                                             </Style>
-                                        </TextBox.Style>
+                                        </TextBox.Style>-->
                                     </TextBox>
                                     <!-- Reduced height -->
 
@@ -1735,9 +1735,11 @@
                                         <!-- Comment Content -->
                                         <StackPanel Orientation="Vertical">
                                             <TextBlock Text="{Binding User}" FontWeight="Bold"/>
-                                            <TextBlock Text="{Binding Content}" TextWrapping="Wrap" Width="163"/>
+                                            <TextBlock Text="{Binding Content}" TextWrapping="Wrap" Width="140"/>
                                             <TextBlock Text="{Binding CreatedDateTime}" FontSize="10" Foreground="Gray"/>
                                         </StackPanel>
+                                        
+                                        <TextBlock Text="{Binding Version}" FontWeight="Bold" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0,0,10,0"/>
 
                                     </StackPanel>
                                 </DataTemplate>

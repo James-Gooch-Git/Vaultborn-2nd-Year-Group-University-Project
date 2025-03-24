@@ -5778,19 +5778,24 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         {
             try
             {
+                MessageBox.Show($"Adding comment: {CommentContent.Text}");
                 string comment = CommentContent.Text;
 
-                if (!string.IsNullOrEmpty(comment) && !comment.StartsWith("Add a comment"))
+                if (!string.IsNullOrEmpty(comment))
                 {
+                    MessageBox.Show($"Comment valid");
+                    MessageBox.Show($"Ver num: {_selectedVersionNum}");
                     int verNum;
                     if (_selectedVersionNum == null)
                     {
-                        verNum = 1;
+                        var versions = await GetModelVersions(_selectedItemId);
+                        verNum = int.Parse(versions[0]["VersionNumber"]);
                     }
                     else
                     {
                         verNum = int.Parse(_selectedVersionNum);
                     }
+                    MessageBox.Show($"Ver num got: {verNum}");
                     
                     MongoConnection database = new MongoConnection();
                     Comment commentContent = new Comment
@@ -5804,6 +5809,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     };
 
                     await database.Comments.InsertOneAsync(commentContent);
+                    MessageBox.Show($"Comment added to db");
                     ListNewComment(commentContent);
                 }
             }
@@ -5823,7 +5829,8 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 foreach (Comment comment in comments)
                 {
                     string name = await GetUserName(comment.UserId);
-                    commentItems.Add(new CommentItem {User = name, Content = comment.Content, CreatedDateTime = comment.CreatedDateTime});
+                    string version = $"V{comment.VersionNumber}";
+                    commentItems.Add(new CommentItem {User = name, Content = comment.Content, CreatedDateTime = comment.CreatedDateTime, Version = version});
                 }
                 
                 CommentsAmount.Text = $"All Comments ({commentItems.Count})";
@@ -5858,7 +5865,8 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 if (commentItem.CommentId == comment.CommentId)
                 {
                     string name = await GetUserName(commentItem.UserId);
-                    ListComments.Items.Add(new CommentItem { User = name, Content = comment.Content, CreatedDateTime = comment.CreatedDateTime });
+                    string version = $"V{comment.VersionNumber}";
+                    ListComments.Items.Add(new CommentItem { User = name, Content = comment.Content, CreatedDateTime = comment.CreatedDateTime, Version = version });
                 }
             }
         }
@@ -5932,7 +5940,8 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             foreach (Comment comment in sortedComments)
             {
                 string name = await GetUserName(comment.UserId);
-                ListComments.Items.Add(new CommentItem { User = name, Content = comment.Content, CreatedDateTime = comment.CreatedDateTime });
+                string version = $"V{comment.VersionNumber}";
+                ListComments.Items.Add(new CommentItem { User = name, Content = comment.Content, CreatedDateTime = comment.CreatedDateTime, Version = version });
             }
         }
 
@@ -5978,6 +5987,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             public string User { get; set; }
             public string Content { get; set; }
             public DateTime CreatedDateTime { get; set; }
+            public string Version { get; set; }
         }
         
         //marketplace
