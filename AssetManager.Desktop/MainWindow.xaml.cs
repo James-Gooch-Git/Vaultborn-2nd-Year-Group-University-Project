@@ -70,6 +70,8 @@ namespace AssetManager.Desktop
 
         private List<Dictionary<string, string>> originalResults;
         private readonly PayPalService _payPalService;
+        private string _buyItemId;
+        private string _buyProjectId;
         //private List<Dictionary<string, string>> listedModels;
 
         private enum ViewType { Grid, List }
@@ -4843,45 +4845,27 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     MongoConnection database = new MongoConnection();
                     List<ModelData> result = await database.ModelData.Find(x => x.PublicPrivate == "Public" || x.HubId == hubID).ToListAsync();
             
-                    string[,] modelsArray = new string[result.Count, 9];
-                    int index = 0;
-                    foreach (ModelData modelData in result)
-                    {
-                        modelsArray[index, 0] = modelData.Id;
-                        modelsArray[index, 1] = modelData.Name;
-                        modelsArray[index, 2] = modelData.HubId;
-                        modelsArray[index, 3] = modelData.CreatedBy;
-                        modelsArray[index, 4] = modelData.CreatedDate;
-                        modelsArray[index, 5] = modelData.ModifiedDate;
-                        modelsArray[index, 6] = modelData.ModifiedBy;
-                        modelsArray[index, 7] = modelData.FileSize.ToString();
-                        modelsArray[index, 8] = modelData.FolderId;
-                        index++;
-                    }
-            
                     var modelNames = result.Select(x => x.Name).ToList();
                     var topResults = FuzzySharp.Process.ExtractTop(SearchText_Box.Text, modelNames, limit: 3);
                 
                     foreach (var match in topResults)
                     {
-                        for (int i = 0; i < modelNames.Count; i++)
+                        var model = result[match.Index];
+                        Console.WriteLine($"{match.Value}: {model.Name}");
+                        if (model != null)
                         {
-                            Console.WriteLine($"{match.Value}: {modelsArray[i, 1]}");
-                            if (match.Value == modelsArray[i, 1])
+                            Console.WriteLine($"Found Match: {match.Value}");
+                            string name = await GetUserName(model.CreatedBy);
+                            //MessageBox.Show($"Result: {match.Value}, Score: {match.Score}");
+                            searchResults.Add(new Dictionary<string, string>
                             {
-                                Console.WriteLine($"Found Match: {match.Value}");
-                                string name = await GetUserName(modelsArray[i,3]);
-                                //MessageBox.Show($"Result: {match.Value}, Score: {match.Score}");
-                                searchResults.Add(new Dictionary<string, string>
-                                {
-                                    { "Name", modelsArray[i, 1] },
-                                    { "Project", name },
-                                    { "LastModified", match.Score.ToString() },
-                                    { "Id", modelsArray[i, 0] },
-                                    { "ProjectId" , modelsArray[i, 8]}
-                                });
-                                break;
-                            }
+                                { "Name", model.Name },
+                                { "Project", name },
+                                { "LastModified", model.ModifiedDate },
+                                { "Id", model.Id },
+                                { "ProjectId" , model.FolderId}
+                            });
+                            break;
                         }
                     }
                 }
@@ -4896,7 +4880,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         private void DisplaySearchResults(List<Dictionary<string, string>> searchResults)
         {
             ModelsDataGrid.Columns[1].Header = "Created By";
-            ModelsDataGrid.Columns[2].Header = "Score";
+            //ModelsDataGrid.Columns[2].Header = "Score";
             ModelsDataGrid.ItemsSource = searchResults;
             originalResults = searchResults;
             Models = searchResults;
@@ -5888,11 +5872,20 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         }
         
         //marketplace
-        private async void InitializeMarketplace()
+        private async Task InitializeMarketplace()
         {
-            MongoConnection database = new MongoConnection();
-            List<Dictionary<string, string>> allListedModels = await GetAllListedModels();
-            MarketplaceDataGrid.ItemsSource = allListedModels;
+            try
+            {
+                List<Dictionary<string, string>> allListedModels = await GetAllListedModels();
+                List<Dictionary<string, string>> namesAZ = allListedModels.OrderBy(x => x["Name"]).ToList();
+                MarketplaceDataGrid.ItemsSource = namesAZ;
+                DisplayMarketplaceGrid(namesAZ);
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show($"Error: {e.Message}");
+                throw;
+            }
         }
 
         private async Task<List<Dictionary<string, string>>> GetAllListedModels()
@@ -5902,6 +5895,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             var listedModels = await database.ListedModels.Find(FilterDefinition<ListedModels>.Empty).ToListAsync();
             foreach (var model in listedModels)
             {
+                bool purchased = await CheckModelPurchased(model.ModelId, _userId);
                 string projectId = await GetModelProjectId(model.ModelId);
                 string sellerName = await GetUserName(model.SellerId);
                 allListedModels.Add(new Dictionary<string, string>
@@ -5911,7 +5905,9 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     { "Seller", sellerName },
                     { "Id", model.ModelId },
                     { "Price", model.Price.ToString("0.00")},
-                    { "ProjectId", projectId}
+                    { "ProjectId", projectId},
+                    { "BuyVisibility", purchased ? "Collapsed" : "Visible" },
+                    { "PurchasedVisibility", purchased ? "Visible" : "Collapsed" }
                 });
             }
             return allListedModels;
@@ -5922,7 +5918,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             MarketplaceBorder.Visibility = Visibility.Visible;
             ProjectsBorder.Visibility = Visibility.Collapsed;
             LibraryBorder.Visibility = Visibility.Collapsed;
-            InitializeMarketplace();
+            await InitializeMarketplace();
         }
         
         private void BtnLibrary_Click(object sender, RoutedEventArgs e)
@@ -5932,15 +5928,9 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             LibraryBorder.Visibility = Visibility.Visible;
         }
         
-        private async void BtnListModel_Click(object sender, RoutedEventArgs e)
+        //list models
+        private void BtnListModel_Click(object sender, RoutedEventArgs e)
         {
-            MongoConnection database = new MongoConnection();
-            var findListing = await database.ListedModels.Find(x => x.ModelId == _selectedItemId).FirstOrDefaultAsync();
-            if (findListing != null)
-            {
-                MessageBox.Show($"Model already listed");
-                return;
-            }
             ListModelPopup.IsOpen = true;
         }
         
@@ -6007,19 +5997,15 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             
         }
 
-        private async void MarketplaceGrid_Click(object sender, MouseButtonEventArgs e)
+        private void MarketplaceGrid_Click(object sender, MouseButtonEventArgs e)
         {
             MarketplaceDataGrid.Visibility = Visibility.Collapsed;
             MarketplaceGridView.Visibility = Visibility.Visible;
             MarketplaceGridBorder.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
             MarketplaceListBorder.Background = Brushes.Transparent;
-            
-            var listedModels = await GetAllListedModels();
-            
-            DisplayMarketplaceGrid(listedModels);
         }
         
-        private async void MarketplaceList_Click(object sender, MouseButtonEventArgs e)
+        private void MarketplaceList_Click(object sender, MouseButtonEventArgs e)
         {
             MarketplaceGridView.Visibility = Visibility.Collapsed;
             MarketplaceDataGrid.Visibility = Visibility.Visible;
@@ -6135,7 +6121,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 
                 TextBlock price = new TextBlock
                 {
-                    Text = model["Price"],
+                    Text = $"{model["Price"]}",
                     FontSize = 16,
                     FontWeight = FontWeights.Normal,
                     Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B")),
@@ -6144,35 +6130,66 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     TextWrapping = TextWrapping.Wrap
                 };
 
-                Button buy = new Button
+                if (model["BuyVisibility"] == "Visible")
                 {
-                    Content = "Buy",
-                    Background = Brushes.Green,
-                    Foreground = Brushes.Azure,
-                    Width = 50,
-                    Height = 20,
-                    BorderBrush = Brushes.Green,
-                    BorderThickness = new Thickness(2),
-                };
+                    Button buy = new Button
+                    {
+                        Content = "Buy",
+                        Background = Brushes.Green,
+                        Foreground = Brushes.Azure,
+                        Width = 50,
+                        Height = 20,
+                        BorderBrush = Brushes.Green,
+                        BorderThickness = new Thickness(2),
+                        HorizontalAlignment = HorizontalAlignment.Center,
+                        VerticalAlignment = VerticalAlignment.Center,
+                    };
 
-                buy.Click += BtnBuy_Click;
+                    buy.Click += async (s, e) =>
+                    {
+                        if (modelSquare.Tag is Dictionary<string, string> models)
+                        {
+                            BuyPopup.IsOpen = true;
+                            await PayPal(models);
+                        }
+                    };
 
-                Border buyBorder = new Border
+                    Border buyBorder = new Border
+                    {
+                        BorderBrush = buy.BorderBrush,
+                        BorderThickness = new Thickness(2),
+                        CornerRadius = new CornerRadius(3),
+                        Width = 50,
+                        Height = 20
+                    };
+
+                    buyBorder.Child = buy;
+                    priceContent.Children.Add(buyBorder);
+                }
+                else if (model["PurchasedVisibility"] == "Visible")
                 {
-                    BorderBrush = buy.BorderBrush,
-                    BorderThickness = new Thickness(2),
-                    CornerRadius = new CornerRadius(3)
-                };
+                    TextBlock bought = new TextBlock
+                    {
+                        Text = "Purchased",
+                        FontSize = 16,
+                        FontWeight = FontWeights.Normal,
+                        Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B")),
+                        TextAlignment = TextAlignment.Center,
+                        HorizontalAlignment = HorizontalAlignment.Left,
+                        TextWrapping = TextWrapping.Wrap
+                    };
+                    
+                    priceContent.Children.Add(bought);
+                }
                 
-                buyBorder.Child = buy;
                 priceContent.Children.Add(price);
-                priceContent.Children.Add(buyBorder);
-
+                
                 modelSquare.Child = grid;
                 MarketplaceModelsContainer.Children.Add(modelSquare);
             }
         }
         
+        //sort 
         private void MarketplaceSort_Click(object sender, MouseButtonEventArgs e)
         {
             SortChevron.Kind = PackIconKind.ChevronUp;
@@ -6186,22 +6203,23 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             {
                 string option = item.Content.ToString();
                 SortByTextBlock.Text = $"Sort By {option}";
-                SortListedModels(option);
+                List<Dictionary<string, string>> models = MarketplaceDataGrid.ItemsSource.Cast<Dictionary<string, string>>().ToList();
+                await SortListedModels(option, models);
             }
         }
 
-        private async void SortListedModels(string option)
+        private async Task SortListedModels(string option, List<Dictionary<string, string>> models)
         {
-            var allListedModels = await GetAllListedModels();
             switch (option)
             {
-                case "Default":
-                    MarketplaceDataGrid.ItemsSource = allListedModels;
-                    DisplayMarketplaceGrid(allListedModels);
+                case "Names A-Z":
+                    List<Dictionary<string, string>> namesAZ = models.OrderBy(x => x["Name"]).ToList();
+                    MarketplaceDataGrid.ItemsSource = namesAZ;
+                    DisplayMarketplaceGrid(namesAZ);
                     break;
                 case "Upvotes":
                     List<Dictionary<string, string>> upvotes = new List<Dictionary<string, string>>();
-                    foreach (var item in allListedModels)
+                    foreach (var item in models)
                     {
                         int upvoteAmount = await GetModelUpvoteCount(item["Id"]);
                         item.Add("Upvotes", upvoteAmount.ToString());
@@ -6213,28 +6231,24 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     DisplayMarketplaceGrid(upvotes);
                     break;
                 case "Price Lowest":
-                    List<Dictionary<string, string>> lowestPrice = allListedModels.OrderBy(x => x["Price"]).ToList();
+                    List<Dictionary<string, string>> lowestPrice = models.OrderBy(x => x["Price"]).ToList();
                     MarketplaceDataGrid.ItemsSource = lowestPrice;
                     DisplayMarketplaceGrid(lowestPrice);
                     break;
                 case "Price Highest":
-                    List<Dictionary<string, string>> highestPrice = allListedModels.OrderByDescending(x => x["Price"]).ToList();
+                    List<Dictionary<string, string>> highestPrice = models.OrderByDescending(x => x["Price"]).ToList();
                     MarketplaceDataGrid.ItemsSource = highestPrice;
                     DisplayMarketplaceGrid(highestPrice);
                     break;
-                case "Name A-Z":
-                    List<Dictionary<string, string>> namesAZ = allListedModels.OrderBy(x => x["Name"]).ToList();
-                    MarketplaceDataGrid.ItemsSource = namesAZ;
-                    DisplayMarketplaceGrid(namesAZ);
-                    break;
                 case "Name Z-A":
-                    List<Dictionary<string, string>> namesZA = allListedModels.OrderByDescending(x => x["Name"]).ToList();
+                    List<Dictionary<string, string>> namesZA = models.OrderByDescending(x => x["Name"]).ToList();
                     MarketplaceDataGrid.ItemsSource = namesZA;
                     DisplayMarketplaceGrid(namesZA);
                     break;
             }
         }
         
+        //buy
         private async void BtnBuy_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -6242,21 +6256,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 BuyPopup.IsOpen = true;
                 if (MarketplaceDataGrid.SelectedItem is Dictionary<string, string> models)
                 {
-                    double price = double.Parse(models["Price"]);
-                    string aT = await _payPalService.GetPayPalAcessToken();
-                    string approvalUrl = await _payPalService.CreateOrder(aT, price);
-                    if (string.IsNullOrEmpty(approvalUrl))
-                    {
-                        MessageBox.Show($"❌ Payment Failed");
-                        BuyPopup.IsOpen = false;
-                    }
-                    else
-                    {
-                        webView.CoreWebView2.NavigationStarting -= Redirected;
-                        webView.CoreWebView2.NavigationStarting += Redirected;
-
-                        webView.CoreWebView2.Navigate(approvalUrl);
-                    }
+                    await PayPal(models);
                 }
             }
             catch (Exception exception)
@@ -6274,13 +6274,19 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 Console.WriteLine($"{uri}");
                 string token = HttpUtility.ParseQueryString(uri.Query).Get("token");
                 string payerId = HttpUtility.ParseQueryString(uri.Query).Get("PayerId");
-                string payPalAccessToken = await _payPalService.GetPayPalAcessToken();
+                string payPalAccessToken = await _payPalService.GetPayPalAccessToken();
                 bool approved = await _payPalService.CapturePayment(token, payPalAccessToken);
                 if (approved)
                 {
-                    MessageBox.Show($"\u2705 Payment Successful");
+                    MessageBox.Show($"\u2705 Payment Successful \n Model download");
                     webView.CoreWebView2.Navigate("about:blank");
                     BuyPopup.IsOpen = false;
+                    FileDownloadService fileDownloadService = new FileDownloadService();
+                    await fileDownloadService.DownloadModelAsync(_buyProjectId, _buyItemId);
+                    MongoConnection database  = new MongoConnection();
+                    Purchased purchased = new Purchased {ModelId = _buyItemId, UserId = _userId} ;
+                    await database.Purchased.InsertOneAsync(purchased);
+                    await InitializeMarketplace();
                 }
                 else
                 {
@@ -6297,6 +6303,32 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 BuyPopup.IsOpen = false;
             }
         }
+
+        private async Task PayPal(Dictionary<string, string> models)
+        {
+            _buyItemId = models["Id"];
+            _buyProjectId = await GetModelProjectId(_buyItemId);
+
+            string amount = models["Price"].Replace("£", "");
+            Console.WriteLine($"Price: {amount}");
+            double price = double.Parse(amount);
+            string aT = await _payPalService.GetPayPalAccessToken();
+            //MessageBox.Show($"Access Token: {aT}");
+            string approvalUrl = await _payPalService.CreateOrder(aT, price);
+            //MessageBox.Show($"Approval Url: {approvalUrl}");
+            if (string.IsNullOrEmpty(approvalUrl))
+            {
+                MessageBox.Show($"❌ Payment Failed");
+                BuyPopup.IsOpen = false;
+            }
+            else
+            {
+                webView.CoreWebView2.NavigationStarting -= Redirected;
+                webView.CoreWebView2.NavigationStarting += Redirected;
+
+                webView.CoreWebView2.Navigate(approvalUrl);
+            }
+        }
         
         private void SortPopup_Closed(object? sender, EventArgs e)
         {
@@ -6308,6 +6340,62 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
         }
 
+        
+        //search
+        private async void MarketplaceSearch_OnKeyDown(object sender, KeyEventArgs e)
+        {
+            List<Dictionary<string, string>> searchResults = new List<Dictionary<string, string>>();
+            if (e.Key == Key.Enter)
+            {
+                MongoConnection database = new MongoConnection();
+                List<ListedModels> result = await database.ListedModels.Find(FilterDefinition<ListedModels>.Empty).ToListAsync();
+        
+                var modelNames = result.Select(x => x.Name).ToList();
+                var topResults = FuzzySharp.Process.ExtractTop(MarketplaceSearchTextBox.Text, modelNames, limit: 3);
+            
+                foreach (var match in topResults)
+                {
+                    var model = result[match.Index];
+                    Console.WriteLine($"{match.Value}: {model.Name}");
+                    if (model != null)
+                    {
+                        Console.WriteLine($"Found Match: {match.Value}");
+                        string sellerName = await GetUserName(model.SellerId);
+                        string projectId = await GetModelProjectId(model.ModelId);
+                        searchResults.Add(new Dictionary<string, string>
+                        {
+                            { "Name", model.Name },
+                            { "Description", model.Description },
+                            { "Seller", sellerName },
+                            { "Id", model.ModelId },
+                            { "Price" , $"£{model.Price.ToString("0.00")}"} ,
+                            { "ProjectId", projectId}
+                        });
+                    }
+                }
+            }
+            MarketplaceDataGrid.ItemsSource = searchResults;
+            DisplayMarketplaceGrid(searchResults);
+        }
+
+        private async void MarketplaceClearSearch_Click(object sender, MouseButtonEventArgs e)
+        {
+            MarketplaceSearchTextBox.Text = "";
+            await InitializeMarketplace();
+        }
+
+        private async Task<bool> CheckModelPurchased(string modelId, string userId)
+        {
+            MongoConnection database = new MongoConnection();
+            var result = await database.Purchased.Find(x => x.ModelId == modelId && x.UserId == userId).FirstOrDefaultAsync();
+            if (result == null)
+            {
+                return false;
+            }
+
+            return true;
+        }
+        
         //COMMENTED OUT FUNCTIONS//
 
         /* private void BtnGenerate3D_Click(object sender, RoutedEventArgs e)

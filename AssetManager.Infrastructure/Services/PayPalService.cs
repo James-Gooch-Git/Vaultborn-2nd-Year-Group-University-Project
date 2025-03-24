@@ -8,7 +8,7 @@ public class PayPalService
     private string clientId = "AczMZeknBHiVxYKbTXXJcnBBQGzbyxezvXljdSo762l99bhMOfQIvZYsUOljr3CcZwZ4BjtLZMnUUZ1O";
     private string clientSecret = "EBFRT8ssTMtNlfw2753rw689IE6PF9MY4TQnotc3SUCm9rY-7vTxpkhwHK7GecKfrgPn1GLfk3FEvalC";
 
-    public async Task<string> GetPayPalAcessToken()
+    public async Task<string> GetPayPalAccessToken()
     {
         try
         {
