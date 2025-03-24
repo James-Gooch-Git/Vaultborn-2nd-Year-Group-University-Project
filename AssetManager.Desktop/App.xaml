@@ -4,40 +4,39 @@
              xmlns:local="clr-namespace:AssetManager.Desktop"
              xmlns:converters="clr-namespace:AssetManager.Desktop.Converters"
              StartupUri="LoginWindow.xaml">
+
     <Application.Resources>
+        <ResourceDictionary>
+            <!-- Merge external dictionary -->
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="/AssetManager.Desktop;component/Resources/FantasyCardTemplates.xaml"/>
-                
             </ResourceDictionary.MergedDictionaries>
+
+            <!-- First (Top) Button Template -->
             <ControlTemplate x:Key="FirstButtonTemplate" TargetType="Button">
                 <Grid>
-                    <!-- Image Background -->
                     <Image x:Name="bgImage"
-               Source="/Assets/Button3DarkerBlueFirstRow.png"
-               Stretch="Fill"
-               Width="{TemplateBinding Width}"
-               Height="{TemplateBinding Height}" />
+                           Source="/Assets/Button3DarkerBlueFirstRow.png"
+                           Stretch="Fill"
+                           Width="{TemplateBinding Width}"
+                           Height="{TemplateBinding Height}" />
 
-                    <!-- Glow Overlay -->
                     <Rectangle x:Name="glowOverlay"
-                   Fill="#FFF5DEB3"
-                   Opacity="0"
-                   RadiusX="8" RadiusY="8"/>
+                               Fill="#FFF5DEB3"
+                               Opacity="0"
+                               RadiusX="8" RadiusY="8"/>
 
-                    <!-- Button Text -->
                     <ContentPresenter HorizontalAlignment="Center"
-                          VerticalAlignment="Center"
-                                      Margin="-30,-4,0,0" 
-                          RecognizesAccessKey="True"/>
+                                      VerticalAlignment="Center"
+                                      Margin="-30,-4,0,0"
+                                      RecognizesAccessKey="True"/>
                 </Grid>
 
-                <!-- Interaction Triggers -->
                 <ControlTemplate.Triggers>
                     <Trigger Property="IsMouseOver" Value="True">
                         <Setter TargetName="glowOverlay" Property="Opacity" Value="0.08"/>
                         <Setter TargetName="bgImage" Property="Source" Value="/Assets/Button3DarkerBlueFirstRowHover.png"/>
                     </Trigger>
-
                     <Trigger Property="IsPressed" Value="True">
                         <Setter TargetName="glowOverlay" Property="Opacity" Value="0.15"/>
                         <Setter TargetName="bgImage" Property="RenderTransform">
@@ -46,42 +45,37 @@
                             </Setter.Value>
                         </Setter>
                     </Trigger>
-
                     <Trigger Property="IsEnabled" Value="False">
                         <Setter Property="Opacity" Value="0.4"/>
                     </Trigger>
                 </ControlTemplate.Triggers>
             </ControlTemplate>
 
+            <!-- Middle Button Template -->
             <ControlTemplate x:Key="MiddleButtonTemplate" TargetType="Button">
                 <Grid>
-                    <!-- Image Background -->
                     <Image x:Name="bgImage"
-   Source="/Assets/BlendedButton.png"
-   Stretch="Fill"
-   Width="{TemplateBinding Width}"
-   Height="{TemplateBinding Height}" />
+                           Source="/Assets/BlendedButton.png"
+                           Stretch="Fill"
+                           Width="{TemplateBinding Width}"
+                           Height="{TemplateBinding Height}" />
 
-                    <!-- Glow Overlay -->
                     <Rectangle x:Name="glowOverlay"
-       Fill="#FFF5DEB3"
-       Opacity="0"
-       RadiusX="8" RadiusY="8"/>
+                               Fill="#FFF5DEB3"
+                               Opacity="0"
+                               RadiusX="8" RadiusY="8"/>
 
-                    <!-- Button Text -->
                     <ContentPresenter HorizontalAlignment="Center"
-              VerticalAlignment="Center"
-                                       Margin="-30,-4,0,0" 
-              RecognizesAccessKey="True"/>
+                                      VerticalAlignment="Center"
+                                      Margin="-30,-4,0,0"
+                                      RecognizesAccessKey="True"/>
                 </Grid>
 
-                <!-- Interaction Triggers -->
                 <ControlTemplate.Triggers>
                     <Trigger Property="IsMouseOver" Value="True">
                         <Setter TargetName="glowOverlay" Property="Opacity" Value="0.08"/>
                         <Setter TargetName="bgImage" Property="Source" Value="/Assets/BlendedButtonHover.png"/>
                     </Trigger>
-
                     <Trigger Property="IsPressed" Value="True">
                         <Setter TargetName="glowOverlay" Property="Opacity" Value="0.15"/>
                         <Setter TargetName="bgImage" Property="RenderTransform">
@@ -90,41 +84,37 @@
                             </Setter.Value>
                         </Setter>
                     </Trigger>
-
                     <Trigger Property="IsEnabled" Value="False">
                         <Setter Property="Opacity" Value="0.4"/>
                     </Trigger>
                 </ControlTemplate.Triggers>
             </ControlTemplate>
+
+            <!-- Middle Button 2 Template -->
             <ControlTemplate x:Key="MiddleButton2Template" TargetType="Button">
                 <Grid>
-                    <!-- Image Background -->
                     <Image x:Name="bgImage"
-Source="/Assets/MiddleButton2.png"
-Stretch="Fill"
-Width="{TemplateBinding Width}"
-Height="{TemplateBinding Height}" />
+                           Source="/Assets/MiddleButton2.png"
+                           Stretch="Fill"
+                           Width="{TemplateBinding Width}"
+                           Height="{TemplateBinding Height}" />
 
-                    <!-- Glow Overlay -->
                     <Rectangle x:Name="glowOverlay"
-    Fill="#FFF5DEB3"
-    Opacity="0"
-    RadiusX="8" RadiusY="8"/>
+                               Fill="#FFF5DEB3"
+                               Opacity="0"
+                               RadiusX="8" RadiusY="8"/>
 
-                    <!-- Button Text -->
                     <ContentPresenter HorizontalAlignment="Center"
-           VerticalAlignment="Center"
-                                    Margin="-30,-4,0,0" 
-           RecognizesAccessKey="True"/>
+                                      VerticalAlignment="Center"
+                                      Margin="-30,-4,0,0"
+                                      RecognizesAccessKey="True"/>
                 </Grid>
 
-                <!-- Interaction Triggers -->
                 <ControlTemplate.Triggers>
                     <Trigger Property="IsMouseOver" Value="True">
                         <Setter TargetName="glowOverlay" Property="Opacity" Value="0.08"/>
                         <Setter TargetName="bgImage" Property="Source" Value="/Assets/MiddleButton2Hover.png"/>
                     </Trigger>
-
                     <Trigger Property="IsPressed" Value="True">
                         <Setter TargetName="glowOverlay" Property="Opacity" Value="0.15"/>
                         <Setter TargetName="bgImage" Property="RenderTransform">
@@ -133,41 +123,37 @@ Height="{TemplateBinding Height}" />
                             </Setter.Value>
                         </Setter>
                     </Trigger>
-
                     <Trigger Property="IsEnabled" Value="False">
                         <Setter Property="Opacity" Value="0.4"/>
                     </Trigger>
                 </ControlTemplate.Triggers>
             </ControlTemplate>
+
+            <!-- Last Button Template -->
             <ControlTemplate x:Key="LastButtonTemplate" TargetType="Button">
                 <Grid>
-                    <!-- Image Background -->
                     <Image x:Name="bgImage"
-   Source="/Assets/Button3DarkerBlueLastRowAlternate.png"
-   Stretch="Fill"
-   Width="{TemplateBinding Width}"
-   Height="{TemplateBinding Height}" />
+                           Source="/Assets/Button3DarkerBlueLastRowAlternate.png"
+                           Stretch="Fill"
+                           Width="{TemplateBinding Width}"
+                           Height="{TemplateBinding Height}" />
 
-                    <!-- Glow Overlay -->
                     <Rectangle x:Name="glowOverlay"
-       Fill="#FFF5DEB3"
-       Opacity="0"
-       RadiusX="8" RadiusY="8"/>
+                               Fill="#FFF5DEB3"
+                               Opacity="0"
+                               RadiusX="8" RadiusY="8"/>
 
-                    <!-- Button Text -->
                     <ContentPresenter HorizontalAlignment="Center"
-              VerticalAlignment="Center"
-                                       Margin="-30,-4,0,0" 
-              RecognizesAccessKey="True"/>
+                                      VerticalAlignment="Center"
+                                      Margin="-30,-4,0,0"
+                                      RecognizesAccessKey="True"/>
                 </Grid>
 
-                <!-- Interaction Triggers -->
                 <ControlTemplate.Triggers>
                     <Trigger Property="IsMouseOver" Value="True">
                         <Setter TargetName="glowOverlay" Property="Opacity" Value="0.08"/>
                         <Setter TargetName="bgImage" Property="Source" Value="/Assets/Button3DarkerBlueLastRowHoverAlternate.png"/>
                     </Trigger>
-
                     <Trigger Property="IsPressed" Value="True">
                         <Setter TargetName="glowOverlay" Property="Opacity" Value="0.15"/>
                         <Setter TargetName="bgImage" Property="RenderTransform">
@@ -176,18 +162,15 @@ Height="{TemplateBinding Height}" />
                             </Setter.Value>
                         </Setter>
                     </Trigger>
-
                     <Trigger Property="IsEnabled" Value="False">
                         <Setter Property="Opacity" Value="0.4"/>
                     </Trigger>
                 </ControlTemplate.Triggers>
             </ControlTemplate>
 
-            <converters:ProgressToWidthConverter x:Key="ProgressToWidthConverterr"/>
-            <!-- Other application resources -->
+            <!-- Converters -->
+            <converters:ProgressToWidthConverter x:Key="ProgressToWidthConverter"/>
 
         </ResourceDictionary>
-        
     </Application.Resources>
-    
 </Application>
