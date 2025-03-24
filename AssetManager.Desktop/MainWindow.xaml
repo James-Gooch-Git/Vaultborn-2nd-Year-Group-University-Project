@@ -1208,9 +1208,12 @@
                             
                                 <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <Border BorderBrush="Green" BorderThickness="4" CornerRadius="4">
-                                        <Button Click="BtnBuy_Click" Content="Buy" Background="Green" Foreground="Azure" Width="50" Height="20" BorderBrush="Green" BorderThickness="2"/>
-                                    </Border>
+                                    <StackPanel>
+                                        <Border BorderBrush="Green" BorderThickness="4" CornerRadius="4" Visibility="{Binding BuyVisibility}">
+                                            <Button Click="BtnBuy_Click" Content="Buy" Background="Green" Foreground="Azure" Width="50" Height="20" BorderBrush="Green" BorderThickness="2"/>
+                                        </Border>
+                                        <TextBlock Text="Purchased" FontWeight="Normal" VerticalAlignment="Center" Visibility="{Binding PurchasedVisibility}"/>
+                                    </StackPanel>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>

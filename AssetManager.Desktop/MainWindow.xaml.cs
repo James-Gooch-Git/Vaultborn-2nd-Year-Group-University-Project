@@ -4574,6 +4574,7 @@ namespace AssetManager.Desktop
             var listedModels = await database.ListedModels.Find(FilterDefinition<ListedModels>.Empty).ToListAsync();
             foreach (var model in listedModels)
             {
+                bool purchased = await CheckModelPurchased(model.ModelId, _userId);
                 string projectId = await GetModelProjectId(model.ModelId);
                 string sellerName = await GetUserName(model.SellerId);
                 allListedModels.Add(new Dictionary<string, string>
@@ -4583,13 +4584,16 @@ namespace AssetManager.Desktop
                     { "Seller", sellerName },
                     { "Id", model.ModelId },
                     { "Price", model.Price.ToString("0.00")},
-                    { "ProjectId", projectId}
+                    { "ProjectId", projectId},
+                    { "BuyVisibility", purchased ? "Collapsed" : "Visible" },
+                    { "PurchasedVisibility", purchased ? "Visible" : "Collapsed" }
                 });
+                MessageBox.Show($"Model: {model.Name}, BuyVis: {(purchased ? "Collapsed": "Visible")}, PurVis: {(purchased ? "Visible" : "Collapsed")}");
             }
             return allListedModels;
         }
         
-        private async void BtnMarketplace_Click(object sender, RoutedEventArgs e)
+        private void BtnMarketplace_Click(object sender, RoutedEventArgs e)
         {
             MarketplaceBorder.Visibility = Visibility.Visible;
             ProjectsBorder.Visibility = Visibility.Collapsed;
@@ -4806,41 +4810,60 @@ namespace AssetManager.Desktop
                     TextWrapping = TextWrapping.Wrap
                 };
 
-                Button buy = new Button
+                if (model["BuyVisibility"] == "Visible")
                 {
-                    Content = "Buy",
-                    Background = Brushes.Green,
-                    Foreground = Brushes.Azure,
-                    Width = 50,
-                    Height = 20,
-                    BorderBrush = Brushes.Green,
-                    BorderThickness = new Thickness(2),
-                    HorizontalAlignment = HorizontalAlignment.Center,
-                    VerticalAlignment = VerticalAlignment.Center,
-                };
-
-                buy.Click += async (s, e) =>
-                {
-                    if (modelSquare.Tag is Dictionary<string, string> models)
+                    Button buy = new Button
                     {
-                        BuyPopup.IsOpen = true;
-                        await PayPal(models);
-                    }
-                };
+                        Content = "Buy",
+                        Background = Brushes.Green,
+                        Foreground = Brushes.Azure,
+                        Width = 50,
+                        Height = 20,
+                        BorderBrush = Brushes.Green,
+                        BorderThickness = new Thickness(2),
+                        HorizontalAlignment = HorizontalAlignment.Center,
+                        VerticalAlignment = VerticalAlignment.Center,
+                    };
 
-                Border buyBorder = new Border
+                    buy.Click += async (s, e) =>
+                    {
+                        if (modelSquare.Tag is Dictionary<string, string> models)
+                        {
+                            BuyPopup.IsOpen = true;
+                            await PayPal(models);
+                        }
+                    };
+
+                    Border buyBorder = new Border
+                    {
+                        BorderBrush = buy.BorderBrush,
+                        BorderThickness = new Thickness(2),
+                        CornerRadius = new CornerRadius(3),
+                        Width = 50,
+                        Height = 20
+                    };
+
+                    buyBorder.Child = buy;
+                    priceContent.Children.Add(buyBorder);
+                }
+                else if (model["PurchasedVisibility"] == "Visible")
                 {
-                    BorderBrush = buy.BorderBrush,
-                    BorderThickness = new Thickness(2),
-                    CornerRadius = new CornerRadius(3),
-                    Width = 50,
-                    Height = 20
-                };
+                    TextBlock bought = new TextBlock
+                    {
+                        Text = "Purchased",
+                        FontSize = 16,
+                        FontWeight = FontWeights.Normal,
+                        Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B")),
+                        TextAlignment = TextAlignment.Center,
+                        HorizontalAlignment = HorizontalAlignment.Left,
+                        TextWrapping = TextWrapping.Wrap
+                    };
+                    
+                    priceContent.Children.Add(bought);
+                }
                 
-                buyBorder.Child = buy;
                 priceContent.Children.Add(price);
-                priceContent.Children.Add(buyBorder);
-
+                
                 modelSquare.Child = grid;
                 MarketplaceModelsContainer.Children.Add(modelSquare);
             }
@@ -4940,6 +4963,9 @@ namespace AssetManager.Desktop
                     BuyPopup.IsOpen = false;
                     FileDownloadService fileDownloadService = new FileDownloadService();
                     await fileDownloadService.DownloadModelAsync(_buyProjectId, _buyItemId);
+                    MongoConnection database  = new MongoConnection();
+                    Purchased purchased = new Purchased {ModelId = _buyItemId, UserId = _userId} ;
+                    await database.Purchased.InsertOneAsync(purchased);
                 }
                 else
                 {
@@ -5029,6 +5055,18 @@ namespace AssetManager.Desktop
         {
             MarketplaceSearchTextBox.Text = "";
             InitializeMarketplace();
+        }
+
+        private async Task<bool> CheckModelPurchased(string modelId, string userId)
+        {
+            MongoConnection database = new MongoConnection();
+            var result = await database.Purchased.Find(x => x.ModelId == modelId && x.UserId == userId).FirstOrDefaultAsync();
+            if (result == null)
+            {
+                return false;
+            }
+
+            return true;
         }
         
         //COMMENTED OUT FUNCTIONS//
