@@ -4266,7 +4266,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
         private async Task LoadThumbnailAsync(string projectId, string itemId, Image thumbnailImage)
         {
-            string thumbnailUrl = await DataManagement.FetchThumbnailUrl(_objectId, _accessToken);
+            string thumbnailUrl = await DataManagement.FetchThumbnailUrl(_objectId, _accessToken, projectId, itemId);
 
             if (string.IsNullOrEmpty(thumbnailUrl))
             {
@@ -5792,7 +5792,13 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
 */
 
-        
+
+        private void OpenDeckView_Click(object sender, RoutedEventArgs e)
+        {
+            DeckView dv = new DeckView();
+            dv.Show();
+            
+        }
     }
 
 }

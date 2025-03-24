@@ -13,7 +13,8 @@
 
     <!-- background image -->
     <Window.Background>
-        <ImageBrush Stretch="None" ImageSource="\Assets\Fantasy-login4.png" AlignmentY="Top" AlignmentX="Center"/>
+        <!-- <ImageBrush Stretch="None" ImageSource="\Assets\Fantasy-login4.png" AlignmentY="Top" AlignmentX="Center"/> -->
+        <ImageBrush ImageSource="pack://application:,,,/Assets/fantasy-login4.png"/>
     </Window.Background>
 
 
