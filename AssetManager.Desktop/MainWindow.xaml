@@ -1316,6 +1316,45 @@
                             <TextBlock x:Name="IdText"/>
                         </StackPanel>-->
 
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,15">
+                            <TextBlock Text="Model Version: " FontWeight="Bold" Foreground="Black" VerticalAlignment="Center"/>
+
+                            <Button x:Name="ModelVersionButton" Foreground="Black" Background="Transparent" BorderThickness="0" Cursor="Hand" Margin="5,0,0,0" Click="ModelVersionButton_Click" VerticalAlignment="Center">
+                                <Button.Style>
+                                    <Style TargetType="Button">
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Border Background="Transparent" BorderBrush="Transparent">
+                                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                    </Border>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                        <Setter Property="Background" Value="Transparent"/>
+                                        <Setter Property="BorderBrush" Value="Transparent"/>
+                                        <Setter Property="Foreground" Value="Black"/>
+                                        <Style.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter Property="Background" Value="Transparent"/>
+                                                <Setter Property="BorderBrush" Value="Transparent"/>
+                                            </Trigger>
+                                            <Trigger Property="IsPressed" Value="True">
+                                                <Setter Property="Background" Value="Transparent"/>
+                                                <Setter Property="BorderBrush" Value="Transparent"/>
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock x:Name="ModelVersionText" Text="" VerticalAlignment="Center"/>
+                                    <md:PackIcon Kind="ChevronDown" Width="16" Height="16" Foreground="#4B4B4B" Margin="2,-1,0,0" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+
+
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
                             <TextBlock Text="Created By: " FontWeight="Bold"/>
                             <TextBlock x:Name="CreatedByText"/>
@@ -1357,7 +1396,7 @@
                         </StackPanel>
 
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
-                            <TextBlock Text="Polyt Count: " FontWeight="Bold"/>
+                            <TextBlock Text="Poly Count: " FontWeight="Bold"/>
                             <TextBlock x:Name="PolyCountText"/>
                         </StackPanel>
 
@@ -1435,7 +1474,7 @@
 
 
                     <!-- List Model Button & Popup -->
-                    <Border MouseLeftButtonDown="MarketplaceGrid_Click" BorderBrush="#98730C" BorderThickness="3" CornerRadius="2" Width="90" Height="40" HorizontalAlignment="Center" Margin="0,20,0,0" Cursor="Hand">
+                    <Border x:Name="ListModelButtonBorder" MouseLeftButtonDown="MarketplaceGrid_Click" BorderBrush="#98730C" BorderThickness="3" CornerRadius="2" Width="90" Height="40" HorizontalAlignment="Center" Margin="0,20,0,0" Cursor="Hand">
                         <Button  x:Name="BtnListModel" Content="List Model" Click="BtnListModel_Click" Grid.Row="4" BorderBrush="#98730C" BorderThickness="2" Background="#540754" Foreground="White" Width="90" Height="40" HorizontalAlignment="Center" VerticalAlignment="Center" Cursor="Hand"/>
                     </Border>
 
