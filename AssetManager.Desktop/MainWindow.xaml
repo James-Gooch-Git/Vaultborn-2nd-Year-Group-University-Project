@@ -295,7 +295,7 @@
         </Grid.ColumnDefinitions>
         <Border Grid.Row="0" Grid.ColumnSpan="4" BorderBrush="#797979" BorderThickness="0,0,0,1">
             <Border.Background>
-                <ImageBrush ImageSource="C:\Users\james\Desktop\AssetManagerTom2\AssetManager\AssetManager.Desktop\Assets\ScaleBackground.png" Stretch="UniformToFill" />
+                <ImageBrush ImageSource="\Assets\ScaleBackground.png" Stretch="UniformToFill" />
             </Border.Background>
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -303,7 +303,7 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <Image Source="C:\Users\james\Desktop\AssetManagerTom2\AssetManager\AssetManager.Desktop\Assets\AppIcon4.png" Width="62" Height="45"/>
+                    <Image Source="\Assets\AppIcon4.png" Width="62" Height="45"/>
                     <TextBlock FontSize="16" Foreground="#E0E0E0" VerticalAlignment="Center" Height="18" Margin="-10,0,0,0"><Run Text="VAULTBORN"/><Run Text=" "/><Bold><Run Text="TREASURES"/></Bold></TextBlock>
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
@@ -503,7 +503,7 @@
         Cursor="Hand" Margin="328,-5,319,-5"/>
 
 
-<Button HorizontalAlignment="Left" BorderThickness="0" x:Name="BtnViewDecks" Width="100" Height="40" Click="OpenDeckView_Click" Cursor="Hand" Margin="400,0,0,0">
+                    <Button HorizontalAlignment="Left" BorderThickness="0" x:Name="BtnViewDecks" Width="100" Height="40" Click="OpenDeckView_Click" Cursor="Hand" Margin="400,0,0,0">
 
                         <Button.Resources>
                             <Style TargetType="Border">
@@ -537,11 +537,11 @@
                             <TextBlock Text="Decks" Margin="1,0,0,0" VerticalAlignment="Center"/>
                         </StackPanel>
 
-                    </Button>-->
-                    
-                    <Border MouseLeftButtonDown="MarketplaceGrid_Click" BorderBrush="#98730C" BorderThickness="3" CornerRadius="2" Width="90" Height="40" HorizontalAlignment="Left" Margin="130,0,0,0" Cursor="Hand">
+                    </Button>
+
+                    <!--<Border MouseLeftButtonDown="MarketplaceGrid_Click" BorderBrush="#98730C" BorderThickness="3" CornerRadius="2" Width="90" Height="40" HorizontalAlignment="Left" Margin="130,0,0,0" Cursor="Hand">
                         <Button x:Name="BtnMarketplace" Click="BtnMarketplace_Click" Content="Marketplace" BorderBrush="#98730C" BorderThickness="2" Background="#540754" Foreground="White" Width="90" Height="40" HorizontalAlignment="Center" VerticalAlignment="Center" Cursor="Hand"/>
-                    </Border>
+                    </Border>-->
                     
                     <!-- <Border MouseLeftButtonDown="UpArrow_Click" x:Name="UpArrowBorder" Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" Cursor="Hand" Margin="0,0,5,0" Visibility="Hidden">
                         <md:PackIcon x:Name="UpArrow" Kind="ArrowUpBoldOutline" Height="30" Width="30" VerticalAlignment="Center" HorizontalAlignment="Center"/> 

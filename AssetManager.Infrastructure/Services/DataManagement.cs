@@ -10,6 +10,7 @@ using Newtonsoft.Json;
 using ForgeViewerApp;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using AssetManager.Infrastructure.Models;
 
 
 namespace AssetManager.Infrastructure.Services
