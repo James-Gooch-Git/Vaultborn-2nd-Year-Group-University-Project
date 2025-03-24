@@ -16,7 +16,7 @@ namespace AssetManager.Desktop
     public partial class DeckView : Window
     {
         private readonly IMongoCollection<BsonDocument> _cardsCollection;
-        private readonly string _userId = "Z432FEYUJQNA3AA9"; // Simulating user authentication
+        private readonly string _userId = MainWindow._userId; // Simulating user authentication
         private BsonDocument _selectedCard;
 
         public DeckView()
@@ -88,7 +88,6 @@ namespace AssetManager.Desktop
                         DisplaySelectedCard(cardName, cardImageUrl, cardDescription, stats);
                     };
 
-
                     // Add the styled card to panel
                     CardListPanel.Children.Add(cardControl);
 
@@ -96,6 +95,7 @@ namespace AssetManager.Desktop
             }
             catch (Exception ex)
             {
+               // Console.WriteLine($"{cardImageUrl}");
                 Console.WriteLine($"Error loading deck cards: {ex.Message}");
             }
         }

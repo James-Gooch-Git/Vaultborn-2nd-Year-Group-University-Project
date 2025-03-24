@@ -14,7 +14,7 @@ public class CreateCard
         _cardsCollection = mongo.GetCollection("Cards");
     }
 
-    public void NewCard()
+    public void NewCard(string modelId, string modelName, string userId)
     {
 
         var newCard = new BsonDocument
@@ -38,21 +38,22 @@ public class CreateCard
 
     }
     
-    public async Task AddNewCard(string userId, string name, string description, string imageUrl, string modelUrl)
+    public void AddNewCard(string userId, string name, string description, string imageUrl, string modelName, string modelId)
     {
         var newCard = new BsonDocument
         {
             { "name", name },
             { "owner_id", userId },  // You can modify this to get the actual user ID dynamically
             { "description", description },
-            { "model_3d_url", modelUrl },
+            { "model_name", modelName },
+            { "model_id", modelId },
             { "snapshot_url", imageUrl },
             { "created_at", DateTime.UtcNow }
         };
 
         try
         {
-            await _cardsCollection.InsertOneAsync(newCard);
+            _cardsCollection.InsertOneAsync(newCard);
         }
         catch (Exception ex)
         {

@@ -16,10 +16,7 @@ using System.Windows.Media.Imaging;
 using System.Net;
 using System.Windows.Input;
 using System.Windows.Media.Effects;
-
-
 using System.Text;
-
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Wpf;
 using System.Windows.Data; // Fix for Binding issue
@@ -27,7 +24,6 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using ForgeViewerApp; // Ensure we use WPF DataGrid
 using AssetManagement.Infrastructure.Fusion;
-
 using MongoDB.Bson;
 using AssetManager.Infrastructure.Models;
 using Newtonsoft.Json;
@@ -36,6 +32,7 @@ using Azure.Core;
 using System.Web;
 using Microsoft.WindowsAPICodePack.Taskbar;
 using System.Windows.Controls.Primitives;
+using AssetManager.Infrastructure.DOC;
 
 namespace AssetManager.Desktop
 {
@@ -47,7 +44,7 @@ namespace AssetManager.Desktop
         private string _selectedProjectName;
         private string _selectedItemId;
         private string _selectedItemName;
-        private string selectedHubID;
+        public static string selectedHubID;
         private string _folderId;
         private static string hubID;
         private string _objectId;
@@ -56,7 +53,7 @@ namespace AssetManager.Desktop
         private readonly ModelUpload _uploadService;
         private readonly FileDownloadService _filedwnService;
         private List<Dictionary<string, string>> Models;
-        private string _userId = Environment.GetEnvironmentVariable("userId", EnvironmentVariableTarget.User);
+        public static string _userId = Environment.GetEnvironmentVariable("userId", EnvironmentVariableTarget.User);
         private static readonly HttpClient client = new HttpClient();
         private string selectedHubName = "Loading..."; // Default value before hubs load
         private bool isModelLoaded = false;
@@ -1302,7 +1299,7 @@ namespace AssetManager.Desktop
                    Console.WriteLine($"✅ {models.Count} models loaded successfully.");
                }*/
 
-        private async void LoadModelsForSelectedProject()
+        public async void LoadModelsForSelectedProject()
         {
             if (string.IsNullOrEmpty(_selectedProjectId) || string.IsNullOrEmpty(_folderId))
             {
@@ -1695,7 +1692,7 @@ namespace AssetManager.Desktop
                 _selectedModel = model;
 
                 // Debug - print what we're actually selecting
-                Console.WriteLine("Selection changed - Selected item data:");
+                //Console.WriteLine("Selection changed - Selected item data:");
                 foreach (var kvp in model)
                 {
                     Console.WriteLine($"Key: {kvp.Key}, Value: {kvp.Value}");
@@ -1906,6 +1903,23 @@ namespace AssetManager.Desktop
                     BtnDownload_Click(selectedModelId);
                 }
             };
+            
+            MenuItem createCardFromItem = new MenuItem { Header = "🃏 Create Card" };
+            createCardFromItem.Tag = new Tuple<string, string>(modelId, modelName);
+            createCardFromItem.Click += async (s, e) =>
+            {
+                if (s is MenuItem menuItem && menuItem.Tag is Tuple<string, string> modelInfo)
+                {
+                    string selectedModelId = modelInfo.Item1;
+                    //Console.WriteLine($"💬 Opening Comments for Model: {selectedModelId}");
+                    _selectedItemId = selectedModelId;
+                    _selectedItemName = modelInfo.Item2;
+
+                    AddCardWindow addCardWindow = new AddCardWindow(_selectedItemId);
+                    addCardWindow.Owner = this;  // Set the owner to the deck (this) window
+                    addCardWindow.ShowDialog();                
+                }
+            };
 
             MenuItem deleteItem = new MenuItem { Header = "🗑️ Delete" };
             deleteItem.Tag = new Tuple<string, string>(modelId, modelName);
@@ -1928,6 +1942,7 @@ namespace AssetManager.Desktop
             menu.Items.Add(openInFusionItem);
             menu.Items.Add(viewInAppItem);
             menu.Items.Add(openCommentsItem);
+            menu.Items.Add(createCardFromItem);
             menu.Items.Add(downloadItem);
             menu.Items.Add(deleteItem);
 
@@ -2308,6 +2323,13 @@ namespace AssetManager.Desktop
 
                     // Load thumbnail asynchronously
                     _ = ShowThumbnail(projectId, itemId, thumbnailImage);
+
+                    UploadThumbnailToMongo(projectId, itemId, thumbnailImage);
+
+                    void UploadThumbnailToMongo(string s, string itemId1, Image image)
+                    {
+                        
+                    }
 
                     TextBlock modelName = new TextBlock
                     {
@@ -5791,8 +5813,6 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         }
 
 */
-
-
         private void OpenDeckView_Click(object sender, RoutedEventArgs e)
         {
             DeckView dv = new DeckView();

@@ -9,23 +9,18 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="29dceaf0-6b38-45af-9473-223a6fd443eb" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/AssetManager.Desktop/AddCardWindow.xaml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/AssetManager.Desktop/AddCardWindow.xaml.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/AssetManager.Desktop/SelectModelWindow.xaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/AssetManager.Desktop/SelectModelWindow.xaml.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/.idea.AssetManager/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.AssetManager/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/AssetManager.Core/bin/Debug/net8.0/AssetManager.Core.dll" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Core/bin/Debug/net8.0/AssetManager.Core.dll" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/AssetManager.Core/bin/Debug/net8.0/AssetManager.Core.pdb" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Core/bin/Debug/net8.0/AssetManager.Core.pdb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/AssetManager.Desktop/App.xaml" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Desktop/App.xaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/AssetManager.Desktop/AssetManager.Desktop.csproj" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Desktop/AssetManager.Desktop.csproj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/AssetManager.Desktop/DeckWindow.xaml" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Desktop/DeckWindow.xaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/AssetManager.Desktop/AddCardWindow.xaml" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Desktop/AddCardWindow.xaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/AssetManager.Desktop/AddCardWindow.xaml.cs" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Desktop/AddCardWindow.xaml.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/AssetManager.Desktop/DeckWindow.xaml.cs" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Desktop/DeckWindow.xaml.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/AssetManager.Desktop/LoginWindow.xaml" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Desktop/LoginWindow.xaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml.cs" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/AssetManager.Infrastructure/DOC/CreateCard.cs" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Infrastructure/DOC/CreateCard.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/AssetManager.Infrastructure/Services/DataManagement.cs" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Infrastructure/Services/DataManagement.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/AssetManager.Infrastructure/bin/Debug/net8.0/win-x64/AssetManager.Core.dll" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Infrastructure/bin/Debug/net8.0/win-x64/AssetManager.Core.dll" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/AssetManager.Infrastructure/bin/Debug/net8.0/win-x64/AssetManager.Core.pdb" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Infrastructure/bin/Debug/net8.0/win-x64/AssetManager.Core.pdb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/AssetManager.Infrastructure/bin/Debug/net8.0/win-x64/AssetManager.Infrastructure.deps.json" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Infrastructure/bin/Debug/net8.0/win-x64/AssetManager.Infrastructure.deps.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/AssetManager.Infrastructure/bin/Debug/net8.0/win-x64/AssetManager.Infrastructure.dll" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Infrastructure/bin/Debug/net8.0/win-x64/AssetManager.Infrastructure.dll" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/AssetManager.Infrastructure/bin/Debug/net8.0/win-x64/AssetManager.Infrastructure.pdb" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Infrastructure/bin/Debug/net8.0/win-x64/AssetManager.Infrastructure.pdb" afterDir="false" />
     </list>
@@ -51,12 +46,12 @@
     &quot;assignee&quot;: &quot;TomGrout&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/TomGrout/AssetManager.git",
-    "accountId": "90714e12-1a5a-4016-8181-9850399436aa"
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/TomGrout/AssetManager.git&quot;,
+    &quot;accountId&quot;: &quot;90714e12-1a5a-4016-8181-9850399436aa&quot;
   }
-}]]></component>
+}</component>
   <component name="HighlightingSettingsPerFile">
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/13e79b2a7b78394ccf591d3454bff5bfb14e692da011a7e38b66c2312b365a/String.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/4c2266d9aba4c4ba36aec62278534ed6bbd881431c65810dd69b8d57bbf/Path.Windows.cs" root0="FORCE_HIGHLIGHTING" />
@@ -368,5 +363,24 @@
     <MESSAGE value="sort listed models works for list view" />
     <MESSAGE value="merge DOC progress" />
     <option name="LAST_COMMIT_MESSAGE" value="merge DOC progress" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="DotNet Breakpoints">
+          <url>file://$PROJECT_DIR$/AssetManager.Desktop/DeckWindow.xaml.cs</url>
+          <line>49</line>
+          <properties documentPath="C:\Users\tomgr\source\repos\AssetManager2\AssetManager.Desktop\DeckWindow.xaml.cs" containingFunctionPresentation="Method 'LoadDeckCards'">
+            <startOffsets>
+              <option value="1562" />
+            </startOffsets>
+            <endOffsets>
+              <option value="1597" />
+            </endOffsets>
+          </properties>
+          <option name="timeStamp" value="2" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>
