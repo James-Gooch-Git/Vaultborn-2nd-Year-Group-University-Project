@@ -122,11 +122,8 @@ namespace AssetManager.Infrastructure.Services
         }
 
         // Method to check if a model has already been translated
-         public async Task<bool> IsTranslationCompletedAsync(string encodedUrn, string accessToken)
+        public async Task<bool> IsTranslationCompletedAsync(string encodedUrn, string accessToken)
         {
-            //TokenService tokenService = new TokenService();
-
-           // string accessToken = await tokenService.GetViewerAccessTokenAsync();
             // Remove the "urn:" prefix for the API call if necessary
             string urnWithoutPrefix = encodedUrn.Replace("urn:", "");
             string url = $"https://developer.api.autodesk.com/modelderivative/v2/designdata/{urnWithoutPrefix}/manifest";
@@ -135,15 +132,17 @@ namespace AssetManager.Infrastructure.Services
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
             HttpResponseMessage response = await _httpClient.SendAsync(request);
+
+            // Log the status code for debugging purposes
             if (!response.IsSuccessStatusCode)
             {
-                // If the manifest isn't available or an error occurred, assume not complete
-                return false;
+                Console.WriteLine($"Error checking manifest: {response.StatusCode} - {response.ReasonPhrase}");
+                return false;  // Return false if manifest not found or there was another issue
             }
 
             string json = await response.Content.ReadAsStringAsync();
+
             // Deserialize the manifest response to get the status
-            // For simplicity, assume the response JSON has a "status" property.
             using var doc = JsonDocument.Parse(json);
             if (doc.RootElement.TryGetProperty("status", out JsonElement statusElement))
             {
@@ -153,7 +152,49 @@ namespace AssetManager.Infrastructure.Services
 
             return false;
         }
+
         // Helper method to debug token contents
-      
+
+        public static async Task<bool> IsVersionViewableAsync(string encodedUrn, string accessToken)
+        {
+            string urnWithoutPrefix = encodedUrn.Replace("urn:", "");
+            string url = $"https://developer.api.autodesk.com/modelderivative/v2/designdata/{urnWithoutPrefix}/manifest";
+
+            using (var client = new HttpClient())
+            {
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+                HttpResponseMessage response = await client.GetAsync(url);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine($"❌ Error checking model version: {response.StatusCode}");
+                    return false;
+                }
+
+                string jsonResponse = await response.Content.ReadAsStringAsync();
+                using var doc = JsonDocument.Parse(jsonResponse);
+                if (doc.RootElement.TryGetProperty("status", out JsonElement statusElement))
+                {
+                    string status = statusElement.GetString();
+                    if (status == "success")
+                    {
+                        return true; // Translation is successful and viewable
+                    }
+                    else if (status == "pending" || status == "processing")
+                    {
+                        Console.WriteLine("🔄 Model is still processing, please wait...");
+                        return false; // Still processing, not yet viewable
+                    }
+                    else
+                    {
+                        Console.WriteLine("❌ Translation failed or there was an error with the model.");
+                        return false; // Failed or error state
+                    }
+                }
+            }
+
+            return false; // Default return if no status found
+        }
+
     }
 }

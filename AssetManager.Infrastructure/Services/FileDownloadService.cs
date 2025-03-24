@@ -152,6 +152,48 @@ public class FileDownloadService
         return storageId;
     }
 
+    public async Task<string> GetStorageIdFromVersion(string projectId, string versionId)
+    {
+        // ✅ URL-encode versionId to avoid API errors
+        string encodedVersionId = Uri.EscapeDataString(versionId);
+
+        string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/versions/{encodedVersionId}";
+        Console.WriteLine($"🔍 Fetching Storage ID for Version: {versionId} from {url}");
+
+        using HttpClient httpClient = new HttpClient();
+        httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TokenManager.GetToken());
+
+        HttpResponseMessage response = await httpClient.GetAsync(url);
+        if (!response.IsSuccessStatusCode)
+        {
+            Console.WriteLine($"❌ Error retrieving storage ID. Status Code: {response.StatusCode}");
+            return null;
+        }
+
+        string jsonResponse = await response.Content.ReadAsStringAsync();
+        Console.WriteLine($"🔹 API Response: {jsonResponse}"); // Debugging output
+
+        using JsonDocument doc = JsonDocument.Parse(jsonResponse);
+
+        JsonElement root = doc.RootElement.GetProperty("data");
+
+        // ✅ Ensure "relationships" and "storage" exist before accessing "id"
+        if (root.TryGetProperty("relationships", out JsonElement relationships) &&
+            relationships.TryGetProperty("storage", out JsonElement storage) &&
+            storage.TryGetProperty("data", out JsonElement data) &&
+            data.TryGetProperty("id", out JsonElement idElement))
+        {
+            string storageId = idElement.GetString();
+            Console.WriteLine($"📂 Storage ID for Version {versionId}: {storageId}");
+            return storageId;
+        }
+
+        Console.WriteLine("❌ No storage ID found for this version.");
+        return null;
+    }
+
+
+
     private (string bucketKey, string objectKey) ExtractBucketAndObjectKeys(string storageId)
     {
         if (string.IsNullOrEmpty(storageId) || !storageId.StartsWith("urn:adsk.objects:os.object:"))

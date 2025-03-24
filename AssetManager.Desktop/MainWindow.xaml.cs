@@ -61,6 +61,8 @@ namespace AssetManager.Desktop
         private string selectedHubName = "Loading..."; // Default value before hubs load
         private bool isModelLoaded = false;
         private Dictionary<int, (int VersionNumber, string VersionID)> versionsMarkerData = new Dictionary<int, (int, string)>();
+        private bool showLatestVersions = true;
+
 
 
         private List<Dictionary<string, string>> originalResults;
@@ -3536,12 +3538,61 @@ namespace AssetManager.Desktop
             //ForgeViewerWindow forgeViewer = new ForgeViewerWindow(encodedUrn);
             // forgeViewer.Show();
             LoadForgeViewer(encodedUrn);
-            int numberOfVersions = await GetNumberOfVersions();
-            GenerateMarkers(numberOfVersions);
+            GenerateMarkers();
 
             Grid versionSlider = VersionSlider;
             versionSlider.Visibility = Visibility.Visible;
+            Button versionButton = VersionsSelectButton;
+            versionButton.Visibility = Visibility.Visible;
         }
+
+        //In app viewer for different versions
+        private async void BtnViewInApp_Click(string selectedItemId, string selectedVersionId)
+        {
+            string objectId = await new FileDownloadService().GetStorageIdFromVersion(_selectedProjectId, selectedVersionId);
+
+            _objectId = objectId; // Store it globally
+
+            // Encode Storage ID to URN
+            string encodedUrn = EncodeObjectIdToUrn(objectId);
+            if (string.IsNullOrEmpty(encodedUrn))
+            {
+                MessageBox.Show("Failed to process model identifier.", "Processing Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            // Check if the model translation is available
+            bool isModelReady = await ModelDerivativeService.IsModelDerivativeReady(encodedUrn);
+
+            // Check if the translation is completed
+            ModelDerivativeService modelService = new ModelDerivativeService(new HttpClient());
+            bool isTranslationCompleted = await modelService.IsTranslationCompletedAsync(encodedUrn, _accessToken);
+
+            if (!isTranslationCompleted)
+            {
+                MessageBox.Show("Model translation is still in progress or failed. Please try again later.", "Translation In Progress", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            // Load the model in the viewer
+            try
+            {
+                LoadForgeViewer(encodedUrn);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error loading the model viewer. Please check the logs for more details.", "Viewer Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+
+
+
+
+
+
+
+
 
         private void Btn_CloseViewer_Click(object sender, RoutedEventArgs e)
         {
@@ -3571,6 +3622,11 @@ namespace AssetManager.Desktop
 
             Grid versionSlider = VersionSlider;
             versionSlider.Visibility = Visibility.Collapsed;
+            Button versionButton = VersionsSelectButton;
+            versionButton.Visibility = Visibility.Collapsed;
+
+            slider.Value = 100; 
+
         }
 
         //Trying the SKybox
@@ -3830,9 +3886,10 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             return numberOfVersions;
         }
 
-        private async void GenerateMarkers(int count)
+        private async Task GenerateMarkers()
         {
             var versions = await DataManagement.GetItemVersions(_selectedProjectId, _selectedItemId);
+            int count = versions.Count;
 
             Console.WriteLine($"Number of versions: {versions.Count}");
 
@@ -3841,15 +3898,20 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
             if (count < 1 || versions.Count == 0) return;
 
+            // Limit to the latest or first 10 versions based on the flag
+            int displayCount = Math.Min(10, versions.Count);
             List<double> tickValues = new List<double>();
 
+            // Determine the list of versions to show based on the flag
+            var versionsToDisplay = showLatestVersions ? versions.Take(displayCount).ToList() : versions.TakeLast(displayCount).ToList();
+
             // Handle the case when there's only one version
-            if (versions.Count == 1)
+            if (displayCount == 1)
             {
-                double markerValue = 50; // Center the marker when there's only one version
+                double markerValue = 100; // Center the marker when there's only one version
                 tickValues.Add(markerValue);
 
-                var version = versions[0]; // The only version available
+                var version = versionsToDisplay[0]; // The only version available
                 versionsMarkerData[(int)Math.Round(markerValue)] = (version.VersionNumber, version.VersionID);
 
                 Border marker = new Border
@@ -3876,14 +3938,13 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             }
             else
             {
-                // Loop to create the markers, starting from the rightmost (latest version)
-                for (int i = 0; i < count; i++)
+                // Loop to create markers for the selected versions
+                for (int i = 0; i < displayCount; i++)
                 {
-                    // Calculate marker position in reverse order (start from the rightmost side)
-                    double markerValue = (1 - (i / (double)(count - 1))) * 100;  // Invert position for right to left
+                    double markerValue = (1 - (i / (double)(displayCount - 1))) * 100;  // Invert position for right to left
                     tickValues.Add(markerValue);
 
-                    var version = versions[i];  // Access the versions in order (latest version first)
+                    var version = versionsToDisplay[i];  // Access the selected versions
 
                     versionsMarkerData[(int)Math.Round(markerValue)] = (version.VersionNumber, version.VersionID);
 
@@ -3932,15 +3993,64 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             sliderValue.Visibility = Visibility.Hidden;
 
             // Show the latest version number after markers are generated
-            if (versions.Any())
+            if (versionsToDisplay.Any())
             {
-                var latestVersion = versions.First();  // First version (newest)
+                var latestVersion = versionsToDisplay.First();  // First version in the selected list
                 sliderValue.Text = $"Version: {latestVersion.VersionNumber}";
                 sliderValue.Visibility = Visibility.Visible; // Make sure version number text is visible
             }
 
             Console.WriteLine("Markers generated.");
         }
+
+        private async void VersionSliderButton_Click(object sender, RoutedEventArgs e)
+        {
+            // Toggle the flag between showing the latest versions or the first versions
+            showLatestVersions = !showLatestVersions;
+
+            // Change the button text based on the current state
+            VersionsSelectButton.Content = showLatestVersions ? "Show First Versions" : "Show Latest Versions";
+
+            // Regenerate the markers based on the updated flag (either showing first or latest versions)
+            await GenerateMarkers(); // Ensure markers are fully updated before proceeding
+
+            // Set the slider value to the appropriate position after the markers are generated
+            slider.Value = showLatestVersions ? 100 : 0; // Show the latest if true, first if false
+
+            // Wait for the slider value to be updated before proceeding
+            await Task.Delay(100); // Small delay to ensure slider update is complete
+
+            // Manually call Slider_ValueChanged after changing the slider value
+            int roundedValue = (int)Math.Round(slider.Value); // Round normally
+
+            // Find the closest key in versionsMarkerData
+            int closestMarker = versionsMarkerData.Keys.OrderBy(k => Math.Abs(k - roundedValue)).FirstOrDefault();
+
+            if (versionsMarkerData.ContainsKey(closestMarker))
+            {
+                var markerData = versionsMarkerData[closestMarker];
+                OnMarkerReached(markerData); // Call OnMarkerReached to handle the version change
+            }
+
+            // After toggling to latest versions, load the model corresponding to the latest version
+            if (showLatestVersions)
+            {
+                // Ensure the latest version is fetched from the marker data
+                var latestVersion = versionsMarkerData.OrderByDescending(kvp => kvp.Key).FirstOrDefault().Value;
+
+                if (latestVersion != default)
+                {
+                    BtnViewInApp_Click(_selectedItemId, latestVersion.VersionID); // Load the latest version model
+                }
+            }
+        }
+
+
+
+
+
+
+
 
 
 
@@ -3949,15 +4059,18 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
         private void Slider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            int roundedValue = (int)Math.Round(slider.Value / 5.0) * 5; // Snap to nearest marker step
+            int roundedValue = (int)Math.Round(slider.Value); // Round normally
 
-            if (versionsMarkerData.ContainsKey(roundedValue))
+            // Find the closest key in versionsMarkerData
+            int closestMarker = versionsMarkerData.Keys.OrderBy(k => Math.Abs(k - roundedValue)).FirstOrDefault();
+
+            if (versionsMarkerData.ContainsKey(closestMarker))
             {
-                // Retrieve version number and version ID when marker is reached
-                var markerData = versionsMarkerData[roundedValue];
-                OnMarkerReached(markerData); // Call function with marker data
+                var markerData = versionsMarkerData[closestMarker];
+                OnMarkerReached(markerData);
             }
         }
+
 
         private void OnMarkerReached((int VersionNumber, string VersionID) markerData)
         {
@@ -3966,6 +4079,8 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
             // Here you can do something with the VersionID (e.g., load the version or perform any action)
             Console.WriteLine($"You reached version {markerData.VersionNumber} with ID: {markerData.VersionID}");
+
+            BtnViewInApp_Click(_selectedItemId, markerData.VersionID);
         }
 
 
@@ -5595,7 +5710,12 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         {
             SortChevron.Kind = PackIconKind.ChevronDown;
         }
-        
+
+        private void ToggleButton_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
         //COMMENTED OUT FUNCTIONS//
 
         /* private void BtnGenerate3D_Click(object sender, RoutedEventArgs e)
@@ -5793,7 +5913,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
 */
 
-        
+
     }
 
 }

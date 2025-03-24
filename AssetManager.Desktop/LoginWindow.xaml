@@ -7,6 +7,7 @@
         xmlns:md="clr-namespace:MaterialDesignThemes.Wpf;assembly=MaterialDesignThemes.Wpf"
         xmlns:local="clr-namespace:AssetManager.Desktop"
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+        xmlns:windowsState = "Maximise"
         mc:Ignorable="d"
                 FontFamily="Helvetica"
         Title="LoginWindow" Height="720" Width="1448" ResizeMode="CanResize">
