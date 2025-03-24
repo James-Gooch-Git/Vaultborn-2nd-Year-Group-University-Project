@@ -45,7 +45,7 @@ namespace AssetManager.Infrastructure.Models
         public int UpvoteCount { get; set; }
 
         [BsonElement("thumbnail_url")]
-        public int Thumbnail_Url { get; set; }
+        public string Thumbnail_Url { get; set; }
 
         [BsonElement("_version")]
         public string Version { get; set; }
