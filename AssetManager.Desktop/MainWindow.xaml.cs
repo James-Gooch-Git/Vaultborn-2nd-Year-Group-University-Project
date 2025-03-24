@@ -5594,7 +5594,12 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         {
             SortChevron.Kind = PackIconKind.ChevronDown;
         }
-        
+
+        private void BtnFantasy_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
         //COMMENTED OUT FUNCTIONS//
 
         /* private void BtnGenerate3D_Click(object sender, RoutedEventArgs e)
@@ -5793,12 +5798,14 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 */
 
 
+
         private void OpenDeckView_Click(object sender, RoutedEventArgs e)
         {
             DeckView dv = new DeckView();
             dv.Show();
             
         }
+
     }
 
 }

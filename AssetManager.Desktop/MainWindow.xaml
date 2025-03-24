@@ -433,85 +433,52 @@
 
                 <Border HorizontalAlignment="Stretch" VerticalAlignment="Bottom" BorderBrush="#4B4B4B" BorderThickness="0,1,0,0" Margin="20,0,20,0"/>
 
-                <Grid Grid.Row="1">
+                <Grid Grid.Row="1" RenderTransformOrigin="0.541,0.435">
 
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <Button HorizontalAlignment="Left" BorderThickness="0" x:Name="BtnUploadFile" Width="172" 
-        Click="BtnUploadFile_Click" Cursor="Hand" Margin="42,-18,0,-25" RenderTransformOrigin="0.5,0.5">
+                    <Button x:Name="BtnUploadFile"
+        Template="{StaticResource FirstButtonTemplate}"
+        Click="BtnMarketplace_Click"
+        Width="220" Height="80"
+        FontFamily="Georgia"
+        FontSize="19"
+        FontWeight="Bold"
+        Foreground="#000000"
+        Content="Import Asset"
+        Background="Transparent"
+        BorderThickness="0"
+        Cursor="Hand" Margin="0,-5,647,-5"/>
+                    
+                    <Button x:Name="BtnMarketplace"
+        Template="{StaticResource MiddleButtonTemplate}"
+        Click="BtnMarketplace_Click"
+        Width="220" Height="80"
+        FontFamily="Georgia"
+        FontSize="19"
+        FontWeight="Bold"
+        Foreground="#000000"
+        Content="Marketplace"
+        Background="Transparent"
+        BorderThickness="0"
+        Cursor="Hand" Margin="180,-4,467,-6"/>
 
-                        <Button.Resources>
-                            <Style TargetType="Border">
-                                <Setter Property="CornerRadius" Value="3"/>
-                            </Style>
-                        </Button.Resources>
-                        <Button.RenderTransform>
-                            <TransformGroup>
-                                <ScaleTransform ScaleY="1"/>
-                                <SkewTransform AngleY="-0.424" AngleX="-0.998"/>
-                                <RotateTransform/>
-                                <TranslateTransform Y="-0.505" X="-2.864"/>
-                            </TransformGroup>
-                        </Button.RenderTransform>
+                    <Button x:Name="EmptyButton"
+        Template="{StaticResource LastButtonTemplate}"
+        Click="BtnMarketplace_Click"
+        Width="220" Height="80"
+        FontFamily="Georgia"
+        FontSize="19"
+        FontWeight="Bold"
+        Foreground="#000000"
+        Content="Enchant"
+        Background="Transparent"
+        BorderThickness="0"
+        Cursor="Hand" Margin="328,-5,319,-5"/>
 
-                        <Button.Style>
-                            <Style TargetType="{x:Type Button}">
-                                <Setter Property="Background" Value="Transparent"/>
-                                <!-- Set background to transparent -->
-                                <Setter Property="Foreground" Value="White"/>
-                                <Setter Property="Template">
-                                    <Setter.Value>
-                                        <ControlTemplate TargetType="{x:Type Button}">
-                                            <Border Background="{TemplateBinding Background}" BorderThickness="0">
-                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                            </Border>
-                                        </ControlTemplate>
-                                    </Setter.Value>
-                                </Setter>
-                                <Style.Triggers>
-                                    <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter Property="Background" Value="Transparent"/>
-                                        <!-- Keep hover background transparent -->
-                                    </Trigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Button.Style>
-
-                        <!-- Replace icon and text with an Image -->
-                        <Image Source="\Assets\ImportAssets.png" Width="172" Height="63" RenderTransformOrigin="0.5,0.5">
-                            <Image.RenderTransform>
-                                <TransformGroup>
-                                    <ScaleTransform ScaleY="1"/>
-                                    <SkewTransform AngleY="-1.458" AngleX="-0.04"/>
-                                    <RotateTransform Angle="1.298"/>
-                                    <TranslateTransform Y="-1.973" X="-0.026"/>
-                                </TransformGroup>
-                            </Image.RenderTransform>
-                        </Image>
-
-                    </Button>
-
-
-                    <Button x:Name="BtnMarketplace" Click="BtnMarketplace_Click" 
-        BorderThickness="0" Background="Transparent"
-        Width="160" HorizontalAlignment="Left" Margin="228,0,0,0">
-
-                        <!-- Image inside the button -->
-                        <Image Source="\Assets\MarketPlaceButton.png" Stretch="Fill" Width="157" Height="60" RenderTransformOrigin="0.5,0.5">
-                            <Image.RenderTransform>
-                                <TransformGroup>
-                                    <ScaleTransform/>
-                                    <SkewTransform AngleY="0.218"/>
-                                    <RotateTransform/>
-                                    <TranslateTransform Y="0.196"/>
-                                </TransformGroup>
-                            </Image.RenderTransform>
-                        </Image>
-
-                    </Button>
 
 <Button HorizontalAlignment="Left" BorderThickness="0" x:Name="BtnViewDecks" Width="100" Height="40" Click="OpenDeckView_Click" Cursor="Hand" Margin="400,0,0,0">
 
