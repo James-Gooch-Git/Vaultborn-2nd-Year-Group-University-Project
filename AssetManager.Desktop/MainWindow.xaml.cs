@@ -3820,14 +3820,6 @@ namespace AssetManager.Desktop
         }
 
 
-
-
-
-
-
-
-
-
         private void Btn_CloseViewer_Click(object sender, RoutedEventArgs e)
         {
             // Hide the Forge Viewer
@@ -4278,17 +4270,6 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 }
             }
         }
-
-
-
-
-
-
-
-
-
-
-
 
 
         private void Slider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)

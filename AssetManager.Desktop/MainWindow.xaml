@@ -985,7 +985,7 @@
 
                 </Grid>
 
-                <Grid x:Name="VersionSlider" Grid.Row="3" Visibility="Collapsed">
+                <Grid x:Name="VersionSlider" Grid.Row="3" Visibility="Visible">
                     <!-- Slider with Snapping Enabled -->
                     <Slider Name="slider"
                         HorizontalAlignment="Center"
@@ -1013,13 +1013,19 @@
                         Width="1000"
                         Height="40"/>
                 </Grid>
-                <Button x:Name="VersionsSelectButton" Visibility="Collapsed" 
+                <Button x:Name="VersionsSelectButton" Visibility="Visible" 
+                    Template="{StaticResource MiddleButton2Template}"
+                    FontFamily="Georgia"
+                    FontSize="12"
+                    FontWeight="Bold"
+                    Foreground="#000000"
                     HorizontalAlignment="Right"
                     VerticalAlignment="Bottom"
-                    Width="150" Height="60" 
-                    Margin="0,0,100,20" 
+                    Width="250" Height="70" 
+                    Margin="0,0,40,20" 
                     Content="Show First Versions" 
-                    Click="VersionSliderButton_Click" Grid.Row="2" />
+                    Click="VersionSliderButton_Click" Grid.Row="2"
+                    Cursor="Hand"/>
 
 
 
