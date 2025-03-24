@@ -1757,7 +1757,7 @@
                     </StackPanel>
 
                     <!-- Comments List -->
-                    <ScrollViewer VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Hidden" Background="Transparent" BorderThickness="0" Height="300" Width="225" HorizontalAlignment="Left">
+                    <ScrollViewer VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Hidden" Background="Transparent" BorderThickness="0" Height="Auto" Width="225" HorizontalAlignment="Left">
 
                         <ListBox x:Name="ListComments" Background="Transparent" BorderThickness="0" Padding="0" Margin="0" VerticalAlignment="Stretch" HorizontalAlignment="Left">
 
