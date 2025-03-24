@@ -5,7 +5,7 @@ namespace AssetManager.Infrastructure.Models;
 
 public class Purchased
 {
-    [BsonElement("_modelid")]
+    [BsonElement("_id")]
     public string ModelId { get; set; }
     
     [BsonElement("_userid")]

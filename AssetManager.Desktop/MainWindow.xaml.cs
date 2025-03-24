@@ -4559,12 +4559,20 @@ namespace AssetManager.Desktop
         }
         
         //marketplace
-        private async void InitializeMarketplace()
+        private async Task InitializeMarketplace()
         {
-            List<Dictionary<string, string>> allListedModels = await GetAllListedModels();
-            List<Dictionary<string, string>> namesAZ = allListedModels.OrderBy(x => x["Name"]).ToList();
-            MarketplaceDataGrid.ItemsSource = namesAZ;
-            DisplayMarketplaceGrid(namesAZ);
+            try
+            {
+                List<Dictionary<string, string>> allListedModels = await GetAllListedModels();
+                List<Dictionary<string, string>> namesAZ = allListedModels.OrderBy(x => x["Name"]).ToList();
+                MarketplaceDataGrid.ItemsSource = namesAZ;
+                DisplayMarketplaceGrid(namesAZ);
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show($"Error: {e.Message}");
+                throw;
+            }
         }
 
         private async Task<List<Dictionary<string, string>>> GetAllListedModels()
@@ -4588,17 +4596,16 @@ namespace AssetManager.Desktop
                     { "BuyVisibility", purchased ? "Collapsed" : "Visible" },
                     { "PurchasedVisibility", purchased ? "Visible" : "Collapsed" }
                 });
-                MessageBox.Show($"Model: {model.Name}, BuyVis: {(purchased ? "Collapsed": "Visible")}, PurVis: {(purchased ? "Visible" : "Collapsed")}");
             }
             return allListedModels;
         }
         
-        private void BtnMarketplace_Click(object sender, RoutedEventArgs e)
+        private async void BtnMarketplace_Click(object sender, RoutedEventArgs e)
         {
             MarketplaceBorder.Visibility = Visibility.Visible;
             ProjectsBorder.Visibility = Visibility.Collapsed;
             LibraryBorder.Visibility = Visibility.Collapsed;
-            InitializeMarketplace();
+            await InitializeMarketplace();
         }
         
         private void BtnLibrary_Click(object sender, RoutedEventArgs e)
@@ -4966,6 +4973,7 @@ namespace AssetManager.Desktop
                     MongoConnection database  = new MongoConnection();
                     Purchased purchased = new Purchased {ModelId = _buyItemId, UserId = _userId} ;
                     await database.Purchased.InsertOneAsync(purchased);
+                    await InitializeMarketplace();
                 }
                 else
                 {
@@ -5051,10 +5059,10 @@ namespace AssetManager.Desktop
             DisplayMarketplaceGrid(searchResults);
         }
 
-        private void MarketplaceClearSearch_Click(object sender, MouseButtonEventArgs e)
+        private async void MarketplaceClearSearch_Click(object sender, MouseButtonEventArgs e)
         {
             MarketplaceSearchTextBox.Text = "";
-            InitializeMarketplace();
+            await InitializeMarketplace();
         }
 
         private async Task<bool> CheckModelPurchased(string modelId, string userId)
