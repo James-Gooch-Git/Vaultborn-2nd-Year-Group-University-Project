@@ -223,6 +223,7 @@ namespace AssetManager.Infrastructure.Services
                 Console.WriteLine("✅ PDF successfully submitted for translation.");
                 return true;
             }
+        }
 
         // Helper method to debug token contents
 
