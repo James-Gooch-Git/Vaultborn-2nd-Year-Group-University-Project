@@ -270,26 +270,20 @@
             <!--<ColumnDefinition Width="5"/>-->
             <ColumnDefinition x:Name="ModelDataSidebar" Width="0"/>
         </Grid.ColumnDefinitions>
-
         <Border Grid.Row="0" Grid.ColumnSpan="4" BorderBrush="#797979" BorderThickness="0,0,0,1">
-
+            <Border.Background>
+                <ImageBrush ImageSource="C:\Users\james\Desktop\AssetManagerTom2\AssetManager\AssetManager.Desktop\Assets\ScaleBackground.png" Stretch="UniformToFill" />
+            </Border.Background>
             <Grid>
-
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-
-                    <Image Source="\Assets\AppIcon4.png" Width="62" Height="45"/>
-
-                    <TextBlock FontSize="16" Foreground="#4B4b4b" VerticalAlignment="Center" Height="18" Margin="-10,0,0,0"><Run Text="VAULT"/><Run Text="BORN"/><Bold><Run Text=""/></Bold></TextBlock>
-
+                    <Image Source="C:\Users\james\Desktop\AssetManagerTom2\AssetManager\AssetManager.Desktop\Assets\AppIcon4.png" Width="62" Height="45"/>
+                    <TextBlock FontSize="16" Foreground="#E0E0E0" VerticalAlignment="Center" Height="18" Margin="-10,0,0,0"><Run Text="VAULTBORN"/><Run Text=" "/><Bold><Run Text="TREASURES"/></Bold></TextBlock>
                 </StackPanel>
-
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-
                     <Border Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" Cursor="Hand" Margin="0,0,5,0">
                         <md:PackIcon Grid.Column="1" Kind="BellOutline" Style="{StaticResource IconHover}" Cursor="Hand" VerticalAlignment="Center" HorizontalAlignment="Right"/>
                     </Border>
@@ -335,6 +329,7 @@
             </Grid>
 
         </Border>
+
 
         <Border x:Name="ProjectsBorder" Grid.Row="1" Grid.Column="0" BorderBrush="#797979" BorderThickness="0,0,1,0" Padding="5,0,5,0">
             <Grid>
