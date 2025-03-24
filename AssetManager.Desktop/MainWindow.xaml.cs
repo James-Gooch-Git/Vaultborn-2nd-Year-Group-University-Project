@@ -16,7 +16,7 @@ using System.Windows.Media.Imaging;
 using System.Net;
 using System.Windows.Input;
 using System.Windows.Media.Effects;
-
+using System.Timers;
 
 using System.Text;
 
@@ -63,8 +63,9 @@ namespace AssetManager.Desktop
         private string selectedHubName = "Loading..."; // Default value before hubs load
         private bool isModelLoaded = false;
         private Dictionary<int, (int VersionNumber, string VersionID)> versionsMarkerData = new Dictionary<int, (int, string)>();
-        private bool showLatestVersions = true;
-
+        private System.Timers.Timer _refreshTimer;
+        private const int REFRESH_INTERVAL_MINUTES = 15;
+        private bool _isRefreshing = false;
 
 
         private List<Dictionary<string, string>> originalResults;
@@ -82,8 +83,8 @@ namespace AssetManager.Desktop
             InitializeComponent();
 
 
-  
 
+       
             //InitializeWebView2();
             //  ModelDataGrid.SelectionChanged += ModelDataGrid_SelectionChanged;
             Initialize();
@@ -103,6 +104,7 @@ namespace AssetManager.Desktop
             _uploadService = new ModelUpload(_accessToken);
             _filedwnService = new FileDownloadService();
             //InitializeTreeView();
+            InitializeBackgroundRefresh();
             InitialiseFolders();
             _payPalService = new PayPalService();
             Initialize();
@@ -183,7 +185,7 @@ namespace AssetManager.Desktop
 
                 LoadProjectsForHub(hubID);
                 await TestDataManagement();
-
+                await RefreshHubs();
                 //FusionManager.InitializePythonEngine();
                 //InitialiseFolders();
                 Username_TextBlock.Text = await GetUserName(_userId);
@@ -3772,61 +3774,12 @@ namespace AssetManager.Desktop
             //ForgeViewerWindow forgeViewer = new ForgeViewerWindow(encodedUrn);
             // forgeViewer.Show();
             LoadForgeViewer(encodedUrn);
-            GenerateMarkers();
+            int numberOfVersions = await GetNumberOfVersions();
+            GenerateMarkers(numberOfVersions);
 
             Grid versionSlider = VersionSlider;
             versionSlider.Visibility = Visibility.Visible;
-            Button versionButton = VersionsSelectButton;
-            versionButton.Visibility = Visibility.Visible;
         }
-
-        //In app viewer for different versions
-        private async void BtnViewInApp_Click(string selectedItemId, string selectedVersionId)
-        {
-            string objectId = await new FileDownloadService().GetStorageIdFromVersion(_selectedProjectId, selectedVersionId);
-
-            _objectId = objectId; // Store it globally
-
-            // Encode Storage ID to URN
-            string encodedUrn = EncodeObjectIdToUrn(objectId);
-            if (string.IsNullOrEmpty(encodedUrn))
-            {
-                MessageBox.Show("Failed to process model identifier.", "Processing Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            // Check if the model translation is available
-            bool isModelReady = await ModelDerivativeService.IsModelDerivativeReady(encodedUrn);
-
-            // Check if the translation is completed
-            ModelDerivativeService modelService = new ModelDerivativeService(new HttpClient());
-            bool isTranslationCompleted = await modelService.IsTranslationCompletedAsync(encodedUrn, _accessToken);
-
-            if (!isTranslationCompleted)
-            {
-                MessageBox.Show("Model translation is still in progress or failed. Please try again later.", "Translation In Progress", MessageBoxButton.OK, MessageBoxImage.Information);
-                return;
-            }
-
-            // Load the model in the viewer
-            try
-            {
-                LoadForgeViewer(encodedUrn);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Error loading the model viewer. Please check the logs for more details.", "Viewer Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-
-
-
-
-
-
-
-
 
         private void Btn_CloseViewer_Click(object sender, RoutedEventArgs e)
         {
@@ -3856,11 +3809,6 @@ namespace AssetManager.Desktop
 
             Grid versionSlider = VersionSlider;
             versionSlider.Visibility = Visibility.Collapsed;
-            Button versionButton = VersionsSelectButton;
-            versionButton.Visibility = Visibility.Collapsed;
-
-            slider.Value = 100; 
-
         }
 
         //Trying the SKybox
@@ -4120,10 +4068,9 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             return numberOfVersions;
         }
 
-        private async Task GenerateMarkers()
+        private async void GenerateMarkers(int count)
         {
             var versions = await DataManagement.GetItemVersions(_selectedProjectId, _selectedItemId);
-            int count = versions.Count;
 
             Console.WriteLine($"Number of versions: {versions.Count}");
 
@@ -4132,20 +4079,15 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
             if (count < 1 || versions.Count == 0) return;
 
-            // Limit to the latest or first 10 versions based on the flag
-            int displayCount = Math.Min(10, versions.Count);
             List<double> tickValues = new List<double>();
 
-            // Determine the list of versions to show based on the flag
-            var versionsToDisplay = showLatestVersions ? versions.Take(displayCount).ToList() : versions.TakeLast(displayCount).ToList();
-
             // Handle the case when there's only one version
-            if (displayCount == 1)
+            if (versions.Count == 1)
             {
-                double markerValue = 100; // Center the marker when there's only one version
+                double markerValue = 50; // Center the marker when there's only one version
                 tickValues.Add(markerValue);
 
-                var version = versionsToDisplay[0]; // The only version available
+                var version = versions[0]; // The only version available
                 versionsMarkerData[(int)Math.Round(markerValue)] = (version.VersionNumber, version.VersionID);
 
                 Border marker = new Border
@@ -4172,13 +4114,14 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             }
             else
             {
-                // Loop to create markers for the selected versions
-                for (int i = 0; i < displayCount; i++)
+                // Loop to create the markers, starting from the rightmost (latest version)
+                for (int i = 0; i < count; i++)
                 {
-                    double markerValue = (1 - (i / (double)(displayCount - 1))) * 100;  // Invert position for right to left
+                    // Calculate marker position in reverse order (start from the rightmost side)
+                    double markerValue = (1 - (i / (double)(count - 1))) * 100;  // Invert position for right to left
                     tickValues.Add(markerValue);
 
-                    var version = versionsToDisplay[i];  // Access the selected versions
+                    var version = versions[i];  // Access the versions in order (latest version first)
 
                     versionsMarkerData[(int)Math.Round(markerValue)] = (version.VersionNumber, version.VersionID);
 
@@ -4227,9 +4170,9 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             sliderValue.Visibility = Visibility.Hidden;
 
             // Show the latest version number after markers are generated
-            if (versionsToDisplay.Any())
+            if (versions.Any())
             {
-                var latestVersion = versionsToDisplay.First();  // First version in the selected list
+                var latestVersion = versions.First();  // First version (newest)
                 sliderValue.Text = $"Version: {latestVersion.VersionNumber}";
                 sliderValue.Visibility = Visibility.Visible; // Make sure version number text is visible
             }
@@ -4237,74 +4180,21 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             Console.WriteLine("Markers generated.");
         }
 
-        private async void VersionSliderButton_Click(object sender, RoutedEventArgs e)
-        {
-            // Toggle the flag between showing the latest versions or the first versions
-            showLatestVersions = !showLatestVersions;
-
-            // Change the button text based on the current state
-            VersionsSelectButton.Content = showLatestVersions ? "Show First Versions" : "Show Latest Versions";
-
-            // Regenerate the markers based on the updated flag (either showing first or latest versions)
-            await GenerateMarkers(); // Ensure markers are fully updated before proceeding
-
-            // Set the slider value to the appropriate position after the markers are generated
-            slider.Value = showLatestVersions ? 100 : 0; // Show the latest if true, first if false
-
-            // Wait for the slider value to be updated before proceeding
-            await Task.Delay(100); // Small delay to ensure slider update is complete
-
-            // Manually call Slider_ValueChanged after changing the slider value
-            int roundedValue = (int)Math.Round(slider.Value); // Round normally
-
-            // Find the closest key in versionsMarkerData
-            int closestMarker = versionsMarkerData.Keys.OrderBy(k => Math.Abs(k - roundedValue)).FirstOrDefault();
-
-            if (versionsMarkerData.ContainsKey(closestMarker))
-            {
-                var markerData = versionsMarkerData[closestMarker];
-                OnMarkerReached(markerData); // Call OnMarkerReached to handle the version change
-            }
-
-            // After toggling to latest versions, load the model corresponding to the latest version
-            if (showLatestVersions)
-            {
-                // Ensure the latest version is fetched from the marker data
-                var latestVersion = versionsMarkerData.OrderByDescending(kvp => kvp.Key).FirstOrDefault().Value;
-
-                if (latestVersion != default)
-                {
-                    BtnViewInApp_Click(_selectedItemId, latestVersion.VersionID); // Load the latest version model
-                }
-            }
-        }
-
-
-
-
-
-
-
-
-
 
 
 
 
         private void Slider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            int roundedValue = (int)Math.Round(slider.Value); // Round normally
+            int roundedValue = (int)Math.Round(slider.Value / 5.0) * 5; // Snap to nearest marker step
 
-            // Find the closest key in versionsMarkerData
-            int closestMarker = versionsMarkerData.Keys.OrderBy(k => Math.Abs(k - roundedValue)).FirstOrDefault();
-
-            if (versionsMarkerData.ContainsKey(closestMarker))
+            if (versionsMarkerData.ContainsKey(roundedValue))
             {
-                var markerData = versionsMarkerData[closestMarker];
-                OnMarkerReached(markerData);
+                // Retrieve version number and version ID when marker is reached
+                var markerData = versionsMarkerData[roundedValue];
+                OnMarkerReached(markerData); // Call function with marker data
             }
         }
-
 
         private void OnMarkerReached((int VersionNumber, string VersionID) markerData)
         {
@@ -4313,8 +4203,6 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
             // Here you can do something with the VersionID (e.g., load the version or perform any action)
             Console.WriteLine($"You reached version {markerData.VersionNumber} with ID: {markerData.VersionID}");
-
-            BtnViewInApp_Click(_selectedItemId, markerData.VersionID);
         }
 
 
@@ -4326,6 +4214,204 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
         #endregion
 
+        #region Refresh Service
+        // Initialize the timer in your MainWindow constructor or Initialize() method
+        private void InitializeBackgroundRefresh()
+        {
+            _refreshTimer = new System.Timers.Timer();
+            _refreshTimer.Interval = TimeSpan.FromMinutes(REFRESH_INTERVAL_MINUTES).TotalMilliseconds;
+            _refreshTimer.Elapsed += OnRefreshTimerElapsed;
+            _refreshTimer.AutoReset = true;
+            _refreshTimer.Start();
+
+            Console.WriteLine($"🔄 Background refresh initialized. Will refresh every {REFRESH_INTERVAL_MINUTES} minutes.");
+        }
+
+        // This method will be called when the timer elapses
+        private async void OnRefreshTimerElapsed(object sender, ElapsedEventArgs e)
+        {
+            // Prevent concurrent refreshes
+            if (_isRefreshing)
+            {
+                Console.WriteLine("⚠️ Previous refresh operation still in progress. Skipping this refresh cycle.");
+                return;
+            }
+
+            _isRefreshing = true;
+
+            try
+            {
+                Console.WriteLine($"🔄 Starting background refresh at {DateTime.Now}");
+
+                await Dispatcher.InvokeAsync(async () =>
+                {
+                    try
+                    {
+                        // Refresh the access token if needed
+                        string accessToken = TokenManager.GetToken();
+                        if (string.IsNullOrEmpty(accessToken))
+                        {
+                            accessToken = TokenManager.GetToken();
+                            _accessToken = accessToken;
+                        }
+
+                        // Refresh hubs
+                        await RefreshHubs();
+
+                        // Refresh current project data if a project is selected
+                        if (!string.IsNullOrEmpty(_selectedProjectId) && !string.IsNullOrEmpty(_folderId))
+                        {
+                            await RefreshCurrentProject();
+                        }
+
+                        // Refresh model data if a model is selected
+                        if (!string.IsNullOrEmpty(_selectedItemId))
+                        {
+                            await RefreshCurrentModel();
+                        }
+
+                        Console.WriteLine($"✅ Background refresh completed successfully at {DateTime.Now}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"❌ Error during background refresh: {ex.Message}");
+                    }
+                });
+            }
+            finally
+            {
+                _isRefreshing = false;
+            }
+        }
+
+        // Refresh hubs data
+        private async Task RefreshHubs()
+        {
+            try
+            {
+                var hubDetails = await DataManagement.GetAllHubs();
+
+                if (hubDetails != null && hubDetails.Count > 0)
+                {
+                    hubs.Clear();
+                    hubs.AddRange(hubDetails);
+
+                    // Keep the currently selected hub if it still exists
+                    bool selectedHubExists = hubs.Any(h => h.HubID == selectedHubID);
+                    if (!selectedHubExists && hubs.Count > 0)
+                    {
+                        selectedHubID = hubs[0].HubID;
+                        selectedHubName = hubs[0].HubName;
+
+                        // Update UI
+                        await Dispatcher.InvokeAsync(() =>
+                        {
+                            HubsHeaderTextBlock.Text = $"Hubs - {selectedHubName}";
+                            PopulateHubMenu();
+                        });
+                    }
+
+                    Console.WriteLine($"✅ Refreshed {hubs.Count} hubs");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error refreshing hubs: {ex.Message}");
+            }
+        }
+
+        // Refresh current project data
+        private async Task RefreshCurrentProject()
+        {
+            try
+            {
+                var models = await GetModelsFromProject(_selectedProjectId, _folderId);
+
+                if (models != null)
+                {
+                    await Dispatcher.InvokeAsync(() =>
+                    {
+                        // Update the DataGrid if it's visible
+                        if (ModelsDataGrid.Visibility == Visibility.Visible)
+                        {
+                            ModelsDataGrid.ItemsSource = null;
+                            ModelsDataGrid.ItemsSource = models;
+                            originalResults = models;
+                            Models = models;
+                        }
+
+                        // Update the Grid view if it's visible
+                        if (Grid_View.Visibility == Visibility.Visible)
+                        {
+                            ModelsContainer.Children.Clear();
+                            isModelLoaded = false;
+                            DisplayGridModels();
+                        }
+                    });
+
+                    Console.WriteLine($"✅ Refreshed {models.Count} models for project {_selectedProjectId}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error refreshing project data: {ex.Message}");
+            }
+        }
+
+        // Refresh current model data
+        private async Task RefreshCurrentModel()
+        {
+            try
+            {
+                // Refresh storage ID for the currently selected model
+                await FetchAndSetStorageId();
+
+                // Refresh model metadata
+                if (ModelInfo.Visibility == Visibility.Visible)
+                {
+                    await LoadMetadata();
+                    Console.WriteLine($"✅ Refreshed metadata for model {_selectedItemId}");
+                }
+
+                // Refresh comments if they're visible
+                if (ModelComments.Visibility == Visibility.Visible)
+                {
+                    ClearComments();
+                    ListAllComments(_selectedItemId);
+                    Console.WriteLine($"✅ Refreshed comments for model {_selectedItemId}");
+                }
+
+                // Refresh model thumbnail
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    DisplayModelThumb();
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error refreshing model data: {ex.Message}");
+            }
+        }
+
+        // Call this method to clean up the timer when the window is closed
+        private void CleanupBackgroundRefresh()
+        {
+            if (_refreshTimer != null)
+            {
+                _refreshTimer.Stop();
+                _refreshTimer.Elapsed -= OnRefreshTimerElapsed;
+                _refreshTimer.Dispose();
+                _refreshTimer = null;
+                Console.WriteLine("✅ Background refresh timer cleaned up");
+            }
+        }
+
+        // Add this to your window's Closing event or Closed event
+        private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            CleanupBackgroundRefresh();
+        }
+        #endregion
 
 
         //ZERO REFERENCES FUNCTIONS//
