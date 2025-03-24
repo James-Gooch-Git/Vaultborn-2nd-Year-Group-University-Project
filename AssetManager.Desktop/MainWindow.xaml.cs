@@ -66,10 +66,13 @@ namespace AssetManager.Desktop
         private System.Timers.Timer _refreshTimer;
         private const int REFRESH_INTERVAL_MINUTES = 15;
         private bool _isRefreshing = false;
+        private bool showLatestVersions = true;
 
 
         private List<Dictionary<string, string>> originalResults;
         private readonly PayPalService _payPalService;
+        private string _buyItemId;
+        private string _buyProjectId;
         //private List<Dictionary<string, string>> listedModels;
 
         private enum ViewType { Grid, List }
@@ -483,83 +486,15 @@ namespace AssetManager.Desktop
             }
         }
 
-        /*        private async void DisplayGridModels()
-                {
-                    _modelLoadCancellationTokenSource.Cancel();
-                    _modelLoadCancellationTokenSource = new CancellationTokenSource();
-                    CancellationToken token = _modelLoadCancellationTokenSource.Token;
-                    if (isModelLoaded) return; // Prevent duplicate calls
-                    isModelLoaded = true;
-
-                    ModelsContainer.Children.Clear(); // Clear existing squares
-                    List<Dictionary<string, string>> models = await GetAllModels();
-
-                    foreach (var model in models)
-                    {
-                        Border modelSquare = new Border
-                        {
-                            Width = 263,
-                            Height = 253,
-                            CornerRadius = new CornerRadius(5),
-                            Background = Brushes.White,
-                            BorderBrush = Brushes.LightGray,
-                            BorderThickness = new Thickness(1),
-                            Margin = new Thickness(10),
-                            Effect = new DropShadowEffect
-                            {
-                                Color = Colors.Black,
-                                Opacity = 0.1,
-                                BlurRadius = 10,
-                                ShadowDepth = 2
-                            }
-                        };
-
-                        StackPanel content = new StackPanel
-                        {
-                            Orientation = Orientation.Vertical,
-                            VerticalAlignment = VerticalAlignment.Center,
-                            HorizontalAlignment = HorizontalAlignment.Left
-                        };
-
-                        TextBlock modelName = new TextBlock
-                        {
-                            Text = model["Name"],
-                            FontSize = 16,
-                            FontWeight = FontWeights.Normal,
-                            TextAlignment = TextAlignment.Center,
-                            HorizontalAlignment = HorizontalAlignment.Left,
-                            TextWrapping = TextWrapping.Wrap,
-                            Margin = new Thickness(5, 2, 5, 2)
-                        };
-
-                        TextBlock projectName = new TextBlock
-                        {
-                            Text = $"Project: {model["Project"]}",
-                            FontSize = 14,
-                            FontWeight = FontWeights.Normal,
-                            Foreground = Brushes.Gray,
-                            TextAlignment = TextAlignment.Left,
-                            HorizontalAlignment = HorizontalAlignment.Left,
-                            TextWrapping = TextWrapping.Wrap,
-                            Margin = new Thickness(5, 2, 5, 2)
-                        };
-
-                        content.Children.Add(modelName);
-                        content.Children.Add(projectName);
-                        modelSquare.Child = content;
-                       // Stop execution if project changes mid-load
-                        ModelsContainer.Children.Add(modelSquare);
-                       // ModelsContainer.Children.Add(modelSquare);
-                        if (token.IsCancellationRequested) return;
-                    }
-                }*/
-
         private async void DisplayGridModels()
         {
-            if (isModelLoaded) return;
+            _modelLoadCancellationTokenSource.Cancel();
+            _modelLoadCancellationTokenSource = new CancellationTokenSource();
+            CancellationToken token = _modelLoadCancellationTokenSource.Token;
+            if (isModelLoaded) return; // Prevent duplicate calls
             isModelLoaded = true;
 
-            // Fetch models for the selected project only
+            ModelsContainer.Children.Clear(); // Clear existing squares
             List<Dictionary<string, string>> models = await GetModelsFromProject(_selectedProjectId, _folderId);
 
             if (models == null || models.Count == 0)
@@ -570,18 +505,16 @@ namespace AssetManager.Desktop
 
             foreach (var model in models)
             {
-                string modelId = model["Id"];
-                string modelName = model["Name"];
                 string projectId = _selectedProjectId;
+                string itemId = model["Id"];
 
-                Border modelSquare = new Border
+                Border modelCard = new Border
                 {
-                    Width = 263,
-                    Height = 253,
-                    CornerRadius = new CornerRadius(5),
+                    Width = 253,
+                    Height = 240,
                     Background = Brushes.White,
-                    BorderBrush = Brushes.LightGray,
-                    BorderThickness = new Thickness(1),
+                    BorderBrush = Brushes.Transparent,
+                    CornerRadius = new CornerRadius(12),
                     Margin = new Thickness(10),
                     Effect = new DropShadowEffect
                     {
@@ -590,132 +523,269 @@ namespace AssetManager.Desktop
                         BlurRadius = 10,
                         ShadowDepth = 2
                     },
-
-                    Tag = model, // Store the model data in the Tag for easy access
-                    Cursor = Cursors.Hand // Change cursor to indicate clickability
+                    Cursor = Cursors.Hand,
+                    Tag = model
                 };
 
-                Grid grid = new Grid();
-
-                grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(170) });
-                grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-
-
-                Border headerBackground = new Border
+                modelCard.MouseLeftButtonDown += (s, args) =>
                 {
-                    Background = new SolidColorBrush(Color.FromRgb(230, 230, 230)),
-                    HorizontalAlignment = HorizontalAlignment.Stretch,
-                    Margin = new Thickness(5)
+                    if (s is Border border && border.Tag is Dictionary<string, string> selectedModel)
+                    {
+                        _selectedModel = selectedModel;
+                        _selectedItemId = selectedModel.ContainsKey("Id") ? selectedModel["Id"] : selectedModel.GetValueOrDefault("id");
+                        _selectedItemName = selectedModel.GetValueOrDefault("Name", selectedModel.GetValueOrDefault("name", "Unknown"));
+                        _selectedProjectId = selectedModel.GetValueOrDefault("ProjectId", selectedModel.GetValueOrDefault("projectId", _selectedProjectId));
+                        _selectedProjectName = selectedModel.GetValueOrDefault("Project", selectedModel.GetValueOrDefault("project", _selectedProjectName));
+                        Task.Run(async () => await FetchAndSetStorageId());
+                        HighlightSelectedModel(border);
+                    }
                 };
 
-                Grid.SetRow(headerBackground, 0);
-                grid.Children.Add(headerBackground);
+                Grid modelContent = new Grid();
 
-                Grid overlayGrid = new Grid
+                // Grey Background
+                Border thumbnailContainer = new Border
                 {
-                    HorizontalAlignment = HorizontalAlignment.Stretch,
-                    VerticalAlignment = VerticalAlignment.Stretch
+                    Background = new SolidColorBrush(Color.FromRgb(245, 245, 245)),
+                    CornerRadius = new CornerRadius(10),
+                    Margin = new Thickness(10),
+                    VerticalAlignment = VerticalAlignment.Top,
+                    Height = 160,
+                    Child = new Image
+                    {
+                        Width = 130,
+                        Height = 130,
+                        Stretch = Stretch.Uniform
+                    }
                 };
+                Image thumbnailImage = thumbnailContainer.Child as Image;
+                _ = ShowThumbnail(projectId, itemId, thumbnailImage);
 
-                StackPanel content = new StackPanel
-                {
-                    Orientation = Orientation.Vertical,
-                    VerticalAlignment = VerticalAlignment.Center,
-                    HorizontalAlignment = HorizontalAlignment.Left,
-                    Margin = new Thickness(8, 5, 5, 2)
-                };
-
-                Image thumbnailImage = new Image
-                {
-                    Width = 150,
-                    Height = 150,
-                    Stretch = Stretch.Uniform,
-                    HorizontalAlignment = HorizontalAlignment.Center,
-                    VerticalAlignment = VerticalAlignment.Center
-                };
-
-                _ = ShowThumbnail(projectId, modelId, thumbnailImage);
-
-                Grid.SetRow(thumbnailImage, 0);
-                grid.Children.Add(thumbnailImage);
-
-                TextBlock modelNameBlock = new TextBlock
+                // Model Name (bottom-left)
+                TextBlock nameBlock = new TextBlock
                 {
                     Text = model["Name"],
-                    FontSize = 16,
-                    FontWeight = FontWeights.Normal,
-                    Foreground = (Brush)new BrushConverter().ConvertFrom("#4B4B4B"),
-                    TextAlignment = TextAlignment.Center,
-                    HorizontalAlignment = HorizontalAlignment.Left,
-                    TextWrapping = TextWrapping.Wrap
-                };
-
-                TextBlock projectNameBlock = new TextBlock
-                {
-                    Text = model["Project"],
                     FontSize = 14,
-                    FontWeight = FontWeights.Normal,
-                    Foreground = Brushes.Gray,
-                    TextAlignment = TextAlignment.Left,
+                    FontWeight = FontWeights.SemiBold,
+                    Foreground = Brushes.Black,
                     HorizontalAlignment = HorizontalAlignment.Left,
-                    TextWrapping = TextWrapping.Wrap
+                    VerticalAlignment = VerticalAlignment.Bottom,
+                    Margin = new Thickness(12, 0, 0, 40),
+                    TextTrimming = TextTrimming.CharacterEllipsis
                 };
 
-                content.Children.Add(modelNameBlock);
-                content.Children.Add(projectNameBlock);
-
-                Grid.SetRow(content, 1);
-                grid.Children.Add(content);
-
-                Border iconBorder = new Border
-                {
-                    Background = Brushes.Transparent,
-                    BorderBrush = Brushes.Transparent,
-                    VerticalAlignment = VerticalAlignment.Center,
-                    HorizontalAlignment = HorizontalAlignment.Center,
-                    Cursor = Cursors.Hand,
-                    Margin = new Thickness(0, 6.5, 2, 0)
-                };
-
-                PackIcon icon = new PackIcon
+                // 3-dot Menu (bottom-right)
+                PackIcon packIcon = new PackIcon
                 {
                     Kind = PackIconKind.DotsVertical,
-                    Width = 20,
-                    Height = 20,
-                    Foreground = Brushes.Gray,
-                    Cursor = Cursors.Hand
+                    Width = 18,
+                    Height = 18,
+                    Foreground = Brushes.Black,
                 };
 
-                ContextMenu contextMenu = CreateModelContextMenu(modelId, modelName);
-                icon.ContextMenu = contextMenu;
-
-                icon.MouseLeftButtonUp += (s, e) =>
+                Button menuButton = new Button
                 {
-                    icon.ContextMenu.PlacementTarget = icon;
-                    icon.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
-                    icon.ContextMenu.IsOpen = true;
-                };
-
-                iconBorder.Child = icon;
-
-                Border iconContainer = new Border
-                {
-                    Child = iconBorder,
+                    Content = packIcon,
+                    Width = 30,
+                    Height = 30,
+                    Background = Brushes.Transparent,
+                    BorderBrush = Brushes.Transparent,
                     HorizontalAlignment = HorizontalAlignment.Right,
                     VerticalAlignment = VerticalAlignment.Bottom,
-                    Margin = new Thickness(5)
+                    Margin = new Thickness(0, 0, 10, 8),
+                    ToolTip = "More Options"
                 };
 
-                overlayGrid.Children.Add(iconContainer);
+                menuButton.DataContext = model;
+                menuButton.Click += (s, ev) =>
+                {
+                    if (s is Button btn && btn.DataContext is Dictionary<string, string> selectedModel)
+                    {
+                        string selectedModelId = selectedModel["Id"];
+                        string selectedModelName = selectedModel["Name"];
+                        _selectedItemId = selectedModelId;
+                        _selectedModel = selectedModel;
 
-                Grid parentGrid = new Grid();
-                parentGrid.Children.Add(grid);
-                parentGrid.Children.Add(overlayGrid);
+                        ContextMenu contextMenu = CreateModelContextMenu(selectedModelId, selectedModelName);
+                        contextMenu.PlacementTarget = btn;
+                        contextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+                        contextMenu.IsOpen = true;
+                    }
+                };
 
-                modelSquare.Child = parentGrid;
-                ModelsContainer.Children.Add(modelSquare);
+                // Add to grid
+                modelContent.Children.Add(thumbnailContainer);
+                modelContent.Children.Add(nameBlock);
+                modelContent.Children.Add(menuButton);
+
+                modelCard.Child = modelContent;
+                ModelsContainer.Children.Add(modelCard);
             }
+
         }
+
+        //private async void DisplayGridModels()
+        //{
+        //    if (isModelLoaded) return;
+        //    isModelLoaded = true;
+
+        //    // Fetch models for the selected project only
+        //    List<Dictionary<string, string>> models = await GetModelsFromProject(_selectedProjectId, _folderId);
+
+        //    if (models == null || models.Count == 0)
+        //    {
+        //        MessageBox.Show("No models found for this project.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
+        //        return;
+        //    }
+
+        //    foreach (var model in models)
+        //    {
+        //        string modelId = model["Id"];
+        //        string modelName = model["Name"];
+        //        string projectId = _selectedProjectId;
+
+        //        Border modelSquare = new Border
+        //        {
+        //            Width = 263,
+        //            Height = 253,
+        //            CornerRadius = new CornerRadius(5),
+        //            Background = Brushes.White,
+        //            BorderBrush = Brushes.LightGray,
+        //            BorderThickness = new Thickness(1),
+        //            Margin = new Thickness(10),
+        //            Effect = new DropShadowEffect
+        //            {
+        //                Color = Colors.Black,
+        //                Opacity = 0.1,
+        //                BlurRadius = 10,
+        //                ShadowDepth = 2
+        //            },
+
+        //            Tag = model, // Store the model data in the Tag for easy access
+        //            Cursor = Cursors.Hand // Change cursor to indicate clickability
+        //        };
+
+        //        Grid grid = new Grid();
+
+        //        grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(170) });
+        //        grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+
+        //        Border headerBackground = new Border
+        //        {
+        //            Background = new SolidColorBrush(Color.FromRgb(230, 230, 230)),
+        //            HorizontalAlignment = HorizontalAlignment.Stretch,
+        //            Margin = new Thickness(5)
+        //        };
+
+        //        Grid.SetRow(headerBackground, 0);
+        //        grid.Children.Add(headerBackground);
+
+        //        Grid overlayGrid = new Grid
+        //        {
+        //            HorizontalAlignment = HorizontalAlignment.Stretch,
+        //            VerticalAlignment = VerticalAlignment.Stretch
+        //        };
+
+        //        StackPanel content = new StackPanel
+        //        {
+        //            Orientation = Orientation.Vertical,
+        //            VerticalAlignment = VerticalAlignment.Center,
+        //            HorizontalAlignment = HorizontalAlignment.Left,
+        //            Margin = new Thickness(8, 5, 5, 2)
+        //        };
+
+        //        Image thumbnailImage = new Image
+        //        {
+        //            Width = 150,
+        //            Height = 150,
+        //            Stretch = Stretch.Uniform,
+        //            HorizontalAlignment = HorizontalAlignment.Center,
+        //            VerticalAlignment = VerticalAlignment.Center
+        //        };
+
+        //        _ = ShowThumbnail(projectId, modelId, thumbnailImage);
+
+        //        Grid.SetRow(thumbnailImage, 0);
+        //        grid.Children.Add(thumbnailImage);
+
+        //        TextBlock modelNameBlock = new TextBlock
+        //        {
+        //            Text = model["Name"],
+        //            FontSize = 16,
+        //            FontWeight = FontWeights.Normal,
+        //            Foreground = (Brush)new BrushConverter().ConvertFrom("#4B4B4B"),
+        //            TextAlignment = TextAlignment.Center,
+        //            HorizontalAlignment = HorizontalAlignment.Left,
+        //            TextWrapping = TextWrapping.Wrap
+        //        };
+
+        //        TextBlock projectNameBlock = new TextBlock
+        //        {
+        //            Text = model["Project"],
+        //            FontSize = 14,
+        //            FontWeight = FontWeights.Normal,
+        //            Foreground = Brushes.Gray,
+        //            TextAlignment = TextAlignment.Left,
+        //            HorizontalAlignment = HorizontalAlignment.Left,
+        //            TextWrapping = TextWrapping.Wrap
+        //        };
+
+        //        content.Children.Add(modelNameBlock);
+        //        content.Children.Add(projectNameBlock);
+
+        //        Grid.SetRow(content, 1);
+        //        grid.Children.Add(content);
+
+        //        Border iconBorder = new Border
+        //        {
+        //            Background = Brushes.Transparent,
+        //            BorderBrush = Brushes.Transparent,
+        //            VerticalAlignment = VerticalAlignment.Center,
+        //            HorizontalAlignment = HorizontalAlignment.Center,
+        //            Cursor = Cursors.Hand,
+        //            Margin = new Thickness(0, 6.5, 2, 0)
+        //        };
+
+        //        PackIcon icon = new PackIcon
+        //        {
+        //            Kind = PackIconKind.DotsVertical,
+        //            Width = 20,
+        //            Height = 20,
+        //            Foreground = Brushes.Gray,
+        //            Cursor = Cursors.Hand
+        //        };
+
+        //        ContextMenu contextMenu = CreateModelContextMenu(modelId, modelName);
+        //        icon.ContextMenu = contextMenu;
+
+        //        icon.MouseLeftButtonUp += (s, e) =>
+        //        {
+        //            icon.ContextMenu.PlacementTarget = icon;
+        //            icon.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+        //            icon.ContextMenu.IsOpen = true;
+        //        };
+
+        //        iconBorder.Child = icon;
+
+        //        Border iconContainer = new Border
+        //        {
+        //            Child = iconBorder,
+        //            HorizontalAlignment = HorizontalAlignment.Right,
+        //            VerticalAlignment = VerticalAlignment.Bottom,
+        //            Margin = new Thickness(5)
+        //        };
+
+        //        overlayGrid.Children.Add(iconContainer);
+
+        //        Grid parentGrid = new Grid();
+        //        parentGrid.Children.Add(grid);
+        //        parentGrid.Children.Add(overlayGrid);
+
+        //        modelSquare.Child = parentGrid;
+        //        ModelsContainer.Children.Add(modelSquare);
+        //    }
+        //}
 
         //private async void DisplayGridModels()
         //{
@@ -1850,6 +1920,8 @@ namespace AssetManager.Desktop
             var border = sender as Border;
             var icon = border?.Child as PackIcon;
 
+            if (icon == null) return; // Don't continue if null
+
             if (icon.Kind.ToString() == "ArrowTopBoldOutline")
             {
                 icon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#11d137"));
@@ -2028,6 +2100,7 @@ namespace AssetManager.Desktop
 
             return menu;
         }
+
         private async void List_Click(object sender, MouseButtonEventArgs e)
         {
             ModelsDataGrid.Visibility = Visibility.Visible; // Show DataGrid
@@ -2054,73 +2127,102 @@ namespace AssetManager.Desktop
                 ModelsDataGrid.SelectionChanged += ModelsDataGrid_SelectionChanged;
 
                 // ✅ Add Versions column if it doesn't exist yet
-                if (!ModelsDataGrid.Columns.Any(col => col.Header?.ToString() == "Versions"))
-                {
-                    var versionsColumn = new DataGridTemplateColumn
-                    {
-                        Header = "Versions",
-                        Width = new DataGridLength(80)
-                    };
-                    var versionTemplate = new DataTemplate();
-                    var versionButtonFactory = new FrameworkElementFactory(typeof(Button));
-                    versionButtonFactory.SetValue(Button.ContentProperty, "Versions ▼");
-                    versionButtonFactory.SetValue(Button.WidthProperty, 70.0);
-                    versionButtonFactory.SetValue(Button.CursorProperty, Cursors.Hand);
-                    versionButtonFactory.SetValue(Button.ToolTipProperty, "Show model versions");
-                    versionButtonFactory.SetValue(Button.BackgroundProperty, Brushes.Transparent);
-                    versionButtonFactory.SetValue(Button.BorderBrushProperty, Brushes.Transparent);
+                //if (!ModelsDataGrid.Columns.Any(col => col.Header?.ToString() == "Versions"))
+                //{
+                //    var versionsColumn = new DataGridTemplateColumn
+                //    {
+                //        Header = "Versions",
+                //        Width = new DataGridLength(80)
+                //    };
+                //    var versionTemplate = new DataTemplate();
+                //    var versionButtonFactory = new FrameworkElementFactory(typeof(Button));
+                //    versionButtonFactory.SetValue(Button.ContentProperty, "Versions ▼");
+                //    versionButtonFactory.SetValue(Button.WidthProperty, 70.0);
+                //    versionButtonFactory.SetValue(Button.CursorProperty, Cursors.Hand);
+                //    versionButtonFactory.SetValue(Button.ToolTipProperty, "Show model versions");
+                //    versionButtonFactory.SetValue(Button.BackgroundProperty, Brushes.Transparent);
+                //    versionButtonFactory.SetValue(Button.BorderBrushProperty, Brushes.Transparent);
 
-                    // Open versions menu when button is clicked
-                    versionButtonFactory.AddHandler(Button.ClickEvent, new RoutedEventHandler((s, ev) =>
-                    {
-                        if (s is Button btn && btn.DataContext is Dictionary<string, string> selectedModel)
-                        {
-                            // Note: We don't need to manually update _selectedItemId here since
-                            // clicking the button will also select the row, triggering the SelectionChanged event
+                //    // Open versions menu when button is clicked
+                //    versionButtonFactory.AddHandler(Button.ClickEvent, new RoutedEventHandler((s, ev) =>
+                //    {
+                //        if (s is Button btn && btn.DataContext is Dictionary<string, string> selectedModel)
+                //        {
+                //            // Note: We don't need to manually update _selectedItemId here since
+                //            // clicking the button will also select the row, triggering the SelectionChanged event
 
-                            ContextMenu versionsMenu = CreateModelVersionsMenu(selectedModel["Id"], selectedModel["Name"]);
-                            versionsMenu.PlacementTarget = btn;
-                            versionsMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
-                            versionsMenu.IsOpen = true;
-                        }
-                    }));
+                //            ContextMenu versionsMenu = CreateModelVersionsMenu(selectedModel["Id"], selectedModel["Name"]);
+                //            versionsMenu.PlacementTarget = btn;
+                //            versionsMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+                //            versionsMenu.IsOpen = true;
+                //        }
+                //    }));
 
-                    versionTemplate.VisualTree = versionButtonFactory;
-                    versionsColumn.CellTemplate = versionTemplate;
+                //    versionTemplate.VisualTree = versionButtonFactory;
+                //    versionsColumn.CellTemplate = versionTemplate;
 
-                    // Add at the beginning (index 0) so it appears on the left
-                    ModelsDataGrid.Columns.Insert(0, versionsColumn);
-                }
+                //    // Add at the beginning (index 0) so it appears on the left
+                //    ModelsDataGrid.Columns.Insert(0, versionsColumn);
+                //}
 
                 // ✅ Ensure "Actions" column exists only once
                 if (!ModelsDataGrid.Columns.Any(col => col.Header?.ToString() == "Actions"))
                 {
                     var actionsColumn = new DataGridTemplateColumn
                     {
-                        Header = "Actions",
                         Width = new DataGridLength(50)
                     };
+
+                    // Custom header with non-bold text and underline
+                    var headerPanel = new StackPanel
+                    {
+                        Orientation = Orientation.Vertical,
+                        HorizontalAlignment = HorizontalAlignment.Center
+                    };
+
+                    var headerText = new TextBlock
+                    {
+                        Text = "Actions",
+                        FontWeight = FontWeights.Normal, // Removes bold
+                        HorizontalAlignment = HorizontalAlignment.Center
+                    };
+
+                    var underline = new Border
+                    {
+                        Height = 1,
+                        Background = Brushes.Gray,
+                        Margin = new Thickness(0, 2, 0, 0),
+                        HorizontalAlignment = HorizontalAlignment.Stretch
+                    };
+
+                    headerPanel.Children.Add(headerText);
+                    headerPanel.Children.Add(underline);
+
+                    actionsColumn.Header = headerPanel;
+
+                    // Create the cell template with the three-dot button
                     var cellTemplate = new DataTemplate();
                     var buttonFactory = new FrameworkElementFactory(typeof(Button));
                     buttonFactory.SetValue(Button.ContentProperty, "⋮"); // Three-dot menu
                     buttonFactory.SetValue(Button.CursorProperty, Cursors.Hand);
                     buttonFactory.SetValue(Button.ToolTipProperty, "Click for options");
-                    // ✅ Open ContextMenu when button is clicked
+
+                    // Button click event to open context menu
                     buttonFactory.AddHandler(Button.ClickEvent, new RoutedEventHandler((s, ev) =>
                     {
                         if (s is Button btn && btn.DataContext is Dictionary<string, string> selectedModel)
                         {
-                            // Note: We don't need to manually update _selectedItemId here since
-                            // clicking the button will also select the row, triggering the SelectionChanged event
-
+                            // Show context menu at the button
                             ContextMenu dynamicContextMenu = CreateModelContextMenu(selectedModel["Id"], selectedModel["Name"]);
                             dynamicContextMenu.PlacementTarget = btn;
                             dynamicContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
                             dynamicContextMenu.IsOpen = true;
                         }
                     }));
+
                     cellTemplate.VisualTree = buttonFactory;
                     actionsColumn.CellTemplate = cellTemplate;
+
                     ModelsDataGrid.Columns.Add(actionsColumn);
                 }
             }
@@ -2131,6 +2233,121 @@ namespace AssetManager.Desktop
             Grid_Border.Background = Brushes.Transparent;
             List_Border.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
         }
+
+        private void PackIcon_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.DataContext is Dictionary<string, string> selectedModel)
+            {
+                ContextMenu dynamicContextMenu = CreateModelContextMenu(selectedModel["Id"], selectedModel["Name"]);
+                dynamicContextMenu.PlacementTarget = btn;
+                dynamicContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+                dynamicContextMenu.IsOpen = true;
+            }
+        }
+
+        //private async void List_Click(object sender, MouseButtonEventArgs e)
+        //{
+        //    ModelsDataGrid.Visibility = Visibility.Visible; // Show DataGrid
+        //    Grid_View.Visibility = Visibility.Collapsed;
+        //    isModelLoaded = false;
+        //    try
+        //    {
+        //        ModelsDataGrid.ItemsSource = null; // Clear previous data
+        //                                           // Fetch models for the selected project
+        //        List<Dictionary<string, string>> models = await GetModelsFromProject(_selectedProjectId, _folderId);
+        //        if (models == null || models.Count == 0)
+        //        {
+        //            Console.WriteLine("🔄 No models found, clearing grid.");
+        //            ModelsDataGrid.ItemsSource = null;
+        //            return;
+        //        }
+        //        ModelsDataGrid.ItemsSource = models;
+        //        Console.WriteLine($"✅ Loaded {models.Count} models.");
+
+        //        // Ensure SelectionChanged event is attached
+        //        // Note: Since you already have a comprehensive ModelsDataGrid_SelectionChanged method,
+        //        // this ensures it's properly attached when switching to list view
+        //        ModelsDataGrid.SelectionChanged -= ModelsDataGrid_SelectionChanged;
+        //        ModelsDataGrid.SelectionChanged += ModelsDataGrid_SelectionChanged;
+
+        //        // ✅ Add Versions column if it doesn't exist yet
+        //        //if (!ModelsDataGrid.Columns.Any(col => col.Header?.ToString() == "Versions"))
+        //        //{
+        //        //    var versionsColumn = new DataGridTemplateColumn
+        //        //    {
+        //        //        Header = "Versions",
+        //        //        Width = new DataGridLength(80)
+        //        //    };
+        //        //    var versionTemplate = new DataTemplate();
+        //        //    var versionButtonFactory = new FrameworkElementFactory(typeof(Button));
+        //        //    versionButtonFactory.SetValue(Button.ContentProperty, "Versions ▼");
+        //        //    versionButtonFactory.SetValue(Button.WidthProperty, 70.0);
+        //        //    versionButtonFactory.SetValue(Button.CursorProperty, Cursors.Hand);
+        //        //    versionButtonFactory.SetValue(Button.ToolTipProperty, "Show model versions");
+        //        //    versionButtonFactory.SetValue(Button.BackgroundProperty, Brushes.Transparent);
+        //        //    versionButtonFactory.SetValue(Button.BorderBrushProperty, Brushes.Transparent);
+
+        //        //    // Open versions menu when button is clicked
+        //        //    versionButtonFactory.AddHandler(Button.ClickEvent, new RoutedEventHandler((s, ev) =>
+        //        //    {
+        //        //        if (s is Button btn && btn.DataContext is Dictionary<string, string> selectedModel)
+        //        //        {
+        //        //            // Note: We don't need to manually update _selectedItemId here since
+        //        //            // clicking the button will also select the row, triggering the SelectionChanged event
+
+        //        //            ContextMenu versionsMenu = CreateModelVersionsMenu(selectedModel["Id"], selectedModel["Name"]);
+        //        //            versionsMenu.PlacementTarget = btn;
+        //        //            versionsMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+        //        //            versionsMenu.IsOpen = true;
+        //        //        }
+        //        //    }));
+
+        //        //    versionTemplate.VisualTree = versionButtonFactory;
+        //        //    versionsColumn.CellTemplate = versionTemplate;
+
+        //        //    // Add at the beginning (index 0) so it appears on the left
+        //        //    ModelsDataGrid.Columns.Insert(0, versionsColumn);
+        //        //}
+
+        //        // ✅ Ensure "Actions" column exists only once
+        //        if (!ModelsDataGrid.Columns.Any(col => col.Header?.ToString() == "Actions"))
+        //        {
+        //            var actionsColumn = new DataGridTemplateColumn
+        //            {
+        //                Header = "Actions",
+        //                Width = new DataGridLength(50)
+        //            };
+        //            var cellTemplate = new DataTemplate();
+        //            var buttonFactory = new FrameworkElementFactory(typeof(Button));
+        //            buttonFactory.SetValue(Button.ContentProperty, "⋮"); // Three-dot menu
+        //            buttonFactory.SetValue(Button.CursorProperty, Cursors.Hand);
+        //            buttonFactory.SetValue(Button.ToolTipProperty, "Click for options");
+        //            // ✅ Open ContextMenu when button is clicked
+        //            buttonFactory.AddHandler(Button.ClickEvent, new RoutedEventHandler((s, ev) =>
+        //            {
+        //                if (s is Button btn && btn.DataContext is Dictionary<string, string> selectedModel)
+        //                {
+        //                    // Note: We don't need to manually update _selectedItemId here since
+        //                    // clicking the button will also select the row, triggering the SelectionChanged event
+
+        //                    ContextMenu dynamicContextMenu = CreateModelContextMenu(selectedModel["Id"], selectedModel["Name"]);
+        //                    dynamicContextMenu.PlacementTarget = btn;
+        //                    dynamicContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+        //                    dynamicContextMenu.IsOpen = true;
+        //                }
+        //            }));
+        //            cellTemplate.VisualTree = buttonFactory;
+        //            actionsColumn.CellTemplate = cellTemplate;
+        //            ModelsDataGrid.Columns.Add(actionsColumn);
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        MessageBox.Show($"❌ Error loading models: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        //    }
+        //    Grid_Border.Background = Brushes.Transparent;
+        //    List_Border.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
+        //}
 
 
         private ContextMenu CreateModelVersionsMenu(string modelId, string modelName)
@@ -2291,36 +2508,6 @@ namespace AssetManager.Desktop
             // - Enable specific actions for this version
         }
 
-        //private async void Grid_Click(object sender, MouseButtonEventArgs e)
-        //{
-        //    if (string.IsNullOrEmpty(_selectedProjectId))
-        //    {
-        //        MessageBox.Show("❌ Please select a project to view models.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
-        //        return;
-        //    }
-
-        //    ModelsDataGrid.Visibility = Visibility.Collapsed; // Hide DataGrid
-        //    Grid_View.Visibility = Visibility.Visible; // Show Grid View
-
-        //    // Clear previous grid data
-        //    ModelsContainer.Children.Clear();
-
-        //    try
-        //    {
-        //        DisplayGridModels();
-
-        //        //Console.WriteLine($"✅ {models.Count} models loaded successfully in grid view.");
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        MessageBox.Show($"❌ Error loading models: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-        //    }
-
-        //    // Update UI styles to reflect active view mode
-        //    List_Border.Background = Brushes.Transparent;
-        //    Grid_Border.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
-        //}
-
         private async void Grid_Click(object sender, MouseButtonEventArgs e)
         {
             if (string.IsNullOrEmpty(_selectedProjectId))
@@ -2329,194 +2516,224 @@ namespace AssetManager.Desktop
                 return;
             }
 
-            ModelsDataGrid.Visibility = Visibility.Collapsed;
-            Grid_View.Visibility = Visibility.Visible;
+            ModelsDataGrid.Visibility = Visibility.Collapsed; // Hide DataGrid
+            Grid_View.Visibility = Visibility.Visible; // Show Grid View
+
+            // Clear previous grid data
             ModelsContainer.Children.Clear();
 
             try
             {
-                List<Dictionary<string, string>> models = await GetModelsFromProject(_selectedProjectId, _folderId);
+                DisplayGridModels();
 
-                if (models == null || models.Count == 0)
-                {
-                    MessageBox.Show("No models found for this project.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
-                    return;
-                }
-
-                foreach (var model in models)
-                {
-                    string projectId = _selectedProjectId;
-                    string itemId = model["Id"];
-
-                    Border modelSquare = new Border
-                    {
-                        Width = 263,
-                        Height = 300,
-                        CornerRadius = new CornerRadius(10),
-                        Background = Brushes.White,
-                        BorderBrush = Brushes.LightGray,
-                        BorderThickness = new Thickness(1),
-                        Margin = new Thickness(10),
-                        Effect = new DropShadowEffect
-                        {
-                            Color = Colors.Black,
-                            Opacity = 0.1,
-                            BlurRadius = 10,
-                            ShadowDepth = 2
-                        },
-                        Tag = model,
-                        Cursor = Cursors.Hand
-                    };
-
-                    modelSquare.MouseLeftButtonDown += (s, args) =>
-                    {
-                        if (s is Border border && border.Tag is Dictionary<string, string> selectedModel)
-                        {
-                            _selectedModel = selectedModel;
-                            _selectedItemId = selectedModel.ContainsKey("Id") ? selectedModel["Id"] : selectedModel.GetValueOrDefault("id");
-                            _selectedItemName = selectedModel.GetValueOrDefault("Name", selectedModel.GetValueOrDefault("name", "Unknown"));
-                            _selectedProjectId = selectedModel.GetValueOrDefault("ProjectId", selectedModel.GetValueOrDefault("projectId", _selectedProjectId));
-                            _selectedProjectName = selectedModel.GetValueOrDefault("Project", selectedModel.GetValueOrDefault("project", _selectedProjectName));
-
-                            Console.WriteLine($"✅ Selected Model: {_selectedItemName} (ID: {_selectedItemId}, Project ID: {_selectedProjectId})");
-                            Task.Run(async () => await FetchAndSetStorageId());
-                            HighlightSelectedModel(border);
-                        }
-                    };
-
-                    StackPanel content = new StackPanel
-                    {
-                        Orientation = Orientation.Vertical,
-                        VerticalAlignment = VerticalAlignment.Top,
-                        HorizontalAlignment = HorizontalAlignment.Center
-                    };
-
-                    Border imageBackground = new Border
-                    {
-                        Width = 200,
-                        Height = 200,
-                        Background = Brushes.White,
-                        CornerRadius = new CornerRadius(10),
-                        Margin = new Thickness(0, 5, 0, 5),
-                        Child = new Image
-                        {
-                            Width = 180,
-                            Height = 180,
-                            Stretch = Stretch.Uniform
-                        }
-                    };
-
-                    Image thumbnailImage = imageBackground.Child as Image;
-                    _ = ShowThumbnail(projectId, itemId, thumbnailImage);
-
-                    TextBlock modelName = new TextBlock
-                    {
-                        Text = model["Name"],
-                        FontSize = 16,
-                        FontWeight = FontWeights.SemiBold,
-                        TextAlignment = TextAlignment.Center,
-                        HorizontalAlignment = HorizontalAlignment.Center,
-                        Margin = new Thickness(5, 8, 5, 2),
-                        TextWrapping = TextWrapping.Wrap
-                    };
-
-                    Button versionsButton = new Button
-                    {
-                        Content = "Versions ▼",
-                        FontSize = 12,
-                        Width = 80,
-                        Height = 25,
-                        Background = Brushes.Transparent,
-                        BorderBrush = Brushes.Gray,
-                        BorderThickness = new Thickness(1),
-                        Padding = new Thickness(5, 2, 5, 2),
-                        HorizontalAlignment = HorizontalAlignment.Center,
-                        ToolTip = "Show model versions",
-                        Margin = new Thickness(0, 0, 0, 8)
-                    };
-                    versionsButton.DataContext = model;
-                    versionsButton.Click += (s, ev) =>
-                    {
-                        if (s is Button btn && btn.DataContext is Dictionary<string, string> selectedModel)
-                        {
-                            string selectedModelId = selectedModel["Id"];
-                            string selectedModelName = selectedModel["Name"];
-                            _selectedItemId = selectedModelId;
-                            _selectedModel = selectedModel;
-
-                            ContextMenu versionsMenu = CreateModelVersionsMenu(selectedModelId, selectedModelName);
-                            versionsMenu.PlacementTarget = btn;
-                            versionsMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
-                            versionsMenu.IsOpen = true;
-                        }
-                    };
-
-                    PackIcon packIcon = new PackIcon
-                    {
-                        Kind = PackIconKind.DotsVertical,
-                        Width = 18,
-                        Height = 18,
-                        Foreground = Brushes.Black,
-                        VerticalAlignment = VerticalAlignment.Center,
-                        HorizontalAlignment = HorizontalAlignment.Center
-                    };
-
-                    Button menuButton = new Button
-                    {
-                        Content = packIcon,
-                        Width = 30,
-                        Height = 30,
-                        Background = Brushes.Transparent,
-                        BorderBrush = Brushes.Transparent,
-                        Padding = new Thickness(0),
-                        Margin = new Thickness(0, 0, 5, 0),
-                        HorizontalAlignment = HorizontalAlignment.Right,
-                        ToolTip = "More Options"
-                    };
-                    menuButton.DataContext = model;
-                    menuButton.Click += (s, ev) =>
-                    {
-                        if (s is Button btn && btn.DataContext is Dictionary<string, string> selectedModel)
-                        {
-                            string selectedModelId = selectedModel["Id"];
-                            string selectedModelName = selectedModel["Name"];
-                            _selectedItemId = selectedModelId;
-                            _selectedModel = selectedModel;
-
-                            ContextMenu dynamicContextMenu = CreateModelContextMenu(selectedModelId, selectedModelName);
-                            dynamicContextMenu.PlacementTarget = btn;
-                            dynamicContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
-                            dynamicContextMenu.IsOpen = true;
-                        }
-                    };
-
-                    DockPanel titleBar = new DockPanel
-                    {
-                        LastChildFill = false,
-                        Margin = new Thickness(5, 0, 5, 2)
-                    };
-                    DockPanel.SetDock(menuButton, Dock.Right);
-                    titleBar.Children.Add(menuButton);
-                    titleBar.Children.Add(modelName);
-
-                    content.Children.Add(imageBackground);
-                    content.Children.Add(versionsButton);
-                    content.Children.Add(titleBar);
-                    modelSquare.Child = content;
-
-                    ModelsContainer.Children.Add(modelSquare);
-                }
-
-                Console.WriteLine($"✅ {models.Count} models loaded successfully in grid view.");
+                //Console.WriteLine($"✅ {models.Count} models loaded successfully in grid view.");
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"❌ Error loading models: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
 
+            // Update UI styles to reflect active view mode
             List_Border.Background = Brushes.Transparent;
             Grid_Border.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
         }
+
+        //private async void Grid_Click(object sender, MouseButtonEventArgs e)
+        //{
+        //    if (string.IsNullOrEmpty(_selectedProjectId))
+        //    {
+        //        MessageBox.Show("❌ Please select a project to view models.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+        //        return;
+        //    }
+
+        //    ModelsDataGrid.Visibility = Visibility.Collapsed;
+        //    Grid_View.Visibility = Visibility.Visible;
+        //    ModelsContainer.Children.Clear();
+
+        //    try
+        //    {
+        //        List<Dictionary<string, string>> models = await GetModelsFromProject(_selectedProjectId, _folderId);
+
+        //        if (models == null || models.Count == 0)
+        //        {
+        //            MessageBox.Show("No models found for this project.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
+        //            return;
+        //        }
+
+        //        foreach (var model in models)
+        //        {
+        //            string projectId = _selectedProjectId;
+        //            string itemId = model["Id"];
+
+        //            Border modelSquare = new Border
+        //            {
+        //                Width = 263,
+        //                Height = 300,
+        //                CornerRadius = new CornerRadius(10),
+        //                Background = Brushes.White,
+        //                BorderBrush = Brushes.LightGray,
+        //                BorderThickness = new Thickness(1),
+        //                Margin = new Thickness(10),
+        //                Effect = new DropShadowEffect
+        //                {
+        //                    Color = Colors.Black,
+        //                    Opacity = 0.1,
+        //                    BlurRadius = 10,
+        //                    ShadowDepth = 2
+        //                },
+        //                Tag = model,
+        //                Cursor = Cursors.Hand
+        //            };
+
+        //            modelSquare.MouseLeftButtonDown += (s, args) =>
+        //            {
+        //                if (s is Border border && border.Tag is Dictionary<string, string> selectedModel)
+        //                {
+        //                    _selectedModel = selectedModel;
+        //                    _selectedItemId = selectedModel.ContainsKey("Id") ? selectedModel["Id"] : selectedModel.GetValueOrDefault("id");
+        //                    _selectedItemName = selectedModel.GetValueOrDefault("Name", selectedModel.GetValueOrDefault("name", "Unknown"));
+        //                    _selectedProjectId = selectedModel.GetValueOrDefault("ProjectId", selectedModel.GetValueOrDefault("projectId", _selectedProjectId));
+        //                    _selectedProjectName = selectedModel.GetValueOrDefault("Project", selectedModel.GetValueOrDefault("project", _selectedProjectName));
+
+        //                    Console.WriteLine($"✅ Selected Model: {_selectedItemName} (ID: {_selectedItemId}, Project ID: {_selectedProjectId})");
+        //                    Task.Run(async () => await FetchAndSetStorageId());
+        //                    HighlightSelectedModel(border);
+        //                }
+        //            };
+
+        //            StackPanel content = new StackPanel
+        //            {
+        //                Orientation = Orientation.Vertical,
+        //                VerticalAlignment = VerticalAlignment.Top,
+        //                HorizontalAlignment = HorizontalAlignment.Center
+        //            };
+
+        //            Border imageBackground = new Border
+        //            {
+        //                Width = 200,
+        //                Height = 200,
+        //                Background = Brushes.White,
+        //                CornerRadius = new CornerRadius(10),
+        //                Margin = new Thickness(0, 5, 0, 5),
+        //                Child = new Image
+        //                {
+        //                    Width = 180,
+        //                    Height = 180,
+        //                    Stretch = Stretch.Uniform
+        //                }
+        //            };
+
+        //            Image thumbnailImage = imageBackground.Child as Image;
+        //            _ = ShowThumbnail(projectId, itemId, thumbnailImage);
+
+        //            TextBlock modelName = new TextBlock
+        //            {
+        //                Text = model["Name"],
+        //                FontSize = 16,
+        //                FontWeight = FontWeights.SemiBold,
+        //                TextAlignment = TextAlignment.Center,
+        //                HorizontalAlignment = HorizontalAlignment.Center,
+        //                Margin = new Thickness(5, 8, 5, 2),
+        //                TextWrapping = TextWrapping.Wrap
+        //            };
+
+        //            //Button versionsButton = new Button
+        //            //{
+        //            //    Content = "Versions ▼",
+        //            //    FontSize = 12,
+        //            //    Width = 80,
+        //            //    Height = 25,
+        //            //    Background = Brushes.Transparent,
+        //            //    BorderBrush = Brushes.Gray,
+        //            //    BorderThickness = new Thickness(1),
+        //            //    Padding = new Thickness(5, 2, 5, 2),
+        //            //    HorizontalAlignment = HorizontalAlignment.Center,
+        //            //    ToolTip = "Show model versions",
+        //            //    Margin = new Thickness(0, 0, 0, 8)
+        //            //};
+        //            //versionsButton.DataContext = model;
+        //            //versionsButton.Click += (s, ev) =>
+        //            //{
+        //            //    if (s is Button btn && btn.DataContext is Dictionary<string, string> selectedModel)
+        //            //    {
+        //            //        string selectedModelId = selectedModel["Id"];
+        //            //        string selectedModelName = selectedModel["Name"];
+        //            //        _selectedItemId = selectedModelId;
+        //            //        _selectedModel = selectedModel;
+
+        //            //        ContextMenu versionsMenu = CreateModelVersionsMenu(selectedModelId, selectedModelName);
+        //            //        versionsMenu.PlacementTarget = btn;
+        //            //        versionsMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+        //            //        versionsMenu.IsOpen = true;
+        //            //    }
+        //            //};
+
+        //            PackIcon packIcon = new PackIcon
+        //            {
+        //                Kind = PackIconKind.DotsVertical,
+        //                Width = 18,
+        //                Height = 18,
+        //                Foreground = Brushes.Black,
+        //                VerticalAlignment = VerticalAlignment.Center,
+        //                HorizontalAlignment = HorizontalAlignment.Center
+        //            };
+
+        //            Button menuButton = new Button
+        //            {
+        //                Content = packIcon,
+        //                Width = 30,
+        //                Height = 30,
+        //                Background = Brushes.Transparent,
+        //                BorderBrush = Brushes.Transparent,
+        //                Padding = new Thickness(0),
+        //                Margin = new Thickness(0, 0, 5, 0),
+        //                HorizontalAlignment = HorizontalAlignment.Right,
+        //                ToolTip = "More Options"
+        //            };
+        //            menuButton.DataContext = model;
+        //            menuButton.Click += (s, ev) =>
+        //            {
+        //                if (s is Button btn && btn.DataContext is Dictionary<string, string> selectedModel)
+        //                {
+        //                    string selectedModelId = selectedModel["Id"];
+        //                    string selectedModelName = selectedModel["Name"];
+        //                    _selectedItemId = selectedModelId;
+        //                    _selectedModel = selectedModel;
+
+        //                    ContextMenu dynamicContextMenu = CreateModelContextMenu(selectedModelId, selectedModelName);
+        //                    dynamicContextMenu.PlacementTarget = btn;
+        //                    dynamicContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+        //                    dynamicContextMenu.IsOpen = true;
+        //                }
+        //            };
+
+        //            DockPanel titleBar = new DockPanel
+        //            {
+        //                LastChildFill = false,
+        //                Margin = new Thickness(5, 0, 5, 2)
+        //            };
+        //            DockPanel.SetDock(menuButton, Dock.Right);
+        //            titleBar.Children.Add(menuButton);
+        //            titleBar.Children.Add(modelName);
+
+        //            content.Children.Add(imageBackground);
+        //            //content.Children.Add(versionsButton);
+        //            content.Children.Add(titleBar);
+        //            modelSquare.Child = content;
+
+        //            ModelsContainer.Children.Add(modelSquare);
+        //        }
+
+        //        Console.WriteLine($"✅ {models.Count} models loaded successfully in grid view.");
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        MessageBox.Show($"❌ Error loading models: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        //    }
+
+        //    List_Border.Background = Brushes.Transparent;
+        //    Grid_Border.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
+        //}
 
 
         //private async void Grid_Click(object sender, MouseButtonEventArgs e)
@@ -3650,7 +3867,7 @@ namespace AssetManager.Desktop
             fileDownloadService.DownloadModelAsync(_selectedProjectId, _selectedItemId);
         }
 
-     
+
 
 
         //Fusion using Hub 
@@ -3766,7 +3983,7 @@ namespace AssetManager.Desktop
             //ForgeViewerWindow forgeViewer = new ForgeViewerWindow(encodedUrn);
             // forgeViewer.Show();
             LoadForgeViewer(encodedUrn);
-            
+
         }
 
         private async void BtnViewInApp_Click(string selectedItemId)
@@ -3860,12 +4077,53 @@ namespace AssetManager.Desktop
             //ForgeViewerWindow forgeViewer = new ForgeViewerWindow(encodedUrn);
             // forgeViewer.Show();
             LoadForgeViewer(encodedUrn);
-            int numberOfVersions = await GetNumberOfVersions();
-            GenerateMarkers(numberOfVersions);
+            GenerateMarkers();
 
             Grid versionSlider = VersionSlider;
             versionSlider.Visibility = Visibility.Visible;
+            Button versionButton = VersionsSelectButton;
+            versionButton.Visibility = Visibility.Visible;
         }
+
+        //In app viewer for different versions
+        private async void BtnViewInApp_Click(string selectedItemId, string selectedVersionId)
+        {
+            string objectId = await new FileDownloadService().GetStorageIdFromVersion(_selectedProjectId, selectedVersionId);
+
+            _objectId = objectId; // Store it globally
+
+            // Encode Storage ID to URN
+            string encodedUrn = EncodeObjectIdToUrn(objectId);
+            if (string.IsNullOrEmpty(encodedUrn))
+            {
+                MessageBox.Show("Failed to process model identifier.", "Processing Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            // Check if the model translation is available
+            bool isModelReady = await ModelDerivativeService.IsModelDerivativeReady(encodedUrn);
+
+            // Check if the translation is completed
+            ModelDerivativeService modelService = new ModelDerivativeService(new HttpClient());
+            bool isTranslationCompleted = await modelService.IsTranslationCompletedAsync(encodedUrn, _accessToken);
+
+            if (!isTranslationCompleted)
+            {
+                MessageBox.Show("Model translation is still in progress or failed. Please try again later.", "Translation In Progress", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            // Load the model in the viewer
+            try
+            {
+                LoadForgeViewer(encodedUrn);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error loading the model viewer. Please check the logs for more details.", "Viewer Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
 
         private void Btn_CloseViewer_Click(object sender, RoutedEventArgs e)
         {
@@ -3887,7 +4145,7 @@ namespace AssetManager.Desktop
             _selectedItemId = null;
             //_selectedVersionId = null; // If you're tracking version ID
             _objectId = null; // If you're tracking storage ID
-           // _currentModelUrn = null;   // If you're tracking the URN
+                              // _currentModelUrn = null;   // If you're tracking the URN
 
             Console.WriteLine("🔄 Global variables reset after closing Forge Viewer");
 
@@ -3895,6 +4153,11 @@ namespace AssetManager.Desktop
 
             Grid versionSlider = VersionSlider;
             versionSlider.Visibility = Visibility.Collapsed;
+            Button versionButton = VersionsSelectButton;
+            versionButton.Visibility = Visibility.Collapsed;
+
+            slider.Value = 100;
+
         }
 
         //Trying the SKybox
@@ -4355,9 +4618,10 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             return numberOfVersions;
         }
 
-        private async void GenerateMarkers(int count)
+        private async Task GenerateMarkers()
         {
             var versions = await DataManagement.GetItemVersions(_selectedProjectId, _selectedItemId);
+            int count = versions.Count;
 
             Console.WriteLine($"Number of versions: {versions.Count}");
 
@@ -4366,15 +4630,20 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
             if (count < 1 || versions.Count == 0) return;
 
+            // Limit to the latest or first 10 versions based on the flag
+            int displayCount = Math.Min(10, versions.Count);
             List<double> tickValues = new List<double>();
 
+            // Determine the list of versions to show based on the flag
+            var versionsToDisplay = showLatestVersions ? versions.Take(displayCount).ToList() : versions.TakeLast(displayCount).ToList();
+
             // Handle the case when there's only one version
-            if (versions.Count == 1)
+            if (displayCount == 1)
             {
-                double markerValue = 50; // Center the marker when there's only one version
+                double markerValue = 100; // Center the marker when there's only one version
                 tickValues.Add(markerValue);
 
-                var version = versions[0]; // The only version available
+                var version = versionsToDisplay[0]; // The only version available
                 versionsMarkerData[(int)Math.Round(markerValue)] = (version.VersionNumber, version.VersionID);
 
                 Border marker = new Border
@@ -4401,14 +4670,13 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             }
             else
             {
-                // Loop to create the markers, starting from the rightmost (latest version)
-                for (int i = 0; i < count; i++)
+                // Loop to create markers for the selected versions
+                for (int i = 0; i < displayCount; i++)
                 {
-                    // Calculate marker position in reverse order (start from the rightmost side)
-                    double markerValue = (1 - (i / (double)(count - 1))) * 100;  // Invert position for right to left
+                    double markerValue = (1 - (i / (double)(displayCount - 1))) * 100;  // Invert position for right to left
                     tickValues.Add(markerValue);
 
-                    var version = versions[i];  // Access the versions in order (latest version first)
+                    var version = versionsToDisplay[i];  // Access the selected versions
 
                     versionsMarkerData[(int)Math.Round(markerValue)] = (version.VersionNumber, version.VersionID);
 
@@ -4457,9 +4725,9 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             sliderValue.Visibility = Visibility.Hidden;
 
             // Show the latest version number after markers are generated
-            if (versions.Any())
+            if (versionsToDisplay.Any())
             {
-                var latestVersion = versions.First();  // First version (newest)
+                var latestVersion = versionsToDisplay.First();  // First version in the selected list
                 sliderValue.Text = $"Version: {latestVersion.VersionNumber}";
                 sliderValue.Visibility = Visibility.Visible; // Make sure version number text is visible
             }
@@ -4467,21 +4735,63 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             Console.WriteLine("Markers generated.");
         }
 
+        private async void VersionSliderButton_Click(object sender, RoutedEventArgs e)
+        {
+            // Toggle the flag between showing the latest versions or the first versions
+            showLatestVersions = !showLatestVersions;
 
+            // Change the button text based on the current state
+            VersionsSelectButton.Content = showLatestVersions ? "Show First Versions" : "Show Latest Versions";
 
+            // Regenerate the markers based on the updated flag (either showing first or latest versions)
+            await GenerateMarkers(); // Ensure markers are fully updated before proceeding
+
+            // Set the slider value to the appropriate position after the markers are generated
+            slider.Value = showLatestVersions ? 100 : 0; // Show the latest if true, first if false
+
+            // Wait for the slider value to be updated before proceeding
+            await Task.Delay(100); // Small delay to ensure slider update is complete
+
+            // Manually call Slider_ValueChanged after changing the slider value
+            int roundedValue = (int)Math.Round(slider.Value); // Round normally
+
+            // Find the closest key in versionsMarkerData
+            int closestMarker = versionsMarkerData.Keys.OrderBy(k => Math.Abs(k - roundedValue)).FirstOrDefault();
+
+            if (versionsMarkerData.ContainsKey(closestMarker))
+            {
+                var markerData = versionsMarkerData[closestMarker];
+                OnMarkerReached(markerData); // Call OnMarkerReached to handle the version change
+            }
+
+            // After toggling to latest versions, load the model corresponding to the latest version
+            if (showLatestVersions)
+            {
+                // Ensure the latest version is fetched from the marker data
+                var latestVersion = versionsMarkerData.OrderByDescending(kvp => kvp.Key).FirstOrDefault().Value;
+
+                if (latestVersion != default)
+                {
+                    BtnViewInApp_Click(_selectedItemId, latestVersion.VersionID); // Load the latest version model
+                }
+            }
+        }
 
 
         private void Slider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            int roundedValue = (int)Math.Round(slider.Value / 5.0) * 5; // Snap to nearest marker step
+            int roundedValue = (int)Math.Round(slider.Value); // Round normally
 
-            if (versionsMarkerData.ContainsKey(roundedValue))
+            // Find the closest key in versionsMarkerData
+            int closestMarker = versionsMarkerData.Keys.OrderBy(k => Math.Abs(k - roundedValue)).FirstOrDefault();
+
+            if (versionsMarkerData.ContainsKey(closestMarker))
             {
-                // Retrieve version number and version ID when marker is reached
-                var markerData = versionsMarkerData[roundedValue];
-                OnMarkerReached(markerData); // Call function with marker data
+                var markerData = versionsMarkerData[closestMarker];
+                OnMarkerReached(markerData);
             }
         }
+
 
         private void OnMarkerReached((int VersionNumber, string VersionID) markerData)
         {
@@ -4490,8 +4800,9 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
             // Here you can do something with the VersionID (e.g., load the version or perform any action)
             Console.WriteLine($"You reached version {markerData.VersionNumber} with ID: {markerData.VersionID}");
-        }
 
+            BtnViewInApp_Click(_selectedItemId, markerData.VersionID);
+        }
 
 
 
@@ -5130,45 +5441,27 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     MongoConnection database = new MongoConnection();
                     List<ModelData> result = await database.ModelData.Find(x => x.PublicPrivate == "Public" || x.HubId == hubID).ToListAsync();
             
-                    string[,] modelsArray = new string[result.Count, 9];
-                    int index = 0;
-                    foreach (ModelData modelData in result)
-                    {
-                        modelsArray[index, 0] = modelData.Id;
-                        modelsArray[index, 1] = modelData.Name;
-                        modelsArray[index, 2] = modelData.HubId;
-                        modelsArray[index, 3] = modelData.CreatedBy;
-                        modelsArray[index, 4] = modelData.CreatedDate;
-                        modelsArray[index, 5] = modelData.ModifiedDate;
-                        modelsArray[index, 6] = modelData.ModifiedBy;
-                        modelsArray[index, 7] = modelData.FileSize.ToString();
-                        modelsArray[index, 8] = modelData.FolderId;
-                        index++;
-                    }
-            
                     var modelNames = result.Select(x => x.Name).ToList();
                     var topResults = FuzzySharp.Process.ExtractTop(SearchText_Box.Text, modelNames, limit: 3);
                 
                     foreach (var match in topResults)
                     {
-                        for (int i = 0; i < modelNames.Count; i++)
+                        var model = result[match.Index];
+                        Console.WriteLine($"{match.Value}: {model.Name}");
+                        if (model != null)
                         {
-                            Console.WriteLine($"{match.Value}: {modelsArray[i, 1]}");
-                            if (match.Value == modelsArray[i, 1])
+                            Console.WriteLine($"Found Match: {match.Value}");
+                            string name = await GetUserName(model.CreatedBy);
+                            //MessageBox.Show($"Result: {match.Value}, Score: {match.Score}");
+                            searchResults.Add(new Dictionary<string, string>
                             {
-                                Console.WriteLine($"Found Match: {match.Value}");
-                                string name = await GetUserName(modelsArray[i,3]);
-                                //MessageBox.Show($"Result: {match.Value}, Score: {match.Score}");
-                                searchResults.Add(new Dictionary<string, string>
-                                {
-                                    { "Name", modelsArray[i, 1] },
-                                    { "Project", name },
-                                    { "LastModified", match.Score.ToString() },
-                                    { "Id", modelsArray[i, 0] },
-                                    { "ProjectId" , modelsArray[i, 8]}
-                                });
-                                break;
-                            }
+                                { "Name", model.Name },
+                                { "Project", name },
+                                { "LastModified", model.ModifiedDate },
+                                { "Id", model.Id },
+                                { "ProjectId" , model.FolderId}
+                            });
+                            break;
                         }
                     }
                 }
@@ -5183,7 +5476,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         private void DisplaySearchResults(List<Dictionary<string, string>> searchResults)
         {
             ModelsDataGrid.Columns[1].Header = "Created By";
-            ModelsDataGrid.Columns[2].Header = "Score";
+            //ModelsDataGrid.Columns[2].Header = "Score";
             ModelsDataGrid.ItemsSource = searchResults;
             originalResults = searchResults;
             Models = searchResults;
@@ -6175,11 +6468,20 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         }
         
         //marketplace
-        private async void InitializeMarketplace()
+        private async Task InitializeMarketplace()
         {
-            MongoConnection database = new MongoConnection();
-            List<Dictionary<string, string>> allListedModels = await GetAllListedModels();
-            MarketplaceDataGrid.ItemsSource = allListedModels;
+            try
+            {
+                List<Dictionary<string, string>> allListedModels = await GetAllListedModels();
+                List<Dictionary<string, string>> namesAZ = allListedModels.OrderBy(x => x["Name"]).ToList();
+                MarketplaceDataGrid.ItemsSource = namesAZ;
+                DisplayMarketplaceGrid(namesAZ);
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show($"Error: {e.Message}");
+                throw;
+            }
         }
 
         private async Task<List<Dictionary<string, string>>> GetAllListedModels()
@@ -6189,6 +6491,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             var listedModels = await database.ListedModels.Find(FilterDefinition<ListedModels>.Empty).ToListAsync();
             foreach (var model in listedModels)
             {
+                bool purchased = await CheckModelPurchased(model.ModelId, _userId);
                 string projectId = await GetModelProjectId(model.ModelId);
                 string sellerName = await GetUserName(model.SellerId);
                 allListedModels.Add(new Dictionary<string, string>
@@ -6198,7 +6501,9 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     { "Seller", sellerName },
                     { "Id", model.ModelId },
                     { "Price", model.Price.ToString("0.00")},
-                    { "ProjectId", projectId}
+                    { "ProjectId", projectId},
+                    { "BuyVisibility", purchased ? "Collapsed" : "Visible" },
+                    { "PurchasedVisibility", purchased ? "Visible" : "Collapsed" }
                 });
             }
             return allListedModels;
@@ -6209,7 +6514,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             MarketplaceBorder.Visibility = Visibility.Visible;
             ProjectsBorder.Visibility = Visibility.Collapsed;
             LibraryBorder.Visibility = Visibility.Collapsed;
-            InitializeMarketplace();
+            await InitializeMarketplace();
         }
         
         private void BtnLibrary_Click(object sender, RoutedEventArgs e)
@@ -6219,15 +6524,9 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             LibraryBorder.Visibility = Visibility.Visible;
         }
         
-        private async void BtnListModel_Click(object sender, RoutedEventArgs e)
+        //list models
+        private void BtnListModel_Click(object sender, RoutedEventArgs e)
         {
-            MongoConnection database = new MongoConnection();
-            var findListing = await database.ListedModels.Find(x => x.ModelId == _selectedItemId).FirstOrDefaultAsync();
-            if (findListing != null)
-            {
-                MessageBox.Show($"Model already listed");
-                return;
-            }
             ListModelPopup.IsOpen = true;
         }
         
@@ -6294,19 +6593,15 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             
         }
 
-        private async void MarketplaceGrid_Click(object sender, MouseButtonEventArgs e)
+        private void MarketplaceGrid_Click(object sender, MouseButtonEventArgs e)
         {
             MarketplaceDataGrid.Visibility = Visibility.Collapsed;
             MarketplaceGridView.Visibility = Visibility.Visible;
             MarketplaceGridBorder.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
             MarketplaceListBorder.Background = Brushes.Transparent;
-            
-            var listedModels = await GetAllListedModels();
-            
-            DisplayMarketplaceGrid(listedModels);
         }
         
-        private async void MarketplaceList_Click(object sender, MouseButtonEventArgs e)
+        private void MarketplaceList_Click(object sender, MouseButtonEventArgs e)
         {
             MarketplaceGridView.Visibility = Visibility.Collapsed;
             MarketplaceDataGrid.Visibility = Visibility.Visible;
@@ -6422,7 +6717,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 
                 TextBlock price = new TextBlock
                 {
-                    Text = model["Price"],
+                    Text = $"{model["Price"]}",
                     FontSize = 16,
                     FontWeight = FontWeights.Normal,
                     Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B")),
@@ -6431,35 +6726,66 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     TextWrapping = TextWrapping.Wrap
                 };
 
-                Button buy = new Button
+                if (model["BuyVisibility"] == "Visible")
                 {
-                    Content = "Buy",
-                    Background = Brushes.Green,
-                    Foreground = Brushes.Azure,
-                    Width = 50,
-                    Height = 20,
-                    BorderBrush = Brushes.Green,
-                    BorderThickness = new Thickness(2),
-                };
+                    Button buy = new Button
+                    {
+                        Content = "Buy",
+                        Background = Brushes.Green,
+                        Foreground = Brushes.Azure,
+                        Width = 50,
+                        Height = 20,
+                        BorderBrush = Brushes.Green,
+                        BorderThickness = new Thickness(2),
+                        HorizontalAlignment = HorizontalAlignment.Center,
+                        VerticalAlignment = VerticalAlignment.Center,
+                    };
 
-                buy.Click += BtnBuy_Click;
+                    buy.Click += async (s, e) =>
+                    {
+                        if (modelSquare.Tag is Dictionary<string, string> models)
+                        {
+                            BuyPopup.IsOpen = true;
+                            await PayPal(models);
+                        }
+                    };
 
-                Border buyBorder = new Border
+                    Border buyBorder = new Border
+                    {
+                        BorderBrush = buy.BorderBrush,
+                        BorderThickness = new Thickness(2),
+                        CornerRadius = new CornerRadius(3),
+                        Width = 50,
+                        Height = 20
+                    };
+
+                    buyBorder.Child = buy;
+                    priceContent.Children.Add(buyBorder);
+                }
+                else if (model["PurchasedVisibility"] == "Visible")
                 {
-                    BorderBrush = buy.BorderBrush,
-                    BorderThickness = new Thickness(2),
-                    CornerRadius = new CornerRadius(3)
-                };
+                    TextBlock bought = new TextBlock
+                    {
+                        Text = "Purchased",
+                        FontSize = 16,
+                        FontWeight = FontWeights.Normal,
+                        Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B")),
+                        TextAlignment = TextAlignment.Center,
+                        HorizontalAlignment = HorizontalAlignment.Left,
+                        TextWrapping = TextWrapping.Wrap
+                    };
+                    
+                    priceContent.Children.Add(bought);
+                }
                 
-                buyBorder.Child = buy;
                 priceContent.Children.Add(price);
-                priceContent.Children.Add(buyBorder);
-
+                
                 modelSquare.Child = grid;
                 MarketplaceModelsContainer.Children.Add(modelSquare);
             }
         }
         
+        //sort 
         private void MarketplaceSort_Click(object sender, MouseButtonEventArgs e)
         {
             SortChevron.Kind = PackIconKind.ChevronUp;
@@ -6473,22 +6799,23 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             {
                 string option = item.Content.ToString();
                 SortByTextBlock.Text = $"Sort By {option}";
-                SortListedModels(option);
+                List<Dictionary<string, string>> models = MarketplaceDataGrid.ItemsSource.Cast<Dictionary<string, string>>().ToList();
+                await SortListedModels(option, models);
             }
         }
 
-        private async void SortListedModels(string option)
+        private async Task SortListedModels(string option, List<Dictionary<string, string>> models)
         {
-            var allListedModels = await GetAllListedModels();
             switch (option)
             {
-                case "Default":
-                    MarketplaceDataGrid.ItemsSource = allListedModels;
-                    DisplayMarketplaceGrid(allListedModels);
+                case "Names A-Z":
+                    List<Dictionary<string, string>> namesAZ = models.OrderBy(x => x["Name"]).ToList();
+                    MarketplaceDataGrid.ItemsSource = namesAZ;
+                    DisplayMarketplaceGrid(namesAZ);
                     break;
                 case "Upvotes":
                     List<Dictionary<string, string>> upvotes = new List<Dictionary<string, string>>();
-                    foreach (var item in allListedModels)
+                    foreach (var item in models)
                     {
                         int upvoteAmount = await GetModelUpvoteCount(item["Id"]);
                         item.Add("Upvotes", upvoteAmount.ToString());
@@ -6500,28 +6827,24 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     DisplayMarketplaceGrid(upvotes);
                     break;
                 case "Price Lowest":
-                    List<Dictionary<string, string>> lowestPrice = allListedModels.OrderBy(x => x["Price"]).ToList();
+                    List<Dictionary<string, string>> lowestPrice = models.OrderBy(x => x["Price"]).ToList();
                     MarketplaceDataGrid.ItemsSource = lowestPrice;
                     DisplayMarketplaceGrid(lowestPrice);
                     break;
                 case "Price Highest":
-                    List<Dictionary<string, string>> highestPrice = allListedModels.OrderByDescending(x => x["Price"]).ToList();
+                    List<Dictionary<string, string>> highestPrice = models.OrderByDescending(x => x["Price"]).ToList();
                     MarketplaceDataGrid.ItemsSource = highestPrice;
                     DisplayMarketplaceGrid(highestPrice);
                     break;
-                case "Name A-Z":
-                    List<Dictionary<string, string>> namesAZ = allListedModels.OrderBy(x => x["Name"]).ToList();
-                    MarketplaceDataGrid.ItemsSource = namesAZ;
-                    DisplayMarketplaceGrid(namesAZ);
-                    break;
                 case "Name Z-A":
-                    List<Dictionary<string, string>> namesZA = allListedModels.OrderByDescending(x => x["Name"]).ToList();
+                    List<Dictionary<string, string>> namesZA = models.OrderByDescending(x => x["Name"]).ToList();
                     MarketplaceDataGrid.ItemsSource = namesZA;
                     DisplayMarketplaceGrid(namesZA);
                     break;
             }
         }
         
+        //buy
         private async void BtnBuy_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -6529,21 +6852,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 BuyPopup.IsOpen = true;
                 if (MarketplaceDataGrid.SelectedItem is Dictionary<string, string> models)
                 {
-                    double price = double.Parse(models["Price"]);
-                    string aT = await _payPalService.GetPayPalAcessToken();
-                    string approvalUrl = await _payPalService.CreateOrder(aT, price);
-                    if (string.IsNullOrEmpty(approvalUrl))
-                    {
-                        MessageBox.Show($"❌ Payment Failed");
-                        BuyPopup.IsOpen = false;
-                    }
-                    else
-                    {
-                        webView.CoreWebView2.NavigationStarting -= Redirected;
-                        webView.CoreWebView2.NavigationStarting += Redirected;
-
-                        webView.CoreWebView2.Navigate(approvalUrl);
-                    }
+                    await PayPal(models);
                 }
             }
             catch (Exception exception)
@@ -6561,13 +6870,19 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 Console.WriteLine($"{uri}");
                 string token = HttpUtility.ParseQueryString(uri.Query).Get("token");
                 string payerId = HttpUtility.ParseQueryString(uri.Query).Get("PayerId");
-                string payPalAccessToken = await _payPalService.GetPayPalAcessToken();
+                string payPalAccessToken = await _payPalService.GetPayPalAccessToken();
                 bool approved = await _payPalService.CapturePayment(token, payPalAccessToken);
                 if (approved)
                 {
-                    MessageBox.Show($"\u2705 Payment Successful");
+                    MessageBox.Show($"\u2705 Payment Successful \n Model download");
                     webView.CoreWebView2.Navigate("about:blank");
                     BuyPopup.IsOpen = false;
+                    FileDownloadService fileDownloadService = new FileDownloadService();
+                    await fileDownloadService.DownloadModelAsync(_buyProjectId, _buyItemId);
+                    MongoConnection database  = new MongoConnection();
+                    Purchased purchased = new Purchased {ModelId = _buyItemId, UserId = _userId} ;
+                    await database.Purchased.InsertOneAsync(purchased);
+                    await InitializeMarketplace();
                 }
                 else
                 {
@@ -6584,6 +6899,32 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 BuyPopup.IsOpen = false;
             }
         }
+
+        private async Task PayPal(Dictionary<string, string> models)
+        {
+            _buyItemId = models["Id"];
+            _buyProjectId = await GetModelProjectId(_buyItemId);
+
+            string amount = models["Price"].Replace("£", "");
+            Console.WriteLine($"Price: {amount}");
+            double price = double.Parse(amount);
+            string aT = await _payPalService.GetPayPalAccessToken();
+            //MessageBox.Show($"Access Token: {aT}");
+            string approvalUrl = await _payPalService.CreateOrder(aT, price);
+            //MessageBox.Show($"Approval Url: {approvalUrl}");
+            if (string.IsNullOrEmpty(approvalUrl))
+            {
+                MessageBox.Show($"❌ Payment Failed");
+                BuyPopup.IsOpen = false;
+            }
+            else
+            {
+                webView.CoreWebView2.NavigationStarting -= Redirected;
+                webView.CoreWebView2.NavigationStarting += Redirected;
+
+                webView.CoreWebView2.Navigate(approvalUrl);
+            }
+        }
         
         private void SortPopup_Closed(object? sender, EventArgs e)
         {
@@ -6595,6 +6936,62 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
         }
 
+        
+        //search
+        private async void MarketplaceSearch_OnKeyDown(object sender, KeyEventArgs e)
+        {
+            List<Dictionary<string, string>> searchResults = new List<Dictionary<string, string>>();
+            if (e.Key == Key.Enter)
+            {
+                MongoConnection database = new MongoConnection();
+                List<ListedModels> result = await database.ListedModels.Find(FilterDefinition<ListedModels>.Empty).ToListAsync();
+        
+                var modelNames = result.Select(x => x.Name).ToList();
+                var topResults = FuzzySharp.Process.ExtractTop(MarketplaceSearchTextBox.Text, modelNames, limit: 3);
+            
+                foreach (var match in topResults)
+                {
+                    var model = result[match.Index];
+                    Console.WriteLine($"{match.Value}: {model.Name}");
+                    if (model != null)
+                    {
+                        Console.WriteLine($"Found Match: {match.Value}");
+                        string sellerName = await GetUserName(model.SellerId);
+                        string projectId = await GetModelProjectId(model.ModelId);
+                        searchResults.Add(new Dictionary<string, string>
+                        {
+                            { "Name", model.Name },
+                            { "Description", model.Description },
+                            { "Seller", sellerName },
+                            { "Id", model.ModelId },
+                            { "Price" , $"£{model.Price.ToString("0.00")}"} ,
+                            { "ProjectId", projectId}
+                        });
+                    }
+                }
+            }
+            MarketplaceDataGrid.ItemsSource = searchResults;
+            DisplayMarketplaceGrid(searchResults);
+        }
+
+        private async void MarketplaceClearSearch_Click(object sender, MouseButtonEventArgs e)
+        {
+            MarketplaceSearchTextBox.Text = "";
+            await InitializeMarketplace();
+        }
+
+        private async Task<bool> CheckModelPurchased(string modelId, string userId)
+        {
+            MongoConnection database = new MongoConnection();
+            var result = await database.Purchased.Find(x => x.ModelId == modelId && x.UserId == userId).FirstOrDefaultAsync();
+            if (result == null)
+            {
+                return false;
+            }
+
+            return true;
+        }
+        
         //COMMENTED OUT FUNCTIONS//
 
         /* private void BtnGenerate3D_Click(object sender, RoutedEventArgs e)
