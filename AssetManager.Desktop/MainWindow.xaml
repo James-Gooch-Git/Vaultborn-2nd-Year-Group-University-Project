@@ -1025,7 +1025,7 @@
 
                 </Grid>
 
-                <Grid x:Name="VersionSlider" Grid.Row="3" Visibility="Visible">
+                <Grid x:Name="VersionSlider" Grid.Row="3" Visibility="Collapsed">
                     <!-- Slider with Snapping Enabled -->
                     <Slider Name="slider"
             HorizontalAlignment="Center"
@@ -1105,7 +1105,7 @@
 
 
 
-                <Button x:Name="VersionsSelectButton" Visibility="Visible" 
+                <Button x:Name="VersionsSelectButton" Visibility="Collapsed" 
                     Template="{StaticResource MiddleButton2Template}"
                     FontFamily="Georgia"
                     FontSize="12"
