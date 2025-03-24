@@ -3567,7 +3567,7 @@ namespace AssetManager.Desktop
             fileDownloadService.DownloadModelAsync(_selectedProjectId, _selectedItemId);
         }
 
-     
+
 
 
         //Fusion using Hub 
@@ -3683,137 +3683,9 @@ namespace AssetManager.Desktop
             //ForgeViewerWindow forgeViewer = new ForgeViewerWindow(encodedUrn);
             // forgeViewer.Show();
             LoadForgeViewer(encodedUrn);
-            
+
         }
 
-        /*private async void BtnViewInApp_Click(string selectedItemId)
-        {
-            // ✅ Track the last active view
-            if (ModelsDataGrid.Visibility == Visibility.Visible)
-            {
-                _lastViewType = ViewType.List;
-            }
-            else if (Grid_View.Visibility == Visibility.Visible)
-            {
-                _lastViewType = ViewType.Grid;
-            }
-
-            // Hide both views
-            ModelsDataGrid.Visibility = Visibility.Collapsed;
-            Grid_View.Visibility = Visibility.Collapsed;
-
-            // Show the Forge Viewer
-            ForgeViewerContainer.Visibility = Visibility.Visible;
-            ForgeWebView.Visibility = Visibility.Visible;
-
-            Console.WriteLine($"View in App button clicked. Returning to: {_lastViewType} view after closing.");
-
-            ModelsDataGrid.Visibility = Visibility.Collapsed;
-            Grid_View.Visibility = Visibility.Collapsed;
-
-            // Show Forge Viewer
-            ForgeViewerContainer.Visibility = Visibility.Visible;
-            ForgeWebView.Visibility = Visibility.Visible;
-
-            Console.WriteLine($"View in App button clicked. Using global IDs:");
-            Console.WriteLine($"- Selected Item ID: {_selectedItemId}");
-            Console.WriteLine($"- Selected Project ID: {_selectedProjectId}");
-            Console.WriteLine($"- Storage ID: {_objectId}");
-
-            if (string.IsNullOrEmpty(_selectedItemId) || string.IsNullOrEmpty(_selectedProjectId))
-            {
-                MessageBox.Show("❌ Please select a model before viewing.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            // If we already have the storage ID, use it directly
-            string objectId = _objectId;
-
-            // If not available, fetch it on demand
-            if (string.IsNullOrEmpty(objectId))
-            {
-                Console.WriteLine("🔍 Storage ID not set globally, fetching now...");
-                FileDownloadService fileService = new FileDownloadService();
-                objectId = await fileService.GetStorageIdFromItem(_selectedProjectId, _selectedItemId);
-                if (string.IsNullOrEmpty(objectId))
-                {
-                    MessageBox.Show("Could not retrieve model information.", "Model Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-                _objectId = objectId; // Update global storage ID
-            }
-
-            // Encode URN
-            string encodedUrn = EncodeObjectIdToUrn(objectId);
-            if (string.IsNullOrEmpty(encodedUrn))
-            {
-                MessageBox.Show("Failed to process model identifier.", "Processing Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            Console.WriteLine($"✅ Encoded URN: {encodedUrn}");
-
-            // Continue with model viewer loading...
-            ModelDerivativeService modelService = new ModelDerivativeService(new HttpClient());
-            bool translationComplete = await modelService.IsTranslationCompletedAsync(encodedUrn, _accessToken);
-
-            if (!translationComplete)
-            {
-                Console.WriteLine("🔄 Submitting translation job...");
-                bool jobResponse = await modelService.SubmitModelForTranslationAsync(encodedUrn, _accessToken);
-
-                Console.WriteLine($"✅ Translation job submitted: {jobResponse}");
-
-                if (!jobResponse)
-                {
-                    MessageBox.Show("❌ Translation job failed to submit.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-            }
-
-            Console.WriteLine($"🔍 Opening Forge Viewer for Model: {_selectedItemId}");
-
-            // Open Forge Viewer in a new window
-            //ForgeViewerWindow forgeViewer = new ForgeViewerWindow(encodedUrn);
-            // forgeViewer.Show();
-            LoadForgeViewer(encodedUrn);
-            int numberOfVersions = await GetNumberOfVersions();
-            GenerateMarkers(numberOfVersions);
-
-            Grid versionSlider = VersionSlider;
-            versionSlider.Visibility = Visibility.Visible;
-        }
-
-        private void Btn_CloseViewer_Click(object sender, RoutedEventArgs e)
-        {
-            // Hide the Forge Viewer
-            ForgeViewerContainer.Visibility = Visibility.Collapsed;
-            ForgeWebView.Visibility = Visibility.Collapsed;
-
-            // ✅ Restore the last active view
-            if (_lastViewType == ViewType.Grid)
-            {
-                ModelsDataGrid.Visibility = Visibility.Collapsed;
-                Grid_View.Visibility = Visibility.Visible;
-            }
-            else
-            {
-                ModelsDataGrid.Visibility = Visibility.Visible;
-                Grid_View.Visibility = Visibility.Collapsed;
-            }
-            _selectedItemId = null;
-            //_selectedVersionId = null; // If you're tracking version ID
-            _objectId = null; // If you're tracking storage ID
-           // _currentModelUrn = null;   // If you're tracking the URN
-
-            Console.WriteLine("🔄 Global variables reset after closing Forge Viewer");
-
-            Console.WriteLine($"🔄 Returning to {_lastViewType} view.");
-
-            Grid versionSlider = VersionSlider;
-            versionSlider.Visibility = Visibility.Collapsed;
-        }*/
-        
         private async void BtnViewInApp_Click(string selectedItemId)
         {
             // ✅ Track the last active view
@@ -3973,7 +3845,7 @@ namespace AssetManager.Desktop
             _selectedItemId = null;
             //_selectedVersionId = null; // If you're tracking version ID
             _objectId = null; // If you're tracking storage ID
-           // _currentModelUrn = null;   // If you're tracking the URN
+                              // _currentModelUrn = null;   // If you're tracking the URN
 
             Console.WriteLine("🔄 Global variables reset after closing Forge Viewer");
 
@@ -3984,7 +3856,7 @@ namespace AssetManager.Desktop
             Button versionButton = VersionsSelectButton;
             versionButton.Visibility = Visibility.Collapsed;
 
-            slider.Value = 100; 
+            slider.Value = 100;
 
         }
 
@@ -4245,119 +4117,6 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             return numberOfVersions;
         }
 
-        private async void GenerateMarkers(int count)
-        {
-            var versions = await DataManagement.GetItemVersions(_selectedProjectId, _selectedItemId);
-
-            Console.WriteLine($"Number of versions: {versions.Count}");
-
-            versionsMarkerData.Clear(); // Clear previous markers
-            MarkerContainer.Children.Clear(); // Remove previous marker children
-
-            if (count < 1 || versions.Count == 0) return;
-
-            List<double> tickValues = new List<double>();
-
-            // Handle the case when there's only one version
-            if (versions.Count == 1)
-            {
-                double markerValue = 50; // Center the marker when there's only one version
-                tickValues.Add(markerValue);
-
-                var version = versions[0]; // The only version available
-                versionsMarkerData[(int)Math.Round(markerValue)] = (version.VersionNumber, version.VersionID);
-
-                Border marker = new Border
-                {
-                    Width = 16,
-                    Height = 16,
-                    Background = new SolidColorBrush(Colors.LightGray),
-                    CornerRadius = new CornerRadius(3),
-                    Child = new TextBlock
-                    {
-                        Text = "A", // Single marker label
-                        HorizontalAlignment = HorizontalAlignment.Center,
-                        VerticalAlignment = VerticalAlignment.Center
-                    }
-                };
-
-                double sliderWidth = MarkerContainer.Width;
-                double markerX = (markerValue / 100.0) * sliderWidth - (marker.Width / 2); // Center the marker
-
-                Canvas.SetLeft(marker, markerX);
-                Canvas.SetTop(marker, (MarkerContainer.Height / 2) - (marker.Height / 2));
-
-                MarkerContainer.Children.Add(marker); // Add marker to Canvas
-            }
-            else
-            {
-                // Loop to create the markers, starting from the rightmost (latest version)
-                for (int i = 0; i < count; i++)
-                {
-                    // Calculate marker position in reverse order (start from the rightmost side)
-                    double markerValue = (1 - (i / (double)(count - 1))) * 100;  // Invert position for right to left
-                    tickValues.Add(markerValue);
-
-                    var version = versions[i];  // Access the versions in order (latest version first)
-
-                    versionsMarkerData[(int)Math.Round(markerValue)] = (version.VersionNumber, version.VersionID);
-
-                    Border marker = new Border
-                    {
-                        Width = 16,
-                        Height = 16,
-                        Background = new SolidColorBrush(Colors.LightGray),
-                        CornerRadius = new CornerRadius(3),
-                        Child = new TextBlock
-                        {
-                            Text = ((char)('A' + i)).ToString(),
-                            HorizontalAlignment = HorizontalAlignment.Center,
-                            VerticalAlignment = VerticalAlignment.Center
-                        }
-                    };
-
-                    double sliderWidth = MarkerContainer.Width;
-                    double markerX = (markerValue / 100.0) * sliderWidth - (marker.Width / 2);
-
-                    if (markerX < (sliderWidth / 2))
-                    {
-                        markerX += 4;
-                    }
-                    else
-                    {
-                        markerX -= 4;
-                    }
-
-                    Canvas.SetLeft(marker, markerX);
-                    Canvas.SetTop(marker, (MarkerContainer.Height / 2) - (marker.Height / 2));
-
-                    MarkerContainer.Children.Add(marker); // Add marker to Canvas
-                }
-            }
-
-            // Set slider ticks dynamically
-            slider.Ticks = new DoubleCollection(tickValues);
-            slider.IsSnapToTickEnabled = true;
-
-            // Attach event handler
-            slider.ValueChanged -= Slider_ValueChanged;
-            slider.ValueChanged += Slider_ValueChanged;
-
-            // Initially hide the slider value text
-            sliderValue.Visibility = Visibility.Hidden;
-
-            // Show the latest version number after markers are generated
-            if (versions.Any())
-            {
-                var latestVersion = versions.First();  // First version (newest)
-                sliderValue.Text = $"Version: {latestVersion.VersionNumber}";
-                sliderValue.Visibility = Visibility.Visible; // Make sure version number text is visible
-            }
-
-            Console.WriteLine("Markers generated.");
-        }
-
-
         private async Task GenerateMarkers()
         {
             var versions = await DataManagement.GetItemVersions(_selectedProjectId, _selectedItemId);
@@ -4520,24 +4279,18 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
         private void Slider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            int roundedValue = (int)Math.Round(slider.Value / 5.0) * 5; // Snap to nearest marker step
+            int roundedValue = (int)Math.Round(slider.Value); // Round normally
 
-            if (versionsMarkerData.ContainsKey(roundedValue))
+            // Find the closest key in versionsMarkerData
+            int closestMarker = versionsMarkerData.Keys.OrderBy(k => Math.Abs(k - roundedValue)).FirstOrDefault();
+
+            if (versionsMarkerData.ContainsKey(closestMarker))
             {
-                // Retrieve version number and version ID when marker is reached
-                var markerData = versionsMarkerData[roundedValue];
-                OnMarkerReached(markerData); // Call function with marker data
+                var markerData = versionsMarkerData[closestMarker];
+                OnMarkerReached(markerData);
             }
         }
 
-        /*private void OnMarkerReached((int VersionNumber, string VersionID) markerData)
-        {
-            // Display version number above the slider
-            sliderValue.Text = $"Version: {markerData.VersionNumber}";
-
-            // Here you can do something with the VersionID (e.g., load the version or perform any action)
-            Console.WriteLine($"You reached version {markerData.VersionNumber} with ID: {markerData.VersionID}");
-        }*/
 
         private void OnMarkerReached((int VersionNumber, string VersionID) markerData)
         {
@@ -4549,6 +4302,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
             BtnViewInApp_Click(_selectedItemId, markerData.VersionID);
         }
+
 
 
 
