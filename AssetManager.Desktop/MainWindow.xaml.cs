@@ -3488,7 +3488,8 @@ namespace AssetManager.Desktop
 
             if (!isTranslationCompleted)
             {
-                MessageBox.Show("Model translation is still in progress or failed. Please try again later.", "Translation In Progress", MessageBoxButton.OK, MessageBoxImage.Information);
+                //MessageBox.Show("Model translation is still in progress or failed. Please try again later.", "Translation In Progress", MessageBoxButton.OK, MessageBoxImage.Information);
+                VersionError.IsOpen = true;
                 return;
             }
 
@@ -4029,14 +4030,36 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 {
                     Width = 16,
                     Height = 16,
-                    Background = new SolidColorBrush(Colors.LightGray),
+                    Background = new SolidColorBrush(Colors.Blue),  // Set marker color to blue
                     CornerRadius = new CornerRadius(3),
                     Child = new TextBlock
                     {
-                        Text = "A", // Single marker label
+                        Text = version.VersionNumber.ToString(), // Show version number
                         HorizontalAlignment = HorizontalAlignment.Center,
-                        VerticalAlignment = VerticalAlignment.Center
+                        VerticalAlignment = VerticalAlignment.Center,
+                        Foreground = new SolidColorBrush(Colors.White) // Set text color to white
                     }
+                };
+
+                // Add hover effect to change color to purple
+                marker.MouseEnter += (sender, e) =>
+                {
+                    marker.Background = new SolidColorBrush(Colors.Purple); // Change color on hover
+                    marker.Cursor = Cursors.Hand; // Change cursor to hand when hovering over the marker
+                };
+                marker.MouseLeave += (sender, e) =>
+                {
+                    marker.Background = new SolidColorBrush(Colors.Blue); // Revert back to blue when mouse leaves
+                    marker.Cursor = Cursors.Arrow; // Revert cursor back to normal when mouse leaves
+                };
+
+                // Add click event to set slider value based on marker position
+                marker.MouseLeftButtonDown += (sender, e) =>
+                {
+                    double sliderWidth = MarkerContainer.Width;
+                    double markerX = Canvas.GetLeft(marker) + marker.Width / 2; // Get X position of marker (centered)
+                    double value = (markerX / sliderWidth) * 100; // Calculate corresponding slider value
+                    slider.Value = value; // Set the slider's value to the marker's position
                 };
 
                 double sliderWidth = MarkerContainer.Width;
@@ -4063,28 +4086,42 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     {
                         Width = 16,
                         Height = 16,
-                        Background = new SolidColorBrush(Colors.LightGray),
+                        Background = new SolidColorBrush(Colors.Blue),  // Set marker color to blue
                         CornerRadius = new CornerRadius(3),
                         Child = new TextBlock
                         {
-                            Text = ((char)('A' + i)).ToString(),
+                            Text = version.VersionNumber.ToString(), // Show version number
                             HorizontalAlignment = HorizontalAlignment.Center,
-                            VerticalAlignment = VerticalAlignment.Center
+                            VerticalAlignment = VerticalAlignment.Center,
+                            Foreground = new SolidColorBrush(Colors.White) // Set text color to white
                         }
                     };
 
+                    // Add hover effect to change color to purple
+                    marker.MouseEnter += (sender, e) =>
+                    {
+                        marker.Background = new SolidColorBrush(Colors.Purple); // Change color on hover
+                        marker.Cursor = Cursors.Hand; // Change cursor to hand when hovering over the marker
+                    };
+                    marker.MouseLeave += (sender, e) =>
+                    {
+                        marker.Background = new SolidColorBrush(Colors.Blue); // Revert back to blue when mouse leaves
+                        marker.Cursor = Cursors.Arrow; // Revert cursor back to normal when mouse leaves
+                    };
+
+                    // Add click event to set slider value based on marker position
+                    marker.MouseLeftButtonDown += (sender, e) =>
+                    {
+                        double sliderWidth = MarkerContainer.Width;
+                        double markerX = Canvas.GetLeft(marker) + marker.Width / 2; // Get X position of marker (centered)
+                        double value = (markerX / sliderWidth) * 100; // Calculate corresponding slider value
+                        slider.Value = value; // Set the slider's value to the marker's position
+                    };
+
                     double sliderWidth = MarkerContainer.Width;
-                    double markerX = (markerValue / 100.0) * sliderWidth - (marker.Width / 2);
+                    double markerX = (markerValue / 100.0) * sliderWidth - (marker.Width / 2);  // Calculate marker X position based on the slider width
 
-                    if (markerX < (sliderWidth / 2))
-                    {
-                        markerX += 4;
-                    }
-                    else
-                    {
-                        markerX -= 4;
-                    }
-
+                    // Ensure markers align perfectly with the thumb position
                     Canvas.SetLeft(marker, markerX);
                     Canvas.SetTop(marker, (MarkerContainer.Height / 2) - (marker.Height / 2));
 
@@ -4113,6 +4150,14 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
             Console.WriteLine("Markers generated.");
         }
+
+
+
+
+
+
+
+
 
         private async void VersionSliderButton_Click(object sender, RoutedEventArgs e)
         {
@@ -4183,7 +4228,10 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             BtnViewInApp_Click(_selectedItemId, markerData.VersionID);
         }
 
-
+        private void CloseVersionPopup(object sender, RoutedEventArgs e)
+        {
+            VersionError.IsOpen = false;
+        }
 
 
 
