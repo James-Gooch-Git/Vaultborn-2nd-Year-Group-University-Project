@@ -1408,6 +1408,12 @@ namespace AssetManager.Desktop
 
 
         #endregion
+        private static readonly HashSet<string> Accepted3DModelExtensions = new HashSet<string>
+{
+    ".obj", ".fbx", ".stl", ".dae", ".3ds", ".blend", ".ply",
+    ".gltf", ".glb", ".ifc", ".iges", ".igs", ".step", ".stp",
+    ".sldprt", ".sldasm", ".3mf", ".prt", ".x3d", ".wrl"
+};
 
         //NEEDS MIGRATING TO UI SERVICES || UI FUNCTIONALITY//
         #region UI Functionality
@@ -1415,7 +1421,7 @@ namespace AssetManager.Desktop
         {
             if (sender is TreeViewItem item && item.Tag is (string projectId, string folderId, bool isFolder))
             {
-                if (item.Items.Count == 1 && item.Items[0] == null) // Check if it needs loading
+                if (item.Items.Count == 1 && item.Items[0] == null)
                 {
                     item.Items.Clear();
 
@@ -1429,11 +1435,20 @@ namespace AssetManager.Desktop
 
                     foreach (var (itemId, itemName, isFolderItem) in items)
                     {
+                        bool is3DModel = false;
+
+                        if (!isFolderItem)
+                        {
+                            string extension = Path.GetExtension(itemName)?.ToLowerInvariant();
+                            is3DModel = Accepted3DModelExtensions.Contains(extension);
+                            // You can now use `is3DModel` for logic or tag
+                        }
+
                         TreeViewItem fileItem = new TreeViewItem
                         {
                             Header = isFolderItem ? $"📁 {itemName}" : $"📄 {itemName}",
-                            Tag = (projectId, itemId, isFolderItem),
-                            ContextMenu = CreateContextMenu(projectId, itemId, isFolderItem) // ✅ Add right-click menu
+                            Tag = (projectId, itemId, isFolderItem, is3DModel), // Include is3DModel if needed
+                            ContextMenu = CreateContextMenu(projectId, itemId, isFolderItem)
                         };
 
                         if (isFolderItem)
@@ -1446,6 +1461,8 @@ namespace AssetManager.Desktop
                 }
             }
         }
+
+
         /*private void InitializeTreeView()
         {
             ProjectTreeView.Items.Clear();
@@ -1545,16 +1562,23 @@ namespace AssetManager.Desktop
 
             if (subItems == null || !subItems.Any())
             {
-                return; // No subfolders to add
+                return;
             }
 
             foreach (var (subItemId, subItemName, isSubFolder) in subItems)
             {
+                bool isPdf = false;
+                if (!isSubFolder)
+                {
+                    string extension = Path.GetExtension(subItemName)?.ToLowerInvariant();
+                    isPdf = extension == ".pdf";
+                }
+
                 TreeViewItem subItem = new TreeViewItem
                 {
                     Header = isSubFolder ? $"📁 {subItemName}" : $"📄 {subItemName}",
-                    Tag = (projectId, subItemId, isSubFolder),
-                    ContextMenu = CreateContextMenu(projectId, subItemId, isSubFolder) // ✅ Add right-click menu
+                    Tag = (projectId, subItemId, isSubFolder, isPdf),
+                    ContextMenu = CreateContextMenu(projectId, subItemId, isSubFolder)
                 };
 
                 if (isSubFolder)
@@ -1565,6 +1589,7 @@ namespace AssetManager.Desktop
                 parentFolder.Items.Add(subItem);
             }
         }
+
 
         private ContextMenu CreateContextMenu(string projectId, string itemId, bool isFolder)
         {
@@ -1665,34 +1690,95 @@ namespace AssetManager.Desktop
         #region UI Buttons
         private void ProjectTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
-            if (e.NewValue is TreeViewItem selectedItem && selectedItem.Tag is ValueTuple<string, string, bool> projectData)
+            if (e.NewValue is TreeViewItem selectedItem)
             {
-                _selectedProjectId = projectData.Item1;
-                _folderId = projectData.Item2;
-
-                // Extract the project name from the header (remove the 📁 emoji if present)
-                string header = selectedItem.Header.ToString();
-                _selectedProjectName = header.StartsWith("📁 ") ? header.Substring(3) : header;
-
-                Console.WriteLine($"📌 Selected Project: {_selectedProjectName}, Project ID: {_selectedProjectId}, Folder ID: {_folderId}");
-
-                // Reset model loading flag and clear UI before loading new models
-                isModelLoaded = false;
-                ModelsContainer.Children.Clear();
-
-                // Automatically refresh the grid view if it's currently visible
-                if (Grid_View.Visibility == Visibility.Visible)
+                // Handle the expanded tuple with PDF flag
+                if (selectedItem.Tag is ValueTuple<string, string, bool, bool> fileData)
                 {
-                    Grid_Click(null, null);  // Refresh grid view with the new project
+                    string projectId = fileData.Item1;
+                    string itemId = fileData.Item2;
+                    bool isFolder = fileData.Item3;
+                    bool isPdf = fileData.Item4;
+
+                    _selectedProjectId = projectId;
+                    _selectedItemId = itemId;
+
+                    // Extract the item name from the header (remove the icon prefix)
+                    string header = selectedItem.Header.ToString();
+                    string displayName = header.Length > 2 ? header.Substring(2).Trim() : header;
+
+                    if (isFolder)
+                    {
+                        _selectedProjectName = displayName;
+                        _folderId = itemId;
+
+                        Console.WriteLine($"📁 Selected Folder: {_selectedProjectName}, Project ID: {_selectedProjectId}, Folder ID: {_folderId}");
+
+                        // Reset model loading flag and clear UI before loading new models
+                        isModelLoaded = false;
+                        ModelsContainer.Children.Clear();
+
+                        // Load models for the selected folder
+                        if (Grid_View.Visibility == Visibility.Visible)
+                        {
+                            Grid_Click(null, null);
+                        }
+                        else if (ModelsDataGrid.Visibility == Visibility.Visible)
+                        {
+                            List_Click(null, null);
+                        }
+                        else
+                        {
+                            LoadModelsForSelectedProject();
+                        }
+                    }
+                    else if (isPdf)
+                    {
+                        // It's a PDF file
+                        _selectedItemName = displayName;
+                        Console.WriteLine($"📑 Selected PDF: {_selectedItemName}, Item ID: {_selectedItemId}, Project ID: {_selectedProjectId}");
+
+                        // Open the PDF in the Forge Viewer
+                        OpenPdfInForgeViewer(_selectedProjectId, _selectedItemId, _selectedItemName);
+                    }
+                    else
+                    {
+                        // It's a regular file - handle accordingly
+                        _selectedItemName = displayName;
+                        Console.WriteLine($"📄 Selected File: {_selectedItemName}, Item ID: {_selectedItemId}, Project ID: {_selectedProjectId}");
+
+                        // You could add specific handling for other file types here
+                    }
                 }
-                else if (ModelsDataGrid.Visibility == Visibility.Visible)
+                // Handle the original tuple format for backward compatibility
+                else if (selectedItem.Tag is ValueTuple<string, string, bool> projectData)
                 {
-                    List_Click(null, null);  // Refresh List View
-                }
-                else
-                {
-                    // Otherwise, load models normally
-                    LoadModelsForSelectedProject();
+                    _selectedProjectId = projectData.Item1;
+                    _folderId = projectData.Item2;
+
+                    // Extract the project name from the header
+                    string header = selectedItem.Header.ToString();
+                    _selectedProjectName = header.StartsWith("📁 ") ? header.Substring(3) : header;
+
+                    Console.WriteLine($"📌 Selected Project: {_selectedProjectName}, Project ID: {_selectedProjectId}, Folder ID: {_folderId}");
+
+                    // Reset model loading flag and clear UI before loading new models
+                    isModelLoaded = false;
+                    ModelsContainer.Children.Clear();
+
+                    // Refresh the appropriate view
+                    if (Grid_View.Visibility == Visibility.Visible)
+                    {
+                        Grid_Click(null, null);
+                    }
+                    else if (ModelsDataGrid.Visibility == Visibility.Visible)
+                    {
+                        List_Click(null, null);
+                    }
+                    else
+                    {
+                        LoadModelsForSelectedProject();
+                    }
                 }
             }
         }
@@ -3961,13 +4047,13 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             }
         }*/
 
-        private async void LoadForgeViewer(string encodedUrn)
+        private async void LoadForgeViewer(string encodedUrn, bool isPdf = false)
         {
             try
             {
                 ForgeWebView.Visibility = Visibility.Visible;
 
-                // Initialize WebView2
+                // Initialize WebView2 if needed
                 if (ForgeWebView.CoreWebView2 == null)
                 {
                     await ForgeWebView.EnsureCoreWebView2Async();
@@ -3981,66 +4067,156 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     return;
                 }
 
-                Console.WriteLine("🔄 Initializing WebView2...");
+                Console.WriteLine($"🔄 Initializing WebView2 for {(isPdf ? "PDF" : "3D model")}...");
                 await ForgeWebView.EnsureCoreWebView2Async();
                 Console.WriteLine("✅ WebView2 initialized successfully.");
 
-                // ✅ Correct HDRI URL (must be .hdr or .dds, hosted with a direct link)
-                string hdriUrl = "https://www.dropbox.com/scl/fi/xb0pph37hni7q1qoa1inq/rogland_clear_night_4k.hdr?rlkey=mik14m29cyr3uzzj8guakwzxf&raw=1";
+                string htmlContent;
 
-                string htmlContent = $@"<!DOCTYPE html>
- <html>
- <head>
-     <meta charset='UTF-8'>
-     <meta http-equiv='X-UA-Compatible' content='IE=Edge' />
-     <title>Forge Viewer</title>
-     <script src='https://developer.api.autodesk.com/modelderivative/v2/viewers/7.52/viewer3D.min.js'></script>
-     <link rel='stylesheet' href='https://developer.api.autodesk.com/modelderivative/v2/viewers/7.52/style.min.css' type='text/css'>
- </head>
- <body>
-     <div id='forgeViewer' style='width: 100%; height: 100vh;'></div>
-     <script>
-         var options = {{
-             env: 'AutodeskProduction',
-             getAccessToken: function(onTokenReady) {{
-                 onTokenReady('{accessToken}', 3599);
-             }}
-         }};
-         var documentId = 'urn:{encodedUrn}';
-         Autodesk.Viewing.Initializer(options, function() {{
-             var viewerDiv = document.getElementById('forgeViewer');
-             var viewer = new Autodesk.Viewing.GuiViewer3D(viewerDiv);
-             viewer.start();
+                if (isPdf)
+                {
+                    // HTML content specifically for PDF viewing
+                    htmlContent = $@"<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='UTF-8'>
+    <meta http-equiv='X-UA-Compatible' content='IE=Edge' />
+    <title>PDF Viewer</title>
+    <script src='https://developer.api.autodesk.com/modelderivative/v2/viewers/7.52/viewer3D.min.js'></script>
+    <link rel='stylesheet' href='https://developer.api.autodesk.com/modelderivative/v2/viewers/7.52/style.min.css' type='text/css'>
+    <style>
+        body, html {{ height: 100%; margin: 0; padding: 0; }}
+        #toolbar {{ position: absolute; top: 10px; left: 10px; z-index: 1000; background: rgba(255,255,255,0.9); padding: 5px; border-radius: 5px; }}
+        #forgeViewer {{ width: 100%; height: 100vh; }}
+    </style>
+</head>
+<body>
+    <div id='toolbar'>
+        <label for='pageSelect'>Page:</label>
+        <select id='pageSelect'></select>
+    </div>
+    <div id='forgeViewer'></div>
 
-             viewer.loadExtension('Autodesk.Viewing.EnvironmentSettings')
-                 .then(() => {{
-                     console.log('🌌 EnvironmentSettings Extension Loaded!');
+    <script>
+        var viewer;
+        var doc;
+        var viewables = [];
+        var currentModel = null;
 
-                     // ✅ Register the HDRI as a Forge Viewer environment
-                     Autodesk.Viewing.Private.EnvSettings.addCustomEnvironment('Custom_Fantasy_HDRI', {{
-                         path: '{hdriUrl}',
-                         type: 'equirectangular', // Must be 'equirectangular' for HDRI
-                         displayName: 'Fantasy Night Sky',
-                     }});
+        var options = {{
+            env: 'AutodeskProduction',
+            getAccessToken: function(onTokenReady) {{
+                onTokenReady('{accessToken}', 3599);
+            }}
+        }};
 
-                     // ✅ Apply the HDRI as an available environment
-                     viewer.setEnvironment('Custom_Fantasy_HDRI');
-                     console.log('✅ Custom HDRI added to Environments List!');
+        var documentId = 'urn:{encodedUrn}';
 
-                     // ✅ Ensure the HDRI is visible
-                     viewer.setEnvMapBackground(true);
-                 }});
+        Autodesk.Viewing.Initializer(options, function () {{
+            var viewerDiv = document.getElementById('forgeViewer');
+            viewer = new Autodesk.Viewing.GuiViewer3D(viewerDiv);
+            viewer.start();
 
-             Autodesk.Viewing.Document.load(documentId, function(doc) {{
-                 var defaultModel = doc.getRoot().getDefaultGeometry();
-                 viewer.loadDocumentNode(doc, defaultModel);
-             }}, function(errorMsg) {{
-                 console.error('Error loading document: ' + errorMsg);
-             }});
-         }});
-     </script>
- </body>
- </html>";
+            Autodesk.Viewing.Document.load(documentId, function (loadedDoc) {{
+                doc = loadedDoc;
+                viewables = doc.getRoot().search({{
+                    type: 'geometry',
+                    role: '2d'
+                }});
+
+                if (viewables && viewables.length > 0) {{
+                    populatePageSelector(viewables);
+                    loadPage(0); // Load first page
+                }} else {{
+                    console.error('No viewables found in PDF.');
+                }}
+            }}, function (errorCode, errorMsg) {{
+                console.error('Error loading document:', errorCode, errorMsg);
+            }});
+        }});
+
+        function populatePageSelector(viewables) {{
+            var select = document.getElementById('pageSelect');
+            viewables.forEach(function (v, i) {{
+                var option = document.createElement('option');
+                option.value = i;
+                option.text = v.data.name || 'Page ' + (i + 1);
+                select.appendChild(option);
+            }});
+            select.addEventListener('change', function () {{
+                var pageIndex = parseInt(this.value);
+                loadPage(pageIndex);
+            }});
+        }}
+
+      function loadPage(index) {{
+    if (!doc || !viewer || !viewables[index]) {{
+        console.error('Viewer or document not ready.', {{ doc, viewer, viewable: viewables[index] }});
+        return;
+    }}
+
+    console.log(`🔄 Switching to page index ${{index}}...`);
+    console.log('📄 Viewable to load:', viewables[index]);
+
+    if (currentModel) {{
+        console.log('❎ Unloading current model...');
+        viewer.unloadModel(currentModel);
+        currentModel = null;
+    }}
+
+    viewer.loadDocumentNode(doc, viewables[index]).then(function (model) {{
+        currentModel = model;
+        console.log(`✅ Loaded page ${{index + 1}} successfully.`);
+    }}).catch(function (err) {{
+        console.error('❌ Failed to load page:', err);
+    }});
+}}
+
+    </script>
+</body>
+</html>";
+
+                }
+                else
+                {
+                    // Use your existing HTML content for 3D models
+                    htmlContent = $@"<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='UTF-8'>
+    <meta http-equiv='X-UA-Compatible' content='IE=Edge' />
+    <title>Forge Viewer</title>
+    <script src='https://developer.api.autodesk.com/modelderivative/v2/viewers/7.52/viewer3D.min.js'></script>
+    <link rel='stylesheet' href='https://developer.api.autodesk.com/modelderivative/v2/viewers/7.52/style.min.css' type='text/css'>
+</head>
+<body>
+    <div id='forgeViewer' style='width: 100%; height: 100vh;'></div>
+    <script>
+        var options = {{
+            env: 'AutodeskProduction',
+            getAccessToken: function(onTokenReady) {{
+                onTokenReady('{accessToken}', 3599);
+            }}
+        }};
+        
+        var documentId = 'urn:{encodedUrn}';
+        
+        Autodesk.Viewing.Initializer(options, function() {{
+            var viewerDiv = document.getElementById('forgeViewer');
+            var viewer = new Autodesk.Viewing.GuiViewer3D(viewerDiv);
+            viewer.start();
+            
+            Autodesk.Viewing.Document.load(documentId, function(doc) {{
+                var defaultModel = doc.getRoot().getDefaultGeometry();
+                viewer.loadDocumentNode(doc, defaultModel);
+            }}, function(errorCode, errorMsg) {{
+                console.error('Error loading document: ' + errorCode + ' - ' + errorMsg);
+            }});
+        }});
+    </script>
+</body>
+</html>";
+                }
 
                 ForgeWebView.NavigateToString(htmlContent);
             }
@@ -4050,6 +4226,117 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             }
         }
 
+        // Helper method to determine if a file is a PDF
+        private bool IsPdfFile(string filename)
+        {
+            return !string.IsNullOrEmpty(filename) &&
+                   System.IO.Path.GetExtension(filename).Equals(".pdf", StringComparison.OrdinalIgnoreCase);
+        }
+        private async void OpenPdfInForgeViewer(string projectId, string itemId, string fileName)
+        {
+            try
+            {
+                // Track the last active view for when we close the viewer
+                if (ModelsDataGrid.Visibility == Visibility.Visible)
+                {
+                    _lastViewType = ViewType.List;
+                }
+                else if (Grid_View.Visibility == Visibility.Visible)
+                {
+                    _lastViewType = ViewType.Grid;
+                }
+
+                // Hide both views
+                ModelsDataGrid.Visibility = Visibility.Collapsed;
+                Grid_View.Visibility = Visibility.Collapsed;
+
+                // Show the Forge Viewer
+                ForgeViewerContainer.Visibility = Visibility.Visible;
+                ForgeWebView.Visibility = Visibility.Visible;
+
+                Console.WriteLine($"📑 Opening PDF in Forge Viewer: {fileName}");
+                Console.WriteLine($"- Item ID: {itemId}");
+                Console.WriteLine($"- Project ID: {projectId}");
+
+                // Get the storage ID for the PDF file
+                string objectId;
+                FileDownloadService fileService = new FileDownloadService();
+                objectId = await fileService.GetStorageIdFromItem(projectId, itemId);
+
+                if (string.IsNullOrEmpty(objectId))
+                {
+                    MessageBox.Show("Could not retrieve PDF file information.", "PDF Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                _objectId = objectId; // Update global storage ID
+
+                // Encode URN
+                string encodedUrn = EncodeObjectIdToUrn(objectId);
+                if (string.IsNullOrEmpty(encodedUrn))
+                {
+                    MessageBox.Show("Failed to process PDF identifier.", "Processing Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                Console.WriteLine($"✅ Encoded URN for PDF: {encodedUrn}");
+
+                // Check if the PDF file is already translated
+                ModelDerivativeService modelService = new ModelDerivativeService(new HttpClient());
+                bool translationComplete = await modelService.IsTranslationCompletedAsync(encodedUrn, _accessToken);
+
+                if (!translationComplete)
+                {
+                    Console.WriteLine("🔄 Submitting PDF translation job...");
+
+                    // For PDFs, we use the specialized PDF translation method
+                    bool jobResponse = await modelService.SubmitPdfForTranslationAsync(encodedUrn, _accessToken);
+
+                    Console.WriteLine($"✅ PDF translation job submitted: {jobResponse}");
+
+                    if (!jobResponse)
+                    {
+                        MessageBox.Show("❌ PDF translation job failed to submit.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        return;
+                    }
+
+                    // Wait for translation to complete
+                    int maxRetries = 30;
+                    int delayMs = 2000;
+                    bool isReady = false;
+
+                    for (int attempt = 1; attempt <= maxRetries; attempt++)
+                    {
+                        Console.WriteLine($"⏳ Waiting for PDF translation... (Attempt {attempt}/{maxRetries})");
+
+                        isReady = await modelService.IsTranslationCompletedAsync(encodedUrn, _accessToken);
+                        if (isReady)
+                        {
+                            Console.WriteLine("✅ PDF translation completed successfully!");
+                            break;
+                        }
+
+                        await Task.Delay(delayMs);
+                    }
+
+                    if (!isReady)
+                    {
+                        MessageBox.Show("❌ PDF translation failed or timed out.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        return;
+                    }
+                }
+
+                Console.WriteLine($"🔍 Opening Forge Viewer for PDF: {fileName}");
+
+                // Load PDF in Forge Viewer - reuse your existing method with a PDF flag
+                LoadForgeViewer(encodedUrn, true);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"❌ Error opening PDF: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                Console.WriteLine($"❌ Error opening PDF: {ex.Message}\n{ex.StackTrace}");
+            }
+        }
 
         #endregion
 
