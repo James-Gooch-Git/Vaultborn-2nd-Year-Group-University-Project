@@ -58,7 +58,7 @@ namespace AssetManager.Desktop
         private readonly ModelUpload _uploadService;
         private readonly FileDownloadService _filedwnService;
         private List<Dictionary<string, string>> Models;
-        private string _userId = Environment.GetEnvironmentVariable("userId", EnvironmentVariableTarget.User);
+        private static string _userId = Environment.GetEnvironmentVariable("userId", EnvironmentVariableTarget.User);
         private static readonly HttpClient client = new HttpClient();
         private string selectedHubName = "Loading..."; // Default value before hubs load
         private bool isModelLoaded = false;
@@ -385,6 +385,17 @@ namespace AssetManager.Desktop
                 return "Unknown Project";
             }
             return userData.FolderId;
+        }
+        
+        private async Task<string> GetModelSeller(string modelId)
+        {
+            MongoConnection database = new MongoConnection();
+            var userData = await database.ListedModels.Find(x => x.ModelId == modelId).FirstOrDefaultAsync();
+            if (userData == null)
+            {
+                return "Unknown User";
+            }
+            return userData.SellerId;
         }
         #endregion
 
@@ -4952,7 +4963,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 MessageBox.Show($"New model");
                 await database.ModelData.InsertOneAsync(modelData);
                 string message = $"New Model - {modelData.Name}";
-                await InsertNotifDB(modelData.Id, message);
+                await InsertNotifDB(modelData.Id, message, _userId);
             }
         }
 
@@ -4979,7 +4990,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 await database.Versions.UpdateOneAsync(filter, update);
                 string modelName = await GetModelName(modelId);
                 string message = $"New version {verNum} on model - {modelName}";
-                await InsertNotifDB(modelId, message);
+                await InsertNotifDB(modelId, message, _userId);
             }
         }
         
@@ -6453,6 +6464,10 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     Purchased purchased = new Purchased {ModelId = _buyItemId, UserId = _userId} ;
                     await database.Purchased.InsertOneAsync(purchased);
                     await InitializeMarketplace();
+                    string modelName = await GetModelName(_buyItemId);
+                    string sellerId = await GetModelSeller(_buyItemId);
+                    string message = $"New purchase on {modelName}";
+                    await InsertNotifDB(_buyItemId, message, sellerId);
                 }
                 else
                 {
@@ -6568,14 +6583,14 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             NotificationsPopup.IsOpen = true;
         }
 
-        private static async Task InsertNotifDB(string modelId, string message)
+        private static async Task InsertNotifDB(string modelId, string message, string userId)
         {
             MongoConnection database = new MongoConnection();
             Notifications notif = new Notifications
             {
                 Id = new ObjectId(),
                 ModelId = modelId,
-                UserId = Environment.GetEnvironmentVariable("userId", EnvironmentVariableTarget.User),
+                UserId = userId,
                 Message = message,
                 Pending = 1
             };
