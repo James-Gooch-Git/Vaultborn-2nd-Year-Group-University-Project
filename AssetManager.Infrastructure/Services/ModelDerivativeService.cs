@@ -166,13 +166,14 @@ namespace AssetManager.Infrastructure.Services
             Console.WriteLine($"🔑 Using Access Token: {accessToken.Substring(0, 10)}...");
 
             // JSON Payload specifically for PDF translation
+            // Ensure this is in your SubmitPdfForTranslationAsync method
             var jobPayload = new
             {
                 input = new { urn = encodedUrn },
                 output = new
                 {
                     formats = new[]
-        {
+                    {
             new
             {
                 type = "svf",
