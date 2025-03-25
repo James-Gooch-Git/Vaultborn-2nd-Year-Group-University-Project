@@ -38,6 +38,8 @@ using Microsoft.WindowsAPICodePack.Taskbar;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media.Media3D;
 using System.Runtime.Serialization;
+using System.Windows.Forms.VisualStyles;
+using VerticalAlignment = System.Windows.VerticalAlignment;
 
 namespace AssetManager.Desktop
 {
@@ -6617,7 +6619,8 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             List<Notifications> notifs = await GetPendingNotifications();
             foreach (var notif in notifs)
             {
-                NotificationsListBox.Items.Add(notif);
+                NotificationItem item = new NotificationItem{Id = notif.Id.ToString(), Message = notif.Message};
+                NotificationsListBox.Items.Add(item);
                 var filter = Builders<Notifications>.Filter.Eq(x => x.Id, notif.Id);
                 var update = Builders<Notifications>.Update.Set("Pending", 0);
                 await database.Notifications.UpdateOneAsync(filter, update);
@@ -6630,8 +6633,18 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             var result = await database.Notifications.Find(x => x.UserId == _userId && x.Pending == 0).ToListAsync();
             if (result != null)
             {
-                NotificationsListBox.ItemsSource = result;
+                foreach (var item in result)
+                {
+                    NotificationItem notif = new NotificationItem { Id = item.Id.ToString(), Message = item.Message};
+                    NotificationsListBox.Items.Add(notif);
+                }
             }
+        }
+
+        public class NotificationItem
+        {
+            public string Id { get; set; }
+            public string Message { get; set; }
         }
         
         //COMMENTED OUT FUNCTIONS//

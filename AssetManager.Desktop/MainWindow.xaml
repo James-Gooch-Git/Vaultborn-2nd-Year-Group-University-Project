@@ -344,6 +344,7 @@
                                                     <ColumnDefinition Width="*"/>
                                                 </Grid.ColumnDefinitions>
                                                 
+                                                    <TextBlock Text="{Binding Id}" Visibility="Collapsed" x:Name="NotificationId"/>
                                                     <md:PackIcon Grid.Column="0" Kind="Circle" Foreground="#d1d5db" VerticalAlignment="Center"/>
                                                     <TextBlock Grid.Column="1" Text="{Binding Message}" Foreground="#d1d5db" TextWrapping="Wrap" MinWidth="275" MaxWidth="275" Margin="5,0,0,0" VerticalAlignment="Center"/>
                                                 </Grid>
@@ -352,7 +353,7 @@
                                     </ListBox.ItemTemplate>
                                 </ListBox>
                                 
-                                <Border Grid.Row="2" BorderBrush="#98730C" BorderThickness="3" CornerRadius="2" Width="80" Height="25" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <Border Grid.Row="2" BorderBrush="#98730C" BorderThickness="3" CornerRadius="2" Width="80" Height="25" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,5">
                                     <Button Content="Clear All" Width="80" Height="25" BorderBrush="#98730C" BorderThickness="2" Background="#540754" Foreground="#d1d5db" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                 </Border>
                             </Grid>
