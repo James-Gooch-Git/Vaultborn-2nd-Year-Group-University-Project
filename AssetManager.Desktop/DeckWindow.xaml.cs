@@ -8,6 +8,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using AssetManager.Infrastructure.Data;
 using AssetManager.Infrastructure.DOC;
+using AssetManager.Infrastructure.Services;
 using MongoDB.Bson;
 using MongoDB.Driver;
 
@@ -155,21 +156,29 @@ namespace AssetManager.Desktop
             public ImageSource ImageSource { get; set; }
             // Add other card properties as needed
         }
-        
-        private void View3DButton_Click(object sender, RoutedEventArgs e)
+
+        private async void View3DButton_Click(object sender, RoutedEventArgs e)
         {
-            if (_selectedCard  == null || !_selectedCard .Contains("model_urn"))
+            if (_selectedCard == null || !_selectedCard.Contains("item_id"))
             {
                 MessageBox.Show("3D model unavailable for this card.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
-            string modelUrn = _selectedCard ["model_urn"].ToString();
+            string selectedItemId = _selectedCard["item_id"].ToString();
 
-            // Open the Forge Viewer Window with the model URN
-            ForgeViewerWindow viewerWindow = new ForgeViewerWindow(modelUrn);
-            viewerWindow.Show();
+            // Get reference to MainWindow
+            if (Application.Current.MainWindow is MainWindow mainWindow)
+            {
+                await mainWindow.ViewModelInEmbeddedViewerAsync(selectedItemId);
+            }
+            else
+            {
+                MessageBox.Show("Main window not accessible.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
+
+
 
         private void AddCardButton_Click(object sender, RoutedEventArgs e)
         { 
