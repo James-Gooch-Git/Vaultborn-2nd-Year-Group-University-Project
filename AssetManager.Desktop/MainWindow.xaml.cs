@@ -366,9 +366,48 @@ namespace AssetManager.Desktop
         {
             MongoConnection database = new MongoConnection();
             var userData = await database.Users.Find(x => x.Id == userId).FirstOrDefaultAsync();
-            return userData.ProfilePic;
+
+            if (userData == null)
+            {
+                // Failsafe: shouldn't happen if InsertUserDataDB runs properly
+                return "https://your-bucket.s3.amazonaws.com/fallback.png";
+            }
+
+            // List of your official AWS profile pic URLs
+            List<string> awsProfilePics = new List<string>
+{
+    "https://usericonsvaultborn.s3.eu-north-1.amazonaws.com/Angel.png",
+    "https://usericonsvaultborn.s3.eu-north-1.amazonaws.com/BusinessMan.png",
+    "https://usericonsvaultborn.s3.eu-north-1.amazonaws.com/Cthulu.png",
+    "https://usericonsvaultborn.s3.eu-north-1.amazonaws.com/Unicorn.png",
+    "https://usericonsvaultborn.s3.eu-north-1.amazonaws.com/Vampire.png",
+    "https://usericonsvaultborn.s3.eu-north-1.amazonaws.com/Werewolf.png",
+    "https://usericonsvaultborn.s3.eu-north-1.amazonaws.com/Witch.jpeg",
+    "https://usericonsvaultborn.s3.eu-north-1.amazonaws.com/Wizard.png"
+};
+
+
+            string currentPic = userData.ProfilePic;
+
+            // ✅ If the saved MongoDB profile pic is not one of your approved AWS images
+            if (!string.IsNullOrEmpty(currentPic) && !awsProfilePics.Contains(currentPic))
+            {
+                Random rng = new Random();
+                string newPic = awsProfilePics[rng.Next(awsProfilePics.Count)];
+
+                // Update the user document in MongoDB with the new profile picture
+                var update = Builders<User>.Update.Set(u => u.ProfilePic, newPic);
+                await database.Users.UpdateOneAsync(x => x.Id == userId, update);
+
+                return newPic;
+            }
+
+            // ✅ If it's already one of your official pics, just return it
+            return currentPic;
         }
-        
+
+
+
         private async Task<string> GetModelName(string modelId)
         {
             MongoConnection database = new MongoConnection();
@@ -3323,13 +3362,17 @@ namespace AssetManager.Desktop
 
         private void BtnLogout_Click(object sender, RoutedEventArgs e)
         {
-            Console.WriteLine("👤 Logging out...");
+            // Step 1: Clear tokens and session
+            LoginWindow.PerformLogout();
 
-            // Close the current window and show the login screen
-            LoginWindow loginWindow = new LoginWindow(true);
-            this.Close();
+            // Step 2: Open a fresh LoginWindow
+            var loginWindow = new LoginWindow();
             loginWindow.Show();
+
+            // Step 3: Close the current MainWindow
+            this.Close();
         }
+
 
         private void BtnDownload_Click(object sender, RoutedEventArgs e)
         {
