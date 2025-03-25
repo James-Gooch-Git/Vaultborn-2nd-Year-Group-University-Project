@@ -6631,6 +6631,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         {
             MongoConnection database = new MongoConnection();
             var result = await database.Notifications.Find(x => x.UserId == _userId && x.Pending == 0).ToListAsync();
+            
             if (result != null)
             {
                 foreach (var item in result)
