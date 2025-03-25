@@ -1,8 +1,8 @@
 **/bin/
 **/obj/
-*.dll
-*.pdb
-*.exe
+**.dll
+**.pdb
+**.exe
 /packages/
 riderModule.iml
 /_ReSharper.Caches/
