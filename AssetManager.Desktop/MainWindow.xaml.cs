@@ -190,6 +190,7 @@ namespace AssetManager.Desktop
                 LoadProjectsForHub(hubID);
                 await TestDataManagement();
                 await RefreshHubs();
+                await AddNotifsToCentre();
                 //FusionManager.InitializePythonEngine();
                 //InitialiseFolders();
                 Username_TextBlock.Text = await GetUserName(_userId);
@@ -4372,6 +4373,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                         }
 
                         await CheckModelVersions();
+                        await AddNotifsToCentre();
 
                         Console.WriteLine($"✅ Background refresh completed successfully at {DateTime.Now}");
                     }
@@ -4949,6 +4951,8 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             {
                 MessageBox.Show($"New model");
                 await database.ModelData.InsertOneAsync(modelData);
+                string message = $"New Model - {modelData.Name}";
+                await InsertNotifDB(modelData.Id, message);
             }
         }
 
@@ -4973,6 +4977,9 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 var filter = Builders<Versions>.Filter.Eq(x => x.Id, modelId);
                 var update = Builders<Versions>.Update.Set("VersionNumber", verNum);
                 await database.Versions.UpdateOneAsync(filter, update);
+                string modelName = await GetModelName(modelId);
+                string message = $"New version {verNum} on model - {modelName}";
+                await InsertNotifDB(modelId, message);
             }
         }
         
@@ -6559,6 +6566,46 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         private void Bell_Click(object sender, MouseButtonEventArgs e)
         {
             NotificationsPopup.IsOpen = true;
+        }
+
+        private static async Task InsertNotifDB(string modelId, string message)
+        {
+            MongoConnection database = new MongoConnection();
+            Notifications notif = new Notifications
+            {
+                Id = new ObjectId(),
+                ModelId = modelId,
+                UserId = Environment.GetEnvironmentVariable("userId", EnvironmentVariableTarget.User),
+                Message = message,
+                Pending = 1
+            };
+            
+            await database.Notifications.InsertOneAsync(notif);
+        }
+
+        private async Task<List<Notifications>> GetPendingNotifications()
+        {
+            MongoConnection database = new MongoConnection();
+            var result = await database.Notifications.Find(x => x.UserId == _userId && x.Pending == 1).ToListAsync();
+            if (result == null)
+            {
+                return null;
+            }
+
+            return result;
+        }
+
+        private async Task AddNotifsToCentre()
+        {
+            MongoConnection database = new MongoConnection();
+            List<Notifications> notifs = await GetPendingNotifications();
+            foreach (var notif in notifs)
+            {
+                NotificationsListBox.Items.Add(notif);
+                var filter = Builders<Notifications>.Filter.Eq(x => x.Id, notif.Id);
+                var update = Builders<Notifications>.Update.Set("Pending", 0);
+                await database.Notifications.UpdateOneAsync(filter, update);
+            }
         }
         
         //COMMENTED OUT FUNCTIONS//

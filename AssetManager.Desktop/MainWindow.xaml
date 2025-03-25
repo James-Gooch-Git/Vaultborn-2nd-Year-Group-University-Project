@@ -332,7 +332,7 @@
                                     <RowDefinition Height="30"/> <!-- Clear all -->
                                 </Grid.RowDefinitions>
                                 
-                                <TextBlock Text="Notifications" VerticalAlignment="Center" Margin="5"/>
+                                <TextBlock Foreground="#d1d5db" Text="Notifications" VerticalAlignment="Center" Margin="5"/>
                                 
                                 <ListBox Grid.Row="1" x:Name="NotificationsListBox" Background="#5c1c1c" BorderBrush="Transparent" BorderThickness="0" MaxWidth="300" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto">
                                     <ListBox.ItemTemplate>
@@ -345,7 +345,7 @@
                                                 </Grid.ColumnDefinitions>
                                                 
                                                     <md:PackIcon Grid.Column="0" Kind="Circle" Foreground="#d1d5db" VerticalAlignment="Center"/>
-                                                    <TextBlock Grid.Column="1" Text="{Binding Message}" TextWrapping="Wrap" MaxWidth="275" Margin="5,0,0,0" VerticalAlignment="Center"/>
+                                                    <TextBlock Grid.Column="1" Text="{Binding Message}" Foreground="#d1d5db" TextWrapping="Wrap" MinWidth="275" MaxWidth="275" Margin="5,0,0,0" VerticalAlignment="Center"/>
                                                 </Grid>
                                             </Border>
                                         </DataTemplate>
