@@ -1204,7 +1204,14 @@
                 </Grid.RowDefinitions>
 
                 <TextBlock Text="Marketplace" FontSize="20" Foreground="#4B4b4b" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="20,0,0,0"/>
-
+                
+                <Border MouseLeftButtonDown="BtnLibrary_Click" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,20,0" Background="#5c1c1c" Height="30" Width="150" CornerRadius="6" Cursor="Hand">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <md:PackIcon Kind="ChevronLeft" Foreground="#d1d5db" Margin="0,0,8,0"/>
+                        <TextBlock Text="Back To Asset Library" Foreground="#d1d5db" Margin="0,0,8,0"/>
+                    </StackPanel>
+                </Border>
+                
                 <Border HorizontalAlignment="Stretch" VerticalAlignment="Bottom" BorderBrush="#4B4B4B" BorderThickness="0,1,0,0" Margin="20,0,20,0"/>
 
                 <Grid Grid.Row="1">
@@ -1214,11 +1221,15 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <Border MouseLeftButtonDown="BtnLibrary_Click" BorderBrush="#98730C" BorderThickness="3" CornerRadius="2" Width="110" Height="40" HorizontalAlignment="Left" Margin="20,0,0,0">
+                    <!--<Border MouseLeftButtonDown="BtnLibrary_Click" BorderBrush="#98730C" BorderThickness="3" CornerRadius="2" Width="110" Height="40" HorizontalAlignment="Left" Margin="20,0,0,0">
                         <Button x:Name="BtnLibrary" Click="BtnLibrary_Click" Content="Asset Library" 
                                 BorderBrush="#98730C" BorderThickness="2" Background="#540754" Foreground="White"
                                 Width="110" Height="40" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    </Border>
+                    </Border>-->
+                    
+                    <Button x:Name="ModelsButton" Click="MarketplaceModels_Click" Content="Models" Width="110" Height="40" Margin="20,0,0,0" HorizontalAlignment="Left" BorderBrush="#98730C" BorderThickness="3" Background="#540754" Foreground="#d1d5db"/>
+                    
+                    <Button x:Name="DecksButton" Click="MarketplaceDecks_Click" Content="Decks" Width="110" Height="40" Margin="150,0,0,0" HorizontalAlignment="Left" BorderBrush="#98730C" BorderThickness="3" Background="#540754" Foreground="#d1d5db"/>
 
                     <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
 
@@ -1505,7 +1516,7 @@
                     </DataGrid.Columns>
                 </DataGrid>
 
-                <Popup x:Name="BuyPopup" Placement="Bottom" PlacementTarget="{Binding ElementName=BtnLibrary}" StaysOpen="True" AllowsTransparency="True" PopupAnimation="Fade" HorizontalOffset="150">
+                <Popup x:Name="BuyPopup" Placement="Bottom" PlacementTarget="{Binding ElementName=ModelsButton}" StaysOpen="True" AllowsTransparency="True" PopupAnimation="Fade" HorizontalOffset="150">
                     <Border x:Name="BuyBorder" Background="#5c1c1c" CornerRadius="5"
                             Width="400" Height="400">
 

@@ -6144,12 +6144,22 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 List<Dictionary<string, string>> namesAZ = allListedModels.OrderBy(x => x["Name"]).ToList();
                 MarketplaceDataGrid.ItemsSource = namesAZ;
                 DisplayMarketplaceGrid(namesAZ);
+                ModelsButton.Background = Brushes.Aqua;
             }
             catch (Exception e)
             {
                 MessageBox.Show($"Error: {e.Message}");
                 throw;
             }
+        }
+
+        private async Task InitializeMarketplaceDecks()
+        {
+            MarketplaceDataGrid.ItemsSource = null;
+            List<Dictionary<string, string>> allListedDecks = await GetAllListedDecks();
+            List<Dictionary<string, string>> namesAZ = allListedDecks.OrderBy(x => x["Name"]).ToList();
+            MarketplaceDataGrid.ItemsSource = namesAZ;
+            DisplayMarketplaceGrid(namesAZ);
         }
 
         private async Task<List<Dictionary<string, string>>> GetAllListedModels()
@@ -6176,6 +6186,35 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             }
             return allListedModels;
         }
+
+        private async Task<List<Dictionary<string, string>>> GetAllListedDecks()
+        {
+            MongoConnection database = new MongoConnection();
+            List<Dictionary<string, string>> allListedDecks = new List<Dictionary<string, string>>();
+
+            var collection = database.GetCollection("Decks");
+            var filter = Builders<BsonDocument>.Filter.Eq("is_listed", true);
+            var decks = await collection.Find(filter).ToListAsync();
+
+            foreach (var deck in decks)
+            {
+                bool purchased = await CheckModelPurchased(deck["_id"].ToString(), _userId);
+                string sellerName = await GetUserName(deck["owner_id"].ToString());
+                allListedDecks.Add(new Dictionary<string, string>
+                {
+                    { "Name", deck["name"].ToString() },
+                    { "Description",deck["description"].ToString() },
+                    { "Seller", sellerName },
+                    { "Id", deck["_id"].ToString() },
+                    { "Price", deck["price"].ToString()},
+                    { "BuyVisibility", purchased ? "Collapsed" : "Visible" },
+                    { "PurchasedVisibility", purchased ? "Visible" : "Collapsed" },
+                    { "ProjectId", "N/A"}
+                });
+            }
+            
+            return allListedDecks;
+        }
         
         private async void BtnMarketplace_Click(object sender, RoutedEventArgs e)
         {
@@ -6190,6 +6229,20 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             MarketplaceBorder.Visibility = Visibility.Collapsed;
             ProjectsBorder.Visibility = Visibility.Visible;
             LibraryBorder.Visibility = Visibility.Visible;
+        }
+
+        private async void MarketplaceModels_Click(object sender, RoutedEventArgs e)
+        {
+            ModelsButton.Background = Brushes.Aqua;
+            DecksButton.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#540754"));
+            await InitializeMarketplace();
+        }
+
+        private async void MarketplaceDecks_Click(object sender, RoutedEventArgs e)
+        {
+            DecksButton.Background = Brushes.Aqua;
+            ModelsButton.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#540754"));
+            await InitializeMarketplaceDecks();
         }
         
         //list models
