@@ -9,6 +9,8 @@ using AssetManager.Infrastructure.Services;
 using Microsoft.Win32;
 using System.Diagnostics;
 using MaterialDesignThemes.Wpf;
+using SharpVectors.Renderers.Wpf;
+using SharpVectors.Converters;
 using MongoDB.Driver;
 using System.Windows.Media;
 using AssetManager.Infrastructure.Data;
@@ -773,6 +775,7 @@ namespace AssetManager.Desktop
                             string projectId = project.GetProperty("id").GetString();
                             string projectName = project.GetProperty("attributes").GetProperty("name").GetString();
 
+
                             var topFolder = await DataManagement.GetTopLevelFolder(hubID, projectId);
                             string folderId = topFolder.Item1;
 
@@ -1110,6 +1113,8 @@ namespace AssetManager.Desktop
                                 { "LastModified", formattedDate }
                             };
 
+                            Console.WriteLine("Project Name: " + _selectedProjectName);
+
                             // Add to models list
                             models.Add(modelDict);
 
@@ -1306,6 +1311,46 @@ namespace AssetManager.Desktop
     ".sldprt", ".sldasm", ".3mf", ".prt", ".x3d", ".wrl"
 };
 
+        private static readonly Dictionary<string, string> FileExtensionIcons = new()
+        {
+            [".obj"] = "Icons2/obj_icon.svg",
+            [".fbx"] = "Icons2/fbx_icon.svg",
+            [".stl"] = "Icons2/stl_icon.svg",
+            [".dae"] = "Icons2/dae_icon.svg",
+            [".3ds"] = "Icons2/3ds_icon.svg",
+            [".blend"] = "Icons2/blend_icon.svg",
+            [".ply"] = "Icons2/ply_icon.svg",
+            [".gltf"] = "Icons2/gltf_icon.svg",
+            [".glb"] = "Icons2/glb_icon.svg",
+            [".ifc"] = "Icons2/ifc_icon.svg",
+            [".iges"] = "Icons2/iges_icon.svg",
+            [".igs"] = "Icons2/igs_icon.svg",
+            [".step"] = "Icons2/step_icon.svg",
+            [".stp"] = "Icons2/step_icon.svg",
+            [".sldprt"] = "Icons2/sldprt_icon.svg",
+            [".sldasm"] = "Icons2/sldasm_icon.svg",
+            [".3mf"] = "Icons2/3mf_icon.svg",
+            [".prt"] = "Icons2/prt_icon.svg",
+            [".x3d"] = "Icons2/x3d_icon.svg",
+            [".wrl"] = "Icons2/wrl_icon.svg",
+            [".dwfx"] = "Icons2/dwfx_icon.svg",
+            [".iam"] = "Icons2/iam_icon.svg",
+            [".rvt"] = "Icons2/rvt_icon.svg",
+
+        };
+
+        private static string GetIconForExtension(string extension)
+        {
+            if (!string.IsNullOrEmpty(extension) &&
+                FileExtensionIcons.TryGetValue(extension.ToLowerInvariant(), out var iconPath))
+            {
+                return iconPath;
+            }
+            return "Icons2/default_icon.svg"; // fallback
+        }
+
+
+
         //NEEDS MIGRATING TO UI SERVICES || UI FUNCTIONALITY//
         #region UI Functionality
         private async void TreeViewItem_Expanded(object sender, RoutedEventArgs e)
@@ -1337,10 +1382,12 @@ namespace AssetManager.Desktop
 
                         TreeViewItem fileItem = new TreeViewItem
                         {
-                            Header = isFolderItem ? $"📁 {itemName}" : $"📄 {itemName}",
-                            Tag = (projectId, itemId, isFolderItem, is3DModel), // Include is3DModel if needed
+                            //Header = isFolderItem ? CreateHeader("Icons2/folder_icon.svg", itemName, 28, 28) : CreateHeader(GetIconForExtension(Path.GetExtension(itemName)), itemName, 28, 28),
+                            Header = CreateHeader(GetIconForExtension(Path.GetExtension(itemName)), itemName, 30, 30),
+                            Tag = (projectId, itemId, isFolderItem, is3DModel),
                             ContextMenu = CreateContextMenu(projectId, itemId, isFolderItem)
                         };
+
 
                         if (isFolderItem)
                         {
@@ -1352,6 +1399,38 @@ namespace AssetManager.Desktop
                 }
             }
         }
+
+        private static StackPanel CreateHeader(string iconPath, string displayName, double width, double height)
+        {
+            var stack = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                Margin = new Thickness(2)
+            };
+
+            var svgIcon = new SvgViewbox
+            {
+                Width = width,
+                Height = height,
+                Margin = new Thickness(0, 0, 8, 0),
+                Stretch = Stretch.Uniform,
+                Source = new Uri($"pack://application:,,,/{iconPath}", UriKind.Absolute)
+            };
+
+            var label = new TextBlock
+            {
+                Text = displayName,
+                FontSize = 14,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+
+            stack.Children.Add(svgIcon);
+            stack.Children.Add(label);
+            return stack;
+        }
+
+
+
 
 
         /*private void InitializeTreeView()

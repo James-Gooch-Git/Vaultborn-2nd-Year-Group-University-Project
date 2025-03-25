@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         xmlns:md="clr-namespace:MaterialDesignThemes.Wpf;assembly=MaterialDesignThemes.Wpf"
+        xmlns:svg="http://sharpvectors.codeplex.com/svgc"
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
 
 
@@ -289,12 +290,13 @@
         </Grid.RowDefinitions>
 
         <Grid.ColumnDefinitions>
-            <ColumnDefinition x:Name="ResizeSidebar" MinWidth="200" Width="Auto"/>
+            <ColumnDefinition x:Name="ResizeSidebar" MinWidth="220" Width="Auto"/>
             <!--<ColumnDefinition Width="5"/>-->
             <ColumnDefinition Width="*"/>
             <!--<ColumnDefinition Width="5"/>-->
             <ColumnDefinition x:Name="ModelDataSidebar" Width="0"/>
         </Grid.ColumnDefinitions>
+        
         <Border Grid.Row="0" Grid.ColumnSpan="4" BorderBrush="#797979" BorderThickness="0,0,0,1">
             <Border.Background>
                 <ImageBrush ImageSource="\Assets\ScaleBackground.png" Stretch="UniformToFill" />
@@ -440,6 +442,9 @@
                     <TreeView.ItemContainerStyle>
                         <Style TargetType="TreeViewItem">
                             <EventSetter Event="Expanded" Handler="TreeViewItem_Expanded"/>
+                            <Setter Property="FontSize" Value="16"/>
+                            <!--<Setter Property="FontWeight" Value="Bold"/>-->
+                            <Setter Property="Padding" Value="3"/>
                         </Style>
                     </TreeView.ItemContainerStyle>
                 </TreeView>
