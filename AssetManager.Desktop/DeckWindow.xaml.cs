@@ -209,13 +209,13 @@ namespace AssetManager.Desktop
         
         private void View3DButton_Click(object sender, RoutedEventArgs e)
         {
-            if (_selectedCard  == null || !_selectedCard .Contains("model_urn"))
+            if (_selectedCard  == null || !_selectedCard.Contains("model_id"))
             {
                 MessageBox.Show("3D model unavailable for this card.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
-            string modelUrn = _selectedCard ["model_urn"].ToString();
+            string modelUrn = _selectedCard ["model_id"].ToString();
 
             // Open the Forge Viewer Window with the model URN
             ForgeViewerWindow viewerWindow = new ForgeViewerWindow(modelUrn);
