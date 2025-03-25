@@ -190,6 +190,7 @@ namespace AssetManager.Desktop
                 LoadProjectsForHub(hubID);
                 await TestDataManagement();
                 await RefreshHubs();
+                await DisplayNotifications();
                 await AddNotifsToCentre();
                 //FusionManager.InitializePythonEngine();
                 //InitialiseFolders();
@@ -6621,6 +6622,16 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 var filter = Builders<Notifications>.Filter.Eq(x => x.Id, notif.Id);
                 var update = Builders<Notifications>.Update.Set("Pending", 0);
                 await database.Notifications.UpdateOneAsync(filter, update);
+            }
+        }
+
+        private async Task DisplayNotifications()
+        {
+            MongoConnection database = new MongoConnection();
+            var result = await database.Notifications.Find(x => x.UserId == _userId && x.Pending == 0).ToListAsync();
+            if (result != null)
+            {
+                NotificationsListBox.ItemsSource = result;
             }
         }
         

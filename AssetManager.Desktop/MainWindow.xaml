@@ -352,7 +352,9 @@
                                     </ListBox.ItemTemplate>
                                 </ListBox>
                                 
-                                <Button Grid.Row="2" Content="Clear All" Width="80" Height="20"/>
+                                <Border Grid.Row="2" BorderBrush="#98730C" BorderThickness="3" CornerRadius="2" Width="80" Height="25" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <Button Content="Clear All" Width="80" Height="25" BorderBrush="#98730C" BorderThickness="2" Background="#540754" Foreground="#d1d5db" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
                             </Grid>
                         </Border>
                     </Popup>
