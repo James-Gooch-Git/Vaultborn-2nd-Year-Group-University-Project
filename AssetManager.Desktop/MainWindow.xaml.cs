@@ -197,7 +197,6 @@ namespace AssetManager.Desktop
                 Username_TextBlock.Text = await GetUserName(_userId);
                 UserPic_Image.Source = new BitmapImage(new Uri(await GetUserPic(_userId)));
                 //DisplayGridModels();
-               
             }
             catch (Exception ex)
             {
