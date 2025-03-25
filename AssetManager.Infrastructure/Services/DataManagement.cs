@@ -622,63 +622,12 @@ namespace AssetManager.Infrastructure.Services
                 return null;
             }
 
-            // ✅ Step 1: Fetch the latest version URN
-            string versionsUrl = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/items/{itemId}/versions";
             try
             {
-                using (HttpClient client = new HttpClient())
-                {
-                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-                    HttpResponseMessage response = await client.GetAsync(versionsUrl);
+                return await FetchThumbnailUrl(encodedUrn, accessToken, projectId, itemId);
 
-                    if (!response.IsSuccessStatusCode)
-                    {
-                        Console.WriteLine($"❌ Error fetching item versions: {response.StatusCode} - {response.ReasonPhrase}");
-                        return null;
-                    }
-
-                    string jsonResponse = await response.Content.ReadAsStringAsync();
-                    //Console.WriteLine($"JSON Response: {jsonResponse}");
-
-                    using JsonDocument doc = JsonDocument.Parse(jsonResponse);
-                    JsonElement root = doc.RootElement;
-
-                    if (root.TryGetProperty("data", out JsonElement data))
-                    {
-                        var latestVersion = data.EnumerateArray()
-                                                .OrderByDescending(version => version.GetProperty("attributes").GetProperty("createTime").GetString())
-                                                .FirstOrDefault();
-
-                        if (latestVersion.ValueKind == JsonValueKind.Undefined)
-                        {
-                            Console.WriteLine("❌ No versions found for this item.");
-                            return null;
-                        }
-
-                        // ✅ Extract the correct URN (Base64 encoding is required)
-                        if (latestVersion.TryGetProperty("relationships", out JsonElement relationships) &&
-                            relationships.TryGetProperty("derivatives", out JsonElement derivatives) &&
-                            derivatives.TryGetProperty("data", out JsonElement derivativeData) &&
-                            derivativeData.TryGetProperty("id", out JsonElement urnElement))
-                        {
-                            string rawUrn = urnElement.GetString();
-                            //string encodedUrn = EncodeObjectIdToUrn(rawUrn);
-
-                            Console.WriteLine($"✅ Encoded URN: {encodedUrn}");
-
-                            return await FetchThumbnailUrl(encodedUrn, accessToken, projectId, itemId);
-                        }
-                        else
-                        {
-                            Console.WriteLine("❌ URN not found in response.");
-                        }
-                    }
-                    else
-                    {
-                        Console.WriteLine("❌ No 'data' property found in the response.");
-                    }
-                }
             }
+
             catch (Exception ex)
             {
                 Console.WriteLine($"❌ Exception occurred: {ex.Message}");
@@ -696,65 +645,10 @@ namespace AssetManager.Infrastructure.Services
                 return null;
             }
 
-            // ✅ Step 1: Fetch version metadata for the specified versionId
-            string versionUrl = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/items/{itemId}/versions/{versionId}";
-            Console.WriteLine($"Fetching version metadata for Version ID: {versionId}");
-
             try
             {
-                using (HttpClient client = new HttpClient())
-                {
-                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-                    HttpResponseMessage response = await client.GetAsync(versionUrl);
+                return await FetchThumbnailUrl(encodedUrn, accessToken, projectId, itemId, versionId);
 
-                    Console.WriteLine($"Version metadata fetch status: {response.StatusCode} - {response.ReasonPhrase}");
-
-                    if (!response.IsSuccessStatusCode)
-                    {
-                        Console.WriteLine($"❌ Error fetching version metadata: {response.StatusCode} - {response.ReasonPhrase}");
-                        return null;
-                    }
-
-                    string jsonResponse = await response.Content.ReadAsStringAsync();
-                    Console.WriteLine($"Version metadata response: {jsonResponse}");
-
-                    using JsonDocument doc = JsonDocument.Parse(jsonResponse);
-                    JsonElement root = doc.RootElement;
-
-                    if (root.TryGetProperty("data", out JsonElement data))
-                    {
-                        var version = data;
-                        string responseVersionId = version.GetProperty("id").GetString();  // Get the ID from the response
-                        Console.WriteLine($"Response version ID: {responseVersionId}"); // Printing the response version ID
-
-                        // Check if the version ID matches
-                        if (responseVersionId != versionId)
-                        {
-                            Console.WriteLine($"❌ Version ID mismatch: Expected {versionId}, but got {responseVersionId}. Cannot fetch thumbnail.");
-                            return null;
-                        }
-
-                        // If the IDs match, continue processing
-                        if (version.TryGetProperty("relationships", out JsonElement relationships) &&
-                            relationships.TryGetProperty("derivatives", out JsonElement derivatives) &&
-                            derivatives.TryGetProperty("data", out JsonElement derivativeData) &&
-                            derivativeData.TryGetProperty("id", out JsonElement urnElement))
-                        {
-                            string rawUrn = urnElement.GetString();
-                            Console.WriteLine($"✅ Found URN: {rawUrn}");
-
-                            return await FetchThumbnailUrl(encodedUrn, accessToken, projectId, itemId, versionId);
-                        }
-                        else
-                        {
-                            Console.WriteLine("❌ URN not found in response.");
-                        }
-                    }
-                    else
-                    {
-                        Console.WriteLine("❌ No 'data' property found in the response.");
-                    }
-                }
             }
             catch (Exception ex)
             {
