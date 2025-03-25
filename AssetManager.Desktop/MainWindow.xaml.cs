@@ -38,6 +38,8 @@ using Microsoft.WindowsAPICodePack.Taskbar;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media.Media3D;
 using System.Runtime.Serialization;
+using System.Windows.Forms.VisualStyles;
+using VerticalAlignment = System.Windows.VerticalAlignment;
 
 namespace AssetManager.Desktop
 {
@@ -58,7 +60,7 @@ namespace AssetManager.Desktop
         private readonly ModelUpload _uploadService;
         private readonly FileDownloadService _filedwnService;
         private List<Dictionary<string, string>> Models;
-        private string _userId = Environment.GetEnvironmentVariable("userId", EnvironmentVariableTarget.User);
+        private static string _userId = Environment.GetEnvironmentVariable("userId", EnvironmentVariableTarget.User);
         private static readonly HttpClient client = new HttpClient();
         private string selectedHubName = "Loading..."; // Default value before hubs load
         private bool isModelLoaded = false;
@@ -66,10 +68,14 @@ namespace AssetManager.Desktop
         private System.Timers.Timer _refreshTimer;
         private const int REFRESH_INTERVAL_MINUTES = 15;
         private bool _isRefreshing = false;
+        private bool showLatestVersions = true;
 
 
         private List<Dictionary<string, string>> originalResults;
         private readonly PayPalService _payPalService;
+        private string _buyItemId;
+        private string _buyProjectId;
+        private string _selectedVersionNum;
         //private List<Dictionary<string, string>> listedModels;
 
         private enum ViewType { Grid, List }
@@ -186,12 +192,13 @@ namespace AssetManager.Desktop
                 LoadProjectsForHub(hubID);
                 await TestDataManagement();
                 await RefreshHubs();
+                await DisplayNotifications();
+                await AddNotifsToCentre();
                 //FusionManager.InitializePythonEngine();
                 //InitialiseFolders();
                 Username_TextBlock.Text = await GetUserName(_userId);
                 UserPic_Image.Source = new BitmapImage(new Uri(await GetUserPic(_userId)));
                 //DisplayGridModels();
-               
             }
             catch (Exception ex)
             {
@@ -380,6 +387,17 @@ namespace AssetManager.Desktop
                 return "Unknown Project";
             }
             return userData.FolderId;
+        }
+        
+        private async Task<string> GetModelSeller(string modelId)
+        {
+            MongoConnection database = new MongoConnection();
+            var userData = await database.ListedModels.Find(x => x.ModelId == modelId).FirstOrDefaultAsync();
+            if (userData == null)
+            {
+                return "Unknown User";
+            }
+            return userData.SellerId;
         }
         #endregion
 
@@ -926,6 +944,7 @@ namespace AssetManager.Desktop
                                         { "LastModified", lastModified }
                                     });
                                     await GetModelData(modelId, projectId, projectName);
+                                    await InsertModelVersionDB(modelId, projectId);
                                 }
                             }
                         }
@@ -2191,6 +2210,7 @@ namespace AssetManager.Desktop
                                 // Handle version selection
                                 string versionId = (string)((MenuItem)s).Tag;
                                 LoadModelVersion(modelId, versionId);
+                                _selectedVersionNum = version["VersionNumber"];
                             };
 
                             versionsMenu.Items.Add(versionItem);
@@ -3650,7 +3670,7 @@ namespace AssetManager.Desktop
             fileDownloadService.DownloadModelAsync(_selectedProjectId, _selectedItemId);
         }
 
-     
+
 
 
         //Fusion using Hub 
@@ -3766,7 +3786,7 @@ namespace AssetManager.Desktop
             //ForgeViewerWindow forgeViewer = new ForgeViewerWindow(encodedUrn);
             // forgeViewer.Show();
             LoadForgeViewer(encodedUrn);
-            
+
         }
 
         private async void BtnViewInApp_Click(string selectedItemId)
@@ -3860,12 +3880,53 @@ namespace AssetManager.Desktop
             //ForgeViewerWindow forgeViewer = new ForgeViewerWindow(encodedUrn);
             // forgeViewer.Show();
             LoadForgeViewer(encodedUrn);
-            int numberOfVersions = await GetNumberOfVersions();
-            GenerateMarkers(numberOfVersions);
+            GenerateMarkers();
 
             Grid versionSlider = VersionSlider;
             versionSlider.Visibility = Visibility.Visible;
+            Button versionButton = VersionsSelectButton;
+            versionButton.Visibility = Visibility.Visible;
         }
+
+        //In app viewer for different versions
+        private async void BtnViewInApp_Click(string selectedItemId, string selectedVersionId)
+        {
+            string objectId = await new FileDownloadService().GetStorageIdFromVersion(_selectedProjectId, selectedVersionId);
+
+            _objectId = objectId; // Store it globally
+
+            // Encode Storage ID to URN
+            string encodedUrn = EncodeObjectIdToUrn(objectId);
+            if (string.IsNullOrEmpty(encodedUrn))
+            {
+                MessageBox.Show("Failed to process model identifier.", "Processing Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            // Check if the model translation is available
+            bool isModelReady = await ModelDerivativeService.IsModelDerivativeReady(encodedUrn);
+
+            // Check if the translation is completed
+            ModelDerivativeService modelService = new ModelDerivativeService(new HttpClient());
+            bool isTranslationCompleted = await modelService.IsTranslationCompletedAsync(encodedUrn, _accessToken);
+
+            if (!isTranslationCompleted)
+            {
+                MessageBox.Show("Model translation is still in progress or failed. Please try again later.", "Translation In Progress", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            // Load the model in the viewer
+            try
+            {
+                LoadForgeViewer(encodedUrn);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error loading the model viewer. Please check the logs for more details.", "Viewer Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
 
         private void Btn_CloseViewer_Click(object sender, RoutedEventArgs e)
         {
@@ -3887,7 +3948,7 @@ namespace AssetManager.Desktop
             _selectedItemId = null;
             //_selectedVersionId = null; // If you're tracking version ID
             _objectId = null; // If you're tracking storage ID
-           // _currentModelUrn = null;   // If you're tracking the URN
+                              // _currentModelUrn = null;   // If you're tracking the URN
 
             Console.WriteLine("🔄 Global variables reset after closing Forge Viewer");
 
@@ -3895,6 +3956,11 @@ namespace AssetManager.Desktop
 
             Grid versionSlider = VersionSlider;
             versionSlider.Visibility = Visibility.Collapsed;
+            Button versionButton = VersionsSelectButton;
+            versionButton.Visibility = Visibility.Collapsed;
+
+            slider.Value = 100;
+
         }
 
         //Trying the SKybox
@@ -4784,9 +4850,10 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             return numberOfVersions;
         }
 
-        private async void GenerateMarkers(int count)
+        private async Task GenerateMarkers()
         {
             var versions = await DataManagement.GetItemVersions(_selectedProjectId, _selectedItemId);
+            int count = versions.Count;
 
             Console.WriteLine($"Number of versions: {versions.Count}");
 
@@ -4795,15 +4862,20 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
             if (count < 1 || versions.Count == 0) return;
 
+            // Limit to the latest or first 10 versions based on the flag
+            int displayCount = Math.Min(10, versions.Count);
             List<double> tickValues = new List<double>();
 
+            // Determine the list of versions to show based on the flag
+            var versionsToDisplay = showLatestVersions ? versions.Take(displayCount).ToList() : versions.TakeLast(displayCount).ToList();
+
             // Handle the case when there's only one version
-            if (versions.Count == 1)
+            if (displayCount == 1)
             {
-                double markerValue = 50; // Center the marker when there's only one version
+                double markerValue = 100; // Center the marker when there's only one version
                 tickValues.Add(markerValue);
 
-                var version = versions[0]; // The only version available
+                var version = versionsToDisplay[0]; // The only version available
                 versionsMarkerData[(int)Math.Round(markerValue)] = (version.VersionNumber, version.VersionID);
 
                 Border marker = new Border
@@ -4830,14 +4902,13 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             }
             else
             {
-                // Loop to create the markers, starting from the rightmost (latest version)
-                for (int i = 0; i < count; i++)
+                // Loop to create markers for the selected versions
+                for (int i = 0; i < displayCount; i++)
                 {
-                    // Calculate marker position in reverse order (start from the rightmost side)
-                    double markerValue = (1 - (i / (double)(count - 1))) * 100;  // Invert position for right to left
+                    double markerValue = (1 - (i / (double)(displayCount - 1))) * 100;  // Invert position for right to left
                     tickValues.Add(markerValue);
 
-                    var version = versions[i];  // Access the versions in order (latest version first)
+                    var version = versionsToDisplay[i];  // Access the selected versions
 
                     versionsMarkerData[(int)Math.Round(markerValue)] = (version.VersionNumber, version.VersionID);
 
@@ -4886,9 +4957,9 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             sliderValue.Visibility = Visibility.Hidden;
 
             // Show the latest version number after markers are generated
-            if (versions.Any())
+            if (versionsToDisplay.Any())
             {
-                var latestVersion = versions.First();  // First version (newest)
+                var latestVersion = versionsToDisplay.First();  // First version in the selected list
                 sliderValue.Text = $"Version: {latestVersion.VersionNumber}";
                 sliderValue.Visibility = Visibility.Visible; // Make sure version number text is visible
             }
@@ -4896,31 +4967,75 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             Console.WriteLine("Markers generated.");
         }
 
+        private async void VersionSliderButton_Click(object sender, RoutedEventArgs e)
+        {
+            // Toggle the flag between showing the latest versions or the first versions
+            showLatestVersions = !showLatestVersions;
 
+            // Change the button text based on the current state
+            VersionsSelectButton.Content = showLatestVersions ? "Show First Versions" : "Show Latest Versions";
 
+            // Regenerate the markers based on the updated flag (either showing first or latest versions)
+            await GenerateMarkers(); // Ensure markers are fully updated before proceeding
+
+            // Set the slider value to the appropriate position after the markers are generated
+            slider.Value = showLatestVersions ? 100 : 0; // Show the latest if true, first if false
+
+            // Wait for the slider value to be updated before proceeding
+            await Task.Delay(100); // Small delay to ensure slider update is complete
+
+            // Manually call Slider_ValueChanged after changing the slider value
+            int roundedValue = (int)Math.Round(slider.Value); // Round normally
+
+            // Find the closest key in versionsMarkerData
+            int closestMarker = versionsMarkerData.Keys.OrderBy(k => Math.Abs(k - roundedValue)).FirstOrDefault();
+
+            if (versionsMarkerData.ContainsKey(closestMarker))
+            {
+                var markerData = versionsMarkerData[closestMarker];
+                OnMarkerReached(markerData); // Call OnMarkerReached to handle the version change
+            }
+
+            // After toggling to latest versions, load the model corresponding to the latest version
+            if (showLatestVersions)
+            {
+                // Ensure the latest version is fetched from the marker data
+                var latestVersion = versionsMarkerData.OrderByDescending(kvp => kvp.Key).FirstOrDefault().Value;
+
+                if (latestVersion != default)
+                {
+                    BtnViewInApp_Click(_selectedItemId, latestVersion.VersionID); // Load the latest version model
+                }
+            }
+        }
 
 
         private void Slider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            int roundedValue = (int)Math.Round(slider.Value / 5.0) * 5; // Snap to nearest marker step
+            int roundedValue = (int)Math.Round(slider.Value); // Round normally
 
-            if (versionsMarkerData.ContainsKey(roundedValue))
+            // Find the closest key in versionsMarkerData
+            int closestMarker = versionsMarkerData.Keys.OrderBy(k => Math.Abs(k - roundedValue)).FirstOrDefault();
+
+            if (versionsMarkerData.ContainsKey(closestMarker))
             {
-                // Retrieve version number and version ID when marker is reached
-                var markerData = versionsMarkerData[roundedValue];
-                OnMarkerReached(markerData); // Call function with marker data
+                var markerData = versionsMarkerData[closestMarker];
+                OnMarkerReached(markerData);
             }
         }
+
 
         private void OnMarkerReached((int VersionNumber, string VersionID) markerData)
         {
             // Display version number above the slider
             sliderValue.Text = $"Version: {markerData.VersionNumber}";
-
+            _selectedVersionNum = markerData.VersionNumber.ToString();
+            
             // Here you can do something with the VersionID (e.g., load the version or perform any action)
             Console.WriteLine($"You reached version {markerData.VersionNumber} with ID: {markerData.VersionID}");
-        }
 
+            BtnViewInApp_Click(_selectedItemId, markerData.VersionID);
+        }
 
 
 
@@ -4958,7 +5073,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             try
             {
                 Console.WriteLine($"🔄 Starting background refresh at {DateTime.Now}");
-
+                
                 await Dispatcher.InvokeAsync(async () =>
                 {
                     try
@@ -4985,6 +5100,9 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                         {
                             await RefreshCurrentModel();
                         }
+
+                        await CheckModelVersions();
+                        await AddNotifsToCentre();
 
                         Console.WriteLine($"✅ Background refresh completed successfully at {DateTime.Now}");
                     }
@@ -5126,6 +5244,22 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             CleanupBackgroundRefresh();
+        }
+
+        private void Refresh_Click(object sender, MouseButtonEventArgs e)
+        {
+            if (_isRefreshing)
+            {
+                Console.WriteLine($"Refresh already in progress");
+                return;
+            }
+            
+            OnRefreshTimerElapsed(null, null);
+        }
+        
+        private async Task CheckModelVersions()
+        {
+            await GetAllModels();
         }
         #endregion
 
@@ -5544,7 +5678,37 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
             if (findModel == null)
             {
+                MessageBox.Show($"New model");
                 await database.ModelData.InsertOneAsync(modelData);
+                string message = $"New Model - {modelData.Name}";
+                await InsertNotifDB(modelData.Id, message, _userId);
+            }
+        }
+
+        private async Task InsertModelVersionDB(string modelId, string projectId)
+        {
+            _selectedProjectId = projectId;
+            MongoConnection database = new MongoConnection();
+            var versions = await GetModelVersions(modelId);
+            int verNum = int.Parse(versions[0]["VersionNumber"]);
+            Versions model = new Versions { Id = modelId, VersionNumber = verNum };
+            
+            var findModelVersion = await database.Versions.Find(x => x.Id == modelId).FirstOrDefaultAsync();
+            
+            if (findModelVersion == null)
+            {
+                await database.Versions.InsertOneAsync(model);
+                return;
+            }
+            if (findModelVersion.VersionNumber < verNum)
+            {
+                MessageBox.Show($"New model version {verNum}");
+                var filter = Builders<Versions>.Filter.Eq(x => x.Id, modelId);
+                var update = Builders<Versions>.Update.Set("VersionNumber", verNum);
+                await database.Versions.UpdateOneAsync(filter, update);
+                string modelName = await GetModelName(modelId);
+                string message = $"New version {verNum} on model - {modelName}";
+                await InsertNotifDB(modelId, message, _userId);
             }
         }
         
@@ -5559,45 +5723,27 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     MongoConnection database = new MongoConnection();
                     List<ModelData> result = await database.ModelData.Find(x => x.PublicPrivate == "Public" || x.HubId == hubID).ToListAsync();
             
-                    string[,] modelsArray = new string[result.Count, 9];
-                    int index = 0;
-                    foreach (ModelData modelData in result)
-                    {
-                        modelsArray[index, 0] = modelData.Id;
-                        modelsArray[index, 1] = modelData.Name;
-                        modelsArray[index, 2] = modelData.HubId;
-                        modelsArray[index, 3] = modelData.CreatedBy;
-                        modelsArray[index, 4] = modelData.CreatedDate;
-                        modelsArray[index, 5] = modelData.ModifiedDate;
-                        modelsArray[index, 6] = modelData.ModifiedBy;
-                        modelsArray[index, 7] = modelData.FileSize.ToString();
-                        modelsArray[index, 8] = modelData.FolderId;
-                        index++;
-                    }
-            
                     var modelNames = result.Select(x => x.Name).ToList();
                     var topResults = FuzzySharp.Process.ExtractTop(SearchText_Box.Text, modelNames, limit: 3);
                 
                     foreach (var match in topResults)
                     {
-                        for (int i = 0; i < modelNames.Count; i++)
+                        var model = result[match.Index];
+                        Console.WriteLine($"{match.Value}: {model.Name}");
+                        if (model != null)
                         {
-                            Console.WriteLine($"{match.Value}: {modelsArray[i, 1]}");
-                            if (match.Value == modelsArray[i, 1])
+                            Console.WriteLine($"Found Match: {match.Value}");
+                            string name = await GetUserName(model.CreatedBy);
+                            //MessageBox.Show($"Result: {match.Value}, Score: {match.Score}");
+                            searchResults.Add(new Dictionary<string, string>
                             {
-                                Console.WriteLine($"Found Match: {match.Value}");
-                                string name = await GetUserName(modelsArray[i,3]);
-                                //MessageBox.Show($"Result: {match.Value}, Score: {match.Score}");
-                                searchResults.Add(new Dictionary<string, string>
-                                {
-                                    { "Name", modelsArray[i, 1] },
-                                    { "Project", name },
-                                    { "LastModified", match.Score.ToString() },
-                                    { "Id", modelsArray[i, 0] },
-                                    { "ProjectId" , modelsArray[i, 8]}
-                                });
-                                break;
-                            }
+                                { "Name", model.Name },
+                                { "Project", name },
+                                { "LastModified", model.ModifiedDate },
+                                { "Id", model.Id },
+                                { "ProjectId" , model.FolderId}
+                            });
+                            break;
                         }
                     }
                 }
@@ -5612,7 +5758,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         private void DisplaySearchResults(List<Dictionary<string, string>> searchResults)
         {
             ModelsDataGrid.Columns[1].Header = "Created By";
-            ModelsDataGrid.Columns[2].Header = "Score";
+            //ModelsDataGrid.Columns[2].Header = "Score";
             ModelsDataGrid.ItemsSource = searchResults;
             originalResults = searchResults;
             Models = searchResults;
@@ -5862,6 +6008,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 string latestVersion = $"Version {latestVersionNumber}";
                 ModelVersionText.Text = latestVersion;
                 ModelVersionText.Tag = latestVersionNumber;
+                _selectedVersionNum = latestVersionNumber;
 
                 // ✅ Update UI fields with the full metadata
                 //IdText.Text = modelMetadata.Id;
@@ -6414,8 +6561,19 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             {
                 string comment = CommentContent.Text;
 
-                if (!string.IsNullOrEmpty(comment) && !comment.StartsWith("Add a comment"))
+                if (!string.IsNullOrEmpty(comment))
                 {
+                    int verNum;
+                    if (_selectedVersionNum == null)
+                    {
+                        var versions = await GetModelVersions(_selectedItemId);
+                        verNum = int.Parse(versions[0]["VersionNumber"]);
+                    }
+                    else
+                    {
+                        verNum = int.Parse(_selectedVersionNum);
+                    }
+                    
                     MongoConnection database = new MongoConnection();
                     Comment commentContent = new Comment
                     {
@@ -6423,7 +6581,8 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                         AssetId = _selectedItemId,
                         UserId = Environment.GetEnvironmentVariable("userId", EnvironmentVariableTarget.User),
                         Content = comment,
-                        CreatedDateTime = DateTime.Now
+                        CreatedDateTime = DateTime.Now,
+                        VersionNumber = verNum
                     };
 
                     await database.Comments.InsertOneAsync(commentContent);
@@ -6446,7 +6605,8 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 foreach (Comment comment in comments)
                 {
                     string name = await GetUserName(comment.UserId);
-                    commentItems.Add(new CommentItem {User = name, Content = comment.Content, CreatedDateTime = comment.CreatedDateTime});
+                    string version = $"V{comment.VersionNumber}";
+                    commentItems.Add(new CommentItem {User = name, Content = comment.Content, CreatedDateTime = comment.CreatedDateTime, Version = version});
                 }
                 
                 CommentsAmount.Text = $"All Comments ({commentItems.Count})";
@@ -6481,7 +6641,8 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 if (commentItem.CommentId == comment.CommentId)
                 {
                     string name = await GetUserName(commentItem.UserId);
-                    ListComments.Items.Add(new CommentItem { User = name, Content = comment.Content, CreatedDateTime = comment.CreatedDateTime });
+                    string version = $"V{comment.VersionNumber}";
+                    ListComments.Items.Add(new CommentItem { User = name, Content = comment.Content, CreatedDateTime = comment.CreatedDateTime, Version = version });
                 }
             }
         }
@@ -6555,7 +6716,8 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             foreach (Comment comment in sortedComments)
             {
                 string name = await GetUserName(comment.UserId);
-                ListComments.Items.Add(new CommentItem { User = name, Content = comment.Content, CreatedDateTime = comment.CreatedDateTime });
+                string version = $"V{comment.VersionNumber}";
+                ListComments.Items.Add(new CommentItem { User = name, Content = comment.Content, CreatedDateTime = comment.CreatedDateTime, Version = version });
             }
         }
 
@@ -6601,14 +6763,24 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             public string User { get; set; }
             public string Content { get; set; }
             public DateTime CreatedDateTime { get; set; }
+            public string Version { get; set; }
         }
         
         //marketplace
-        private async void InitializeMarketplace()
+        private async Task InitializeMarketplace()
         {
-            MongoConnection database = new MongoConnection();
-            List<Dictionary<string, string>> allListedModels = await GetAllListedModels();
-            MarketplaceDataGrid.ItemsSource = allListedModels;
+            try
+            {
+                List<Dictionary<string, string>> allListedModels = await GetAllListedModels();
+                List<Dictionary<string, string>> namesAZ = allListedModels.OrderBy(x => x["Name"]).ToList();
+                MarketplaceDataGrid.ItemsSource = namesAZ;
+                DisplayMarketplaceGrid(namesAZ);
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show($"Error: {e.Message}");
+                throw;
+            }
         }
 
         private async Task<List<Dictionary<string, string>>> GetAllListedModels()
@@ -6618,6 +6790,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             var listedModels = await database.ListedModels.Find(FilterDefinition<ListedModels>.Empty).ToListAsync();
             foreach (var model in listedModels)
             {
+                bool purchased = await CheckModelPurchased(model.ModelId, _userId);
                 string projectId = await GetModelProjectId(model.ModelId);
                 string sellerName = await GetUserName(model.SellerId);
                 allListedModels.Add(new Dictionary<string, string>
@@ -6627,7 +6800,9 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     { "Seller", sellerName },
                     { "Id", model.ModelId },
                     { "Price", model.Price.ToString("0.00")},
-                    { "ProjectId", projectId}
+                    { "ProjectId", projectId},
+                    { "BuyVisibility", purchased ? "Collapsed" : "Visible" },
+                    { "PurchasedVisibility", purchased ? "Visible" : "Collapsed" }
                 });
             }
             return allListedModels;
@@ -6638,7 +6813,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             MarketplaceBorder.Visibility = Visibility.Visible;
             ProjectsBorder.Visibility = Visibility.Collapsed;
             LibraryBorder.Visibility = Visibility.Collapsed;
-            InitializeMarketplace();
+            await InitializeMarketplace();
         }
         
         private void BtnLibrary_Click(object sender, RoutedEventArgs e)
@@ -6648,15 +6823,9 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             LibraryBorder.Visibility = Visibility.Visible;
         }
         
-        private async void BtnListModel_Click(object sender, RoutedEventArgs e)
+        //list models
+        private void BtnListModel_Click(object sender, RoutedEventArgs e)
         {
-            MongoConnection database = new MongoConnection();
-            var findListing = await database.ListedModels.Find(x => x.ModelId == _selectedItemId).FirstOrDefaultAsync();
-            if (findListing != null)
-            {
-                MessageBox.Show($"Model already listed");
-                return;
-            }
             ListModelPopup.IsOpen = true;
         }
         
@@ -6723,19 +6892,15 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             
         }
 
-        private async void MarketplaceGrid_Click(object sender, MouseButtonEventArgs e)
+        private void MarketplaceGrid_Click(object sender, MouseButtonEventArgs e)
         {
             MarketplaceDataGrid.Visibility = Visibility.Collapsed;
             MarketplaceGridView.Visibility = Visibility.Visible;
             MarketplaceGridBorder.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
             MarketplaceListBorder.Background = Brushes.Transparent;
-            
-            var listedModels = await GetAllListedModels();
-            
-            DisplayMarketplaceGrid(listedModels);
         }
         
-        private async void MarketplaceList_Click(object sender, MouseButtonEventArgs e)
+        private void MarketplaceList_Click(object sender, MouseButtonEventArgs e)
         {
             MarketplaceGridView.Visibility = Visibility.Collapsed;
             MarketplaceDataGrid.Visibility = Visibility.Visible;
@@ -6851,7 +7016,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 
                 TextBlock price = new TextBlock
                 {
-                    Text = model["Price"],
+                    Text = $"{model["Price"]}",
                     FontSize = 16,
                     FontWeight = FontWeights.Normal,
                     Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B")),
@@ -6860,35 +7025,66 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     TextWrapping = TextWrapping.Wrap
                 };
 
-                Button buy = new Button
+                if (model["BuyVisibility"] == "Visible")
                 {
-                    Content = "Buy",
-                    Background = Brushes.Green,
-                    Foreground = Brushes.Azure,
-                    Width = 50,
-                    Height = 20,
-                    BorderBrush = Brushes.Green,
-                    BorderThickness = new Thickness(2),
-                };
+                    Button buy = new Button
+                    {
+                        Content = "Buy",
+                        Background = Brushes.Green,
+                        Foreground = Brushes.Azure,
+                        Width = 50,
+                        Height = 20,
+                        BorderBrush = Brushes.Green,
+                        BorderThickness = new Thickness(2),
+                        HorizontalAlignment = HorizontalAlignment.Center,
+                        VerticalAlignment = VerticalAlignment.Center,
+                    };
 
-                buy.Click += BtnBuy_Click;
+                    buy.Click += async (s, e) =>
+                    {
+                        if (modelSquare.Tag is Dictionary<string, string> models)
+                        {
+                            BuyPopup.IsOpen = true;
+                            await PayPal(models);
+                        }
+                    };
 
-                Border buyBorder = new Border
+                    Border buyBorder = new Border
+                    {
+                        BorderBrush = buy.BorderBrush,
+                        BorderThickness = new Thickness(2),
+                        CornerRadius = new CornerRadius(3),
+                        Width = 50,
+                        Height = 20
+                    };
+
+                    buyBorder.Child = buy;
+                    priceContent.Children.Add(buyBorder);
+                }
+                else if (model["PurchasedVisibility"] == "Visible")
                 {
-                    BorderBrush = buy.BorderBrush,
-                    BorderThickness = new Thickness(2),
-                    CornerRadius = new CornerRadius(3)
-                };
+                    TextBlock bought = new TextBlock
+                    {
+                        Text = "Purchased",
+                        FontSize = 16,
+                        FontWeight = FontWeights.Normal,
+                        Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B")),
+                        TextAlignment = TextAlignment.Center,
+                        HorizontalAlignment = HorizontalAlignment.Left,
+                        TextWrapping = TextWrapping.Wrap
+                    };
+                    
+                    priceContent.Children.Add(bought);
+                }
                 
-                buyBorder.Child = buy;
                 priceContent.Children.Add(price);
-                priceContent.Children.Add(buyBorder);
-
+                
                 modelSquare.Child = grid;
                 MarketplaceModelsContainer.Children.Add(modelSquare);
             }
         }
         
+        //sort 
         private void MarketplaceSort_Click(object sender, MouseButtonEventArgs e)
         {
             SortChevron.Kind = PackIconKind.ChevronUp;
@@ -6902,22 +7098,23 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             {
                 string option = item.Content.ToString();
                 SortByTextBlock.Text = $"Sort By {option}";
-                SortListedModels(option);
+                List<Dictionary<string, string>> models = MarketplaceDataGrid.ItemsSource.Cast<Dictionary<string, string>>().ToList();
+                await SortListedModels(option, models);
             }
         }
 
-        private async void SortListedModels(string option)
+        private async Task SortListedModels(string option, List<Dictionary<string, string>> models)
         {
-            var allListedModels = await GetAllListedModels();
             switch (option)
             {
-                case "Default":
-                    MarketplaceDataGrid.ItemsSource = allListedModels;
-                    DisplayMarketplaceGrid(allListedModels);
+                case "Names A-Z":
+                    List<Dictionary<string, string>> namesAZ = models.OrderBy(x => x["Name"]).ToList();
+                    MarketplaceDataGrid.ItemsSource = namesAZ;
+                    DisplayMarketplaceGrid(namesAZ);
                     break;
                 case "Upvotes":
                     List<Dictionary<string, string>> upvotes = new List<Dictionary<string, string>>();
-                    foreach (var item in allListedModels)
+                    foreach (var item in models)
                     {
                         int upvoteAmount = await GetModelUpvoteCount(item["Id"]);
                         item.Add("Upvotes", upvoteAmount.ToString());
@@ -6929,28 +7126,24 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     DisplayMarketplaceGrid(upvotes);
                     break;
                 case "Price Lowest":
-                    List<Dictionary<string, string>> lowestPrice = allListedModels.OrderBy(x => x["Price"]).ToList();
+                    List<Dictionary<string, string>> lowestPrice = models.OrderBy(x => x["Price"]).ToList();
                     MarketplaceDataGrid.ItemsSource = lowestPrice;
                     DisplayMarketplaceGrid(lowestPrice);
                     break;
                 case "Price Highest":
-                    List<Dictionary<string, string>> highestPrice = allListedModels.OrderByDescending(x => x["Price"]).ToList();
+                    List<Dictionary<string, string>> highestPrice = models.OrderByDescending(x => x["Price"]).ToList();
                     MarketplaceDataGrid.ItemsSource = highestPrice;
                     DisplayMarketplaceGrid(highestPrice);
                     break;
-                case "Name A-Z":
-                    List<Dictionary<string, string>> namesAZ = allListedModels.OrderBy(x => x["Name"]).ToList();
-                    MarketplaceDataGrid.ItemsSource = namesAZ;
-                    DisplayMarketplaceGrid(namesAZ);
-                    break;
                 case "Name Z-A":
-                    List<Dictionary<string, string>> namesZA = allListedModels.OrderByDescending(x => x["Name"]).ToList();
+                    List<Dictionary<string, string>> namesZA = models.OrderByDescending(x => x["Name"]).ToList();
                     MarketplaceDataGrid.ItemsSource = namesZA;
                     DisplayMarketplaceGrid(namesZA);
                     break;
             }
         }
         
+        //buy
         private async void BtnBuy_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -6958,21 +7151,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 BuyPopup.IsOpen = true;
                 if (MarketplaceDataGrid.SelectedItem is Dictionary<string, string> models)
                 {
-                    double price = double.Parse(models["Price"]);
-                    string aT = await _payPalService.GetPayPalAcessToken();
-                    string approvalUrl = await _payPalService.CreateOrder(aT, price);
-                    if (string.IsNullOrEmpty(approvalUrl))
-                    {
-                        MessageBox.Show($"❌ Payment Failed");
-                        BuyPopup.IsOpen = false;
-                    }
-                    else
-                    {
-                        webView.CoreWebView2.NavigationStarting -= Redirected;
-                        webView.CoreWebView2.NavigationStarting += Redirected;
-
-                        webView.CoreWebView2.Navigate(approvalUrl);
-                    }
+                    await PayPal(models);
                 }
             }
             catch (Exception exception)
@@ -6990,13 +7169,24 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 Console.WriteLine($"{uri}");
                 string token = HttpUtility.ParseQueryString(uri.Query).Get("token");
                 string payerId = HttpUtility.ParseQueryString(uri.Query).Get("PayerId");
-                string payPalAccessToken = await _payPalService.GetPayPalAcessToken();
+                string payPalAccessToken = await _payPalService.GetPayPalAccessToken();
                 bool approved = await _payPalService.CapturePayment(token, payPalAccessToken);
                 if (approved)
                 {
-                    MessageBox.Show($"\u2705 Payment Successful");
+                    MessageBox.Show($"\u2705 Payment Successful \n Model download");
                     webView.CoreWebView2.Navigate("about:blank");
                     BuyPopup.IsOpen = false;
+                    FileDownloadService fileDownloadService = new FileDownloadService();
+                    await fileDownloadService.DownloadModelAsync(_buyProjectId, _buyItemId);
+                    MongoConnection database  = new MongoConnection();
+                    Purchased purchased = new Purchased {ModelId = _buyItemId, UserId = _userId} ;
+                    await database.Purchased.InsertOneAsync(purchased);
+                    await InitializeMarketplace();
+                    string modelName = await GetModelName(_buyItemId);
+                    string sellerId = await GetModelSeller(_buyItemId);
+                    string message = $"New purchase on {modelName}";
+                    await InsertNotifDB(_buyItemId, message, sellerId);
+                    
                 }
                 else
                 {
@@ -7013,6 +7203,32 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 BuyPopup.IsOpen = false;
             }
         }
+
+        private async Task PayPal(Dictionary<string, string> models)
+        {
+            _buyItemId = models["Id"];
+            _buyProjectId = await GetModelProjectId(_buyItemId);
+
+            string amount = models["Price"].Replace("£", "");
+            Console.WriteLine($"Price: {amount}");
+            double price = double.Parse(amount);
+            string aT = await _payPalService.GetPayPalAccessToken();
+            //MessageBox.Show($"Access Token: {aT}");
+            string approvalUrl = await _payPalService.CreateOrder(aT, price);
+            //MessageBox.Show($"Approval Url: {approvalUrl}");
+            if (string.IsNullOrEmpty(approvalUrl))
+            {
+                MessageBox.Show($"❌ Payment Failed");
+                BuyPopup.IsOpen = false;
+            }
+            else
+            {
+                webView.CoreWebView2.NavigationStarting -= Redirected;
+                webView.CoreWebView2.NavigationStarting += Redirected;
+
+                webView.CoreWebView2.Navigate(approvalUrl);
+            }
+        }
         
         private void SortPopup_Closed(object? sender, EventArgs e)
         {
@@ -7024,6 +7240,152 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
         }
 
+        
+        //search
+        private async void MarketplaceSearch_OnKeyDown(object sender, KeyEventArgs e)
+        {
+            List<Dictionary<string, string>> searchResults = new List<Dictionary<string, string>>();
+            if (e.Key == Key.Enter)
+            {
+                MongoConnection database = new MongoConnection();
+                List<ListedModels> result = await database.ListedModels.Find(FilterDefinition<ListedModels>.Empty).ToListAsync();
+        
+                var modelNames = result.Select(x => x.Name).ToList();
+                var topResults = FuzzySharp.Process.ExtractTop(MarketplaceSearchTextBox.Text, modelNames, limit: 3);
+            
+                foreach (var match in topResults)
+                {
+                    var model = result[match.Index];
+                    Console.WriteLine($"{match.Value}: {model.Name}");
+                    if (model != null)
+                    {
+                        Console.WriteLine($"Found Match: {match.Value}");
+                        string sellerName = await GetUserName(model.SellerId);
+                        string projectId = await GetModelProjectId(model.ModelId);
+                        searchResults.Add(new Dictionary<string, string>
+                        {
+                            { "Name", model.Name },
+                            { "Description", model.Description },
+                            { "Seller", sellerName },
+                            { "Id", model.ModelId },
+                            { "Price" , $"£{model.Price.ToString("0.00")}"} ,
+                            { "ProjectId", projectId}
+                        });
+                    }
+                }
+            }
+            MarketplaceDataGrid.ItemsSource = searchResults;
+            DisplayMarketplaceGrid(searchResults);
+        }
+
+        private async void MarketplaceClearSearch_Click(object sender, MouseButtonEventArgs e)
+        {
+            MarketplaceSearchTextBox.Text = "";
+            await InitializeMarketplace();
+        }
+
+        private async Task<bool> CheckModelPurchased(string modelId, string userId)
+        {
+            MongoConnection database = new MongoConnection();
+            var result = await database.Purchased.Find(x => x.ModelId == modelId && x.UserId == userId).FirstOrDefaultAsync();
+            if (result == null)
+            {
+                return false;
+            }
+
+            return true;
+        }
+        
+        //notifs
+        private void Bell_Click(object sender, MouseButtonEventArgs e)
+        {
+            NotificationsPopup.IsOpen = true;
+        }
+
+        private static async Task InsertNotifDB(string modelId, string message, string userId)
+        {
+            MongoConnection database = new MongoConnection();
+            Notifications notif = new Notifications
+            {
+                Id = new ObjectId(),
+                ModelId = modelId,
+                UserId = userId,
+                Message = message,
+                Pending = 1
+            };
+            
+            await database.Notifications.InsertOneAsync(notif);
+        }
+
+        private async Task<List<Notifications>> GetPendingNotifications()
+        {
+            MongoConnection database = new MongoConnection();
+            var result = await database.Notifications.Find(x => x.UserId == _userId && x.Pending == 1).ToListAsync();
+            if (result == null)
+            {
+                return null;
+            }
+
+            return result;
+        }
+
+        private async Task AddNotifsToCentre()
+        {
+            MongoConnection database = new MongoConnection();
+            List<Notifications> notifs = await GetPendingNotifications();
+            foreach (var notif in notifs)
+            {
+                NotificationItem item = new NotificationItem{Id = notif.Id.ToString(), Message = notif.Message};
+                NotificationsListBox.Items.Add(item);
+                var filter = Builders<Notifications>.Filter.Eq(x => x.Id, notif.Id);
+                var update = Builders<Notifications>.Update.Set("Pending", 0);
+                await database.Notifications.UpdateOneAsync(filter, update);
+            }
+        }
+
+        private async Task DisplayNotifications()
+        {
+            MongoConnection database = new MongoConnection();
+            var result = await database.Notifications.Find(x => x.UserId == _userId && x.Pending == 0).ToListAsync();
+            
+            if (result != null)
+            {
+                foreach (var item in result)
+                {
+                    NotificationItem notif = new NotificationItem { Id = item.Id.ToString(), Message = item.Message};
+                    NotificationsListBox.Items.Add(notif);
+                }
+            }
+        }
+        
+        private async void ClearNotifications_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                for (int i = NotificationsListBox.Items.Count - 1; i >= 0; i--)
+                {
+                    if (NotificationsListBox.Items[i] is NotificationItem notif)
+                    {
+                        MongoConnection database = new MongoConnection();
+                        ObjectId id = ObjectId.Parse(notif.Id);
+                        var filter = Builders<Notifications>.Filter.Eq(x => x.Id, id);
+                        await database.Notifications.DeleteOneAsync(filter);
+                    }
+                    NotificationsListBox.Items.RemoveAt(i);
+                }
+            }
+            catch (Exception exception)
+            {
+                MessageBox.Show($"Error: {exception.Message}");
+            }
+        }
+
+        public class NotificationItem
+        {
+            public string Id { get; set; }
+            public string Message { get; set; }
+        }
+        
         //COMMENTED OUT FUNCTIONS//
 
         /* private void BtnGenerate3D_Click(object sender, RoutedEventArgs e)

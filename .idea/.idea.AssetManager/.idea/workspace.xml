@@ -8,21 +8,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="29dceaf0-6b38-45af-9473-223a6fd443eb" name="Changes" comment="mongo thumbnail">
-      <change afterPath="$PROJECT_DIR$/AssetManager.Desktop/AddCardWindow.xaml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/AssetManager.Desktop/AddCardWindow.xaml.cs" afterDir="false" />
+    <list default="true" id="29dceaf0-6b38-45af-9473-223a6fd443eb" name="Changes" comment="notifications displayed using a class">
       <change beforePath="$PROJECT_DIR$/.idea/.idea.AssetManager/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.AssetManager/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/AssetManager.Core/bin/Debug/net8.0/AssetManager.Core.dll" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Core/bin/Debug/net8.0/AssetManager.Core.dll" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/AssetManager.Core/bin/Debug/net8.0/AssetManager.Core.pdb" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Core/bin/Debug/net8.0/AssetManager.Core.pdb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/AssetManager.Desktop/App.xaml" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Desktop/App.xaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/AssetManager.Desktop/AssetManager.Desktop.csproj" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Desktop/AssetManager.Desktop.csproj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/AssetManager.Desktop/DeckWindow.xaml" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Desktop/DeckWindow.xaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/AssetManager.Desktop/DeckWindow.xaml.cs" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Desktop/DeckWindow.xaml.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/AssetManager.Desktop/LoginWindow.xaml" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Desktop/LoginWindow.xaml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml.cs" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/AssetManager.Infrastructure/DOC/CreateCard.cs" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Infrastructure/DOC/CreateCard.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/AssetManager.Infrastructure/Services/DataManagement.cs" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Infrastructure/Services/DataManagement.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/AssetManager.Infrastructure/bin/Debug/net8.0/win-x64/AssetManager.Core.dll" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Infrastructure/bin/Debug/net8.0/win-x64/AssetManager.Core.dll" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/AssetManager.Infrastructure/bin/Debug/net8.0/win-x64/AssetManager.Core.pdb" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Infrastructure/bin/Debug/net8.0/win-x64/AssetManager.Core.pdb" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/AssetManager.Infrastructure/bin/Debug/net8.0/win-x64/AssetManager.Infrastructure.dll" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Infrastructure/bin/Debug/net8.0/win-x64/AssetManager.Infrastructure.dll" afterDir="false" />
@@ -39,7 +30,7 @@
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="master" />
+        <entry key="$PROJECT_DIR$" value="Master-Raheel" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -53,90 +44,35 @@
   <component name="GithubPullRequestsUISettings">{
   &quot;selectedUrlAndAccountId&quot;: {
     &quot;url&quot;: &quot;https://github.com/TomGrout/AssetManager.git&quot;,
-    &quot;accountId&quot;: &quot;90714e12-1a5a-4016-8181-9850399436aa&quot;
+    &quot;accountId&quot;: &quot;036a5616-dfe1-428b-863c-88afa5389710&quot;
   }
 }</component>
   <component name="HighlightingSettingsPerFile">
-    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/13e79b2a7b78394ccf591d3454bff5bfb14e692da011a7e38b66c2312b365a/String.cs" root0="FORCE_HIGHLIGHTING" />
-    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/4c2266d9aba4c4ba36aec62278534ed6bbd881431c65810dd69b8d57bbf/Path.Windows.cs" root0="FORCE_HIGHLIGHTING" />
-    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/669142762fe6d3cf7d37f077c5a6cd58ee415a166197c9fb454faf1921fc6/String.Comparison.cs" root0="FORCE_HIGHLIGHTING" />
-    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/7583d92e3813ae5ce9d62ae68c56be741f222a37ffeaa4eed2b41cfc822a4/PathInternal.Windows.cs" root0="FORCE_HIGHLIGHTING" />
-    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/783d1dc48cd9dda2ce32a4b7f3b54c565cfc7914ab1dc5af92d95ec8f166353b/MemoryExtensions.cs" root0="FORCE_HIGHLIGHTING" />
-    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/7fcc41fe48c43f71d1476329de953fce8565fcc5dbf3c8c6fdb81c216b19c4/ArgumentNullException.cs" root0="FORCE_HIGHLIGHTING" />
-    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/ce7854bb4da5f3387d19aeb7a46d9b3e214173bc14d69641477687ea285423b/Directory.cs" root0="FORCE_HIGHLIGHTING" />
-    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/d791c3eb25297f33ebfc088aa821fe66a8a3a295b63fbd1a1d8f4b2e77e1017/ReadOnlySpan.cs" root0="FORCE_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/App.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/App.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/App.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/App.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/App.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/App.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/App.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/App.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/App.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/App.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/App.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/App.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/App.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/App.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/App.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/App.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/App.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/App.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/DeckWindow.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/DeckWindow.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/DeckWindow.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/DeckWindow.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/DeckWindow.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/DeckWindow.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/DeckWindow.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/DeckWindow.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/DeckWindow.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/DeckWindow.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/DeckWindow.xaml.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/DeckWindow.xaml.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/DeckWindow.xaml.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/DeckWindow.xaml.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/DeckWindow.xaml.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/DeckWindow.xaml.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/DeckWindow.xaml.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/DeckWindow.xaml.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/DeckWindow.xaml.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/DeckWindow.xaml.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/149dcb63c21975bc7a59944663b7c37d2c21a2c5b7527d41702e5774ce7c42c3/CulturePreservingExecutionContext.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/2a8a2211ff7b6ce5ab05b41d416904ec475a643fb8cbb2261f85a750b13217/Console.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/338efc8c78ffd1de56cecc4647ebd34d18f958c8a0963d89a12b9ea90a4ae/ExceptionWrapper.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/3965636461bfb8d650893177bcc539addb11a176a9acc0a7f56c09b0b4e0ae/DispatcherOperation.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/9ac32f819d6853e0a6eda168c52b7f38eef9ae75936fb85d96a15c39d115245/Dispatcher.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/9eb2571cf3bf8373c7c77afa4565d1f2a48d9242018dd6f89aa7fd07572e2d0/Volatile.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/9eda537f15ea23cdfae523c19e87eb303a3ded88937ae7e55919387a43f70/ExecutionContext.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/d05f70559122dfb21712dbedbe71a96d317ca8fd3867172ec7112d1e89f7adb/HwndSubclass.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/e4c59ecf2285bd73c67c23a96494bd21f2a54125734533573bc197eebaf7ac6/HwndWrapper.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/fb367341658aaedd7de424d4c9189db33c4387e268dcc4011918569442ab12/AsyncTaskMethodBuilderT.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/AssetManager.Desktop/LoginWindow.xaml.cs" root0="FORCE_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/MainWindow.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/MainWindow.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/MainWindow.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/MainWindow.xaml" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml" root0="FORCE_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/MainWindow.xaml.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/MainWindow.xaml.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/MainWindow.xaml.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/tyler/OneDrive/Desktop/AssetManager/AssetManager.Desktop/MainWindow.xaml" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/tyler/OneDrive/Desktop/AssetManager/AssetManager.Desktop/MainWindow.xaml" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/tyler/OneDrive/Desktop/AssetManager/AssetManager.Desktop/MainWindow.xaml" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/tyler/OneDrive/Desktop/AssetManager/AssetManager.Desktop/MainWindow.xaml.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml.cs" root0="FORCE_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/MainWindow.xaml.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/tyler/OneDrive/Desktop/AssetManager/AssetManager.Desktop/MainWindow.xaml.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/tyler/OneDrive/Desktop/AssetManager/AssetManager.Desktop/MainWindow.xaml.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/tyler/OneDrive/Desktop/AssetManager/AssetManager.Desktop/MainWindow.xaml.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/AssetManager.Desktop/OpenFusion.cs" root0="FORCE_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/Resources/FantasyCardTemplates.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/Resources/FantasyCardTemplates.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/Resources/FantasyCardTemplates.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/Resources/FantasyCardTemplates.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/Resources/FantasyCardTemplates.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/Resources/FantasyCardTemplates.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/Resources/FantasyCardTemplates.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/Resources/FantasyCardTemplates.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/Resources/FantasyCardTemplates.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/Resources/FantasyCardTemplates.xaml" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/AssetManager.Desktop/obj/Debug/net8.0-windows/win-x64/App.g.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Infrastructure/DOC/CreateCard.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Infrastructure/DOC/CreateCard.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Infrastructure/DOC/CreateCard.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Infrastructure/DOC/CreateDeck.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Infrastructure/DOC/CreateDeck.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Infrastructure/DOC/CreateDeck.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Infrastructure/DOC/FetchDecks.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Infrastructure/DOC/FetchDecks.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Infrastructure/DOC/FetchDecks.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Infrastructure/DOC/ImageProcessor.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Infrastructure/DOC/ImageProcessor.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/AssetManager.Desktop/obj/Debug/net8.0-windows/win-x64/MainWindow.g.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/tyler/OneDrive/Desktop/AssetManager/AssetManager.Infrastructure/Data/MongoConnection.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/tyler/OneDrive/Desktop/AssetManager/AssetManager.Infrastructure/Data/MongoConnection.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/AssetManager.Infrastructure/Services/DataManagement.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/AssetManager.Infrastructure/Services/DeleteModel.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/AssetManager.Infrastructure/Services/ModelUpload.cs" root0="FORCE_HIGHLIGHTING" />
@@ -159,22 +95,22 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    ".NET Project.AssetManager.Desktop.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "Merging master",
-    "ignore.virus.scanning.warn.message": "true",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;.NET Project.AssetManager.Desktop.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;version-comments&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RunManager">
     <configuration name="AssetManager.Desktop" type="DotNetProject" factoryName=".NET Project">
       <option name="EXE_PATH" value="" />
@@ -216,7 +152,9 @@
       <workItem from="1742393210455" duration="71000" />
       <workItem from="1742393296184" duration="13729000" />
       <workItem from="1742471596910" duration="861000" />
-      <workItem from="1742807448644" duration="3881000" />
+      <workItem from="1742566843495" duration="3416000" />
+      <workItem from="1742654880113" duration="6022000" />
+      <workItem from="1742893788671" duration="530000" />
     </task>
     <task id="LOCAL-00001" summary="save main">
       <option name="closed" value="true" />
@@ -314,23 +252,103 @@
       <option name="project" value="LOCAL" />
       <updated>1742492940742</updated>
     </task>
-    <task id="LOCAL-00013" summary="merge DOC progress">
+    <task id="LOCAL-00013" summary="model downloaded on purchase and add £ symbol to price and improved sorting listed models">
       <option name="closed" value="true" />
-      <created>1742569699248</created>
+      <created>1742568117718</created>
       <option name="number" value="00013" />
       <option name="presentableId" value="LOCAL-00013" />
       <option name="project" value="LOCAL" />
-      <updated>1742569699248</updated>
+      <updated>1742568117718</updated>
     </task>
-    <task id="LOCAL-00014" summary="mongo thumbnail">
+    <task id="LOCAL-00014" summary="fixed marketplace grid view buying and fixed button display for marketplace grid view">
       <option name="closed" value="true" />
-      <created>1742811305155</created>
+      <created>1742570142264</created>
       <option name="number" value="00014" />
       <option name="presentableId" value="LOCAL-00014" />
       <option name="project" value="LOCAL" />
-      <updated>1742811305155</updated>
+      <updated>1742570142264</updated>
     </task>
-    <option name="localTasksCounter" value="15" />
+    <task id="LOCAL-00015" summary="added search for marketplace and made sort work for search results in marketplace">
+      <option name="closed" value="true" />
+      <created>1742657180800</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1742657180800</updated>
+    </task>
+    <task id="LOCAL-00016" summary="improved search in asset library">
+      <option name="closed" value="true" />
+      <created>1742657627539</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1742657627541</updated>
+    </task>
+    <task id="LOCAL-00017" summary="fixed error with £ symbol in price stopping paypal from working">
+      <option name="closed" value="true" />
+      <created>1742659646250</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1742659646250</updated>
+    </task>
+    <task id="LOCAL-00018" summary="started version number in comments">
+      <option name="closed" value="true" />
+      <created>1742832449704</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1742832449704</updated>
+    </task>
+    <task id="LOCAL-00019" summary="model version comment was made on displayed">
+      <option name="closed" value="true" />
+      <created>1742837044563</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1742837044563</updated>
+    </task>
+    <task id="LOCAL-00020" summary="notifs displayed when refresh clicked">
+      <option name="closed" value="true" />
+      <created>1742905031355</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1742905031355</updated>
+    </task>
+    <task id="LOCAL-00021" summary="a">
+      <option name="closed" value="true" />
+      <created>1742907655246</created>
+      <option name="number" value="00021" />
+      <option name="presentableId" value="LOCAL-00021" />
+      <option name="project" value="LOCAL" />
+      <updated>1742907655246</updated>
+    </task>
+    <task id="LOCAL-00022" summary="notif for model purchase works">
+      <option name="closed" value="true" />
+      <created>1742910777861</created>
+      <option name="number" value="00022" />
+      <option name="presentableId" value="LOCAL-00022" />
+      <option name="project" value="LOCAL" />
+      <updated>1742910777861</updated>
+    </task>
+    <task id="LOCAL-00023" summary="styled notifications centre">
+      <option name="closed" value="true" />
+      <created>1742914169762</created>
+      <option name="number" value="00023" />
+      <option name="presentableId" value="LOCAL-00023" />
+      <option name="project" value="LOCAL" />
+      <updated>1742914169762</updated>
+    </task>
+    <task id="LOCAL-00024" summary="notifications displayed using a class">
+      <option name="closed" value="true" />
+      <created>1742916069400</created>
+      <option name="number" value="00024" />
+      <option name="presentableId" value="LOCAL-00024" />
+      <option name="project" value="LOCAL" />
+      <updated>1742916069400</updated>
+    </task>
+    <option name="localTasksCounter" value="25" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -373,8 +391,18 @@
     <MESSAGE value="added popup that lets you select sort option" />
     <MESSAGE value="paypal sandbox buying works!!!" />
     <MESSAGE value="sort listed models works for list view" />
-    <MESSAGE value="merge DOC progress" />
-    <MESSAGE value="mongo thumbnail" />
-    <option name="LAST_COMMIT_MESSAGE" value="mongo thumbnail" />
+    <MESSAGE value="model downloaded on purchase and add £ symbol to price and improved sorting listed models" />
+    <MESSAGE value="fixed marketplace grid view buying and fixed button display for marketplace grid view" />
+    <MESSAGE value="added search for marketplace and made sort work for search results in marketplace" />
+    <MESSAGE value="improved search in asset library" />
+    <MESSAGE value="fixed error with £ symbol in price stopping paypal from working" />
+    <MESSAGE value="started version number in comments" />
+    <MESSAGE value="model version comment was made on displayed" />
+    <MESSAGE value="notifs displayed when refresh clicked" />
+    <MESSAGE value="a" />
+    <MESSAGE value="notif for model purchase works" />
+    <MESSAGE value="styled notifications centre" />
+    <MESSAGE value="notifications displayed using a class" />
+    <option name="LAST_COMMIT_MESSAGE" value="notifications displayed using a class" />
   </component>
 </project>

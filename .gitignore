@@ -1,8 +1,14 @@
 **/bin/
 **/obj/
+<<<<<<< HEAD
 *.dll
 *.pdb
 *.exe
+=======
+**.dll
+**.pdb
+**.exe
+>>>>>>> version-comments
 /packages/
 riderModule.iml
 /_ReSharper.Caches/
