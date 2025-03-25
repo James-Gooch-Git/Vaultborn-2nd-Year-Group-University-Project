@@ -465,7 +465,7 @@
 
                     <Button x:Name="BtnUploadFile"
         Template="{StaticResource FirstButtonTemplate}"
-        Click="BtnMarketplace_Click"
+        Click=" BtnUploadFile_Click"
         Width="220" Height="80"
         FontFamily="Georgia"
         FontSize="19"
