@@ -1,7 +1,8 @@
-bin/
-obj/
+**/bin/
+**/obj/
 *.dll
 *.pdb
+*.exe
 /packages/
 riderModule.iml
 /_ReSharper.Caches/
