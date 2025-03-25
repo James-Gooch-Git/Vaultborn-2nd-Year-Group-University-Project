@@ -6641,6 +6641,28 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 }
             }
         }
+        
+        private async void ClearNotifications_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                for (int i = NotificationsListBox.Items.Count - 1; i >= 0; i--)
+                {
+                    if (NotificationsListBox.Items[i] is NotificationItem notif)
+                    {
+                        MongoConnection database = new MongoConnection();
+                        ObjectId id = ObjectId.Parse(notif.Id);
+                        var filter = Builders<Notifications>.Filter.Eq(x => x.Id, id);
+                        await database.Notifications.DeleteOneAsync(filter);
+                    }
+                    NotificationsListBox.Items.RemoveAt(i);
+                }
+            }
+            catch (Exception exception)
+            {
+                MessageBox.Show($"Error: {exception.Message}");
+            }
+        }
 
         public class NotificationItem
         {
