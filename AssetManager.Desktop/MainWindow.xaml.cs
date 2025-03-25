@@ -870,7 +870,7 @@ namespace AssetManager.Desktop
 
 
 
-        public async Task ShowThumbnail(string projectId, string itemId, Image targetImage)
+        public async Task ShowThumbnail(string projectId, string itemId, Image targetImage, string versionId = null)
         {
             try
             {
@@ -880,7 +880,7 @@ namespace AssetManager.Desktop
                     client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
                     FileDownloadService _fileService = new FileDownloadService();
-                    string objectId = await _fileService.GetStorageIdFromItem(projectId, itemId);
+                    string objectId = await _fileService.GetStorageIdFromItem(projectId, itemId, versionId);
                     if (string.IsNullOrEmpty(objectId))
                     {
                         Console.WriteLine("❌ Could not retrieve object ID.");
@@ -930,12 +930,14 @@ namespace AssetManager.Desktop
                                     return;
                                 }
                             }
-
                         }
                     }
 
                     // ✅ Fetch the thumbnail **AFTER** translation is ready
-                    string thumbnailUrl = await DataManagement.GetLatestItemThumbnail(projectId, itemId, encodedUrn);
+                    string thumbnailUrl = string.IsNullOrEmpty(versionId)
+                        ? await DataManagement.GetLatestItemThumbnail(projectId, itemId, encodedUrn) // Fetch thumbnail of the latest version
+                        : await DataManagement.GetVersionThumbnail(projectId, itemId, encodedUrn, versionId); // Fetch thumbnail of a specific version
+
                     if (string.IsNullOrEmpty(thumbnailUrl))
                     {
                         Console.WriteLine("❌ Thumbnail URL is null or empty.");
@@ -992,6 +994,7 @@ namespace AssetManager.Desktop
                 Console.WriteLine($"❌ Unexpected error: {ex.Message}");
             }
         }
+
 
         public static string EncodeObjectIdToUrn(string objectId)
         {
@@ -4409,7 +4412,14 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 // Refresh model thumbnail
                 await Dispatcher.InvokeAsync(() =>
                 {
-                    DisplayModelThumb();
+                    if (versionId == null)
+                    {
+                        DisplayModelThumb();
+                    }
+                    else
+                    {
+                        DisplayModelThumb(versionId);
+                    }
                 });
             }
             catch (Exception ex)
@@ -5097,10 +5107,17 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 ListModelButtonBorder.Visibility = Visibility.Collapsed;
             }
 
-            DisplayModelThumb();
+            if (versionId == null)
+            {
+                DisplayModelThumb();
+            }
+            else
+            {
+                DisplayModelThumb(versionId);
+            }
 
-            // Load metadata with the provided versionId (if any)
-            await LoadMetadata(versionId);
+                // Load metadata with the provided versionId (if any)
+                await LoadMetadata(versionId);
 
             await DisplayTags();
         }
@@ -5110,11 +5127,11 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         {
             if (versionId == null)
             {
-                Console.WriteLine("VERSION ID IS NULL - Fetching latest version metadata...");
+                Console.WriteLine("VERSION ID IS NULL");
             }
             else
             {
-                Console.WriteLine($"        model versionId: {versionId}");
+                Console.WriteLine($"        model versionId {versionId}");
             }
 
             if (_selectedModel == null)
@@ -5125,54 +5142,106 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
             ModelData modelMetadata = null;
 
-            try
+            // If no versionId is provided, fetch the latest version using GetItemVersions
+            if (versionId == null)
             {
-                // Fetch all versions for the selected model with extended metadata
-                var versionsList = await DataManagement.GetItemVersionsWithExtraMetadata(_selectedModel["ProjectId"], _selectedModel["Id"]);
-
-                if (versionsList != null)
+                try
                 {
-                    // Log the number of items and inspect the content
-                    Console.WriteLine($"Versions found: {versionsList.Count()}");
-                    foreach (var version in versionsList)
-                    {
-                        Console.WriteLine($"Version ID: {version.VersionID}, Version Number: {version.VersionNumber}");
-                    }
+                    // Fetch all versions for the selected model using DataManagement.GetItemVersions (static method)
+                    var versionsList = await DataManagement.GetItemVersions(_selectedModel["ProjectId"], _selectedModel["Id"]);
 
-                    if (versionsList.Any())
+                    if (versionsList != null && versionsList.Any())
                     {
-                        var selectedVersion = versionId == null
-                            ? versionsList.OrderByDescending(v => v.VersionNumber).FirstOrDefault()  // Get latest version if versionId is null
-                            : versionsList.FirstOrDefault(v => v.VersionID == versionId);  // Get specific version if versionId is provided
+                        // Get the latest version (highest version number)
+                        var latestVersion = versionsList.OrderByDescending(v => v.VersionNumber).FirstOrDefault();
 
-                        if (selectedVersion.Equals(default))  // Check if default value (no match)
+                        if (latestVersion != default)
                         {
-                            Console.WriteLine("No matching version found.");
-                            MessageBox.Show("❌ Specified version not found.");
+                            // Fetch and map the version-specific metadata into ModelData
+                            modelMetadata = new ModelData
+                            {
+                                Version = latestVersion.VersionNumber.ToString(),
+                                Name = _selectedModel["Name"],  // You can update this if the name is fetched elsewhere
+                                CreatedBy = latestVersion.CreatedBy,
+                                CreatedDate = latestVersion.CreateTime,
+                                ModifiedDate = "Not available",  // This may not be available in GetItemVersions
+                                ModifiedBy = "Not available",   // This may not be available in GetItemVersions
+                                FileSize = 0, // You might need to adjust this field if you have the size info
+                                Foldername = "Not available",   // Update this if folder info is available
+                                Format = "Not available",       // Format may be unavailable here, but you can map it
+                                PolyCount = 0,  // Update this if poly count data is available
+                                Dimensions = "Not available"   // Update if dimension data is available
+                            };
+
+                            Console.WriteLine("                 Metadata fetched for latest version.");
                         }
                         else
                         {
-                            Console.WriteLine($"Selected Version: {selectedVersion.VersionID}");
-                            // Proceed with your logic
+                            MessageBox.Show("❌ Latest version not found.");
+                            return;
                         }
                     }
                     else
                     {
-                        Console.WriteLine("No versions found.");
                         MessageBox.Show("❌ No versions found for the selected model.");
+                        return;
                     }
                 }
-                else
+                catch (Exception ex)
                 {
-                    Console.WriteLine("versionsList is null.");
-                    MessageBox.Show("❌ Error fetching versions list.");
+                    MessageBox.Show($"❌ Error fetching latest version metadata: {ex.Message}");
+                    return;
                 }
-
             }
-            catch (Exception ex)
+            else // If versionId is provided, fetch metadata for that specific version
             {
-                MessageBox.Show($"❌ Error fetching version metadata: {ex.Message}");
-                return;
+                try
+                {
+                    // Fetch all versions for the selected model using DataManagement.GetItemVersions (static method)
+                    var versionsList = await DataManagement.GetItemVersions(_selectedModel["ProjectId"], _selectedModel["Id"]);
+
+                    if (versionsList != null && versionsList.Any())
+                    {
+                        // Find the version with the specified versionId
+                        var selectedVersion = versionsList.FirstOrDefault(v => v.VersionID == versionId);
+
+                        if (selectedVersion != default)
+                        {
+                            // Fetch and map the version-specific metadata into ModelData
+                            modelMetadata = new ModelData
+                            {
+                                Version = selectedVersion.VersionNumber.ToString(),
+                                Name = _selectedModel["Name"],  // Or fetch actual name if available
+                                CreatedBy = selectedVersion.CreatedBy,
+                                CreatedDate = selectedVersion.CreateTime,
+                                ModifiedDate = "Not available", // This may not be available in GetItemVersions
+                                ModifiedBy = "Not available",  // This may not be available in GetItemVersions
+                                FileSize = 0, // You might need to adjust this field if you have the size info
+                                Foldername = "Not available",  // Update if folder info is available
+                                Format = "Not available",      // Format may be unavailable here, but you can map it
+                                PolyCount = 0,                 // Update this if poly count data is available
+                                Dimensions = "Not available"  // Update if dimension data is available
+                            };
+
+                            Console.WriteLine("                 Metadata fetched for specified version.");
+                        }
+                        else
+                        {
+                            MessageBox.Show("❌ Specified version not found.");
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        MessageBox.Show("❌ No versions found for the selected model.");
+                        return;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"❌ Error fetching version metadata: {ex.Message}");
+                    return;
+                }
             }
 
             if (modelMetadata != null)
@@ -5207,6 +5276,27 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 MessageBox.Show("❌ Failed to load model metadata.");
             }
         }
+
+
+
+        // Example method to fetch file size for a version
+        private async Task<long> GetFileSizeForVersion(string projectId, string itemId, string versionId)
+        {
+            // Implement logic to fetch file size for the version
+            // This could involve making an API call to fetch storage details and retrieving the file size
+            // For example, fetching storage info or using the appropriate API endpoint to get file size.
+            return 12345678; // Replace with actual file size retrieval logic
+        }
+
+        // Example method to fetch project name based on projectId
+        private async Task<string> GetProjectName(string projectId)
+        {
+            // Implement logic to fetch project name by projectId
+            // You can use an API to retrieve project details
+            return "Sample Project Name"; // Replace with actual project fetching logic
+        }
+
+
 
 
 
@@ -5294,7 +5384,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             ListAllComments(_selectedModel["Id"]);
         }
 
-        private async void DisplayModelThumb()
+        private async void DisplayModelThumb(string versionId = null)
         {
             ModelNameText.Text = _selectedModel.ContainsKey("Name") ? _selectedModel["Name"] : "Unknown Model";
 
@@ -5308,7 +5398,17 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             ModelImage.Height = 120;
             ModelImage.HorizontalAlignment = HorizontalAlignment.Center;
 
-            _ = ShowThumbnail(_selectedModel["ProjectId"], _selectedModel["Id"], ModelImage);
+            if(versionId == null)
+            {
+                _ = ShowThumbnail(_selectedModel["ProjectId"], _selectedModel["Id"], ModelImage);
+
+            }
+            else
+            {
+                _ = ShowThumbnail(_selectedModel["ProjectId"], _selectedModel["Id"], ModelImage, versionId);
+
+            }
+
         }
 
         private StackPanel CreateModelThumbnailUI(Dictionary<string, string> model)

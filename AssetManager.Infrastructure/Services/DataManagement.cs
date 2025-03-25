@@ -687,7 +687,87 @@ namespace AssetManager.Infrastructure.Services
             return null;
         }
 
-        public static async Task<string> FetchThumbnailUrl(string encodedUrn, string accessToken, string projectId, string itemId)
+        public static async Task<string> GetVersionThumbnail(string projectId, string itemId, string encodedUrn, string versionId)
+        {
+            string accessToken = TokenManager.GetToken();
+            if (string.IsNullOrEmpty(accessToken))
+            {
+                Console.WriteLine("❌ No valid access token.");
+                return null;
+            }
+
+            // ✅ Step 1: Fetch version metadata for the specified versionId
+            string versionUrl = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/items/{itemId}/versions/{versionId}";
+            Console.WriteLine($"Fetching version metadata for Version ID: {versionId}");
+
+            try
+            {
+                using (HttpClient client = new HttpClient())
+                {
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+                    HttpResponseMessage response = await client.GetAsync(versionUrl);
+
+                    Console.WriteLine($"Version metadata fetch status: {response.StatusCode} - {response.ReasonPhrase}");
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        Console.WriteLine($"❌ Error fetching version metadata: {response.StatusCode} - {response.ReasonPhrase}");
+                        return null;
+                    }
+
+                    string jsonResponse = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"Version metadata response: {jsonResponse}");
+
+                    using JsonDocument doc = JsonDocument.Parse(jsonResponse);
+                    JsonElement root = doc.RootElement;
+
+                    if (root.TryGetProperty("data", out JsonElement data))
+                    {
+                        var version = data;
+                        string responseVersionId = version.GetProperty("id").GetString();  // Get the ID from the response
+                        Console.WriteLine($"Response version ID: {responseVersionId}"); // Printing the response version ID
+
+                        // Check if the version ID matches
+                        if (responseVersionId != versionId)
+                        {
+                            Console.WriteLine($"❌ Version ID mismatch: Expected {versionId}, but got {responseVersionId}. Cannot fetch thumbnail.");
+                            return null;
+                        }
+
+                        // If the IDs match, continue processing
+                        if (version.TryGetProperty("relationships", out JsonElement relationships) &&
+                            relationships.TryGetProperty("derivatives", out JsonElement derivatives) &&
+                            derivatives.TryGetProperty("data", out JsonElement derivativeData) &&
+                            derivativeData.TryGetProperty("id", out JsonElement urnElement))
+                        {
+                            string rawUrn = urnElement.GetString();
+                            Console.WriteLine($"✅ Found URN: {rawUrn}");
+
+                            return await FetchThumbnailUrl(encodedUrn, accessToken, projectId, itemId, versionId);
+                        }
+                        else
+                        {
+                            Console.WriteLine("❌ URN not found in response.");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("❌ No 'data' property found in the response.");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Exception occurred: {ex.Message}");
+            }
+
+            return null;
+        }
+
+
+
+
+        public static async Task<string> FetchThumbnailUrl(string encodedUrn, string accessToken, string projectId, string itemId, string versionId = null)
         {
             string thumbnailUrl = $"https://developer.api.autodesk.com/modelderivative/v2/designdata/{encodedUrn}/thumbnail";
 
@@ -702,10 +782,8 @@ namespace AssetManager.Infrastructure.Services
                     Console.WriteLine($"❌ Thumbnail not found or model not translated yet: {response.StatusCode}");
                     return null;
                 }
-
                 else
                 {
-
                     var mongo = new MongoConnection();
                     var _models = mongo.GetCollection("ModelData");
 
@@ -714,10 +792,13 @@ namespace AssetManager.Infrastructure.Services
                     // ✅ Convert the image to a Base64 string (for storage in MongoDB)
                     string base64Image = Convert.ToBase64String(imageData);
 
-                    // ✅ Update the existing model document using projectId & itemId
+                    // ✅ Use versionId if provided, otherwise fall back to itemId
+                    string filterId = string.IsNullOrEmpty(versionId) ? itemId : versionId;
+
+                    // ✅ Update the existing model document using projectId & filterId (either itemId or versionId)
                     var filter = Builders<BsonDocument>.Filter.And(
                         Builders<BsonDocument>.Filter.Eq("_folderid", projectId),
-                        Builders<BsonDocument>.Filter.Eq("_id", itemId)
+                        Builders<BsonDocument>.Filter.Eq("_id", filterId)
                     );
 
                     var update = Builders<BsonDocument>.Update.Set("thumbnail_url", base64Image);
@@ -727,12 +808,11 @@ namespace AssetManager.Infrastructure.Services
                         var result = await _models.UpdateOneAsync(filter, update);
                         if (result.MatchedCount == 0)
                         {
-                            Console.WriteLine(
-                                $"⚠️ No matching model found to update for Project: {projectId}, Item: {itemId}");
+                            Console.WriteLine($"⚠️ No matching model found to update for Project: {projectId}, Item/Version: {filterId}");
                         }
                         else
                         {
-                            Console.WriteLine($"✅ Thumbnail image updated for Project: {projectId}, Item: {itemId}");
+                            Console.WriteLine($"✅ Thumbnail image updated for Project: {projectId}, Item/Version: {filterId}");
                         }
                     }
                     catch (Exception ex)
@@ -745,6 +825,7 @@ namespace AssetManager.Infrastructure.Services
                 return thumbnailUrl;
             }
         }
+
 
 
         public static async Task<List<(string HubID, string HubName, string HubType)>> GetAllHubs()
