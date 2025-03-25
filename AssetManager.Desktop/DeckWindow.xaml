@@ -73,7 +73,10 @@
 
     </Window.Resources>
     
-    <Grid Background="{StaticResource BackgroundBrush}">
+    <Grid>
+        <Grid.Background>  
+            <ImageBrush ImageSource="pack://application:,,,/Assets/deckBG3.png"></ImageBrush>  
+        </Grid.Background> 
         <!-- Main UI Layout -->
         <Grid.RowDefinitions>
             <RowDefinition Height="3*" /> <!-- Enlarged Card Display -->
@@ -87,56 +90,11 @@
                 <ColumnDefinition Width="3*" /> <!-- Description -->
             </Grid.ColumnDefinitions>
             
-            <!-- Button Panel Above Enlarged Image -->
-            <StackPanel Orientation="Horizontal"
-                        HorizontalAlignment="Left"
-                        VerticalAlignment="Top"
-                        Margin="20,0,0,0"
-                        Panel.ZIndex="5">
-            
-                <!-- View in 3D Button -->
-                <Border Background="#333333" 
-                        Width="36" Height="36" 
-                        CornerRadius="10" 
-                        Margin="0,0,10,0">
-                    <Button Background="Transparent"
-                            ToolTip="View in 3D"
-                            BorderThickness="0"
-                            Click="View3DButton_Click">
-                            <Path Data="M10,5 L20,10 L10,15 Z" Fill="#FFD700"/> <!-- Example 3D Icon -->
-                    </Button>
-                </Border>
-
-                <!-- Expand Fullscreen Button -->
-                <Border Background="#333333" 
-                        Width="36" Height="36" 
-                        CornerRadius="10">
-                    <Button Background="Transparent"
-                            ToolTip="View Fullscreen"
-                            BorderThickness="0">
-                        <Path Data="M5,5 L5,15 L15,15 L15,5 Z" Fill="#FFD700"/> <!-- Example Expand Icon -->
-                    </Button>
-                </Border>
-            </StackPanel>
-            
             <!-- Enlarged Selected Card -->
             <Grid Grid.Column="0">
-                <!-- Magic Circle Behind Card -->
-                <Ellipse Width="340" Height="300" 
-                         HorizontalAlignment="Center" 
-                         VerticalAlignment="Center"
-                         Panel.ZIndex="0">
-                    <Ellipse.Fill>
-                        <RadialGradientBrush>
-                            <GradientStop Color="#3F2684" Offset="0"/>
-                            <GradientStop Color="#1E0A30" Offset="1"/>
-                        </RadialGradientBrush>
-                    </Ellipse.Fill>
-                </Ellipse>
-                
                 <!-- Animated Glowing Runes (simulated with ellipses) -->
                 <Canvas HorizontalAlignment="Center" VerticalAlignment="Center" Width="300" Height="300" Panel.ZIndex="1">
-                    <Ellipse Width="270" Height="270" Canvas.Left="15" Canvas.Top="15" Stroke="#9370DB" StrokeThickness="1.5">
+                    <Ellipse Width="270" Height="270" Canvas.Left="15" Canvas.Top="15" Stroke="#9370DB" StrokeThickness="1" Opacity="0.6">
                         <Ellipse.Triggers>
                             <EventTrigger RoutedEvent="Ellipse.Loaded">
                                 <BeginStoryboard>
@@ -165,7 +123,38 @@
                         </Ellipse.Triggers>
                     </Ellipse>
                 </Canvas>
-                
+            
+                <!-- Button Panel Above Enlarged Image -->
+                <StackPanel Orientation="Horizontal"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Bottom"
+                            Margin="20,0,0,0"
+                            Panel.ZIndex="5">
+            
+                    <!-- View in 3D Button -->
+                    <Border Background="#333333" 
+                            Width="36" Height="36" 
+                            CornerRadius="10" 
+                            Margin="0,0,10,0">
+                        <Button Background="Transparent"
+                                ToolTip="View in 3D"
+                                BorderThickness="0"
+                                Click="View3DButton_Click">
+                                
+                        </Button>
+                    </Border>
+
+                    <!-- Expand Fullscreen Button -->
+                    <Border Background="#333333" 
+                            Width="36" Height="36" 
+                            CornerRadius="10">
+                        <Button Background="Transparent"
+                                ToolTip="View Fullscreen"
+                                BorderThickness="0">
+                            
+                        </Button>
+                    </Border>
+                </StackPanel>
                 <!-- Card Image -->
         <!-- Enlarged Fantasy Card -->
         <ContentControl Style="{StaticResource FantasyCardStyle}"
@@ -181,10 +170,10 @@
             </Grid>
 
             <!-- Card Details -->
-            <Border Grid.Column="1" Margin="40" Panel.ZIndex="2" 
+            <Border Grid.Column="1" Margin="60" Panel.ZIndex="2" 
                     Background="#1A000000" 
                     BorderBrush="#FFD700" 
-                    BorderThickness="1" 
+                    BorderThickness="0" 
                     CornerRadius="10">
                 <Border.Effect>
                     <DropShadowEffect Color="#000000" ShadowDepth="5" BlurRadius="10" Opacity="0.7"/>
@@ -196,7 +185,8 @@
                           StrokeThickness="2" 
                           Margin="0,0,0,10"
                           HorizontalAlignment="Center" 
-                          Width="120"/>
+                          Width="120"
+                          Height="1"/>
                     
                     <!-- Card Name -->
                     <TextBlock x:Name="SelectedCardName"
@@ -206,9 +196,10 @@
                                TextAlignment="Center"/>
                     
                     <!-- Divider -->
-                    <Border Height="2" 
+                    <Border Height="0.4" 
                             Background="#FFD700" 
-                            Margin="40,10" 
+                            BorderThickness="0.1"
+                            Margin="40,0, 40, 20" 
                             Opacity="0.7"/>
                     
                     <!-- Card Description -->
@@ -221,7 +212,7 @@
                     <!-- Card Stats -->
                     <Border Background="#1A000000" 
                             BorderBrush="#FFD700" 
-                            BorderThickness="1" 
+                            BorderThickness="0.1" 
                             CornerRadius="5" 
                             Padding="10">
                         <StackPanel x:Name="SelectedCardStatsPanel">
@@ -235,16 +226,17 @@
                           StrokeThickness="2" 
                           Margin="0,10,0,0"
                           HorizontalAlignment="Center" 
-                          Width="120"/>
+                          Width="120"
+                          Height="1"/>
                 </StackPanel>
             </Border>
         </Grid>
 
         <!-- Deck of Cards (Bottom Row) -->
         <Border Grid.Row="1"
-                Background="#26000000"
+                Background="Transparent"
                 BorderBrush="#1E0A30"
-                BorderThickness="1,1,1,0">
+                BorderThickness="0">
             <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Height="250">
                 <StackPanel x:Name="CardListPanel"
                             Orientation="Horizontal"

@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -16,8 +19,9 @@ namespace AssetManager.Desktop
     public partial class DeckView : Window
     {
         private readonly IMongoCollection<BsonDocument> _cardsCollection;
-        private readonly string _userId = "Z432FEYUJQNA3AA9"; // Simulating user authentication
+        private readonly string _userId = MainWindow._userId; // Simulating user authentication
         private BsonDocument _selectedCard;
+        private string _selectedCardId;
 
         public DeckView()
         {
@@ -30,7 +34,7 @@ namespace AssetManager.Desktop
             LoadDeckCards();
         }
 
-        private void LoadDeckCards()
+        private async void LoadDeckCards()
         {
             try
             {
@@ -50,20 +54,15 @@ namespace AssetManager.Desktop
                 foreach (var card in userDeckCards)
                 {
                     string cardName = card["name"].ToString();
+                    string cardId = card["_id"].ToString();
                     string cardImageUrl = card["snapshot_url"].ToString();
                     string cardDescription = card["description"].ToString();
+                    
+                    ImageSource imageUrlSource = await LoadImageFromUrl(cardImageUrl);
 
-                    // Load the card image
-                    BitmapImage bitmap = new BitmapImage();
-                    bitmap.BeginInit();
-                    bitmap.UriSource = new Uri(cardImageUrl, UriKind.RelativeOrAbsolute);
-                    bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                    bitmap.EndInit();
-
-                    // Create an Image element
                     Image cardImage = new Image
                     {
-                        Source = bitmap,
+                        Source = imageUrlSource,
                         Stretch = System.Windows.Media.Stretch.UniformToFill
                     };
 
@@ -84,10 +83,9 @@ namespace AssetManager.Desktop
                     {
                         var statsValue = card.GetValue("stats", new BsonDocument());
                         BsonDocument stats = statsValue.IsBsonDocument ? statsValue.AsBsonDocument : new BsonDocument();
-                        //_selectedCardId = cardId; !!!!!!!!!!!!!!!!!!!!!!
-                        DisplaySelectedCard(cardName, cardImageUrl, cardDescription, stats);
+                        _selectedCardId = cardId;
+                        DisplaySelectedCard(cardName, imageUrlSource, cardDescription, stats);
                     };
-
 
                     // Add the styled card to panel
                     CardListPanel.Children.Add(cardControl);
@@ -96,26 +94,79 @@ namespace AssetManager.Desktop
             }
             catch (Exception ex)
             {
+               // Console.WriteLine($"{cardImageUrl}");
                 Console.WriteLine($"Error loading deck cards: {ex.Message}");
             }
         }
+        
+        private static async Task<ImageSource> LoadImageFromUrl(string imageUrl)
+        {
+            if (imageUrl.StartsWith("https://developer.api.autodesk.com"))
+            {
+                return await LoadImageFromAPI(imageUrl, MainWindow._accessToken);
+            }
 
-        private void DisplaySelectedCard(string name, string imageUrl, string description, BsonDocument stats)
+            BitmapImage bitmap = new BitmapImage();
+            bitmap.BeginInit();
+            bitmap.UriSource = new Uri(imageUrl, UriKind.Absolute); // Ensure Absolute URL
+            bitmap.CacheOption = BitmapCacheOption.OnLoad;
+            bitmap.EndInit();
+            return bitmap;
+
+        }
+        
+        private static async Task<ImageSource> LoadImageFromAPI(string imageUrl, string accessToken)
+        {
+            try
+            {
+                using (HttpClient client = new HttpClient())
+                {
+                    // Set Authorization Header
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+                    // Fetch the image from Autodesk API
+                    HttpResponseMessage response = await client.GetAsync(imageUrl);
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        Console.WriteLine($"❌ Error fetching image: {response.StatusCode} - {response.ReasonPhrase}");
+                        return null;
+                    }
+
+                    // Read image bytes
+                    byte[] imageBytes = await response.Content.ReadAsByteArrayAsync();
+
+                    // Convert to BitmapImage
+                    BitmapImage bitmap = new BitmapImage();
+                    using (MemoryStream stream = new MemoryStream(imageBytes))
+                    {
+                        bitmap.BeginInit();
+                        bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                        bitmap.StreamSource = stream;
+                        bitmap.EndInit();
+                        bitmap.Freeze(); // Freeze for thread safety
+                    }
+
+                    return bitmap;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Exception loading image: {ex.Message}");
+                return null;
+            }
+        }
+
+
+
+        private void DisplaySelectedCard(string name, ImageSource imageSource, string description, BsonDocument stats)
         {
             _selectedCard = stats; // Store the selected card for later use
 
             // Set the card name in the nameplate
             SelectedCardName.Text = name;
 
-            // Load the card image dynamically
-            BitmapImage cardImage = new BitmapImage();
-            cardImage.BeginInit();
-            cardImage.UriSource = new Uri(imageUrl, UriKind.Absolute);
-            cardImage.CacheOption = BitmapCacheOption.OnLoad;
-            cardImage.EndInit();
-
             // Assign the card image to the UI
-            SelectedCardImage.Source = cardImage;
+            SelectedCardImage.Source = imageSource;
             RenderOptions.SetBitmapScalingMode(SelectedCardImage, BitmapScalingMode.HighQuality);
 
             // Update description
@@ -158,13 +209,13 @@ namespace AssetManager.Desktop
         
         private void View3DButton_Click(object sender, RoutedEventArgs e)
         {
-            if (_selectedCard  == null || !_selectedCard .Contains("model_urn"))
+            if (_selectedCard  == null || !_selectedCard.Contains("model_id"))
             {
                 MessageBox.Show("3D model unavailable for this card.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
-            string modelUrn = _selectedCard ["model_urn"].ToString();
+            string modelUrn = _selectedCard ["model_id"].ToString();
 
             // Open the Forge Viewer Window with the model URN
             ForgeViewerWindow viewerWindow = new ForgeViewerWindow(modelUrn);
