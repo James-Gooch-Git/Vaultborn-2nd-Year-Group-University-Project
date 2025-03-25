@@ -923,6 +923,176 @@ namespace AssetManager.Infrastructure.Services
             }
         }
 
+        public static async Task<(int VersionNumber, string VersionID, string CreateTime, string CreatedBy, long FileSize, string FileFormat, string FileType, string LastModifiedTime)> GetItemVersionMetadata(string projectId, string itemId, string versionId)
+        {
+            string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/items/{itemId}/versions/{versionId}";
+            string _accessToken = TokenManager.GetToken();
+            var versionMetadata = (0, string.Empty, string.Empty, string.Empty, 0L, "Not available", "Not available", "Not available");
+
+            if (string.IsNullOrEmpty(_accessToken))
+            {
+                Console.WriteLine("❌ Error: Access token is missing or invalid.");
+                return versionMetadata;
+            }
+
+            try
+            {
+                // Log URL being accessed
+                Console.WriteLine($"🔗 Fetching version metadata from URL: {url}");
+
+                client.DefaultRequestHeaders.Clear();
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
+                HttpResponseMessage response = await client.GetAsync(url);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine($"❌ Error: {response.StatusCode} - {response.ReasonPhrase}");
+                    return versionMetadata;
+                }
+
+                // Log successful API response
+                Console.WriteLine($"✅ Successfully fetched version metadata for projectId: {projectId}, itemId: {itemId}, versionId: {versionId}");
+
+                string jsonResponse = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"🔍 API Response: {jsonResponse.Substring(0, Math.Min(1000, jsonResponse.Length))}..."); // Log first 1000 characters of response for easier debugging
+
+                using JsonDocument doc = JsonDocument.Parse(jsonResponse);
+                JsonElement root = doc.RootElement;
+
+                // Extract version metadata
+                int versionNumber = root.GetProperty("data").GetProperty("attributes").GetProperty("versionNumber").GetInt32();
+                string versionID = root.GetProperty("data").GetProperty("id").GetString();
+                string createTime = root.GetProperty("data").GetProperty("attributes").GetProperty("createTime").GetString();
+                string createdBy = root.GetProperty("data").GetProperty("attributes").GetProperty("createUserName").GetString();
+
+                // Now fetch the storage details to get the file size and additional metadata
+                string storageUrl = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/items/{itemId}/versions/{versionID}/storage";
+                Console.WriteLine($"🔗 Fetching storage details from: {storageUrl}");
+
+                HttpResponseMessage storageResponse = await client.GetAsync(storageUrl);
+
+                if (storageResponse.IsSuccessStatusCode)
+                {
+                    string storageJsonResponse = await storageResponse.Content.ReadAsStringAsync();
+                    Console.WriteLine($"🔍 Storage API Response: {storageJsonResponse.Substring(0, Math.Min(1000, storageJsonResponse.Length))}..."); // Log first 1000 characters for debugging
+
+                    using JsonDocument storageDoc = JsonDocument.Parse(storageJsonResponse);
+                    JsonElement storageRoot = storageDoc.RootElement;
+
+                    long fileSize = 0;
+                    string fileFormat = "Not available";
+                    string fileType = "Not available";
+                    string lastModifiedTime = "Not available";
+
+                    if (storageRoot.TryGetProperty("data", out JsonElement data))
+                    {
+                        fileSize = data.GetProperty("attributes").GetProperty("size").GetInt64();
+                        fileFormat = data.GetProperty("attributes").TryGetProperty("format", out JsonElement format) ? format.GetString() : "Not available";
+                        fileType = data.GetProperty("attributes").TryGetProperty("type", out JsonElement type) ? type.GetString() : "Not available";
+                        lastModifiedTime = data.GetProperty("attributes").TryGetProperty("lastModifiedTime", out JsonElement modifiedTime) ? modifiedTime.GetString() : "Not available";
+                    }
+
+                    // Log the file size and other version info
+                    Console.WriteLine($"📄 Found Version: Number={versionNumber}, ID={versionID}, Created={createTime} by {createdBy}, File Size={fileSize} bytes, Format={fileFormat}, Type={fileType}, Last Modified={lastModifiedTime}");
+
+                    versionMetadata = (versionNumber, versionID, createTime, createdBy, fileSize, fileFormat, fileType, lastModifiedTime);
+                }
+                else
+                {
+                    Console.WriteLine($"❌ Error fetching storage details for version {versionID}. Status Code: {storageResponse.StatusCode}");
+                }
+
+                return versionMetadata;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Exception occurred: {ex.Message}");
+                return versionMetadata;
+            }
+        }
+
+        public static async Task<List<(int VersionNumber, string VersionID, string CreateTime, string CreatedBy, long FileSize, string FileFormat, string FileType, string LastModifiedTime)>> GetItemVersionsWithExtraMetadata(string projectId, string itemId)
+        {
+            string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/items/{itemId}/versions";
+            string _accessToken = TokenManager.GetToken();
+            var versionList = new List<(int, string, string, string, long, string, string, string)>();
+
+            if (string.IsNullOrEmpty(_accessToken))
+            {
+                Console.WriteLine("❌ Error: Access token is missing or invalid.");
+                return versionList;
+            }
+
+            try
+            {
+                client.DefaultRequestHeaders.Clear();
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
+                HttpResponseMessage response = await client.GetAsync(url);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine($"❌ Error: {response.StatusCode} - {response.ReasonPhrase}");
+                    return versionList;
+                }
+
+                string jsonResponse = await response.Content.ReadAsStringAsync();
+                using JsonDocument doc = JsonDocument.Parse(jsonResponse);
+                JsonElement root = doc.RootElement;
+
+                foreach (JsonElement version in root.GetProperty("data").EnumerateArray())
+                {
+                    int versionNumber = version.GetProperty("attributes").GetProperty("versionNumber").GetInt32();
+                    string versionID = version.GetProperty("id").GetString();
+                    string createTime = version.GetProperty("attributes").GetProperty("createTime").GetString();
+                    string createdBy = version.GetProperty("attributes").GetProperty("createUserName").GetString();
+
+                    // Now we fetch the storage details to get the file size and additional metadata
+                    string storageUrl = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/items/{itemId}/versions/{versionID}/storage";
+                    HttpResponseMessage storageResponse = await client.GetAsync(storageUrl);
+
+                    if (storageResponse.IsSuccessStatusCode)
+                    {
+                        string storageJsonResponse = await storageResponse.Content.ReadAsStringAsync();
+                        using JsonDocument storageDoc = JsonDocument.Parse(storageJsonResponse);
+                        JsonElement storageRoot = storageDoc.RootElement;
+
+                        long fileSize = 0;
+                        string fileFormat = "Not available";
+                        string fileType = "Not available";
+                        string lastModifiedTime = "Not available";
+
+                        if (storageRoot.TryGetProperty("data", out JsonElement data))
+                        {
+                            fileSize = data.GetProperty("attributes").GetProperty("size").GetInt64();
+                            fileFormat = data.GetProperty("attributes").TryGetProperty("format", out JsonElement format) ? format.GetString() : "Not available";
+                            fileType = data.GetProperty("attributes").TryGetProperty("type", out JsonElement type) ? type.GetString() : "Not available";
+                            lastModifiedTime = data.GetProperty("attributes").TryGetProperty("lastModifiedTime", out JsonElement modifiedTime) ? modifiedTime.GetString() : "Not available";
+                        }
+
+                        versionList.Add((versionNumber, versionID, createTime, createdBy, fileSize, fileFormat, fileType, lastModifiedTime));
+                    }
+                    else
+                    {
+                        Console.WriteLine($"❌ Error fetching storage details for version {versionID}.");
+                    }
+                }
+
+                return versionList;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Exception occurred: {ex.Message}");
+                return versionList;
+            }
+        }
+
+
+
+
+
+
+
+
         public async Task<ModelData> GetModelMetadataAsync(string projectId, string itemId)
         {
             try
