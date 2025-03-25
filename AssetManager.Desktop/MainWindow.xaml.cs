@@ -6468,6 +6468,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     string sellerId = await GetModelSeller(_buyItemId);
                     string message = $"New purchase on {modelName}";
                     await InsertNotifDB(_buyItemId, message, sellerId);
+                    
                 }
                 else
                 {
