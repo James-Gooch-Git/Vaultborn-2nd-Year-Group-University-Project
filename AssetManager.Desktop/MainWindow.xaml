@@ -311,11 +311,15 @@
                 </StackPanel>
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border MouseLeftButtonDown="Refresh_Click" Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" Cursor="Hand" Margin="0,0,5,0">
+                        <md:PackIcon Grid.Column="1" Kind="Sync" Foreground="#d1d5db" Style="{StaticResource IconHover}" Cursor="Hand" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                    </Border>
+                    
                     <Border Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" Cursor="Hand" Margin="0,0,5,0">
-                        <md:PackIcon Grid.Column="1" Kind="BellOutline" Style="{StaticResource IconHover}" Cursor="Hand" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                        <md:PackIcon Grid.Column="1" Kind="BellOutline" Foreground="#d1d5db" Style="{StaticResource IconHover}" Cursor="Hand" VerticalAlignment="Center" HorizontalAlignment="Right"/>
                     </Border>
 
-                    <Rectangle Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right" Fill="#4B4b4b" Height="30" Width="1" RenderTransformOrigin="0.5,0.5" Margin="0,0,5,0">
+                    <Rectangle Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right" Fill="#d1d5db" Height="30" Width="1" RenderTransformOrigin="0.5,0.5" Margin="0,0,5,0">
                         <Rectangle.RenderTransform>
                             <TransformGroup>
                                 <ScaleTransform ScaleX="-1"/>

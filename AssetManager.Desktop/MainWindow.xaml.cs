@@ -930,6 +930,7 @@ namespace AssetManager.Desktop
                                         { "LastModified", lastModified }
                                     });
                                     await GetModelData(modelId, projectId, projectName);
+                                    await InsertModelVersionDB(modelId, projectId);
                                 }
                             }
                         }
@@ -4342,7 +4343,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             try
             {
                 Console.WriteLine($"🔄 Starting background refresh at {DateTime.Now}");
-
+                
                 await Dispatcher.InvokeAsync(async () =>
                 {
                     try
@@ -4369,6 +4370,8 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                         {
                             await RefreshCurrentModel();
                         }
+
+                        await CheckModelVersions();
 
                         Console.WriteLine($"✅ Background refresh completed successfully at {DateTime.Now}");
                     }
@@ -4510,6 +4513,22 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             CleanupBackgroundRefresh();
+        }
+
+        private void Refresh_Click(object sender, MouseButtonEventArgs e)
+        {
+            if (_isRefreshing)
+            {
+                Console.WriteLine($"Refresh already in progress");
+                return;
+            }
+            
+            OnRefreshTimerElapsed(null, null);
+        }
+        
+        private async Task CheckModelVersions()
+        {
+            await GetAllModels();
         }
         #endregion
 
@@ -4928,7 +4947,32 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
             if (findModel == null)
             {
+                MessageBox.Show($"New model");
                 await database.ModelData.InsertOneAsync(modelData);
+            }
+        }
+
+        private async Task InsertModelVersionDB(string modelId, string projectId)
+        {
+            _selectedProjectId = projectId;
+            MongoConnection database = new MongoConnection();
+            var versions = await GetModelVersions(modelId);
+            int verNum = int.Parse(versions[0]["VersionNumber"]);
+            Versions model = new Versions { Id = modelId, VersionNumber = verNum };
+            
+            var findModelVersion = await database.Versions.Find(x => x.Id == modelId).FirstOrDefaultAsync();
+            
+            if (findModelVersion == null)
+            {
+                await database.Versions.InsertOneAsync(model);
+                return;
+            }
+            if (findModelVersion.VersionNumber < verNum)
+            {
+                MessageBox.Show($"New model version {verNum}");
+                var filter = Builders<Versions>.Filter.Eq(x => x.Id, modelId);
+                var update = Builders<Versions>.Update.Set("VersionNumber", verNum);
+                await database.Versions.UpdateOneAsync(filter, update);
             }
         }
         
@@ -5779,13 +5823,10 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         {
             try
             {
-                MessageBox.Show($"Adding comment: {CommentContent.Text}");
                 string comment = CommentContent.Text;
 
                 if (!string.IsNullOrEmpty(comment))
                 {
-                    MessageBox.Show($"Comment valid");
-                    MessageBox.Show($"Ver num: {_selectedVersionNum}");
                     int verNum;
                     if (_selectedVersionNum == null)
                     {
@@ -5796,7 +5837,6 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     {
                         verNum = int.Parse(_selectedVersionNum);
                     }
-                    MessageBox.Show($"Ver num got: {verNum}");
                     
                     MongoConnection database = new MongoConnection();
                     Comment commentContent = new Comment
@@ -5810,7 +5850,6 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     };
 
                     await database.Comments.InsertOneAsync(commentContent);
-                    MessageBox.Show($"Comment added to db");
                     ListNewComment(commentContent);
                 }
             }
