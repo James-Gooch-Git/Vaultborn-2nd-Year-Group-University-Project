@@ -4470,47 +4470,38 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 <head>
     <meta charset='UTF-8'>
     <meta http-equiv='X-UA-Compatible' content='IE=Edge' />
-    <title>Forge Viewer</title>
+    <title>Forge Viewer with Skybox</title>
     <script src='https://developer.api.autodesk.com/modelderivative/v2/viewers/7.*/viewer3D.js'></script>
     <link rel='stylesheet' href='https://developer.api.autodesk.com/modelderivative/v2/viewers/7.*/style.css' type='text/css'>
     <style>
         body, html {{ height: 100%; margin: 0; padding: 0; overflow: hidden; }}
         #forgeViewer {{ width: 100%; height: 100vh; position: relative; }}
-        #log {{ position: fixed; bottom: 10px; left: 10px; right: 10px; height: 150px; background: rgba(0,0,0,0.7); color: white; overflow: auto; padding: 10px; font-family: monospace; z-index: 1000; display: none; }}
         #skyboxControls {{ position: absolute; top: 10px; left: 10px; z-index: 1000; background: rgba(255,255,255,0.9); padding: 10px; border-radius: 5px; }}
         .skyboxButton {{ margin-right: 5px; cursor: pointer; padding: 5px 10px; }}
+        #debug {{ position: fixed; bottom: 10px; left: 10px; right: 10px; height: 100px; background: rgba(0,0,0,0.7); color: white; overflow: auto; padding: 10px; font-family: monospace; z-index: 1000; display: none; }}
     </style>
 </head>
 <body>
     <div id='skyboxControls'>
-        <button id='toggleLog' class='skyboxButton'>Show Logs</button>
         <button id='skybox1' class='skyboxButton'>Space Skybox</button>
         <button id='skybox2' class='skyboxButton'>Sunset Skybox</button>
         <button id='skybox3' class='skyboxButton'>Volcano Skybox</button>
         <button id='noSkybox' class='skyboxButton'>No Skybox</button>
+        <button id='toggleLogs' class='skyboxButton'>Show Logs</button>
     </div>
     <div id='forgeViewer'></div>
-    <div id='log'></div>
+    <div id='debug'></div>
 
     <script>
-        // Debug logging function
-        function log(message) {{
+        // Debug logging helper
+        function debug(message) {{
             console.log(message);
-            var logDiv = document.getElementById('log');
-            var date = new Date();
-            var timestamp = date.getHours() + ':' + date.getMinutes() + ':' + date.getSeconds();
-            var line = document.createElement('div');
-            line.textContent = '[' + timestamp + '] ' + (typeof message === 'object' ? JSON.stringify(message) : message);
-            logDiv.appendChild(line);
-            logDiv.scrollTop = logDiv.scrollHeight;
+            const debugElement = document.getElementById('debug');
+            const line = document.createElement('div');
+            line.textContent = message;
+            debugElement.appendChild(line);
+            debugElement.scrollTop = debugElement.scrollHeight;
         }}
-
-        // Handle any errors
-        window.addEventListener('error', function(event) {{
-            log('ERROR: ' + event.message + ' at ' + event.filename + ':' + event.lineno);
-        }});
-
-        log('Loading 3D model viewer with skybox support...');
 
         // Define the Skybox Extension
         class SkyboxExtension extends Autodesk.Viewing.Extension {{
@@ -4552,833 +4543,146 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             }}
 
             load() {{
-                log('SkyboxExtension loaded');
+                debug('SkyboxExtension loaded');
                 return true;
             }}
 
             unload() {{
                 this.removeSkybox();
-                log('SkyboxExtension unloaded');
+                debug('SkyboxExtension unloaded');
                 return true;
             }}
 
-           // Based on official Autodesk example
+            setSkybox(skyboxName) {{
+                const viewer = this.viewer;
+                debug('Setting skybox: ' + skyboxName);
+                
+                if (!viewer || !viewer.impl) {{
+                    debug('Viewer not available for skybox');
+                    return;
+                }}
 
-// Image-based skybox implementation
-// Image-based skybox implementation
-setSkybox(skyboxName) {{
-    const viewer = this.viewer;
-    log('Setting skybox: ' + skyboxName);
-    
-    if (!viewer || !viewer.impl) {{
-        log('Viewer not available for skybox');
-        return;
-    }}
-    
-    const urls = this.skyboxes[skyboxName];
-    if (!urls) {{
-        log('Skybox not found: ' + skyboxName);
-        return;
-    }}
-    
-    // Remove existing skybox if any
-    this.removeSkybox();
-    
-    // Find THREE.js
-    let THREE = this.getThreeJS();
-    
-    if (!THREE) {{
-        log('THREE.js not found - cannot create skybox');
-        return;
-    }}
-    
-    log('Using THREE.js version: ' + (THREE.REVISION || 'unknown'));
-    
-    // Disable problematic WebGL features
-    this.disableProblematicWebGLFeatures();
-    
-    try {{
-        // Create box geometry
-        const geometry = THREE.BoxGeometry ? 
-            new THREE.BoxGeometry(10000, 10000, 10000) : 
-            new THREE.CubeGeometry(10000, 10000, 10000);
-        
-        // Log the URLs we're using
-        log('Loading skybox textures from:');
-        urls.forEach((url, i) => log(`  Face ${{i}}: ${{url}}`));
-        
-        // Determine the best texture loading approach
-        let textureLoader;
-        if (THREE.TextureLoader) {{
-            log('Using THREE.TextureLoader');
-            textureLoader = new THREE.TextureLoader();
-            textureLoader.setCrossOrigin('anonymous');
-        }} else if (THREE.ImageUtils && THREE.ImageUtils.loadTexture) {{
-            log('Using THREE.ImageUtils.loadTexture');
-            textureLoader = {{
-                load: (url) => THREE.ImageUtils.loadTexture(url)
-            }};
-        }} else {{
-            log('No texture loading capability found');
-            return;
-        }}
-        
-        // Create a CubeTexture instead of 6 separate textures
-        // This often works better with WebGL renderer
-        if (THREE.CubeTextureLoader) {{
-            log('Using CubeTextureLoader for better compatibility');
-            
-            const cubeLoader = new THREE.CubeTextureLoader();
-            cubeLoader.setCrossOrigin('anonymous');
-            
-            // Get cubemap URLs in the right order (px, nx, py, ny, pz, nz)
-            cubeLoader.load(
-                urls,
-                (cubeTexture) => {{
-                    log('Cube texture loaded successfully');
-                    
-                    // Create a skybox using ShaderMaterial with a cube texture
-                    // This approach avoids many WebGL issues
-                    const shader = {{
-                        uniforms: {{
-                            tCube: {{ value: cubeTexture }}
-                        }},
-                        vertexShader: `
-                            varying vec3 vWorldPosition;
-                            void main() {{
-                                vec4 worldPosition = modelMatrix * vec4(position, 1.0);
-                                vWorldPosition = worldPosition.xyz;
-                                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-                            }}
-                        `,
-                        fragmentShader: `
-                            uniform samplerCube tCube;
-                            varying vec3 vWorldPosition;
-                            void main() {{
-                                gl_FragColor = textureCube(tCube, vec3(vWorldPosition.x, vWorldPosition.y, vWorldPosition.z));
-                            }}
-                        `
-                    }};
-                    
-                    // Create material using the shader
-                    const material = new THREE.ShaderMaterial({{
-                        uniforms: shader.uniforms,
-                        vertexShader: shader.vertexShader,
-                        fragmentShader: shader.fragmentShader,
-                        side: THREE.BackSide,
-                        depthWrite: false,
-                        depthTest: false
-                    }});
-                    
-                    // Create the skybox mesh
-                    const skybox = new THREE.Mesh(geometry, material);
-                    skybox.renderOrder = -1000;
-                    
-                    // Add to scene
-                    viewer.impl.scene.add(skybox);
-                    
-                    // Store reference
-                    this.skybox = skybox;
-                    
-                    // Force redraw
-                    viewer.impl.invalidate(true);
-                    
-                    log('Cube-based skybox created successfully');
-                }},
-                undefined,
-                (error) => {{
-                    log('Error loading cube texture: ' + error);
+                const urls = this.skyboxes[skyboxName];
+                if (!urls) {{
+                    debug('Skybox not found: ' + skyboxName);
+                    return;
                 }}
-            );
-            
-            return;
-        }}
-        
-// Load textures immediately
-        const materials = [];
-        for (let i = 0; i < 6; i++) {{
-            log(`Loading texture for face ${{i}} from ${{urls[i]}}`);
-            
-            try {{
-                // Use a more robust texture loading approach
-                if (THREE.TextureLoader) {{
-                    const loader = new THREE.TextureLoader();
-                    loader.setCrossOrigin('anonymous');
-                    
-                    // Create material first with a placeholder color
-                    const material = new THREE.MeshBasicMaterial({{
-                        color: 0x222266,  // Dark blue placeholder
-                        side: THREE.BackSide,
-                        depthWrite: false,
-                        depthTest: false,
-                        name: `skybox-face-${{i}}`
-                    }});
-                    
-                    materials.push(material);
-                    
-                    // Then load the texture and update the material when it's ready
-                    loader.load(
-                        urls[i],
-                        (texture) => {{
-                            // Texture loaded successfully
-                            log(`Texture ${{i}} loaded successfully`);
-                            material.map = texture;
-                            material.needsUpdate = true;
-                            
-                            // Force a redraw
-                            if (viewer && viewer.impl) {{
-                                viewer.impl.invalidate(true);
-                            }}
-                        }},
-                        undefined, // onProgress not needed
-                        (error) => {{
-                            log(`Error loading texture ${{i}}: ${{error}}`);
-                        }}
-                    );
-                }} else if (THREE.ImageUtils && THREE.ImageUtils.loadTexture) {{
-                    // Fallback to ImageUtils if TextureLoader is not available
-                    const texture = THREE.ImageUtils.loadTexture(
-                        urls[i],
-                        undefined,
-                        function() {{
-                            log(`Texture ${{i}} loaded successfully with ImageUtils`);
-                            // Force a redraw
-                            if (viewer && viewer.impl) {{
-                                viewer.impl.invalidate(true);
-                            }}
-                        }},
-                        function(error) {{
-                            log(`Error loading texture ${{i}} with ImageUtils: ${{error}}`);
-                        }}
-                    );
-                    
-                    const material = new THREE.MeshBasicMaterial({{
-                        map: texture,
-                        side: THREE.BackSide,
-                        depthWrite: false,
-                        depthTest: false,
-                        name: `skybox-face-${{i}}`
-                    }});
-                    
-                    materials.push(material);
-                }} else {{
-                    // No texture loader available
-                    throw new Error(""No texture loader available"");
-                }}
-            }} catch (err) {{
-                log(`Error creating material ${{i}}: ${{err}}`);
-                // Use a colored material as placeholder
-                const material = new THREE.MeshBasicMaterial({{
-                    color: 0x222266,  // Dark blue placeholder
-                    side: THREE.BackSide,
-                    depthWrite: false,
-                    depthTest: false,
-                    name: `skybox-face-${{i}}-fallback`
-                }});
-                materials.push(material);
-            }}
-        }}
-        
-        // Create mesh with materials
-        let skybox;
-        if (THREE.MeshFaceMaterial) {{
-            skybox = new THREE.Mesh(geometry, new THREE.MeshFaceMaterial(materials));
-        }} else {{
-            skybox = new THREE.Mesh(geometry, materials);
-        }}
-        
-        // Apply appropriate transformation
-        skybox.scale.set(1, 1, -1);
-        
-        // Set it to never be occluded by other objects
-        skybox.renderOrder = -1;
-        
-        // Add to scene
-        viewer.impl.scene.add(skybox);
-        
-        // Store reference
-        this.skybox = skybox;
-        
-        // Set light preset and ensure environment is visible
-        if (typeof viewer.impl.setLightPreset === 'function') {{
-            viewer.impl.setLightPreset(0);
-        }}
-        
-        // Force redraw
-        viewer.impl.invalidate(true);
-        
-        log('Image-based skybox created successfully');
-    }} catch (err) {{
-        log('Error in setSkybox: ' + err);
-        // No fallback, just log the error
-    }}
-}}
 
-// Helper method to find THREE.js
-getThreeJS() {{
-    log('Looking for THREE.js...');
-    
-    // Try different paths where THREE.js might be available
-    let THREE = null;
-    
-    try {{
-        if (typeof Autodesk !== 'undefined' && Autodesk.Viewing) {{
-            log('Autodesk.Viewing is available');
-            
-            if (Autodesk.Viewing.Private && Autodesk.Viewing.Private.THREE) {{
-                log('Found Autodesk.Viewing.Private.THREE');
-                THREE = Autodesk.Viewing.Private.THREE;
-            }} else if (Autodesk.Viewing.THREE) {{
-                log('Found Autodesk.Viewing.THREE');
-                THREE = Autodesk.Viewing.THREE;
-            }} else {{
-                log('THREE.js not found in Autodesk.Viewing namespace');
-            }}
-        }} else {{
-            log('Autodesk.Viewing namespace not available');
-        }}
-        
-        if (!THREE && typeof window !== 'undefined' && window.THREE) {{
-            log('Found window.THREE');
-            THREE = window.THREE;
-        }}
-        
-        // Additional checks for Forge Viewer's THREE.js location
-        if (!THREE && typeof window !== 'undefined') {{
-            // Try to find THREE.js in the viewer's runtime
-            if (window.NOP_VIEWER && window.NOP_VIEWER.impl && window.NOP_VIEWER.impl.runtime) {{
-                if (window.NOP_VIEWER.impl.runtime.THREE) {{
-                    log('Found THREE.js in NOP_VIEWER.impl.runtime');
-                    THREE = window.NOP_VIEWER.impl.runtime.THREE;
-                }}
-            }}
-            
-            // Try to find THREE.js in the global Autodesk object structure
-            if (!THREE && window.Autodesk && window.Autodesk.Viewing && window.Autodesk.Viewing.Private) {{
-                const av = window.Autodesk.Viewing;
-                if (av.Private.GuiViewer3D && av.Private.GuiViewer3D.prototype && av.Private.GuiViewer3D.prototype.constructor) {{
-                    const proto = av.Private.GuiViewer3D.prototype;
-                    if (proto.constructor.THREE) {{
-                        log('Found THREE.js in GuiViewer3D prototype constructor');
-                        THREE = proto.constructor.THREE;
-                    }}
-                }}
-            }}
-        }}
-        
-        if (THREE) {{
-            log('Found THREE.js' + (THREE.REVISION ? ' version: ' + THREE.REVISION : ''));
-            
-            // Log available utilities for debugging
-            log('Available utilities:');
-            if (THREE.CubeGeometry) log('- CubeGeometry');
-            if (THREE.BoxGeometry) log('- BoxGeometry');
-            if (THREE.BoxBufferGeometry) log('- BoxBufferGeometry');
-            
-            if (THREE.ImageUtils) {{
-                log('- ImageUtils' + (THREE.ImageUtils.loadTexture ? ' (with loadTexture)' : ''));
-            }}
-            
-            if (THREE.TextureLoader) {{
-                log('- TextureLoader');
-                // Check if it's actually usable by creating an instance
+                // Remove existing skybox if any
+                this.removeSkybox();
+
                 try {{
-                    const loader = new THREE.TextureLoader();
-                    log('  TextureLoader can be instantiated: ' + (typeof loader.load === 'function' ? 'Yes' : 'No'));
+                    // Find THREE
+                    let THREE;
+                    
+                    if (typeof window.THREE !== 'undefined') {{
+                        THREE = window.THREE;
+                        debug('Using global THREE');
+                    }} else if (typeof Autodesk.Viewing.Private.THREE !== 'undefined') {{
+                        THREE = Autodesk.Viewing.Private.THREE;
+                        debug('Using Autodesk.Viewing.Private.THREE');
+                    }} else {{
+                        THREE = Autodesk.Viewing.THREE;
+                        debug('Using Autodesk.Viewing.THREE');
+                    }}
+                    
+                    debug('THREE version: ' + (THREE.REVISION || 'unknown'));
+                    
+                    // Create textures manually using DOM images
+                    const images = [];
+                    let loadedCount = 0;
+                    
+                    for (let i = 0; i < 6; i++) {{
+                        const img = new Image();
+                        img.crossOrigin = 'Anonymous';
+                        
+                        img.onload = () => {{
+                            debug(`Image ${{i}} loaded: ${{img.width}}x${{img.height}}`);
+                            loadedCount++;
+                            
+                            if (loadedCount === 6) {{
+                                debug('All 6 images loaded, creating cube texture');
+                                this.applySkybox(THREE, images);
+                            }}
+                        }};
+                        
+                        img.onerror = (err) => {{
+                            debug(`Error loading image ${{i}}: ${{urls[i]}}`);
+                            console.error('Image load error:', err);
+                        }};
+                        
+                        debug(`Loading image ${{i}}: ${{urls[i]}}`);
+                        img.src = urls[i];
+                        images.push(img);
+                    }}
+                }} catch (err) {{
+                    debug('Error in setSkybox: ' + err.toString());
+                    console.error('Error in setSkybox:', err);
+                }}
+            }}
+            
+            applySkybox(THREE, images) {{
+                try {{
+                    debug('Creating CubeTexture...');
+                    const texture = new THREE.CubeTexture(images);
+                    texture.needsUpdate = true;
+                    
+                    debug('Setting scene background...');
+                    this.viewer.impl.scene.background = texture;
+                    
+                    // Store for disposal
+                    this.cubeTexture = texture;
+                    
+                    // Change lighting
+                    debug('Setting light preset to 0');
+                    this.viewer.setLightPreset(0);
+                    
+                    // Force redraw with clear all
+                    debug('Forcing scene redraw');
+                    this.viewer.impl.invalidate(true, true, true);
+                    
+                    debug('Skybox applied successfully');
+                }} catch (err) {{
+                    debug('Error applying skybox: ' + err.toString());
+                    console.error('Error applying skybox:', err);
+                }}
+            }}
+
+            removeSkybox() {{
+                debug('Removing skybox');
+                const viewer = this.viewer;
+
+                if (!viewer || !viewer.impl) {{
+                    debug('Viewer not available');
+                    return;
+                }}
+
+                try {{
+                    // Remove background 
+                    if (viewer.impl.scene) {{
+                        viewer.impl.scene.background = null;
+                        debug('Scene background cleared');
+                    }}
+        
+                    // Clean up texture
+                    if (this.cubeTexture) {{
+                        this.cubeTexture.dispose();
+                        this.cubeTexture = null;
+                        debug('Cube texture disposed');
+                    }}
+        
+                    // Restore default lighting
+                    viewer.setLightPreset(1);
+                    debug('Light preset restored to 1');
+        
+                    // Force redraw
+                    viewer.impl.invalidate(true, true, true);
+                    debug('Scene redraw forced');
                 }} catch (e) {{
-                    log('  TextureLoader cannot be instantiated: ' + e);
+                    debug('Error removing skybox: ' + e.toString());
+                    console.error('Error removing skybox:', e);
                 }}
             }}
-            
-            if (THREE.MeshBasicMaterial) log('- MeshBasicMaterial');
-            if (THREE.MeshFaceMaterial) log('- MeshFaceMaterial');
-            if (THREE.BackSide) log('- BackSide constant available');
-        }} else {{
-            log('THREE.js not found in any namespace');
-        }}
-    }} catch (e) {{
-        log('Error while looking for THREE.js: ' + e);
-    }}
-    
-    return THREE;
-}}
-
-// Fallback to colored skybox if image loading fails
-createColoredSkybox(skyboxName) {{
-    log('Creating colored skybox for: ' + skyboxName);
-    
-    const viewer = this.viewer;
-    
-    // Get THREE.js safely
-    const THREE = this.getThreeJS();
-    
-    if (!THREE) {{
-        log('THREE.js not available for colored skybox');
-        return;
-    }}
-    
-    try {{
-        // Create geometry - try different geometry classes
-        let geometry;
-        if (THREE.BoxGeometry) {{
-            log('Using BoxGeometry');
-            geometry = new THREE.BoxGeometry(10000, 10000, 10000);
-        }} else if (THREE.CubeGeometry) {{
-            log('Using CubeGeometry');
-            geometry = new THREE.CubeGeometry(10000, 10000, 10000);
-        }} else if (THREE.BoxBufferGeometry) {{
-            log('Using BoxBufferGeometry');
-            geometry = new THREE.BoxBufferGeometry(10000, 10000, 10000);
-        }} else {{
-            throw new Error('No suitable geometry class found');
-        }}
-        
-        // Create colored materials
-        let colors;
-        if (skyboxName === 'space') {{
-            colors = [0x0a0a20, 0x0a0a20, 0x0a0a20, 0x0a0a20, 0x0a0a20, 0x0a0a20]; // Dark blue
-        }} else if (skyboxName === 'sunset') {{
-            colors = [0xee7070, 0xee7070, 0x7090ee, 0x90a970, 0xee7070, 0xee7070]; // Sunset colors
-        }} else if (skyboxName === 'volcano') {{
-            colors = [0xa05030, 0xa05030, 0x303030, 0x505050, 0xa05030, 0xa05030]; // Volcanic colors
-        }} else {{
-            colors = [0x505050, 0x505050, 0x606060, 0x404040, 0x505050, 0x505050]; // Gray
-        }}
-        
-        const materials = colors.map(color => 
-            new THREE.MeshBasicMaterial({{
-                color: color,
-                side: THREE.BackSide
-            }})
-        );
-        
-        // Create mesh
-        let skybox;
-        if (THREE.MeshFaceMaterial) {{
-            skybox = new THREE.Mesh(geometry, new THREE.MeshFaceMaterial(materials));
-        }} else {{
-            // For newer THREE.js versions that don't have MeshFaceMaterial
-            skybox = new THREE.Mesh(geometry, materials);
-        }}
-        
-        skybox.scale.set(1, 1, -1);
-        
-        // Add to scene
-        viewer.impl.scene.add(skybox);
-        
-        // Store reference
-        this.skybox = skybox;
-        
-        // Set light preset
-        viewer.impl.setLightPreset(0);
-        
-        // Force redraw
-        viewer.impl.invalidate(true);
-        
-        log('Colored skybox created successfully');
-    }} catch (e) {{
-        log('Error creating colored skybox: ' + e);
-    }}
-}}
-
-// Method to remove existing skybox
-removeSkybox() {{
-    if (this.skybox && this.viewer && this.viewer.impl && this.viewer.impl.scene) {{
-        log('Removing existing skybox');
-        this.viewer.impl.scene.remove(this.skybox);
-        this.skybox = null;
-        this.viewer.impl.invalidate(true);
-    }}
-}}
-disableProblematicWebGLFeatures() {{
-    try {{
-        // Check if we have access to the viewer's renderer
-        if (this.viewer && this.viewer.impl && this.viewer.impl.glrenderer) {{
-            const renderer = this.viewer.impl.glrenderer;
-            
-            log('Configuring renderer for compatibility');
-            
-            // Disable certain problematic features if available
-            if (renderer.shadowMap) {{
-                log('Disabling shadow maps');
-                renderer.shadowMap.enabled = false;
-            }}
-            
-            // Check for specific extensions that might cause issues and disable them
-            if (renderer.extensions) {{
-                log('Checking renderer extensions');
-                
-                // Disable draw buffers extension if it exists
-                if (renderer.extensions.get && typeof renderer.extensions.get === 'function') {{
-                    try {{
-                        // Try to disable WEBGL_draw_buffers which often causes the fragment shader error
-                        const drawBuffersExt = renderer.extensions.get('WEBGL_draw_buffers');
-                        if (drawBuffersExt) {{
-                            log('Found WEBGL_draw_buffers extension - this might cause issues');
-                            
-                            // Can't actually disable the extension once enabled, but we can log it
-                            // The actual fix will be in how we create materials
-                        }}
-                    }} catch (e) {{
-                        // Ignore errors when checking for extensions
-                    }}
-                }}
-            }}
-            
-            // Set renderer parameters for better compatibility
-            if (renderer.autoClear !== undefined) {{
-                renderer.autoClear = false;
-            }}
-            
-            // Force standard material usage
-            if (THREE && THREE.ShaderLib) {{
-                log('Using standard material shaders for better compatibility');
-            }}
-        }}
-    }} catch (e) {{
-        log('Error configuring renderer: ' + e);
-    }}
-}}
-
-// Add new methods for compatibility and alternative rendering approaches
-
-// Check if we should use a simpler rendering approach
-shouldUseSimpleRendering() {{
-    // Check for WebGL errors or compatibility issues
-    // This is a heuristic - you might need to adjust based on your environment
-    try {{
-        // Check if there are already WebGL errors in the console
-        if (typeof window !== 'undefined' && window.console && window.console.error) {{
-            const originalConsoleError = window.console.error;
-            let hasWebGLErrors = false;
-            
-            // Temporarily override console.error to check for WebGL errors
-            window.console.error = function(msg) {{
-                if (typeof msg === 'string' && 
-                    (msg.indexOf('WebGL') !== -1 || 
-                     msg.indexOf('GL_INVALID') !== -1)) {{
-                    hasWebGLErrors = true;
-                }}
-                originalConsoleError.apply(console, arguments);
-            }};
-            
-            // Restore original console.error
-            window.console.error = originalConsoleError;
-            
-            if (hasWebGLErrors) {{
-                log('WebGL errors detected, using simple rendering');
-                return true;
-            }}
-        }}
-        
-        // Check if the viewer is using WebGL 2
-        if (this.viewer && this.viewer.impl && this.viewer.impl.glrenderer) {{
-            const renderer = this.viewer.impl.glrenderer;
-            // WebGL 2 might need a different approach
-            if (renderer.context && renderer.context instanceof WebGL2RenderingContext) {{
-                log('WebGL 2 detected, using simpler rendering approach');
-                return true;
-            }}
-        }}
-        
-        return false;
-    }} catch (e) {{
-        log('Error checking WebGL status: ' + e);
-        // When in doubt, use the simple approach
-        return true;
-    }}
-}}
-
-// Set compatible render mode for the viewer
-setCompatibleRenderMode() {{
-    try {{
-        if (this.viewer && this.viewer.impl) {{
-            // Check if certain render modes are available
-            if (typeof this.viewer.impl.setLightPreset === 'function') {{
-                log('Setting light preset to 0 (environment without reflections)');
-                this.viewer.impl.setLightPreset(0);
-            }}
-            
-            // Disable any special rendering flags that might interfere
-            if (typeof this.viewer.impl.toggleEnvMapBackground === 'function') {{
-                log('Ensuring environment map background is enabled');
-                this.viewer.impl.toggleEnvMapBackground(true);
-            }}
-            
-            // Ensure proper scene settings
-            if (this.viewer.impl.renderer && this.viewer.impl.renderer.setClearAlpha) {{
-                log('Setting renderer clear alpha to 0');
-                this.viewer.impl.renderer.setClearAlpha(0);
-            }}
-        }}
-    }} catch (e) {{
-        log('Error setting compatible render mode: ' + e);
-    }}
-}}
-
-// Load textures in background and update skybox when ready
-loadSkyboxTextures(urls, THREE, skybox) {{
-    log('Starting background texture loading');
-    
-    try {{
-        // Determine the texture loader to use
-        let textureLoader;
-        if (THREE.TextureLoader) {{
-            log('Using THREE.TextureLoader for background loading');
-            textureLoader = new THREE.TextureLoader();
-            textureLoader.setCrossOrigin('anonymous');
-        }} else if (THREE.ImageUtils && THREE.ImageUtils.loadTexture) {{
-            log('Using THREE.ImageUtils.loadTexture for background loading');
-            textureLoader = {{
-                load: (url, onLoad) => {{
-                    return THREE.ImageUtils.loadTexture(url, undefined, onLoad);
-                }}
-            }};
-        }} else {{
-            throw new Error('No texture loading capability found');
-        }}
-        
-        // Track loaded textures
-        let loadedCount = 0;
-        const totalTextures = urls.length;
-        const loadedTextures = new Array(totalTextures);
-        
-        // Function to update skybox when all textures are loaded
-        const updateSkyboxWhenReady = () => {{
-            loadedCount++;
-            log(`Texture loaded in background (${{loadedCount}}/${{totalTextures}})`);
-            
-            if (loadedCount === totalTextures) {{
-                log('All textures loaded in background, updating skybox');
-                
-                try {{
-                    // Create materials with the loaded textures
-                    const materials = loadedTextures.map((texture, i) => {{
-                        return new THREE.MeshBasicMaterial({{
-                            map: texture,
-                            side: THREE.BackSide,
-                            name: `skybox-face-${{i}}`
-                        }});
-                    }});
-                    
-                    // Update the skybox with the new materials
-                    if (skybox) {{
-                        // Different update strategy based on THREE.js version
-                        if (THREE.MeshFaceMaterial) {{
-                            skybox.material = new THREE.MeshFaceMaterial(materials);
-                        }} else {{
-                            skybox.material = materials;
-                        }}
-                        
-                        // Force redraw
-                        if (this.viewer && this.viewer.impl) {{
-                            this.viewer.impl.invalidate(true);
-                            log('Skybox updated with loaded textures');
-                        }}
-                    }}
-                }} catch (err) {{
-                    log('Error updating skybox with loaded textures: ' + err);
-                }}
-            }}
-        }};
-        
-        // Start loading each texture
-        urls.forEach((url, i) => {{
-            log(`Starting background load of texture ${{i}} from ${{url}}`);
-            
-            // Use the appropriate loading method based on the loader
-            if (textureLoader.load) {{
-                textureLoader.load(
-                    url,
-                    (texture) => {{
-                        loadedTextures[i] = texture;
-                        updateSkyboxWhenReady();
-                    }},
-                    undefined, // onProgress not needed
-                    (error) => {{
-                        log(`Error loading texture ${{i}} in background: ${{error}}`);
-                        // Create a colored texture as fallback
-                        const canvas = document.createElement('canvas');
-                        canvas.width = 128;
-                        canvas.height = 128;
-                        const ctx = canvas.getContext('2d');
-                        ctx.fillStyle = `rgb(${{40 + i * 30}}, ${{40 + i * 20}}, ${{100 - i * 10}})`;
-                        ctx.fillRect(0, 0, canvas.width, canvas.height);
-                        
-                        // Create texture from canvas
-                        const fallbackTexture = new THREE.Texture(canvas);
-                        fallbackTexture.needsUpdate = true;
-                        loadedTextures[i] = fallbackTexture;
-                        updateSkyboxWhenReady();
-                    }}
-                );
-            }} else if (textureLoader.loadTexture) {{
-                try {{
-                    const texture = textureLoader.loadTexture(url, () => {{
-                        loadedTextures[i] = texture;
-                        updateSkyboxWhenReady();
-                    }});
-                    // If loadTexture is immediate, store result
-                    if (texture) {{
-                        loadedTextures[i] = texture;
-                    }}
-                }} catch (err) {{
-                    log(`Error with loadTexture for texture ${{i}}: ${{err}}`);
-                    updateSkyboxWhenReady(); // Count as loaded to avoid hanging
-                }}
-            }}
-        }});
-    }} catch (e) {{
-        log('Error in background texture loading: ' + e);
-    }}
-}}
-
-// Create a simple skybox with a single material for compatibility
-createSimpleSkybox(skyboxName, THREE) {{
-    log('Creating simple skybox for: ' + skyboxName);
-    
-    const viewer = this.viewer;
-    
-    try {{
-        // Create geometry
-        const geometry = THREE.BoxGeometry ? 
-            new THREE.BoxGeometry(10000, 10000, 10000) : 
-            new THREE.CubeGeometry(10000, 10000, 10000);
-        
-        // Choose color based on skybox name
-        let color;
-        if (skyboxName === 'space') {{
-            color = 0x0a0a20; // Dark blue
-        }} else if (skyboxName === 'sunset') {{
-            color = 0xee7070; // Sunset color
-        }} else if (skyboxName === 'volcano') {{
-            color = 0xa05030; // Volcanic color
-        }} else {{
-            color = 0x505050; // Gray
-        }}
-        
-        // Create a single material for all faces
-        const material = new THREE.MeshBasicMaterial({{
-            color: color,
-            side: THREE.BackSide,
-            name: 'simple-skybox'
-        }});
-        
-        // Create mesh with the single material
-        const skybox = new THREE.Mesh(geometry, material);
-        skybox.scale.set(1, 1, -1);
-        
-        // Add to scene
-        viewer.impl.scene.add(skybox);
-        
-        // Store reference
-        this.skybox = skybox;
-        
-        // Set light preset if available
-        if (typeof viewer.impl.setLightPreset === 'function') {{
-            viewer.impl.setLightPreset(0);
-        }}
-        
-        // Force redraw
-        viewer.impl.invalidate(true);
-        
-        log('Simple skybox created successfully');
-        
-        // Try loading a single texture for all faces as a background task
-        this.loadSingleTextureForSimpleSkybox(skyboxName, THREE, skybox);
-    }} catch (e) {{
-        log('Error creating simple skybox: ' + e);
-    }}
-}}
-
-// Attempt to load a single texture for all faces of the simple skybox
-loadSingleTextureForSimpleSkybox(skyboxName, THREE, skybox) {{
-    const urls = this.skyboxes[skyboxName];
-    if (!urls || urls.length === 0) return;
-    
-    log('Attempting to load a single texture for simple skybox');
-    
-    try {{
-        // Use the first texture URL
-        const url = urls[0];
-        
-        // Determine the texture loader to use
-        let textureLoader;
-        if (THREE.TextureLoader) {{
-            textureLoader = new THREE.TextureLoader();
-            textureLoader.setCrossOrigin('anonymous');
-        }} else if (THREE.ImageUtils && THREE.ImageUtils.loadTexture) {{
-            textureLoader = {{
-                load: (url, onLoad) => {{
-                    return THREE.ImageUtils.loadTexture(url, undefined, onLoad);
-                }}
-            }};
-        }} else {{
-            throw new Error('No texture loading capability found');
-        }}
-        
-        // Load the texture
-        const loadTexture = (loader, url) => {{
-            if (loader.load) {{
-                loader.load(
-                    url,
-                    (texture) => {{
-                        log('Single texture loaded successfully');
-                        updateSkyboxWithTexture(texture);
-                    }},
-                    undefined,
-                    (error) => {{
-                        log('Error loading single texture: ' + error);
-                    }}
-                );
-            }} else if (loader.loadTexture) {{
-                const texture = loader.loadTexture(url, () => {{
-                    log('Single texture loaded with loadTexture');
-                    updateSkyboxWithTexture(texture);
-                }});
-            }}
-        }};
-        
-        // Update the skybox with the loaded texture
-        const updateSkyboxWithTexture = (texture) => {{
-            if (skybox && texture) {{
-                try {{
-                    // Create a new material with the texture
-                    const material = new THREE.MeshBasicMaterial({{
-                        map: texture,
-                        side: THREE.BackSide,
-                        name: 'simple-skybox-textured'
-                    }});
-                    
-                    // Update the skybox material
-                    skybox.material = material;
-                    
-                    // Force redraw
-                    if (this.viewer && this.viewer.impl) {{
-                        this.viewer.impl.invalidate(true);
-                        log('Simple skybox updated with texture');
-                    }}
-                }} catch (err) {{
-                    log('Error updating simple skybox with texture: ' + err);
-                }}
-            }}
-        }};
-        
-        // Start loading the texture
-        loadTexture(textureLoader, url);
-    }} catch (e) {{
-        log('Error in single texture loading: ' + e);
-    }}
-}}
-// Method to remove existing skybox
-removeSkybox() {{
-    if (this.skybox && this.viewer && this.viewer.impl && this.viewer.impl.scene) {{
-        log('Removing existing skybox');
-        this.viewer.impl.scene.remove(this.skybox);
-        this.skybox = null;
-        this.viewer.impl.invalidate(true);
-    }}
-}}
         }}
 
         // Register the extension with Forge Viewer
@@ -5391,102 +4695,104 @@ removeSkybox() {{
             env: 'AutodeskProduction',
             api: 'derivativeV2',
             getAccessToken: function(onTokenReady) {{
-                log('Getting access token...');
                 onTokenReady('{accessToken}', 3599);
             }}
         }};
 
         var documentId = 'urn:{encodedUrn}';
-        log('Document ID: ' + documentId);
 
         // Set up button handlers
-        document.getElementById('toggleLog').addEventListener('click', function() {{
-            var logDiv = document.getElementById('log');
-            if (logDiv.style.display === 'none') {{
-                logDiv.style.display = 'block';
-                this.textContent = 'Hide Logs';
-            }} else {{
-                logDiv.style.display = 'none';
-                this.textContent = 'Show Logs';
-            }}
-        }});
-
         document.getElementById('skybox1').addEventListener('click', function() {{
-            log('Space skybox button clicked');
+            debug('Space skybox button clicked');
             if (skyboxExt) {{
                 skyboxExt.setSkybox('space');
             }} else {{
-                log('Skybox extension not available yet');
+                debug('Skybox extension not loaded yet');
             }}
         }});
 
         document.getElementById('skybox2').addEventListener('click', function() {{
-            log('Sunset skybox button clicked');
+            debug('Sunset skybox button clicked');
             if (skyboxExt) {{
                 skyboxExt.setSkybox('sunset');
             }} else {{
-                log('Skybox extension not available yet');
+                debug('Skybox extension not loaded yet');
             }}
         }});
 
         document.getElementById('skybox3').addEventListener('click', function() {{
-            log('Volcano skybox button clicked');
+            debug('Volcano skybox button clicked');
             if (skyboxExt) {{
                 skyboxExt.setSkybox('volcano');
             }} else {{
-                log('Skybox extension not available yet');
+                debug('Skybox extension not loaded yet');
             }}
         }});
 
         document.getElementById('noSkybox').addEventListener('click', function() {{
-            log('No skybox button clicked');
+            debug('Clear skybox button clicked');
             if (skyboxExt) {{
                 skyboxExt.removeSkybox();
             }} else {{
-                log('Skybox extension not available yet');
+                debug('Skybox extension not loaded yet');
+            }}
+        }});
+        
+        document.getElementById('toggleLogs').addEventListener('click', function() {{
+            const debugElement = document.getElementById('debug');
+            if (debugElement.style.display === 'none') {{
+                debugElement.style.display = 'block';
+                this.textContent = 'Hide Logs';
+            }} else {{
+                debugElement.style.display = 'none';
+                this.textContent = 'Show Logs';
             }}
         }});
 
         // Initialize viewer
+        debug('Initializing Forge Viewer...');
         Autodesk.Viewing.Initializer(options, function() {{
-            log('Viewer initialized');
-
+            debug('Forge Viewer initialized');
+            
             var viewerDiv = document.getElementById('forgeViewer');
             viewer = new Autodesk.Viewing.GuiViewer3D(viewerDiv);
-
-            log('Starting viewer...');
-            var started = viewer.start();
-            log('Viewer started: ' + started);
+            
+            debug('Starting viewer...');
+            var startResult = viewer.start();
+            debug('Viewer start result: ' + startResult);
 
             // Load the skybox extension
-            log('Loading skybox extension...');
+            debug('Loading SkyboxExtension...');
             viewer.loadExtension('SkyboxExtension').then(extension => {{
                 skyboxExt = extension;
-                log('Skybox extension loaded successfully and stored');
+                debug('SkyboxExtension loaded successfully');
             }}).catch(err => {{
-                log('Error loading skybox extension: ' + err.message);
+                debug('Error loading SkyboxExtension: ' + err.toString());
+                console.error('Error loading SkyboxExtension:', err);
             }});
 
-            log('Loading document...');
+            debug('Loading document: ' + documentId);
             Autodesk.Viewing.Document.load(documentId, function(doc) {{
-                log('Document loaded successfully');
+                debug('Document loaded');
                 var defaultModel = doc.getRoot().getDefaultGeometry();
 
                 if (defaultModel) {{
-                    log('Loading default model: ' + defaultModel.guid);
+                    debug('Loading default model: ' + defaultModel.guid);
                     viewer.loadDocumentNode(doc, defaultModel)
                         .then(function(model) {{
-                            log('Model loaded successfully');
+                            debug('Model loaded successfully');
                             viewer.fitToView();
                         }})
                         .catch(function(error) {{
-                            log('Error loading model: ' + error.message);
+                            debug('Error loading model: ' + error.toString());
+                            console.error('Error loading model:', error);
                         }});
                 }} else {{
-                    log('No default geometry found');
+                    debug('No default geometry found');
                 }}
             }}, function(errorCode, errorMsg) {{
-                log('Error loading document: ' + errorCode + ' - ' + errorMsg);
+                debug('Error loading document: ' + errorCode + ' - ' + errorMsg);
+                console.error('Error loading document:', errorCode, errorMsg);
             }});
         }});
     </script>
@@ -5512,6 +4818,7 @@ removeSkybox() {{
                     System.Windows.Forms.MessageBoxIcon.Error);
             }
         }
+
 
         // Helper method to determine if a file is a PDF
         private bool IsPdfFile(string filename)
