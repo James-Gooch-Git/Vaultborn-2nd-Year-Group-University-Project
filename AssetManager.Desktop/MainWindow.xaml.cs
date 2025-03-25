@@ -3537,7 +3537,7 @@ namespace AssetManager.Desktop
             versionButton.Visibility = Visibility.Collapsed;
 
             slider.Value = 100;
-
+            showLatestVersions = true;
         }
 
         //Trying the SKybox
