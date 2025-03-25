@@ -126,7 +126,7 @@
             
                 <!-- Button Panel Above Enlarged Image -->
                 <StackPanel Orientation="Horizontal"
-                            HorizontalAlignment="Left"
+                            HorizontalAlignment="Center"
                             VerticalAlignment="Bottom"
                             Margin="20,0,0,0"
                             Panel.ZIndex="5">
@@ -140,7 +140,6 @@
                                 ToolTip="View in 3D"
                                 BorderThickness="0"
                                 Click="View3DButton_Click">
-                                
                         </Button>
                     </Border>
 
@@ -150,8 +149,32 @@
                             CornerRadius="10">
                         <Button Background="Transparent"
                                 ToolTip="View Fullscreen"
-                                BorderThickness="0">
-                            
+                                BorderThickness="0"
+                                Click="ExpandCard_Click">
+                        </Button>
+                    </Border>
+                    
+                    <!-- Purchase button -->
+                    <Border Background="#333333" 
+                            Width="36" Height="36" 
+                            CornerRadius="10" 
+                            Margin="0,0,10,0">
+                        <Button Background="Transparent"
+                                ToolTip="View in 3D"
+                                BorderThickness="0"
+                                Click="PurchaseCard_Click">
+                        </Button>
+                    </Border>
+                    
+                    <!-- Draw random Button -->
+                    <Border Background="#333333" 
+                            Width="36" Height="36" 
+                            CornerRadius="10" 
+                            Margin="0,0,10,0">
+                        <Button Background="Transparent"
+                                ToolTip="View in 3D"
+                                BorderThickness="0"
+                                Click="DrawRandomCard_Click">
                         </Button>
                     </Border>
                 </StackPanel>

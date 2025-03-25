@@ -43,13 +43,13 @@ namespace AssetManager.Desktop
 {
     public partial class MainWindow : Window
     {
-        private string _accessToken;
+        public static string _accessToken;
         private Dictionary<string, string> _selectedModel;
         private string _selectedProjectId;
         private string _selectedProjectName;
-        private string _selectedItemId;
+        public static string _selectedItemId;
         private string _selectedItemName;
-        private string selectedHubID;
+        public static string selectedHubID;
         private string _folderId;
         private static string hubID;
         private string _objectId;
@@ -58,7 +58,7 @@ namespace AssetManager.Desktop
         private readonly ModelUpload _uploadService;
         private readonly FileDownloadService _filedwnService;
         private List<Dictionary<string, string>> Models;
-        private string _userId = Environment.GetEnvironmentVariable("userId", EnvironmentVariableTarget.User);
+        public static string _userId = Environment.GetEnvironmentVariable("userId", EnvironmentVariableTarget.User);
         private static readonly HttpClient client = new HttpClient();
         private string selectedHubName = "Loading..."; // Default value before hubs load
         private bool isModelLoaded = false;

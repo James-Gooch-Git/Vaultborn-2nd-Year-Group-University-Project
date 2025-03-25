@@ -83,7 +83,9 @@ namespace AssetManager.Desktop
                     {
                         var statsValue = card.GetValue("stats", new BsonDocument());
                         BsonDocument stats = statsValue.IsBsonDocument ? statsValue.AsBsonDocument : new BsonDocument();
+                        //_selectedCard = stats;
                         _selectedCardId = cardId;
+                        Console.WriteLine("\n\nCard id ==" +  cardId);
                         DisplaySelectedCard(cardName, imageUrlSource, cardDescription, stats);
                     };
 
@@ -198,6 +200,7 @@ namespace AssetManager.Desktop
                 Margin = new Thickness(0, 2, 0, 2)
             });
 
+            
         }
         
         public class CardModel
@@ -209,13 +212,27 @@ namespace AssetManager.Desktop
         
         private void View3DButton_Click(object sender, RoutedEventArgs e)
         {
-            if (_selectedCard  == null || !_selectedCard.Contains("model_id"))
+            if (_selectedCard  == null)
             {
                 MessageBox.Show("3D model unavailable for this card.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
+            var filter = Builders<BsonDocument>.Filter.Eq("_id", ObjectId.Parse(_selectedCardId));
+            var selectedCardData = _cardsCollection.Find(filter).FirstOrDefault();
 
-            string modelUrn = _selectedCard ["model_id"].ToString();
+            if (selectedCardData == null)
+            {
+                MessageBox.Show("Card data not found in database.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+            
+            if (!selectedCardData.Contains("model_id") || selectedCardData["model_id"].IsBsonNull)
+            {
+                MessageBox.Show("This card does not have an associated 3D model.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            
+            string modelUrn = selectedCardData["model_id"].ToString();
 
             // Open the Forge Viewer Window with the model URN
             ForgeViewerWindow viewerWindow = new ForgeViewerWindow(modelUrn);
@@ -227,6 +244,29 @@ namespace AssetManager.Desktop
             AddCardWindow addCardWindow = new AddCardWindow();
             addCardWindow.Owner = this;  // Set the owner to the deck (this) window
             addCardWindow.ShowDialog();
+        }
+
+        private void ExpandCard_Click(object sender, RoutedEventArgs e)
+        {
+            if (_selectedCard == null) return;
+
+            string cardName = SelectedCardName.Text;
+            ImageSource cardImage = SelectedCardImage.Source;
+            string cardDescription = SelectedCardDescription.Text;
+            string cardStats = _selectedCard.ToJson(); // Convert BSON to string
+
+            FullScreenCardWindow fullScreenWindow = new FullScreenCardWindow(cardName, cardImage, cardDescription, cardStats);
+            fullScreenWindow.ShowDialog();
+        }
+
+        private void PurchaseCard_Click(object sender, RoutedEventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void DrawRandomCard_Click(object sender, RoutedEventArgs e)
+        {
+            throw new NotImplementedException();
         }
     }
 }
