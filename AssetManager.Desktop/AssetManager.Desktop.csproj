@@ -12,6 +12,13 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <Compile Remove="Icons\**" />
+      <EmbeddedResource Remove="Icons\**" />
+      <None Remove="Icons\**" />
+      <Page Remove="Icons\**" />
+    </ItemGroup>
+
+    <ItemGroup>
       <None Remove="Assets\AppIcon.ico" />
       <None Remove="Assets\AppIcon2.ico" />
       <None Remove="Assets\AppIcon2.png" />
@@ -62,26 +69,6 @@
       <None Remove="Icons2\stl_icon.svg" />
       <None Remove="Icons2\stp_icon.svg" />
       <None Remove="Icons2\x3d_icon.svg" />
-      <None Remove="Icons\3ds_icon.png" />
-      <None Remove="Icons\3mf_icon.png" />
-      <None Remove="Icons\blend_icon.png" />
-      <None Remove="Icons\dae_icon.png" />
-      <None Remove="Icons\default_icon.png" />
-      <None Remove="Icons\fbx_icon.png" />
-      <None Remove="Icons\glb_icon.png" />
-      <None Remove="Icons\gltf_icon.png" />
-      <None Remove="Icons\ifc_icon.png" />
-      <None Remove="Icons\iges_icon.png" />
-      <None Remove="Icons\igs_icon.png" />
-      <None Remove="Icons\obj_icon.png" />
-      <None Remove="Icons\ply_icon.png" />
-      <None Remove="Icons\prt_icon.png" />
-      <None Remove="Icons\sldasm_icon.png" />
-      <None Remove="Icons\sldprt_icon.png" />
-      <None Remove="Icons\stl_icon.png" />
-      <None Remove="Icons\stp_icon.png" />
-      <None Remove="Icons\wrl_icon.png" />
-      <None Remove="Icons\x3d_icon.png" />
       <None Remove="orange-wallpaper.jpg" />
       <None Remove="symbol-1.png" />
     </ItemGroup>
@@ -237,66 +224,6 @@
         <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       </Resource>
       <Resource Include="Icons2\x3d_icon.svg">
-        <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-      </Resource>
-      <Resource Include="Icons\3ds_icon.png">
-        <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-      </Resource>
-      <Resource Include="Icons\3mf_icon.png">
-        <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-      </Resource>
-      <Resource Include="Icons\blend_icon.png">
-        <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-      </Resource>
-      <Resource Include="Icons\dae_icon.png">
-        <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-      </Resource>
-      <Resource Include="Icons\default_icon.png">
-        <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-      </Resource>
-      <Resource Include="Icons\fbx_icon.png">
-        <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-      </Resource>
-      <Resource Include="Icons\glb_icon.png">
-        <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-      </Resource>
-      <Resource Include="Icons\gltf_icon.png">
-        <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-      </Resource>
-      <Resource Include="Icons\ifc_icon.png">
-        <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-      </Resource>
-      <Resource Include="Icons\iges_icon.png">
-        <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-      </Resource>
-      <Resource Include="Icons\igs_icon.png">
-        <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-      </Resource>
-      <Resource Include="Icons\obj_icon.png">
-        <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-      </Resource>
-      <Resource Include="Icons\ply_icon.png">
-        <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-      </Resource>
-      <Resource Include="Icons\prt_icon.png">
-        <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-      </Resource>
-      <Resource Include="Icons\sldasm_icon.png">
-        <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-      </Resource>
-      <Resource Include="Icons\sldprt_icon.png">
-        <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-      </Resource>
-      <Resource Include="Icons\stl_icon.png">
-        <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-      </Resource>
-      <Resource Include="Icons\stp_icon.png">
-        <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-      </Resource>
-      <Resource Include="Icons\wrl_icon.png">
-        <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-      </Resource>
-      <Resource Include="Icons\x3d_icon.png">
         <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       </Resource>
       <Resource Include="orange-wallpaper.jpg" />

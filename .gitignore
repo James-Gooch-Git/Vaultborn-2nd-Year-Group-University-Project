@@ -1,20 +1,8 @@
 **/bin/
 **/obj/
-<<<<<<< HEAD
-<<<<<<< HEAD
-*.dll
-*.pdb
-*.exe
-=======
-**.dll
-**.pdb
-**.exe
->>>>>>> version-comments
-=======
-**.dll
-**.pdb
-**.exe
->>>>>>> Master-Raheel-UI
+**/*.dll
+**/*.pdb
+**/*.exe
 /packages/
 riderModule.iml
 /_ReSharper.Caches/
