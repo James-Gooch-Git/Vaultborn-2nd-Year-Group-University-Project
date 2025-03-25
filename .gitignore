@@ -30,3 +30,4 @@ AssetManager.Infrastructure/bin/Debug/net8.0/win-x64/*.pdb
 AssetManager.Infrastructure/bin/Debug/net8.0/win-x64/AssetManager.Infrastructure.dll
 AssetManager.Infrastructure/bin/Debug/net8.0/win-x64/AssetManager.Infrastructure.pdb
 *.dll
+*.dll

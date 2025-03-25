@@ -3607,7 +3607,7 @@ namespace AssetManager.Desktop
                 await LoadHtmlIntoForgeWebViewAsync(html);
 
                 int numberOfVersions = await GetNumberOfVersions();
-                GenerateMarkers(numberOfVersions);
+                GenerateMarkers();
                 VersionSlider.Visibility = Visibility.Visible;
             }
             catch (Exception ex)
@@ -3639,44 +3639,86 @@ namespace AssetManager.Desktop
 
 
         //In app viewer for different versions
-        private async void BtnViewInApp_Click(string selectedItemId, string selectedVersionId)
+        private async void BtnViewInApp_Click(string selectedItemId)
         {
-            string objectId = await new FileDownloadService().GetStorageIdFromVersion(_selectedProjectId, selectedVersionId);
-
-            _objectId = objectId; // Store it globally
-
-            // Encode Storage ID to URN
-            string encodedUrn = EncodeObjectIdToUrn(objectId);
-            if (string.IsNullOrEmpty(encodedUrn))
-            {
-                MessageBox.Show("Failed to process model identifier.", "Processing Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            // Check if the model translation is available
-            bool isModelReady = await ModelDerivativeService.IsModelDerivativeReady(encodedUrn);
-
-            // Check if the translation is completed
-            ModelDerivativeService modelService = new ModelDerivativeService(new HttpClient());
-            bool isTranslationCompleted = await modelService.IsTranslationCompletedAsync(encodedUrn, _accessToken);
-
-            if (!isTranslationCompleted)
-            {
-                //MessageBox.Show("Model translation is still in progress or failed. Please try again later.", "Translation In Progress", MessageBoxButton.OK, MessageBoxImage.Information);
-                VersionError.IsOpen = true;
-                return;
-            }
-
-            // Load the model in the viewer
             try
             {
-                LoadForgeViewer(encodedUrn);
+                // ✅ Track the last active view
+                if (ModelsDataGrid.Visibility == Visibility.Visible)
+                    _lastViewType = ViewType.List;
+                else if (Grid_View.Visibility == Visibility.Visible)
+                    _lastViewType = ViewType.Grid;
+
+                // Hide other views and show the Forge Viewer
+                ModelsDataGrid.Visibility = Visibility.Collapsed;
+                Grid_View.Visibility = Visibility.Collapsed;
+                ForgeViewerContainer.Visibility = Visibility.Visible;
+                ForgeWebView.Visibility = Visibility.Visible;
+
+                Console.WriteLine($"View in App button clicked. Returning to: {_lastViewType} view after closing.");
+                Console.WriteLine($"- Selected Item ID: {_selectedItemId}");
+                Console.WriteLine($"- Selected Project ID: {_selectedProjectId}");
+                Console.WriteLine($"- Storage ID: {_objectId}");
+
+                // Validate input
+                if (string.IsNullOrEmpty(_selectedItemId) || string.IsNullOrEmpty(_selectedProjectId))
+                {
+                    MessageBox.Show("❌ Please select a model before viewing.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                // Get or fetch the object ID
+                string objectId = _objectId;
+                if (string.IsNullOrEmpty(objectId))
+                {
+                    Console.WriteLine("🔍 Storage ID not set globally, fetching now...");
+                    var fileService = new FileDownloadService();
+                    objectId = await fileService.GetStorageIdFromItem(_selectedProjectId, _selectedItemId);
+
+                    if (string.IsNullOrEmpty(objectId))
+                    {
+                        MessageBox.Show("Could not retrieve model information.", "Model Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        return;
+                    }
+
+                    _objectId = objectId;
+                }
+
+                // Encode object ID into a Forge URN
+                string encodedUrn = EncodeObjectIdToUrn(objectId);
+                if (string.IsNullOrEmpty(encodedUrn))
+                {
+                    MessageBox.Show("Failed to process model identifier.", "Processing Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                Console.WriteLine($"✅ Encoded URN: {encodedUrn}");
+
+                // Generate the Forge Viewer HTML
+                var viewerService = new ForgeViewerService(_accessToken);
+                string? html = await viewerService.GetModelViewerHtmlAsync(encodedUrn);
+
+                if (string.IsNullOrEmpty(html))
+                {
+                    MessageBox.Show("❌ Failed to generate Forge Viewer HTML.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                // Load it into WebView2
+                await LoadHtmlIntoForgeWebViewAsync(html);
+
+                // UI: Show versioning controls
+                int numberOfVersions = await GetNumberOfVersions();
+                GenerateMarkers();
+                VersionSlider.Visibility = Visibility.Visible;
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error loading the model viewer. Please check the logs for more details.", "Viewer Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"❌ Error loading model: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                Console.WriteLine($"❌ Exception: {ex.Message}\n{ex.StackTrace}");
             }
         }
+
 
 
         private void Btn_CloseViewer_Click(object sender, RoutedEventArgs e)
