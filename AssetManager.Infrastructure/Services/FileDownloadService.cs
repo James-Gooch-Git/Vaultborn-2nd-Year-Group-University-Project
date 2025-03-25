@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Threading.Tasks;
+using System.Web;
 
 public class FileDownloadService
 {
@@ -124,26 +125,30 @@ public class FileDownloadService
     public async Task<string> GetStorageIdFromItem(string projectId, string itemId, string versionId = null)
     {
         string url;
+        bool isVersionRequest = !string.IsNullOrEmpty(versionId);
 
-        if (!string.IsNullOrEmpty(versionId))
+        if (isVersionRequest)
         {
-
             // Fetch storage ID from a version
-            url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/versions/{versionId}";
-            Console.WriteLine($"PROJECTID: {projectId} VERSIONID: {versionId} TOKEN: {TokenManager.GetToken()}");
+            string encodedVersionId = HttpUtility.UrlEncode(versionId);
+            url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/versions/{encodedVersionId}";
+            Console.WriteLine($"🔍 Fetching Storage ID from Version: PROJECTID: {projectId} VERSIONID: {versionId}");
         }
         else
         {
             // Fetch storage ID from an item
             url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/items/{itemId}";
+            Console.WriteLine($"🔍 Fetching Storage ID from Item: PROJECTID: {projectId} ITEMID: {itemId}");
         }
 
-        Console.WriteLine($"🔍 Fetching Storage ID from: {url}");
+        Console.WriteLine($"🌍 API URL: {url}");
 
         using HttpClient httpClient = new HttpClient();
         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TokenManager.GetToken());
 
         HttpResponseMessage response = await httpClient.GetAsync(url);
+        Console.WriteLine($"🔍 API Response: {response}");
+
         if (!response.IsSuccessStatusCode)
         {
             Console.WriteLine($"❌ Error retrieving storage ID. Status Code: {response.StatusCode} - {response.ReasonPhrase}");
@@ -151,38 +156,39 @@ public class FileDownloadService
         }
 
         string jsonResponse = await response.Content.ReadAsStringAsync();
-        Console.WriteLine($"🔍 Full response: {jsonResponse}");
+        Console.WriteLine($"🔍 Full JSON Response:\n{jsonResponse}");
 
         using JsonDocument doc = JsonDocument.Parse(jsonResponse);
-
         string storageId = null;
 
         try
         {
-            if (!string.IsNullOrEmpty(versionId))
+            if (isVersionRequest)
             {
-                // Extract storage ID from version response
-                storageId = doc.RootElement
-                    .GetProperty("data")
-                    .GetProperty("attributes")
-                    .GetProperty("extension")
-                    .GetProperty("data")
-                    .GetProperty("storageUrn")
-                    .GetString();
+                if (doc.RootElement.TryGetProperty("data", out JsonElement data) &&
+                    data.TryGetProperty("relationships", out JsonElement relationships) &&
+                    relationships.TryGetProperty("storage", out JsonElement storage) &&
+                    storage.TryGetProperty("data", out JsonElement storageData) &&
+                    storageData.TryGetProperty("id", out JsonElement storageIdElement))
+                {
+                    storageId = storageIdElement.GetString();
+                }
             }
             else
             {
-                // Extract storage ID from item response
-                JsonElement includedArray = doc.RootElement.GetProperty("included");
-                foreach (JsonElement element in includedArray.EnumerateArray())
+                // 🔵 Extract storage ID from item response
+                if (doc.RootElement.TryGetProperty("included", out JsonElement includedArray))
                 {
-                    if (element.TryGetProperty("relationships", out JsonElement relationships) &&
-                        relationships.TryGetProperty("storage", out JsonElement storage) &&
-                        storage.TryGetProperty("data", out JsonElement storageData) &&
-                        storageData.TryGetProperty("id", out JsonElement idElement))
+                    foreach (JsonElement element in includedArray.EnumerateArray())
                     {
-                        storageId = idElement.GetString();
-                        break; // Exit early once the storage ID is found
+                        if (element.TryGetProperty("relationships", out JsonElement relationships) &&
+                            relationships.TryGetProperty("storage", out JsonElement storage) &&
+                            storage.TryGetProperty("data", out JsonElement storageData) &&
+                            storageData.TryGetProperty("id", out JsonElement idElement))
+                        {
+                            storageId = idElement.GetString();
+                            break; // Exit early once the storage ID is found
+                        }
                     }
                 }
             }
@@ -193,7 +199,7 @@ public class FileDownloadService
                 return null;
             }
 
-            Console.WriteLine($"📂 Storage ID: {storageId}");
+            Console.WriteLine($"📂 Found Storage ID: {storageId}");
             return storageId;
         }
         catch (Exception ex)
@@ -202,6 +208,8 @@ public class FileDownloadService
             return null;
         }
     }
+
+
 
 
 
