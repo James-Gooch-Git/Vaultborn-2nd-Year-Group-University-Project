@@ -93,6 +93,10 @@
       <Content Include="Assets\ScaleBackground.png">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </Content>
+      <None Remove="Assets\deckBG3.png" />
+      <Content Include="Assets\deckBG3.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
     </ItemGroup>
 
     <ItemGroup>
