@@ -8,11 +8,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="29dceaf0-6b38-45af-9473-223a6fd443eb" name="Changes" comment="notifications displayed using a class">
+    <list default="true" id="29dceaf0-6b38-45af-9473-223a6fd443eb" name="Changes" comment="back to asset library button added">
       <change beforePath="$PROJECT_DIR$/.idea/.idea.AssetManager/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.AssetManager/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/AssetManager.Core/bin/Debug/net8.0/AssetManager.Core.dll" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Core/bin/Debug/net8.0/AssetManager.Core.dll" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/AssetManager.Core/bin/Debug/net8.0/AssetManager.Core.pdb" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Core/bin/Debug/net8.0/AssetManager.Core.pdb" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml.cs" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml.cs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -351,7 +350,15 @@
       <option name="project" value="LOCAL" />
       <updated>1742920735354</updated>
     </task>
-    <option name="localTasksCounter" value="26" />
+    <task id="LOCAL-00026" summary="back to asset library button added">
+      <option name="closed" value="true" />
+      <created>1742924349186</created>
+      <option name="number" value="00026" />
+      <option name="presentableId" value="LOCAL-00026" />
+      <option name="project" value="LOCAL" />
+      <updated>1742924349186</updated>
+    </task>
+    <option name="localTasksCounter" value="27" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -406,6 +413,7 @@
     <MESSAGE value="styled notifications centre" />
     <MESSAGE value="notifications displayed using a class" />
     <MESSAGE value="a" />
-    <option name="LAST_COMMIT_MESSAGE" value="a" />
+    <MESSAGE value="back to asset library button added" />
+    <option name="LAST_COMMIT_MESSAGE" value="back to asset library button added" />
   </component>
 </project>

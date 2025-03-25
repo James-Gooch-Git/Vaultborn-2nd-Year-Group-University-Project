@@ -1116,6 +1116,10 @@
                                 BorderBrush="#98730C" BorderThickness="2" Background="#540754" Foreground="White"
                                 Width="110" Height="40" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>-->
+                    
+                    <Button x:Name="ModelsButton" Click="MarketplaceModels_Click" Content="Models" Width="110" Height="40" Margin="20,0,0,0" HorizontalAlignment="Left" BorderBrush="#98730C" BorderThickness="3" Background="#540754" Foreground="#d1d5db"/>
+                    
+                    <Button x:Name="DecksButton" Click="MarketplaceDecks_Click" Content="Decks" Width="110" Height="40" Margin="150,0,0,0" HorizontalAlignment="Left" BorderBrush="#98730C" BorderThickness="3" Background="#540754" Foreground="#d1d5db"/>
 
                     <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
 
@@ -1402,7 +1406,7 @@
                     </DataGrid.Columns>
                 </DataGrid>
 
-                <Popup x:Name="BuyPopup" Placement="Bottom" PlacementTarget="{Binding ElementName=BtnLibrary}" StaysOpen="True" AllowsTransparency="True" PopupAnimation="Fade" HorizontalOffset="150">
+                <Popup x:Name="BuyPopup" Placement="Bottom" PlacementTarget="{Binding ElementName=ModelsButton}" StaysOpen="True" AllowsTransparency="True" PopupAnimation="Fade" HorizontalOffset="150">
                     <Border x:Name="BuyBorder" Background="#5c1c1c" CornerRadius="5"
                             Width="400" Height="400">
 
