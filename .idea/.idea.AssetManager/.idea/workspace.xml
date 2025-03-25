@@ -9,15 +9,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="29dceaf0-6b38-45af-9473-223a6fd443eb" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/.idea.AssetManager/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.AssetManager/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/AssetManager.Core/bin/Debug/net8.0/AssetManager.Core.dll" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Core/bin/Debug/net8.0/AssetManager.Core.dll" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/AssetManager.Core/bin/Debug/net8.0/AssetManager.Core.pdb" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Core/bin/Debug/net8.0/AssetManager.Core.pdb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml.cs" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/AssetManager.Infrastructure/bin/Debug/net8.0/win-x64/AssetManager.Core.dll" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Infrastructure/bin/Debug/net8.0/win-x64/AssetManager.Core.dll" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/AssetManager.Infrastructure/bin/Debug/net8.0/win-x64/AssetManager.Core.pdb" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Infrastructure/bin/Debug/net8.0/win-x64/AssetManager.Core.pdb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/AssetManager.Infrastructure/bin/Debug/net8.0/win-x64/AssetManager.Infrastructure.dll" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Infrastructure/bin/Debug/net8.0/win-x64/AssetManager.Infrastructure.dll" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/AssetManager.Infrastructure/bin/Debug/net8.0/win-x64/AssetManager.Infrastructure.pdb" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Infrastructure/bin/Debug/net8.0/win-x64/AssetManager.Infrastructure.pdb" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -58,13 +51,21 @@
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/d05f70559122dfb21712dbedbe71a96d317ca8fd3867172ec7112d1e89f7adb/HwndSubclass.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/e4c59ecf2285bd73c67c23a96494bd21f2a54125734533573bc197eebaf7ac6/HwndWrapper.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/fb367341658aaedd7de424d4c9189db33c4387e268dcc4011918569442ab12/AsyncTaskMethodBuilderT.cs" root0="FORCE_HIGHLIGHTING" />
-    <setting file="file://$PROJECT_DIR$/AssetManager.Core/Fusion/FusionAddIn/FusionManager.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/AssetManager.Desktop/LoginWindow.xaml.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml" root0="FORCE_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/tyler/OneDrive/Desktop/AssetManager/AssetManager.Desktop/MainWindow.xaml" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/tyler/OneDrive/Desktop/AssetManager/AssetManager.Desktop/MainWindow.xaml" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/tyler/OneDrive/Desktop/AssetManager/AssetManager.Desktop/MainWindow.xaml" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/tyler/OneDrive/Desktop/AssetManager/AssetManager.Desktop/MainWindow.xaml.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/tyler/OneDrive/Desktop/AssetManager/AssetManager.Desktop/MainWindow.xaml.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/tyler/OneDrive/Desktop/AssetManager/AssetManager.Desktop/MainWindow.xaml.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/tyler/OneDrive/Desktop/AssetManager/AssetManager.Desktop/MainWindow.xaml.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/AssetManager.Desktop/OpenFusion.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/AssetManager.Desktop/obj/Debug/net8.0-windows/win-x64/App.g.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/AssetManager.Desktop/obj/Debug/net8.0-windows/win-x64/MainWindow.g.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/tyler/OneDrive/Desktop/AssetManager/AssetManager.Infrastructure/Data/MongoConnection.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/tyler/OneDrive/Desktop/AssetManager/AssetManager.Infrastructure/Data/MongoConnection.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/AssetManager.Infrastructure/Services/DataManagement.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/AssetManager.Infrastructure/Services/DeleteModel.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/AssetManager.Infrastructure/Services/ModelUpload.cs" root0="FORCE_HIGHLIGHTING" />
@@ -300,7 +301,23 @@
       <option name="project" value="LOCAL" />
       <updated>1742837044563</updated>
     </task>
-    <option name="localTasksCounter" value="20" />
+    <task id="LOCAL-00020" summary="notifs displayed when refresh clicked">
+      <option name="closed" value="true" />
+      <created>1742905031355</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1742905031355</updated>
+    </task>
+    <task id="LOCAL-00021" summary="a">
+      <option name="closed" value="true" />
+      <created>1742907655246</created>
+      <option name="number" value="00021" />
+      <option name="presentableId" value="LOCAL-00021" />
+      <option name="project" value="LOCAL" />
+      <updated>1742907655246</updated>
+    </task>
+    <option name="localTasksCounter" value="22" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -350,6 +367,8 @@
     <MESSAGE value="fixed error with £ symbol in price stopping paypal from working" />
     <MESSAGE value="started version number in comments" />
     <MESSAGE value="model version comment was made on displayed" />
-    <option name="LAST_COMMIT_MESSAGE" value="model version comment was made on displayed" />
+    <MESSAGE value="notifs displayed when refresh clicked" />
+    <MESSAGE value="a" />
+    <option name="LAST_COMMIT_MESSAGE" value="a" />
   </component>
 </project>
