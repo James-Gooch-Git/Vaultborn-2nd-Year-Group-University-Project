@@ -12,8 +12,12 @@ namespace AssetManager.Infrastructure.Services
     public class ModelDerivativeService
     {
         private readonly HttpClient _httpClient;
-        private readonly string _modelDerivativeUrl = "https://developer.api.autodesk.com/modelderivative/v2/designdata/job";
-        private readonly string _manifestUrl = "https://developer.api.autodesk.com/modelderivative/v2/designdata/{0}/manifest";
+
+        private readonly string _modelDerivativeUrl =
+            "https://developer.api.autodesk.com/modelderivative/v2/designdata/job";
+
+        private readonly string _manifestUrl =
+            "https://developer.api.autodesk.com/modelderivative/v2/designdata/{0}/manifest";
 
         public ModelDerivativeService(HttpClient httpClient)
         {
@@ -59,7 +63,7 @@ namespace AssetManager.Infrastructure.Services
         public async Task<bool> SubmitModelForTranslationAsync(string encodedUrn, string accessToken)
         {
             //TokenService tokenService = new TokenService();
-             //accessToken = TokenManager.GetTwoLeggedToken();
+            //accessToken = TokenManager.GetTwoLeggedToken();
             if (string.IsNullOrEmpty(encodedUrn) || string.IsNullOrEmpty(accessToken))
             {
                 Console.WriteLine("❌ Error: Missing required parameters.");
@@ -79,8 +83,8 @@ namespace AssetManager.Infrastructure.Services
                 {
                     formats = new[]
                     {
-                new { type = "svf", views = new[] { "2d", "3d" } }
-            }
+                        new { type = "svf", views = new[] { "2d", "3d" } }
+                    }
                 }
             };
 
@@ -100,7 +104,7 @@ namespace AssetManager.Infrastructure.Services
                     Content = new StringContent(jsonPayload, Encoding.UTF8, "application/json")
                 };
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-                request.Headers.Add("x-ads-force", "true");  // Force re-translation if already processed
+                request.Headers.Add("x-ads-force", "true"); // Force re-translation if already processed
 
                 // ✅ Send the request
                 HttpResponseMessage response = await client.SendAsync(request);
@@ -126,7 +130,8 @@ namespace AssetManager.Infrastructure.Services
         {
             // Remove the "urn:" prefix for the API call if necessary
             string urnWithoutPrefix = encodedUrn.Replace("urn:", "");
-            string url = $"https://developer.api.autodesk.com/modelderivative/v2/designdata/{urnWithoutPrefix}/manifest";
+            string url =
+                $"https://developer.api.autodesk.com/modelderivative/v2/designdata/{urnWithoutPrefix}/manifest";
 
             using var request = new HttpRequestMessage(HttpMethod.Get, url);
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
@@ -137,7 +142,7 @@ namespace AssetManager.Infrastructure.Services
             if (!response.IsSuccessStatusCode)
             {
                 Console.WriteLine($"Error checking manifest: {response.StatusCode} - {response.ReasonPhrase}");
-                return false;  // Return false if manifest not found or there was another issue
+                return false; // Return false if manifest not found or there was another issue
             }
 
             string json = await response.Content.ReadAsStringAsync();
@@ -153,7 +158,6 @@ namespace AssetManager.Infrastructure.Services
             return false;
         }
 
-<<<<<<< HEAD
         public async Task<bool> SubmitPdfForTranslationAsync(string encodedUrn, string accessToken)
         {
             if (string.IsNullOrEmpty(encodedUrn) || string.IsNullOrEmpty(accessToken))
@@ -174,19 +178,19 @@ namespace AssetManager.Infrastructure.Services
                 {
                     formats = new[]
                     {
-            new
-            {
-                type = "svf",
-                views = new[] { "2d" },
-                advanced = new
-                {
-                    pdfOptions = new
-                    {
-                        generateMasterViews = true
+                        new
+                        {
+                            type = "svf",
+                            views = new[] { "2d" },
+                            advanced = new
+                            {
+                                pdfOptions = new
+                                {
+                                    generateMasterViews = true
+                                }
+                            }
+                        }
                     }
-                }
-            }
-        }
                 }
             };
 
@@ -206,7 +210,7 @@ namespace AssetManager.Infrastructure.Services
                     Content = new StringContent(jsonPayload, Encoding.UTF8, "application/json")
                 };
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-                request.Headers.Add("x-ads-force", "true");  // Force re-translation if already processed
+                request.Headers.Add("x-ads-force", "true"); // Force re-translation if already processed
 
                 HttpResponseMessage response = await client.SendAsync(request);
                 string responseContent = await response.Content.ReadAsStringAsync();
@@ -224,50 +228,54 @@ namespace AssetManager.Infrastructure.Services
                 Console.WriteLine("✅ PDF successfully submitted for translation.");
                 return true;
             }
-=======
-        // Helper method to debug token contents
 
-        public static async Task<bool> IsVersionViewableAsync(string encodedUrn, string accessToken)
-        {
-            string urnWithoutPrefix = encodedUrn.Replace("urn:", "");
-            string url = $"https://developer.api.autodesk.com/modelderivative/v2/designdata/{urnWithoutPrefix}/manifest";
+            // Helper method to debug token contents
 
-            using (var client = new HttpClient())
-            {
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-                HttpResponseMessage response = await client.GetAsync(url);
+           
 
-                if (!response.IsSuccessStatusCode)
-                {
-                    Console.WriteLine($"❌ Error checking model version: {response.StatusCode}");
-                    return false;
-                }
-
-                string jsonResponse = await response.Content.ReadAsStringAsync();
-                using var doc = JsonDocument.Parse(jsonResponse);
-                if (doc.RootElement.TryGetProperty("status", out JsonElement statusElement))
-                {
-                    string status = statusElement.GetString();
-                    if (status == "success")
-                    {
-                        return true; // Translation is successful and viewable
-                    }
-                    else if (status == "pending" || status == "processing")
-                    {
-                        Console.WriteLine("🔄 Model is still processing, please wait...");
-                        return false; // Still processing, not yet viewable
-                    }
-                    else
-                    {
-                        Console.WriteLine("❌ Translation failed or there was an error with the model.");
-                        return false; // Failed or error state
-                    }
-                }
-            }
-
-            return false; // Default return if no status found
->>>>>>> version-comments
         }
+        
+         public static async Task<bool> IsVersionViewableAsync(string encodedUrn, string accessToken)
+            {
+                string urnWithoutPrefix = encodedUrn.Replace("urn:", "");
+                string url =
+                    $"https://developer.api.autodesk.com/modelderivative/v2/designdata/{urnWithoutPrefix}/manifest";
 
+                using (var client = new HttpClient())
+                {
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+                    HttpResponseMessage response = await client.GetAsync(url);
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        Console.WriteLine($"❌ Error checking model version: {response.StatusCode}");
+                        return false;
+                    }
+
+                    string jsonResponse = await response.Content.ReadAsStringAsync();
+                    using var doc = JsonDocument.Parse(jsonResponse);
+                    if (doc.RootElement.TryGetProperty("status", out JsonElement statusElement))
+                    {
+                        string status = statusElement.GetString();
+                        if (status == "success")
+                        {
+                            return true; // Translation is successful and viewable
+                        }
+                        else if (status == "pending" || status == "processing")
+                        {
+                            Console.WriteLine("🔄 Model is still processing, please wait...");
+                            return false; // Still processing, not yet viewable
+                        }
+                        else
+                        {
+                            Console.WriteLine("❌ Translation failed or there was an error with the model.");
+                            return false; // Failed or error state
+                        }
+                    }
+                }
+
+                return false; // Default return if no status found
+
+            }
     }
 }
