@@ -73,7 +73,10 @@
 
     </Window.Resources>
     
-    <Grid Background="{StaticResource BackgroundBrush}">
+    <Grid>
+        <Grid.Background>  
+            <ImageBrush ImageSource="pack://application:,,,/Assets/deckBG3.png"></ImageBrush>  
+        </Grid.Background> 
         <!-- Main UI Layout -->
         <Grid.RowDefinitions>
             <RowDefinition Height="3*" /> <!-- Enlarged Card Display -->
@@ -242,9 +245,9 @@
 
         <!-- Deck of Cards (Bottom Row) -->
         <Border Grid.Row="1"
-                Background="#26000000"
+                Background="Transparent"
                 BorderBrush="#1E0A30"
-                BorderThickness="1,1,1,0">
+                BorderThickness="0">
             <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Height="250">
                 <StackPanel x:Name="CardListPanel"
                             Orientation="Horizontal"

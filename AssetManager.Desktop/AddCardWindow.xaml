@@ -14,7 +14,10 @@
         </LinearGradientBrush>
     </Window.Resources>
     
-    <Grid Background="{StaticResource BackgroundBrush}">
+    <Grid>
+        <Grid.Background>  
+            <ImageBrush ImageSource="pack://application:,,,/Assets/addCardBG.png"></ImageBrush>  
+        </Grid.Background> 
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="2*" /> <!-- Card Preview (Larger) -->
             <ColumnDefinition Width="3*" /> <!-- Stats & Buttons -->
@@ -44,12 +47,12 @@
                     </Style>
                 </StackPanel.Resources>
                 
-                <TextBlock Text="Card Name:" FontWeight="Bold"/>
-                <TextBox x:Name="CardNameTextBox" Margin="0,0, 0, 10" Background="AntiqueWhite"/>
+                <TextBlock Text="Card Name:" FontWeight="Bold" Margin="0,15, 0, 0"/>
+                <TextBox x:Name="CardNameTextBox" Margin="0,0, 30, 10" Background="AntiqueWhite"/>
 
                 <TextBlock Text="3D Model:" FontWeight="Bold" />
-                <StackPanel Orientation="Horizontal" Margin="0, 0, 0, 10" ZIndex="0">
-                    <TextBlock x:Name="ModelTextBox" Margin="0,0, 0, 10" Background="AntiqueWhite" Foreground="DimGray" Width="220"/>
+                <StackPanel Orientation="Horizontal" Margin="0, 0, 0, 10">
+                    <TextBlock x:Name="ModelTextBox" Margin="0,0, 0, 10" Background="AntiqueWhite" Foreground="DimGray" Width="190"/>
                     <Border BorderThickness="0" BorderBrush="AntiqueWhite" Height="16" VerticalAlignment="Top">
                         <Button Content="📁" 
                                 FontSize="10"
@@ -64,13 +67,13 @@
                 </StackPanel>
                 
                 <TextBlock Text="Image URL:" FontWeight="Bold"/>
-                <TextBox x:Name="ImageUrlTextBox" Margin="0,0, 0, 10" Background="AntiqueWhite"/>
+                <TextBox x:Name="ImageUrlTextBox" Margin="0,0, 30, 10" Background="AntiqueWhite"/>
                 
                 <TextBlock Text="Description:" FontWeight="Bold"/>
-                <TextBox x:Name="DescriptionTextBox" Margin="0,0, 0, 0" Background="AntiqueWhite" Height="40"/>
+                <TextBox x:Name="DescriptionTextBox" Margin="0,0, 30, 0" Background="AntiqueWhite" Height="40"/>
 
                 <Button Content="Add Card" Click="SubmitCard_Click" 
-                        Margin="10,20,10,0" Background="Green" Foreground="White"/>
+                        Margin="10,20,10,0" Background="CadetBlue" Foreground="White" Width="60"/>
             </StackPanel>
         </Grid>
     </Grid>

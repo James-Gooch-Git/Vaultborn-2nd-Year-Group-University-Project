@@ -18,6 +18,10 @@
 
     <ItemGroup>
       <Content Include="AppIcon4.ico" />
+      <None Remove="Assets\deckBG2.png" />
+      <Content Include="Assets\deckBG2.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
     </ItemGroup>
 
     <ItemGroup>
@@ -45,12 +49,25 @@
       <Resource Include="Resources\ornate-gold-frame_1156559-2825.jpg" />
       <None Remove="Assets\fantasy-login4.png" />
       <Resource Include="Assets\fantasy-login4.png" />
+      <None Remove="Assets\addCardBG.png" />
+      <Resource Include="Assets\addCardBG.png" />
+      <None Remove="Assets\deckBG1.png" />
+      <Content Include="Assets\deckBG1.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
     </ItemGroup>
     
     <ItemGroup>
       <Page Update="AddCardWindow.xaml">
         <Generator>MSBuild:Compile</Generator>
       </Page>
+    </ItemGroup>
+    
+    <ItemGroup>
+      <None Remove="Assets\deckBG3.png" />
+      <Content Include="Assets\deckBG3.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
     </ItemGroup>
 
 </Project>
