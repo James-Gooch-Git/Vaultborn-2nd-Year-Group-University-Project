@@ -6555,6 +6555,12 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             return true;
         }
         
+        //notifs
+        private void Bell_Click(object sender, MouseButtonEventArgs e)
+        {
+            NotificationsPopup.IsOpen = true;
+        }
+        
         //COMMENTED OUT FUNCTIONS//
 
         /* private void BtnGenerate3D_Click(object sender, RoutedEventArgs e)
