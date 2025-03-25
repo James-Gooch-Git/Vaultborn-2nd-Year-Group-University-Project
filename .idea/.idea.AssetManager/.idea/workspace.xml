@@ -8,12 +8,18 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
+<<<<<<< HEAD
+    <list default="true" id="29dceaf0-6b38-45af-9473-223a6fd443eb" name="Changes" comment="mongo thumbnail">
+      <change afterPath="$PROJECT_DIR$/AssetManager.Desktop/AddCardWindow.xaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/AssetManager.Desktop/AddCardWindow.xaml.cs" afterDir="false" />
+=======
     <list default="true" id="29dceaf0-6b38-45af-9473-223a6fd443eb" name="Changes" comment="ding">
       <change afterPath="$PROJECT_DIR$/AssetManager.Desktop/Assets/addCardBG.png" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/AssetManager.Desktop/Assets/deckBG1.png" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/AssetManager.Desktop/Assets/deckBG2.png" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/AssetManager.Desktop/Assets/deckBG3.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+>>>>>>> master-tom
       <change beforePath="$PROJECT_DIR$/.idea/.idea.AssetManager/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.AssetManager/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/AssetManager.Core/bin/Debug/net8.0/AssetManager.Core.dll" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Core/bin/Debug/net8.0/AssetManager.Core.dll" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/AssetManager.Core/bin/Debug/net8.0/AssetManager.Core.pdb" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Core/bin/Debug/net8.0/AssetManager.Core.pdb" afterDir="false" />
@@ -90,22 +96,22 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;.NET Project.AssetManager.Desktop.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;master-tom&quot;,
-    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    ".NET Project.AssetManager.Desktop.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "Merging master",
+    "ignore.virus.scanning.warn.message": "true",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="RunManager">
     <configuration name="AssetManager.Desktop" type="DotNetProject" factoryName=".NET Project">
       <option name="EXE_PATH" value="" />
@@ -147,8 +153,12 @@
       <workItem from="1742393210455" duration="71000" />
       <workItem from="1742393296184" duration="13729000" />
       <workItem from="1742471596910" duration="861000" />
+<<<<<<< HEAD
+      <workItem from="1742807448644" duration="3881000" />
+=======
       <workItem from="1742807448644" duration="3569000" />
       <workItem from="1742838076714" duration="8822000" />
+>>>>>>> master-tom
     </task>
     <task id="LOCAL-00001" summary="save main">
       <option name="closed" value="true" />
@@ -254,6 +264,15 @@
       <option name="project" value="LOCAL" />
       <updated>1742569699248</updated>
     </task>
+<<<<<<< HEAD
+    <task id="LOCAL-00014" summary="mongo thumbnail">
+      <option name="closed" value="true" />
+      <created>1742811305155</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1742811305155</updated>
+=======
     <task id="LOCAL-00014" summary="ding">
       <option name="closed" value="true" />
       <created>1742838137812</created>
@@ -261,6 +280,7 @@
       <option name="presentableId" value="LOCAL-00014" />
       <option name="project" value="LOCAL" />
       <updated>1742838137812</updated>
+>>>>>>> master-tom
     </task>
     <option name="localTasksCounter" value="15" />
     <servers />
@@ -306,7 +326,12 @@
     <MESSAGE value="paypal sandbox buying works!!!" />
     <MESSAGE value="sort listed models works for list view" />
     <MESSAGE value="merge DOC progress" />
+<<<<<<< HEAD
+    <MESSAGE value="mongo thumbnail" />
+    <option name="LAST_COMMIT_MESSAGE" value="mongo thumbnail" />
+=======
     <MESSAGE value="ding" />
     <option name="LAST_COMMIT_MESSAGE" value="ding" />
+>>>>>>> master-tom
   </component>
 </project>

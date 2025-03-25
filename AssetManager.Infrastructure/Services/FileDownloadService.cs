@@ -67,6 +67,7 @@ public class FileDownloadService
         }
     }
 
+
     public async Task DownloadModelAndSaveMetadata(string _selectedProjectId, string _selectedItemId, string _selectedItemName, string _selectedFolderId)
     {
         await DownloadModelAsync(_selectedProjectId, _selectedItemId);
@@ -84,11 +85,11 @@ public class FileDownloadService
             itemId = _selectedItemId,
             itemName = _selectedItemName
         };
+
         File.WriteAllText(metadataPath, System.Text.Json.JsonSerializer.Serialize(metadata));
 
         Console.WriteLine($"✅ Model metadata saved: {metadataPath}");
     }
-
 
     /*    private async Task<string> GetStorageIdFromItem(string projectId, string itemId, string accessToken)
         {

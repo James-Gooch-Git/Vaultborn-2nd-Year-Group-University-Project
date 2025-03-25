@@ -6,6 +6,9 @@
 /packages/
 riderModule.iml
 /_ReSharper.Caches/
+# Ignore Asset Manager Infrastructure files
+AssetManager.Infrastructure/bin/Debug/net8.0/win-x64/*.dll
+AssetManager.Infrastructure/bin/Debug/net8.0/win-x64/*.pdb
 
 
 # Visual Studio User-Specific Files

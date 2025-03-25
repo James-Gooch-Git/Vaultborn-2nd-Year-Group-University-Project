@@ -153,7 +153,78 @@ namespace AssetManager.Infrastructure.Services
 
             return false;
         }
-        // Helper method to debug token contents
-      
+
+        public async Task<bool> SubmitPdfForTranslationAsync(string encodedUrn, string accessToken)
+        {
+            if (string.IsNullOrEmpty(encodedUrn) || string.IsNullOrEmpty(accessToken))
+            {
+                Console.WriteLine("❌ Error: Missing required parameters for PDF translation.");
+                return false;
+            }
+
+            Console.WriteLine($"🔍 PDF Encoded URN: {encodedUrn}");
+            Console.WriteLine($"🔑 Using Access Token: {accessToken.Substring(0, 10)}...");
+
+            // JSON Payload specifically for PDF translation
+            // Ensure this is in your SubmitPdfForTranslationAsync method
+            var jobPayload = new
+            {
+                input = new { urn = encodedUrn },
+                output = new
+                {
+                    formats = new[]
+                    {
+            new
+            {
+                type = "svf",
+                views = new[] { "2d" },
+                advanced = new
+                {
+                    pdfOptions = new
+                    {
+                        generateMasterViews = true
+                    }
+                }
+            }
+        }
+                }
+            };
+
+
+            string jsonPayload = JsonSerializer.Serialize(jobPayload, new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                WriteIndented = true
+            });
+
+            Console.WriteLine($"📄 PDF Translation JSON Payload: {jsonPayload}");
+
+            using (var client = new HttpClient())
+            {
+                var request = new HttpRequestMessage(HttpMethod.Post, _modelDerivativeUrl)
+                {
+                    Content = new StringContent(jsonPayload, Encoding.UTF8, "application/json")
+                };
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+                request.Headers.Add("x-ads-force", "true");  // Force re-translation if already processed
+
+                HttpResponseMessage response = await client.SendAsync(request);
+                string responseContent = await response.Content.ReadAsStringAsync();
+
+                Console.WriteLine($"🔍 PDF Translation Response Status: {response.StatusCode}");
+                Console.WriteLine($"📄 Response Content: {responseContent}");
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine($"❌ PDF Translation API Request Failed: {response.StatusCode}");
+                    Console.WriteLine($"Error Details: {responseContent}");
+                    return false;
+                }
+
+                Console.WriteLine("✅ PDF successfully submitted for translation.");
+                return true;
+            }
+        }
+
     }
 }

@@ -16,6 +16,11 @@ using System.Windows.Media.Imaging;
 using System.Net;
 using System.Windows.Input;
 using System.Windows.Media.Effects;
+<<<<<<< HEAD
+using System.Timers;
+
+=======
+>>>>>>> master-tom
 using System.Text;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Wpf;
@@ -32,7 +37,12 @@ using Azure.Core;
 using System.Web;
 using Microsoft.WindowsAPICodePack.Taskbar;
 using System.Windows.Controls.Primitives;
+<<<<<<< HEAD
+using System.Windows.Media.Media3D;
+using System.Runtime.Serialization;
+=======
 using AssetManager.Infrastructure.DOC;
+>>>>>>> master-tom
 
 namespace AssetManager.Desktop
 {
@@ -58,6 +68,9 @@ namespace AssetManager.Desktop
         private string selectedHubName = "Loading..."; // Default value before hubs load
         private bool isModelLoaded = false;
         private Dictionary<int, (int VersionNumber, string VersionID)> versionsMarkerData = new Dictionary<int, (int, string)>();
+        private System.Timers.Timer _refreshTimer;
+        private const int REFRESH_INTERVAL_MINUTES = 15;
+        private bool _isRefreshing = false;
 
 
         private List<Dictionary<string, string>> originalResults;
@@ -75,8 +88,8 @@ namespace AssetManager.Desktop
             InitializeComponent();
 
 
-  
 
+       
             //InitializeWebView2();
             //  ModelDataGrid.SelectionChanged += ModelDataGrid_SelectionChanged;
             Initialize();
@@ -96,6 +109,7 @@ namespace AssetManager.Desktop
             _uploadService = new ModelUpload(_accessToken);
             _filedwnService = new FileDownloadService();
             //InitializeTreeView();
+            InitializeBackgroundRefresh();
             InitialiseFolders();
             _payPalService = new PayPalService();
             Initialize();
@@ -176,7 +190,7 @@ namespace AssetManager.Desktop
 
                 LoadProjectsForHub(hubID);
                 await TestDataManagement();
-
+                await RefreshHubs();
                 //FusionManager.InitializePythonEngine();
                 //InitialiseFolders();
                 Username_TextBlock.Text = await GetUserName(_userId);
@@ -580,7 +594,10 @@ namespace AssetManager.Desktop
                         Opacity = 0.1,
                         BlurRadius = 10,
                         ShadowDepth = 2
-                    }
+                    },
+
+                    Tag = model, // Store the model data in the Tag for easy access
+                    Cursor = Cursors.Hand // Change cursor to indicate clickability
                 };
 
                 Grid grid = new Grid();
@@ -1396,6 +1413,12 @@ namespace AssetManager.Desktop
 
 
         #endregion
+        private static readonly HashSet<string> Accepted3DModelExtensions = new HashSet<string>
+{
+    ".obj", ".fbx", ".stl", ".dae", ".3ds", ".blend", ".ply",
+    ".gltf", ".glb", ".ifc", ".iges", ".igs", ".step", ".stp",
+    ".sldprt", ".sldasm", ".3mf", ".prt", ".x3d", ".wrl"
+};
 
         //NEEDS MIGRATING TO UI SERVICES || UI FUNCTIONALITY//
         #region UI Functionality
@@ -1403,7 +1426,7 @@ namespace AssetManager.Desktop
         {
             if (sender is TreeViewItem item && item.Tag is (string projectId, string folderId, bool isFolder))
             {
-                if (item.Items.Count == 1 && item.Items[0] == null) // Check if it needs loading
+                if (item.Items.Count == 1 && item.Items[0] == null)
                 {
                     item.Items.Clear();
 
@@ -1417,11 +1440,20 @@ namespace AssetManager.Desktop
 
                     foreach (var (itemId, itemName, isFolderItem) in items)
                     {
+                        bool is3DModel = false;
+
+                        if (!isFolderItem)
+                        {
+                            string extension = Path.GetExtension(itemName)?.ToLowerInvariant();
+                            is3DModel = Accepted3DModelExtensions.Contains(extension);
+                            // You can now use `is3DModel` for logic or tag
+                        }
+
                         TreeViewItem fileItem = new TreeViewItem
                         {
                             Header = isFolderItem ? $"📁 {itemName}" : $"📄 {itemName}",
-                            Tag = (projectId, itemId, isFolderItem),
-                            ContextMenu = CreateContextMenu(projectId, itemId, isFolderItem) // ✅ Add right-click menu
+                            Tag = (projectId, itemId, isFolderItem, is3DModel), // Include is3DModel if needed
+                            ContextMenu = CreateContextMenu(projectId, itemId, isFolderItem)
                         };
 
                         if (isFolderItem)
@@ -1434,6 +1466,8 @@ namespace AssetManager.Desktop
                 }
             }
         }
+
+
         /*private void InitializeTreeView()
         {
             ProjectTreeView.Items.Clear();
@@ -1533,16 +1567,23 @@ namespace AssetManager.Desktop
 
             if (subItems == null || !subItems.Any())
             {
-                return; // No subfolders to add
+                return;
             }
 
             foreach (var (subItemId, subItemName, isSubFolder) in subItems)
             {
+                bool isPdf = false;
+                if (!isSubFolder)
+                {
+                    string extension = Path.GetExtension(subItemName)?.ToLowerInvariant();
+                    isPdf = extension == ".pdf";
+                }
+
                 TreeViewItem subItem = new TreeViewItem
                 {
                     Header = isSubFolder ? $"📁 {subItemName}" : $"📄 {subItemName}",
-                    Tag = (projectId, subItemId, isSubFolder),
-                    ContextMenu = CreateContextMenu(projectId, subItemId, isSubFolder) // ✅ Add right-click menu
+                    Tag = (projectId, subItemId, isSubFolder, isPdf),
+                    ContextMenu = CreateContextMenu(projectId, subItemId, isSubFolder)
                 };
 
                 if (isSubFolder)
@@ -1553,6 +1594,7 @@ namespace AssetManager.Desktop
                 parentFolder.Items.Add(subItem);
             }
         }
+
 
         private ContextMenu CreateContextMenu(string projectId, string itemId, bool isFolder)
         {
@@ -1653,34 +1695,95 @@ namespace AssetManager.Desktop
         #region UI Buttons
         private void ProjectTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
-            if (e.NewValue is TreeViewItem selectedItem && selectedItem.Tag is ValueTuple<string, string, bool> projectData)
+            if (e.NewValue is TreeViewItem selectedItem)
             {
-                _selectedProjectId = projectData.Item1;
-                _folderId = projectData.Item2;
-
-                // Extract the project name from the header (remove the 📁 emoji if present)
-                string header = selectedItem.Header.ToString();
-                _selectedProjectName = header.StartsWith("📁 ") ? header.Substring(3) : header;
-
-                Console.WriteLine($"📌 Selected Project: {_selectedProjectName}, Project ID: {_selectedProjectId}, Folder ID: {_folderId}");
-
-                // Reset model loading flag and clear UI before loading new models
-                isModelLoaded = false;
-                ModelsContainer.Children.Clear();
-
-                // Automatically refresh the grid view if it's currently visible
-                if (Grid_View.Visibility == Visibility.Visible)
+                // Handle the expanded tuple with PDF flag
+                if (selectedItem.Tag is ValueTuple<string, string, bool, bool> fileData)
                 {
-                    Grid_Click(null, null);  // Refresh grid view with the new project
+                    string projectId = fileData.Item1;
+                    string itemId = fileData.Item2;
+                    bool isFolder = fileData.Item3;
+                    bool isPdf = fileData.Item4;
+
+                    _selectedProjectId = projectId;
+                    _selectedItemId = itemId;
+
+                    // Extract the item name from the header (remove the icon prefix)
+                    string header = selectedItem.Header.ToString();
+                    string displayName = header.Length > 2 ? header.Substring(2).Trim() : header;
+
+                    if (isFolder)
+                    {
+                        _selectedProjectName = displayName;
+                        _folderId = itemId;
+
+                        Console.WriteLine($"📁 Selected Folder: {_selectedProjectName}, Project ID: {_selectedProjectId}, Folder ID: {_folderId}");
+
+                        // Reset model loading flag and clear UI before loading new models
+                        isModelLoaded = false;
+                        ModelsContainer.Children.Clear();
+
+                        // Load models for the selected folder
+                        if (Grid_View.Visibility == Visibility.Visible)
+                        {
+                            Grid_Click(null, null);
+                        }
+                        else if (ModelsDataGrid.Visibility == Visibility.Visible)
+                        {
+                            List_Click(null, null);
+                        }
+                        else
+                        {
+                            LoadModelsForSelectedProject();
+                        }
+                    }
+                    else if (isPdf)
+                    {
+                        // It's a PDF file
+                        _selectedItemName = displayName;
+                        Console.WriteLine($"📑 Selected PDF: {_selectedItemName}, Item ID: {_selectedItemId}, Project ID: {_selectedProjectId}");
+
+                        // Open the PDF in the Forge Viewer
+                        OpenPdfInForgeViewer(_selectedProjectId, _selectedItemId, _selectedItemName);
+                    }
+                    else
+                    {
+                        // It's a regular file - handle accordingly
+                        _selectedItemName = displayName;
+                        Console.WriteLine($"📄 Selected File: {_selectedItemName}, Item ID: {_selectedItemId}, Project ID: {_selectedProjectId}");
+
+                        // You could add specific handling for other file types here
+                    }
                 }
-                else if (ModelsDataGrid.Visibility == Visibility.Visible)
+                // Handle the original tuple format for backward compatibility
+                else if (selectedItem.Tag is ValueTuple<string, string, bool> projectData)
                 {
-                    List_Click(null, null);  // Refresh List View
-                }
-                else
-                {
-                    // Otherwise, load models normally
-                    LoadModelsForSelectedProject();
+                    _selectedProjectId = projectData.Item1;
+                    _folderId = projectData.Item2;
+
+                    // Extract the project name from the header
+                    string header = selectedItem.Header.ToString();
+                    _selectedProjectName = header.StartsWith("📁 ") ? header.Substring(3) : header;
+
+                    Console.WriteLine($"📌 Selected Project: {_selectedProjectName}, Project ID: {_selectedProjectId}, Folder ID: {_folderId}");
+
+                    // Reset model loading flag and clear UI before loading new models
+                    isModelLoaded = false;
+                    ModelsContainer.Children.Clear();
+
+                    // Refresh the appropriate view
+                    if (Grid_View.Visibility == Visibility.Visible)
+                    {
+                        Grid_Click(null, null);
+                    }
+                    else if (ModelsDataGrid.Visibility == Visibility.Visible)
+                    {
+                        List_Click(null, null);
+                    }
+                    else
+                    {
+                        LoadModelsForSelectedProject();
+                    }
                 }
             }
         }
@@ -1729,12 +1832,12 @@ namespace AssetManager.Desktop
 
                 // Also immediately fetch and set the storage ID for the selected item
                 await FetchAndSetStorageId();
-                
-                //if (ModelsDataGrid.CurrentColumn.Header.ToString() != "Actions")
-                //{
-                //    ModelInfoSidebar.Width = new GridLength(200);
-                //    await InitializeModelsInfoSidebar();
-                //}
+
+                if (ModelsDataGrid.CurrentColumn.Header.ToString() != "Actions" && ModelsDataGrid.CurrentColumn.Header.ToString() != "Versions")
+                {
+                    await LoadModelData();
+                }
+
             }
             else if (ModelsDataGrid.SelectedItem != null)
             {
@@ -1882,7 +1985,7 @@ namespace AssetManager.Desktop
                     _selectedItemId = selectedModelId;
                     _selectedItemName = modelInfo.Item2;
 
-                    LoadComments(selectedModelId);
+                    await LoadComments();
                 }
             };
 
@@ -2052,7 +2155,7 @@ namespace AssetManager.Desktop
             List_Border.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
         }
 
-        // New function to create versions menu
+
         private ContextMenu CreateModelVersionsMenu(string modelId, string modelName)
         {
             ContextMenu versionsMenu = new ContextMenu();
@@ -2210,6 +2313,37 @@ namespace AssetManager.Desktop
             // - Display the version in a viewer
             // - Enable specific actions for this version
         }
+
+        //private async void Grid_Click(object sender, MouseButtonEventArgs e)
+        //{
+        //    if (string.IsNullOrEmpty(_selectedProjectId))
+        //    {
+        //        MessageBox.Show("❌ Please select a project to view models.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+        //        return;
+        //    }
+
+        //    ModelsDataGrid.Visibility = Visibility.Collapsed; // Hide DataGrid
+        //    Grid_View.Visibility = Visibility.Visible; // Show Grid View
+
+        //    // Clear previous grid data
+        //    ModelsContainer.Children.Clear();
+
+        //    try
+        //    {
+        //        DisplayGridModels();
+
+        //        //Console.WriteLine($"✅ {models.Count} models loaded successfully in grid view.");
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        MessageBox.Show($"❌ Error loading models: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        //    }
+
+        //    // Update UI styles to reflect active view mode
+        //    List_Border.Background = Brushes.Transparent;
+        //    Grid_Border.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
+        //}
+
         private async void Grid_Click(object sender, MouseButtonEventArgs e)
         {
             if (string.IsNullOrEmpty(_selectedProjectId))
@@ -2218,15 +2352,12 @@ namespace AssetManager.Desktop
                 return;
             }
 
-            ModelsDataGrid.Visibility = Visibility.Collapsed; // Hide DataGrid
-            Grid_View.Visibility = Visibility.Visible; // Show Grid View
-
-            // Clear previous grid data
+            ModelsDataGrid.Visibility = Visibility.Collapsed;
+            Grid_View.Visibility = Visibility.Visible;
             ModelsContainer.Children.Clear();
 
             try
             {
-                // Fetch models for the selected project only
                 List<Dictionary<string, string>> models = await GetModelsFromProject(_selectedProjectId, _folderId);
 
                 if (models == null || models.Count == 0)
@@ -2240,12 +2371,11 @@ namespace AssetManager.Desktop
                     string projectId = _selectedProjectId;
                     string itemId = model["Id"];
 
-                    // UI Container for Model
                     Border modelSquare = new Border
                     {
                         Width = 263,
-                        Height = 300, // Increased to fit the image
-                        CornerRadius = new CornerRadius(5),
+                        Height = 300,
+                        CornerRadius = new CornerRadius(10),
                         Background = Brushes.White,
                         BorderBrush = Brushes.LightGray,
                         BorderThickness = new Thickness(1),
@@ -2257,50 +2387,22 @@ namespace AssetManager.Desktop
                             BlurRadius = 10,
                             ShadowDepth = 2
                         },
-                        Tag = model, // Store the model data in the Tag for easy access
-                        Cursor = Cursors.Hand // Change cursor to indicate clickability
+                        Tag = model,
+                        Cursor = Cursors.Hand
                     };
 
-                    // Add mouse click handler to the entire model card
                     modelSquare.MouseLeftButtonDown += (s, args) =>
                     {
                         if (s is Border border && border.Tag is Dictionary<string, string> selectedModel)
                         {
-                            // Set the selected model and update all tracking variables
                             _selectedModel = selectedModel;
-
-                            // Extract and set all relevant IDs, similar to your ModelsDataGrid_SelectionChanged
-                            if (selectedModel.TryGetValue("Id", out string modelId) || selectedModel.TryGetValue("id", out modelId))
-                            {
-                                _selectedItemId = modelId;
-                                Console.WriteLine($"✅ Set selected item ID: {_selectedItemId}");
-                            }
-                            else
-                            {
-                                _selectedItemId = null;
-                                Console.WriteLine("❌ Model ID missing in selection.");
-                            }
-
-                            // Set the name and related project properties
-                            _selectedItemName = selectedModel.ContainsKey("Name") ? selectedModel["Name"] :
-                                               (selectedModel.ContainsKey("name") ? selectedModel["name"] : "Unknown");
-
-                            // Set the project ID - either from the model or use the currently selected one
-                            if (selectedModel.TryGetValue("ProjectId", out string projId) || selectedModel.TryGetValue("projectId", out projId))
-                            {
-                                _selectedProjectId = projId;
-                                Console.WriteLine($"✅ Set selected project ID: {_selectedProjectId}");
-                            }
-
-                            _selectedProjectName = selectedModel.ContainsKey("Project") ? selectedModel["Project"] :
-                                                  (selectedModel.ContainsKey("project") ? selectedModel["project"] : _selectedProjectName);
+                            _selectedItemId = selectedModel.ContainsKey("Id") ? selectedModel["Id"] : selectedModel.GetValueOrDefault("id");
+                            _selectedItemName = selectedModel.GetValueOrDefault("Name", selectedModel.GetValueOrDefault("name", "Unknown"));
+                            _selectedProjectId = selectedModel.GetValueOrDefault("ProjectId", selectedModel.GetValueOrDefault("projectId", _selectedProjectId));
+                            _selectedProjectName = selectedModel.GetValueOrDefault("Project", selectedModel.GetValueOrDefault("project", _selectedProjectName));
 
                             Console.WriteLine($"✅ Selected Model: {_selectedItemName} (ID: {_selectedItemId}, Project ID: {_selectedProjectId})");
-
-                            // Call FetchAndSetStorageId asynchronously
                             Task.Run(async () => await FetchAndSetStorageId());
-
-                            // Highlight the selected model
                             HighlightSelectedModel(border);
                         }
                     };
@@ -2308,20 +2410,26 @@ namespace AssetManager.Desktop
                     StackPanel content = new StackPanel
                     {
                         Orientation = Orientation.Vertical,
-                        VerticalAlignment = VerticalAlignment.Center,
-                        HorizontalAlignment = HorizontalAlignment.Left
+                        VerticalAlignment = VerticalAlignment.Top,
+                        HorizontalAlignment = HorizontalAlignment.Center
                     };
 
-                    // Thumbnail Image
-                    Image thumbnailImage = new Image
+                    Border imageBackground = new Border
                     {
                         Width = 200,
                         Height = 200,
-                        Margin = new Thickness(10),
-                        Stretch = Stretch.Uniform
+                        Background = Brushes.White,
+                        CornerRadius = new CornerRadius(10),
+                        Margin = new Thickness(0, 5, 0, 5),
+                        Child = new Image
+                        {
+                            Width = 180,
+                            Height = 180,
+                            Stretch = Stretch.Uniform
+                        }
                     };
 
-                    // Load thumbnail asynchronously
+                    Image thumbnailImage = imageBackground.Child as Image;
                     _ = ShowThumbnail(projectId, itemId, thumbnailImage);
 
                     //UploadThumbnailToMongo(projectId, itemId, thumbnailImage);
@@ -2352,47 +2460,37 @@ namespace AssetManager.Desktop
                     {
                         Text = model["Name"],
                         FontSize = 16,
-                        FontWeight = FontWeights.Normal,
+                        FontWeight = FontWeights.SemiBold,
                         TextAlignment = TextAlignment.Center,
-                        HorizontalAlignment = HorizontalAlignment.Left,
-                        TextWrapping = TextWrapping.Wrap,
-                        Margin = new Thickness(5, 2, 5, 2)
+                        HorizontalAlignment = HorizontalAlignment.Center,
+                        Margin = new Thickness(5, 8, 5, 2),
+                        TextWrapping = TextWrapping.Wrap
                     };
 
-                    // ✅ Add Versions dropdown button
                     Button versionsButton = new Button
                     {
                         Content = "Versions ▼",
                         FontSize = 12,
-                        Width = 75,
+                        Width = 80,
                         Height = 25,
                         Background = Brushes.Transparent,
-                        BorderBrush = new SolidColorBrush(Colors.LightGray),
+                        BorderBrush = Brushes.Gray,
                         BorderThickness = new Thickness(1),
                         Padding = new Thickness(5, 2, 5, 2),
-                        HorizontalAlignment = HorizontalAlignment.Left,
+                        HorizontalAlignment = HorizontalAlignment.Center,
                         ToolTip = "Show model versions",
-                        Margin = new Thickness(0, 0, 5, 0)
+                        Margin = new Thickness(0, 0, 0, 8)
                     };
-
-                    // Ensure the versions button has the correct model assigned
                     versionsButton.DataContext = model;
-
-                    // Handle versions button click
                     versionsButton.Click += (s, ev) =>
                     {
                         if (s is Button btn && btn.DataContext is Dictionary<string, string> selectedModel)
                         {
                             string selectedModelId = selectedModel["Id"];
                             string selectedModelName = selectedModel["Name"];
-
-                            // Update global variables directly
                             _selectedItemId = selectedModelId;
                             _selectedModel = selectedModel;
 
-                            Console.WriteLine($"🔍 Versions button clicked for Model ID: {selectedModelId}");
-
-                            // Generate versions menu dynamically
                             ContextMenu versionsMenu = CreateModelVersionsMenu(selectedModelId, selectedModelName);
                             versionsMenu.PlacementTarget = btn;
                             versionsMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
@@ -2400,70 +2498,59 @@ namespace AssetManager.Desktop
                         }
                     };
 
-                    // ✅ Three-dot menu button
+                    PackIcon packIcon = new PackIcon
+                    {
+                        Kind = PackIconKind.DotsVertical,
+                        Width = 18,
+                        Height = 18,
+                        Foreground = Brushes.Black,
+                        VerticalAlignment = VerticalAlignment.Center,
+                        HorizontalAlignment = HorizontalAlignment.Center
+                    };
+
                     Button menuButton = new Button
                     {
-                        Content = "⋮", // Three-dot icon
-                        FontSize = 18,
+                        Content = packIcon,
                         Width = 30,
                         Height = 30,
                         Background = Brushes.Transparent,
                         BorderBrush = Brushes.Transparent,
-                        Padding = new Thickness(5),
+                        Padding = new Thickness(0),
+                        Margin = new Thickness(0, 0, 5, 0),
                         HorizontalAlignment = HorizontalAlignment.Right,
                         ToolTip = "More Options"
                     };
-
-                    // ✅ Ensure the menu button has the correct model assigned
                     menuButton.DataContext = model;
-
-                    // ✅ Ensure the menu opens on button click and retrieves correct ID dynamically
                     menuButton.Click += (s, ev) =>
                     {
                         if (s is Button btn && btn.DataContext is Dictionary<string, string> selectedModel)
                         {
                             string selectedModelId = selectedModel["Id"];
                             string selectedModelName = selectedModel["Name"];
-
-                            // Update global variables directly
                             _selectedItemId = selectedModelId;
                             _selectedModel = selectedModel;
 
-                            Console.WriteLine($"🔍 Three-dot menu clicked for Model ID: {selectedModelId}");
-
-                            // ✅ Generate ContextMenu dynamically on click
                             ContextMenu dynamicContextMenu = CreateModelContextMenu(selectedModelId, selectedModelName);
-
                             dynamicContextMenu.PlacementTarget = btn;
                             dynamicContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
                             dynamicContextMenu.IsOpen = true;
                         }
                     };
 
-                    // Create a panel for just the versions button
-                    StackPanel versionsPanel = new StackPanel
+                    DockPanel titleBar = new DockPanel
                     {
-                        Orientation = Orientation.Horizontal,
-                        HorizontalAlignment = HorizontalAlignment.Left,
-                        Margin = new Thickness(5, 2, 5, 2)
+                        LastChildFill = false,
+                        Margin = new Thickness(5, 0, 5, 2)
                     };
-                    versionsPanel.Children.Add(versionsButton);
-
-                    // Add elements to content panel in the desired order
-                    content.Children.Add(thumbnailImage);
-                    content.Children.Add(versionsPanel); // Versions button first
-
-                    // Container for Model Name + Three-dot menu
-                    DockPanel namePanel = new DockPanel();
-                    DockPanel.SetDock(modelName, Dock.Left);
                     DockPanel.SetDock(menuButton, Dock.Right);
-                    namePanel.Children.Add(menuButton);
-                    namePanel.Children.Add(modelName);
+                    titleBar.Children.Add(menuButton);
+                    titleBar.Children.Add(modelName);
 
-                    // Add the name panel after the versions button
-                    content.Children.Add(namePanel);
-
+                    content.Children.Add(imageBackground);
+                    content.Children.Add(versionsButton);
+                    content.Children.Add(titleBar);
                     modelSquare.Child = content;
+
                     ModelsContainer.Children.Add(modelSquare);
                 }
 
@@ -2474,10 +2561,255 @@ namespace AssetManager.Desktop
                 MessageBox.Show($"❌ Error loading models: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
 
-            // Update UI styles to reflect active view mode
             List_Border.Background = Brushes.Transparent;
             Grid_Border.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
         }
+
+
+        //private async void Grid_Click(object sender, MouseButtonEventArgs e)
+        //{
+        //    if (string.IsNullOrEmpty(_selectedProjectId))
+        //    {
+        //        MessageBox.Show("❌ Please select a project to view models.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+        //        return;
+        //    }
+
+        //    ModelsDataGrid.Visibility = Visibility.Collapsed; // Hide DataGrid
+        //    Grid_View.Visibility = Visibility.Visible; // Show Grid View
+
+        //    // Clear previous grid data
+        //    ModelsContainer.Children.Clear();
+
+        //    try
+        //    {
+        //        // Fetch models for the selected project only
+        //        List<Dictionary<string, string>> models = await GetModelsFromProject(_selectedProjectId, _folderId);
+
+        //        if (models == null || models.Count == 0)
+        //        {
+        //            MessageBox.Show("No models found for this project.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
+        //            return;
+        //        }
+
+        //        foreach (var model in models)
+        //        {
+        //            string projectId = _selectedProjectId;
+        //            string itemId = model["Id"];
+
+        //            // UI Container for Model
+        //            Border modelSquare = new Border
+        //            {
+        //                Width = 263,
+        //                Height = 300, // Increased to fit the image
+        //                CornerRadius = new CornerRadius(5),
+        //                Background = Brushes.White,
+        //                BorderBrush = Brushes.LightGray,
+        //                BorderThickness = new Thickness(1),
+        //                Margin = new Thickness(10),
+        //                Effect = new DropShadowEffect
+        //                {
+        //                    Color = Colors.Black,
+        //                    Opacity = 0.1,
+        //                    BlurRadius = 10,
+        //                    ShadowDepth = 2
+        //                },
+        //                Tag = model, // Store the model data in the Tag for easy access
+        //                Cursor = Cursors.Hand // Change cursor to indicate clickability
+        //            };
+
+        //            // Add mouse click handler to the entire model card
+        //            modelSquare.MouseLeftButtonDown += (s, args) =>
+        //            {
+        //                if (s is Border border && border.Tag is Dictionary<string, string> selectedModel)
+        //                {
+        //                    // Set the selected model and update all tracking variables
+        //                    _selectedModel = selectedModel;
+
+        //                    // Extract and set all relevant IDs, similar to your ModelsDataGrid_SelectionChanged
+        //                    if (selectedModel.TryGetValue("Id", out string modelId) || selectedModel.TryGetValue("id", out modelId))
+        //                    {
+        //                        _selectedItemId = modelId;
+        //                        Console.WriteLine($"✅ Set selected item ID: {_selectedItemId}");
+        //                    }
+        //                    else
+        //                    {
+        //                        _selectedItemId = null;
+        //                        Console.WriteLine("❌ Model ID missing in selection.");
+        //                    }
+
+        //                    // Set the name and related project properties
+        //                    _selectedItemName = selectedModel.ContainsKey("Name") ? selectedModel["Name"] :
+        //                                       (selectedModel.ContainsKey("name") ? selectedModel["name"] : "Unknown");
+
+        //                    // Set the project ID - either from the model or use the currently selected one
+        //                    if (selectedModel.TryGetValue("ProjectId", out string projId) || selectedModel.TryGetValue("projectId", out projId))
+        //                    {
+        //                        _selectedProjectId = projId;
+        //                        Console.WriteLine($"✅ Set selected project ID: {_selectedProjectId}");
+        //                    }
+
+        //                    _selectedProjectName = selectedModel.ContainsKey("Project") ? selectedModel["Project"] :
+        //                                          (selectedModel.ContainsKey("project") ? selectedModel["project"] : _selectedProjectName);
+
+        //                    Console.WriteLine($"✅ Selected Model: {_selectedItemName} (ID: {_selectedItemId}, Project ID: {_selectedProjectId})");
+
+        //                    // Call FetchAndSetStorageId asynchronously
+        //                    Task.Run(async () => await FetchAndSetStorageId());
+
+        //                    // Highlight the selected model
+        //                    HighlightSelectedModel(border);
+        //                }
+        //            };
+
+        //            StackPanel content = new StackPanel
+        //            {
+        //                Orientation = Orientation.Vertical,
+        //                VerticalAlignment = VerticalAlignment.Center,
+        //                HorizontalAlignment = HorizontalAlignment.Left
+        //            };
+
+        //            // Thumbnail Image
+        //            Image thumbnailImage = new Image
+        //            {
+        //                Width = 200,
+        //                Height = 200,
+        //                Margin = new Thickness(10),
+        //                Stretch = Stretch.Uniform
+        //            };
+
+        //            // Load thumbnail asynchronously
+        //            _ = ShowThumbnail(projectId, itemId, thumbnailImage);
+
+        //            TextBlock modelName = new TextBlock
+        //            {
+        //                Text = model["Name"],
+        //                FontSize = 16,
+        //                FontWeight = FontWeights.Normal,
+        //                TextAlignment = TextAlignment.Center,
+        //                HorizontalAlignment = HorizontalAlignment.Left,
+        //                TextWrapping = TextWrapping.Wrap,
+        //                Margin = new Thickness(5, 2, 5, 2)
+        //            };
+
+        //            // ✅ Add Versions dropdown button
+        //            Button versionsButton = new Button
+        //            {
+        //                Content = "Versions ▼",
+        //                FontSize = 12,
+        //                Width = 75,
+        //                Height = 25,
+        //                Background = Brushes.Transparent,
+        //                BorderBrush = new SolidColorBrush(Colors.LightGray),
+        //                BorderThickness = new Thickness(1),
+        //                Padding = new Thickness(5, 2, 5, 2),
+        //                HorizontalAlignment = HorizontalAlignment.Left,
+        //                ToolTip = "Show model versions",
+        //                Margin = new Thickness(0, 0, 5, 0)
+        //            };
+
+        //            // Ensure the versions button has the correct model assigned
+        //            versionsButton.DataContext = model;
+
+        //            // Handle versions button click
+        //            versionsButton.Click += (s, ev) =>
+        //            {
+        //                if (s is Button btn && btn.DataContext is Dictionary<string, string> selectedModel)
+        //                {
+        //                    string selectedModelId = selectedModel["Id"];
+        //                    string selectedModelName = selectedModel["Name"];
+
+        //                    // Update global variables directly
+        //                    _selectedItemId = selectedModelId;
+        //                    _selectedModel = selectedModel;
+
+        //                    Console.WriteLine($"🔍 Versions button clicked for Model ID: {selectedModelId}");
+
+        //                    // Generate versions menu dynamically
+        //                    ContextMenu versionsMenu = CreateModelVersionsMenu(selectedModelId, selectedModelName);
+        //                    versionsMenu.PlacementTarget = btn;
+        //                    versionsMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+        //                    versionsMenu.IsOpen = true;
+        //                }
+        //            };
+
+        //            // ✅ Three-dot menu button
+        //            Button menuButton = new Button
+        //            {
+        //                Content = "⋮", // Three-dot icon
+        //                FontSize = 18,
+        //                Width = 30,
+        //                Height = 30,
+        //                Background = Brushes.Transparent,
+        //                BorderBrush = Brushes.Transparent,
+        //                Padding = new Thickness(5),
+        //                HorizontalAlignment = HorizontalAlignment.Right,
+        //                ToolTip = "More Options"
+        //            };
+
+        //            // ✅ Ensure the menu button has the correct model assigned
+        //            menuButton.DataContext = model;
+
+        //            // ✅ Ensure the menu opens on button click and retrieves correct ID dynamically
+        //            menuButton.Click += (s, ev) =>
+        //            {
+        //                if (s is Button btn && btn.DataContext is Dictionary<string, string> selectedModel)
+        //                {
+        //                    string selectedModelId = selectedModel["Id"];
+        //                    string selectedModelName = selectedModel["Name"];
+
+        //                    // Update global variables directly
+        //                    _selectedItemId = selectedModelId;
+        //                    _selectedModel = selectedModel;
+
+        //                    Console.WriteLine($"🔍 Three-dot menu clicked for Model ID: {selectedModelId}");
+
+        //                    // ✅ Generate ContextMenu dynamically on click
+        //                    ContextMenu dynamicContextMenu = CreateModelContextMenu(selectedModelId, selectedModelName);
+
+        //                    dynamicContextMenu.PlacementTarget = btn;
+        //                    dynamicContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+        //                    dynamicContextMenu.IsOpen = true;
+        //                }
+        //            };
+
+        //            // Create a panel for just the versions button
+        //            StackPanel versionsPanel = new StackPanel
+        //            {
+        //                Orientation = Orientation.Horizontal,
+        //                HorizontalAlignment = HorizontalAlignment.Left,
+        //                Margin = new Thickness(5, 2, 5, 2)
+        //            };
+        //            versionsPanel.Children.Add(versionsButton);
+
+        //            // Add elements to content panel in the desired order
+        //            content.Children.Add(thumbnailImage);
+        //            content.Children.Add(versionsPanel); // Versions button first
+
+        //            // Container for Model Name + Three-dot menu
+        //            DockPanel namePanel = new DockPanel();
+        //            DockPanel.SetDock(modelName, Dock.Left);
+        //            DockPanel.SetDock(menuButton, Dock.Right);
+        //            namePanel.Children.Add(menuButton);
+        //            namePanel.Children.Add(modelName);
+
+        //            // Add the name panel after the versions button
+        //            content.Children.Add(namePanel);
+
+        //            modelSquare.Child = content;
+        //            ModelsContainer.Children.Add(modelSquare);
+        //        }
+
+        //        Console.WriteLine($"✅ {models.Count} models loaded successfully in grid view.");
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        MessageBox.Show($"❌ Error loading models: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        //    }
+
+        //    // Update UI styles to reflect active view mode
+        //    List_Border.Background = Brushes.Transparent;
+        //    Grid_Border.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
+        //}
 
         // Helper method to highlight the currently selected model
         private void HighlightSelectedModel(Border selectedModel)
@@ -3762,13 +4094,13 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             }
         }*/
 
-        private async void LoadForgeViewer(string encodedUrn)
+        private async void LoadForgeViewer(string encodedUrn, bool isPdf = false)
         {
             try
             {
                 ForgeWebView.Visibility = Visibility.Visible;
 
-                // Initialize WebView2
+                // Initialize WebView2 if needed
                 if (ForgeWebView.CoreWebView2 == null)
                 {
                     await ForgeWebView.EnsureCoreWebView2Async();
@@ -3778,79 +4110,709 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 if (string.IsNullOrEmpty(accessToken))
                 {
                     Console.WriteLine("❌ Access token is missing.");
-                    MessageBox.Show("Authentication error. Please log in again.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    System.Windows.Forms.MessageBox.Show("Authentication error. Please log in again.", "Error",
+                        System.Windows.Forms.MessageBoxButtons.OK,
+                        System.Windows.Forms.MessageBoxIcon.Error);
                     return;
                 }
 
-                Console.WriteLine("🔄 Initializing WebView2...");
+                Console.WriteLine($"🔄 Initializing WebView2 for {(isPdf ? "PDF" : "3D model")}...");
                 await ForgeWebView.EnsureCoreWebView2Async();
                 Console.WriteLine("✅ WebView2 initialized successfully.");
 
-                // ✅ Correct HDRI URL (must be .hdr or .dds, hosted with a direct link)
-                string hdriUrl = "https://www.dropbox.com/scl/fi/xb0pph37hni7q1qoa1inq/rogland_clear_night_4k.hdr?rlkey=mik14m29cyr3uzzj8guakwzxf&raw=1";
+                string htmlContent;
 
-                string htmlContent = $@"<!DOCTYPE html>
- <html>
- <head>
-     <meta charset='UTF-8'>
-     <meta http-equiv='X-UA-Compatible' content='IE=Edge' />
-     <title>Forge Viewer</title>
-     <script src='https://developer.api.autodesk.com/modelderivative/v2/viewers/7.52/viewer3D.min.js'></script>
-     <link rel='stylesheet' href='https://developer.api.autodesk.com/modelderivative/v2/viewers/7.52/style.min.css' type='text/css'>
- </head>
- <body>
-     <div id='forgeViewer' style='width: 100%; height: 100vh;'></div>
-     <script>
-         var options = {{
-             env: 'AutodeskProduction',
-             getAccessToken: function(onTokenReady) {{
-                 onTokenReady('{accessToken}', 3599);
-             }}
-         }};
-         var documentId = 'urn:{encodedUrn}';
-         Autodesk.Viewing.Initializer(options, function() {{
-             var viewerDiv = document.getElementById('forgeViewer');
-             var viewer = new Autodesk.Viewing.GuiViewer3D(viewerDiv);
-             viewer.start();
+                if (isPdf)
+                {
+                    // HTML content specifically for PDF viewing - remains the same
+                    htmlContent = $@"<!DOCTYPE html>
+                  <html>
+                  <head>
+                      <meta charset='UTF-8'>
+                      <meta http-equiv='X-UA-Compatible' content='IE=Edge' />
+                      <title>PDF Viewer</title>
+                      <script src='https://developer.api.autodesk.com/modelderivative/v2/viewers/7.*/viewer3D.js'></script>
+                      <link rel='stylesheet' href='https://developer.api.autodesk.com/modelderivative/v2/viewers/7.*/style.css' type='text/css'>
+                      <style>
+                          body, html {{ height: 100%; margin: 0; padding: 0; overflow: hidden; }}
+                          #toolbar {{ position: absolute; top: 10px; left: 10px; z-index: 1000; background: rgba(255,255,255,0.9); padding: 5px; border-radius: 5px; }}
+                          #forgeViewer {{ width: 100%; height: 100vh; position: relative; }}
+                          #log {{ position: fixed; bottom: 10px; left: 10px; right: 10px; height: 150px; background: rgba(0,0,0,0.7); color: white; overflow: auto; padding: 10px; font-family: monospace; z-index: 1000; display: block; }}
+                          #pageLabel {{ margin-left: 20px; font-weight: bold; }}
+                          #pageControls {{ margin-left: 10px; }}
+                          .pageButton {{ margin: 0 2px; padding: 2px 8px; cursor: pointer; }}
+                      </style>
+                  </head>
+                  <body>
+                      <div id='toolbar'>
+                          <label for='pageSelect'>Page:</label>
+                          <select id='pageSelect'></select>
+                          <span id='pageControls'>
+                              <button id='prevPage' class='pageButton'>←</button>
+                              <button id='nextPage' class='pageButton'>→</button>
+                          </span>
+                          <span id='pageLabel'>Page 1 of 1</span>
+                          <button id='toggleLog' style='margin-left: 20px;'>Hide Logs</button>
+                      </div>
+                      <div id='forgeViewer'></div>
+                      <div id='log'></div>
 
-             viewer.loadExtension('Autodesk.Viewing.EnvironmentSettings')
-                 .then(() => {{
-                     console.log('🌌 EnvironmentSettings Extension Loaded!');
+                      <script>
+                          // Debug logging function
+                          function log(message) {{
+                              console.log(message);
+                              var logDiv = document.getElementById('log');
+                              var date = new Date();
+                              var timestamp = date.getHours() + ':' + date.getMinutes() + ':' + date.getSeconds() + '.' + date.getMilliseconds();
+                              var formattedMsg = '[' + timestamp + '] ' + (typeof message === 'object' ? JSON.stringify(message) : message);
+      
+                              var line = document.createElement('div');
+                              line.textContent = formattedMsg;
+                              logDiv.appendChild(line);
+                              logDiv.scrollTop = logDiv.scrollHeight;
+                          }}
+                     
 
-                     // ✅ Register the HDRI as a Forge Viewer environment
-                     Autodesk.Viewing.Private.EnvSettings.addCustomEnvironment('Custom_Fantasy_HDRI', {{
-                         path: '{hdriUrl}',
-                         type: 'equirectangular', // Must be 'equirectangular' for HDRI
-                         displayName: 'Fantasy Night Sky',
-                     }});
+                          document.getElementById('toggleLog').addEventListener('click', function() {{
+                              var logDiv = document.getElementById('log');
+                              if (logDiv.style.display === 'none') {{
+                                  logDiv.style.display = 'block';
+                                  this.textContent = 'Hide Logs';
+                              }} else {{
+                                  logDiv.style.display = 'none';
+                                  this.textContent = 'Show Logs';
+                              }}
+                          }});
 
-                     // ✅ Apply the HDRI as an available environment
-                     viewer.setEnvironment('Custom_Fantasy_HDRI');
-                     console.log('✅ Custom HDRI added to Environments List!');
+                          log('Script started');
+  
+                          // Handle any errors
+                          window.addEventListener('error', function(event) {{
+                              log('ERROR: ' + event.message + ' at ' + event.filename + ':' + event.lineno);
+                          }});
 
-                     // ✅ Ensure the HDRI is visible
-                     viewer.setEnvMapBackground(true);
-                 }});
+                          var viewer;
+                          var doc;
+                          var viewables = [];
+                          var currentModel = null;
+                          var currentPageIndex = 0;
 
-             Autodesk.Viewing.Document.load(documentId, function(doc) {{
-                 var defaultModel = doc.getRoot().getDefaultGeometry();
-                 viewer.loadDocumentNode(doc, defaultModel);
-             }}, function(errorMsg) {{
-                 console.error('Error loading document: ' + errorMsg);
-             }});
-         }});
-     </script>
- </body>
- </html>";
+                          var options = {{
+                              env: 'AutodeskProduction',
+                              api: 'derivativeV2',
+                              getAccessToken: function(onTokenReady) {{
+                                  log('Getting access token');
+                                  onTokenReady('{accessToken}', 3599);
+                              }}
+                          }};
 
+                          var documentId = 'urn:{encodedUrn}';
+                          log('Document ID: ' + documentId);
+
+                          try {{
+                              log('Initializing Autodesk Viewer...');
+                              Autodesk.Viewing.Initializer(options, function () {{
+                                  log('Viewer initialized successfully');
+          
+                                  try {{
+                                      // Create the viewer
+                                      var viewerDiv = document.getElementById('forgeViewer');
+                                      log('Creating viewer in div: ' + (viewerDiv ? 'Found' : 'Not found'));
+              
+                                      // Initialize with PDF extension and enable debugging
+                                      viewer = new Autodesk.Viewing.GuiViewer3D(viewerDiv, {{ 
+                                          extensions: ['Autodesk.PDF'],
+                                          loaderExtensions: {{ pdf: true }},
+                                          enablePDFJS: true
+                                      }});
+              
+                                      log('Starting viewer...');
+                                      var startedViewer = viewer.start();
+                                      log('Viewer start result: ' + startedViewer);
+              
+                                      // Set background color for better visibility
+                                      viewer.setBackgroundColor(250, 250, 250, 250, 250, 250);
+              
+                                      log('Loading document: ' + documentId);
+              
+                                      Autodesk.Viewing.Document.load(
+                                          documentId, 
+                                          // onLoadSuccess
+                                          function (loadedDoc) {{
+                                              log('Document loaded successfully');
+                                              doc = loadedDoc;
+                      
+                                              try {{
+                                                  // Log document structure for debugging
+                                                  var rootItem = doc.getRoot();
+                                                  log('Root item: ' + (rootItem ? 'Found' : 'Not found'));
+                          
+                                                  if (rootItem) {{
+                                                      log('Root item type: ' + rootItem.type);
+                                                      log('Children count: ' + (rootItem.children ? rootItem.children.length : 0));
+                                                  }}
+                          
+                                                  // Method 1: Direct recursive search
+                                                  var items = [];
+                          
+                                                  function getAllLeafNodes(node) {{
+                                                      if (!node) return;
+                                                      log('Examining node: ' + (node.data ? node.data.guid : 'No GUID'));
+                              
+                                                      if (node.children && node.children.length > 0) {{
+                                                          log('Node has ' + node.children.length + ' children');
+                                                          node.children.forEach(getAllLeafNodes);
+                                                      }} else {{
+                                                          log('Leaf node found. Role: ' + (node.data ? node.data.role : 'unknown'));
+                                                          if (node.data && (node.data.role === '2d' || node.data.role === 'thumbnail')) {{
+                                                              items.push(node);
+                                                              log('Found PDF page: ' + (node.data.name || 'Unnamed') + ', GUID: ' + node.data.guid);
+                                                          }}
+                                                      }}
+                                                  }}
+                          
+                                                  getAllLeafNodes(doc.getRoot());
+                                                  log('Method 1 - Found ' + items.length + ' pages');
+                          
+                                                  // Method 2: Use API method (sometimes more reliable)
+                                                  try {{
+                                                      var items2 = Autodesk.Viewing.Document.getSubItemsWithProperties(
+                                                          doc.getRoot(), 
+                                                          {{ 'type': 'geometry', 'role': '2d' }}, 
+                                                          true
+                                                      );
+                                                      log('Method 2 - Found ' + (items2 ? items2.length : 0) + ' pages');
+                                                  }} catch (e) {{
+                                                      log('Error in Method 2: ' + e.message);
+                                                      items2 = [];
+                                                  }}
+                          
+                                                  // Use whichever method found pages
+                                                  viewables = items.length > 0 ? items : (items2 && items2.length > 0 ? items2 : []);
+                          
+                                                  // If we found viewables, set up the page selector
+                                                  if (viewables && viewables.length > 0) {{
+                                                      log('Found ' + viewables.length + ' viewables to display');
+                                                      populatePageSelector(viewables);
+                                                      loadPage(0); // Load first page
+                                                      updatePageLabel(1, viewables.length);
+                                                      setupPageControls(viewables.length);
+                                                  }} else {{
+                                                      // No 2D viewables found, try default geometry
+                                                      log('No 2D viewables found, trying default geometry...');
+                              
+                                                      // Try to get default geometry
+                                                      var defaultGeometry;
+                                                      try {{
+                                                          defaultGeometry = doc.getRoot().getDefaultGeometry();
+                                                          log('Default geometry: ' + (defaultGeometry ? 'Found' : 'Not found'));
+                                                      }} catch (e) {{
+                                                          log('Error getting default geometry: ' + e.message);
+                                                      }}
+                              
+                                                      if (defaultGeometry) {{
+                                                          log('Loading default geometry: ' + (defaultGeometry.guid || 'unknown'));
+                                                          viewer.loadDocumentNode(doc, defaultGeometry)
+                                                              .then(function(model) {{
+                                                                  log('Default geometry loaded successfully');
+                                                                  currentModel = model;
+                                                              }})
+                                                              .catch(function(err) {{
+                                                                  log('Error loading default geometry: ' + err.message);
+                                                              }});
+                                                      }} else {{
+                                                          log('No default geometry found, trying bubble geometry...');
+                                  
+                                                          // Last-ditch effort: Try to find any geometry to display
+                                                          try {{
+                                                              var bubbleNode = doc.getRoot();
+                                                              var allViewables = [];
+                                      
+                                                              // Try to find any geometry
+                                                              function findAnyGeometry(node) {{
+                                                                  if (!node) return;
+                                          
+                                                                  if (node.data && node.data.type === 'geometry') {{
+                                                                      allViewables.push(node);
+                                                                      log('Found a geometry node: ' + (node.data.name || 'Unnamed'));
+                                                                  }}
+                                          
+                                                                  if (node.children && node.children.length > 0) {{
+                                                                      node.children.forEach(findAnyGeometry);
+                                                                  }}
+                                                              }}
+                                      
+                                                              findAnyGeometry(bubbleNode);
+                                                              log('Found ' + allViewables.length + ' total geometry items');
+                                      
+                                                              if (allViewables.length > 0) {{
+                                                                  var anyViewable = allViewables[0];
+                                                                  log('Attempting to load any viewable: ' + (anyViewable.data ? anyViewable.data.guid : 'unknown'));
+                                                                  viewer.loadDocumentNode(doc, anyViewable)
+                                                                      .then(function(model) {{
+                                                                          log('Viewable loaded successfully');
+                                                                          currentModel = model;
+                                                                      }})
+                                                                      .catch(function(err) {{
+                                                                          log('Error loading viewable: ' + err.message);
+                                                                      }});
+                                                              }} else {{
+                                                                  log('No viewables found at all. Check translation status.');
+                                          
+                                                                  // Final attempt - try to access the first page directly
+                                                                  log('Attempting one final method to find viewable...');
+                                                                  try {{
+                                                                      if (bubbleNode && bubbleNode.children && bubbleNode.children.length > 0) {{
+                                                                          var firstChild = bubbleNode.children[0];
+                                                                          log('Loading first child node as last resort');
+                                                                          viewer.loadDocumentNode(doc, firstChild)
+                                                                              .then(function(model) {{
+                                                                                  log('First child node loaded successfully');
+                                                                                  currentModel = model;
+                                                                              }})
+                                                                              .catch(function(err) {{
+                                                                                  log('Error loading first child node: ' + err.message);
+                                                                              }});
+                                                                      }}
+                                                                  }} catch (e) {{
+                                                                      log('Final attempt failed: ' + e.message);
+                                                                  }}
+                                                              }}
+                                                          }} catch (e) {{
+                                                              log('Error in last-ditch effort: ' + e.message);
+                                                          }}
+                                                      }}
+                                                  }}
+                                              }} catch (docError) {{
+                                                  log('Error processing document: ' + docError.message);
+                                              }}
+                                          }}, 
+                                          // onLoadError
+                                          function (errorCode, errorMsg) {{
+                                              log('Error loading document: ' + errorCode + ' - ' + errorMsg);
+                                          }},
+                                          // options
+                                          {{ checkAEC: false }}
+                                      );
+                                  }} catch (e) {{
+                                      log('Error in viewer creation/document loading: ' + e.message);
+                                  }}
+                              }});
+                          }} catch (e) {{
+                              log('Fatal error initializing viewer: ' + e.message);
+                          }}
+
+                          function updatePageLabel(current, total) {{
+                              document.getElementById('pageLabel').textContent = 'Page ' + current + ' of ' + total;
+                          }}
+
+                          function setupPageControls(totalPages) {{
+                              var prevButton = document.getElementById('prevPage');
+                              var nextButton = document.getElementById('nextPage');
+      
+                              prevButton.addEventListener('click', function() {{
+                                  if (currentPageIndex > 0) {{
+                                      currentPageIndex--;
+                                      loadPage(currentPageIndex);
+                                      document.getElementById('pageSelect').value = currentPageIndex;
+                                      updatePageLabel(currentPageIndex + 1, totalPages);
+                                  }}
+                              }});
+      
+                              nextButton.addEventListener('click', function() {{
+                                  if (currentPageIndex < totalPages - 1) {{
+                                      currentPageIndex++;
+                                      loadPage(currentPageIndex);
+                                      document.getElementById('pageSelect').value = currentPageIndex;
+                                      updatePageLabel(currentPageIndex + 1, totalPages);
+                                  }}
+                              }});
+                          }}
+
+                          function populatePageSelector(viewables) {{
+                              try {{
+                                  var select = document.getElementById('pageSelect');
+                                  select.innerHTML = ''; // Clear any existing options
+          
+                                  viewables.forEach(function (v, i) {{
+                                      var option = document.createElement('option');
+                                      option.value = i;
+              
+                                      // Create better page labels
+                                      var pageName = 'Page ' + (i + 1);
+              
+                                      // If the viewable has metadata, try to use that
+                                      if (v.data) {{
+                                          if (v.data.name && v.data.name !== 'Initial') {{
+                                              pageName = v.data.name;
+                                          }}
+                  
+                                          // Log some additional data for debugging
+                                          log('Page ' + (i + 1) + ' metadata: ' +
+                                              'name=' + (v.data.name || 'N/A') +
+                                              ', guid=' + (v.data.guid || 'N/A'));
+                                      }}
+              
+                                      option.text = pageName;
+                                      select.appendChild(option);
+                                      log('Added option for ' + pageName);
+                                  }});
+          
+                                  select.addEventListener('change', function() {{
+                                      var pageIndex = parseInt(this.value);
+                                      currentPageIndex = pageIndex;
+                                      log('Page selector changed to index: ' + pageIndex);
+                                      loadPage(pageIndex);
+                                      updatePageLabel(pageIndex + 1, viewables.length);
+                                  }});
+                              }} catch (e) {{
+                                  log('Error in populatePageSelector: ' + e.message);
+                              }}
+                          }}
+  
+                          function loadPage(index) {{
+                              try {{
+                                  if (!doc || !viewer || !viewables[index]) {{
+                                      log('Cannot load page: Viewer or document not ready');
+                                      return;
+                                  }}
+
+                                  if (currentModel) {{
+                                      log('Unloading current model');
+                                      viewer.unloadModel(currentModel);
+                                      currentModel = null;
+                                  }}
+
+                                  const viewable = viewables[index];
+                                  log('Loading page ' + (index + 1) + ', viewable ID: ' + (viewable.data ? viewable.data.guid : 'unknown'));
+
+                                  viewer.loadDocumentNode(doc, viewable)
+                                      .then(function(model) {{
+                                          currentModel = model;
+                                          log('Successfully loaded page ' + (index + 1));
+                                          currentPageIndex = index;
+
+                                          // Fit to view
+                                          viewer.fitToView();
+                                      }})
+                                      .catch(function(err) {{
+                                          log('Failed to load page: ' + (err.message || JSON.stringify(err)));
+                                      }});
+                              }} catch (e) {{
+                                  log('Error in loadPage: ' + e.message);
+                              }}
+                          }}
+                      </script>
+                  </body>
+                  </html>";
+
+                }
+
+
+                else
+                {
+                    // HTML content for 3D models WITH SKYBOX (fixed formatting)
+                    htmlContent = $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='UTF-8'>
+    <meta http-equiv='X-UA-Compatible' content='IE=Edge' />
+    <title>Forge Viewer with Environment Skybox</title>
+    <script src='https://developer.api.autodesk.com/modelderivative/v2/viewers/7.*/viewer3D.js'></script>
+    <link rel='stylesheet' href='https://developer.api.autodesk.com/modelderivative/v2/viewers/7.*/style.css' type='text/css'>
+    <style>
+        html, body {{ margin: 0; padding: 0; height: 100%; overflow: hidden; }}
+        #forgeViewer {{ width: 100%; height: 100vh; }}
+        #skyboxControls {{ position: absolute; top: 10px; left: 10px; background: rgba(255,255,255,0.9); padding: 10px; border-radius: 5px; z-index: 1000; }}
+        .skyboxButton {{ margin-right: 5px; padding: 5px 10px; cursor: pointer; }}
+        #debug {{ position: fixed; bottom: 0; left: 0; right: 0; height: 100px; background: rgba(0,0,0,0.7); color: #0f0; font-family: monospace; overflow-y: auto; display: none; z-index: 1000; }}
+    </style>
+</head>
+<body>
+    <div id='skyboxControls'>
+        <button id='skybox1' class='skyboxButton'>Space Skybox</button>
+        <button id='skybox2' class='skyboxButton'>Sunset Skybox</button>
+        <button id='skybox3' class='skyboxButton'>Volcano Skybox</button>
+        <button id='noSkybox' class='skyboxButton'>No Skybox</button>
+        <button id='toggleLogs' class='skyboxButton'>Show Logs</button>
+    </div>
+    <div id='forgeViewer'></div>
+    <div id='debug'></div>
+
+    <script>
+        function debug(msg) {{
+            console.log(msg);
+            var d = document.getElementById('debug');
+            var line = document.createElement('div');
+            line.textContent = msg;
+            d.appendChild(line);
+            d.scrollTop = d.scrollHeight;
+        }}
+
+        class SkyboxExtension extends Autodesk.Viewing.Extension {{
+            constructor(viewer, options) {{
+                super(viewer, options);
+                this.viewer = viewer;
+                this.skyboxes = {{
+                    space: [
+                        'https://firebasestorage.googleapis.com/v0/b/skybox-test-a3ffd.appspot.com/o/space%2Fright.png?alt=media',
+                        'https://firebasestorage.googleapis.com/v0/b/skybox-test-a3ffd.appspot.com/o/space%2Fleft.png?alt=media',
+                        'https://firebasestorage.googleapis.com/v0/b/skybox-test-a3ffd.appspot.com/o/space%2Ftop.png?alt=media',
+                        'https://firebasestorage.googleapis.com/v0/b/skybox-test-a3ffd.appspot.com/o/space%2Fbottom.png?alt=media',
+                        'https://firebasestorage.googleapis.com/v0/b/skybox-test-a3ffd.appspot.com/o/space%2Ffront.png?alt=media',
+                        'https://firebasestorage.googleapis.com/v0/b/skybox-test-a3ffd.appspot.com/o/space%2Fback.png?alt=media'
+                    ],
+                    sunset: [
+                        'https://firebasestorage.googleapis.com/v0/b/skybox-test-a3ffd.appspot.com/o/sunset%2Fright.png?alt=media',
+                        'https://firebasestorage.googleapis.com/v0/b/skybox-test-a3ffd.appspot.com/o/sunset%2Fleft.png?alt=media',
+                        'https://firebasestorage.googleapis.com/v0/b/skybox-test-a3ffd.appspot.com/o/sunset%2Ftop.png?alt=media',
+                        'https://firebasestorage.googleapis.com/v0/b/skybox-test-a3ffd.appspot.com/o/sunset%2Fbottom.png?alt=media',
+                        'https://firebasestorage.googleapis.com/v0/b/skybox-test-a3ffd.appspot.com/o/sunset%2Ffront.png?alt=media',
+                        'https://firebasestorage.googleapis.com/v0/b/skybox-test-a3ffd.appspot.com/o/sunset%2Fback.png?alt=media'
+                    ],
+                    volcano: [
+                        'https://my-skybox-images.s3.eu-north-1.amazonaws.com/px.png',
+                        'https://my-skybox-images.s3.eu-north-1.amazonaws.com/nx.png',
+                        'https://my-skybox-images.s3.eu-north-1.amazonaws.com/py.png',
+                        'https://my-skybox-images.s3.eu-north-1.amazonaws.com/ny.png',
+                        'https://my-skybox-images.s3.eu-north-1.amazonaws.com/pz.png',
+                        'https://my-skybox-images.s3.eu-north-1.amazonaws.com/nz.png'
+                    ]
+                }};
+            }}
+
+            load() {{
+                debug('SkyboxExtension loaded');
+                return true;
+            }}
+
+            unload() {{
+                this.viewer.impl.scene.environmentMap = null;
+                this.viewer.setLightPreset(1);
+                this.viewer.impl.invalidate(true, true, true);
+                return true;
+            }}
+
+            setSkybox(name) {{
+                const viewer = this.viewer;
+                const urls = this.skyboxes[name];
+                if (!urls || !viewer) return;
+
+                let THREE = Autodesk?.Viewing?.Private?.THREE;
+                if (!THREE || !THREE.TextureLoader || !THREE.CubeTexture) {{
+                    debug('Missing THREE.TextureLoader or CubeTexture');
+                    return;
+                }}
+
+                const loader = new THREE.TextureLoader();
+                loader.setCrossOrigin('Anonymous');
+
+                const faces = [];
+                let loaded = 0;
+                for (let i = 0; i < 6; i++) {{
+                    loader.load(urls[i], function(texture) {{
+                        faces[i] = texture.image;
+                        loaded++;
+                        if (loaded === 6) {{
+                            const cubeMap = new THREE.CubeTexture(faces);
+                            cubeMap.needsUpdate = true;
+                            viewer.impl.setEnvironmentMap(cubeMap);
+                            viewer.setLightPreset(0);
+                            viewer.impl.invalidate(true, true, true);
+                            debug('Skybox applied: ' + name);
+                        }}
+                    }}, undefined, function(err) {{
+                        debug('Error loading texture ' + urls[i]);
+                    }});
+                }}
+            }}
+        }}
+
+        Autodesk.Viewing.theExtensionManager.registerExtension('SkyboxExtension', SkyboxExtension);
+
+        var viewer;
+        var skyboxExt;
+        var options = {{
+            env: 'AutodeskProduction',
+            api: 'derivativeV2',
+            getAccessToken: function(onTokenReady) {{
+                onTokenReady('{accessToken}', 3599);
+            }}
+        }};
+        var documentId = 'urn:{encodedUrn}';
+
+        document.getElementById('skybox1').onclick = () => skyboxExt && skyboxExt.setSkybox('space');
+        document.getElementById('skybox2').onclick = () => skyboxExt && skyboxExt.setSkybox('sunset');
+        document.getElementById('skybox3').onclick = () => skyboxExt && skyboxExt.setSkybox('volcano');
+        document.getElementById('noSkybox').onclick = () => {{
+            skyboxExt?.unload();
+            debug('Skybox cleared');
+        }};
+        document.getElementById('toggleLogs').onclick = function() {{
+            const debugEl = document.getElementById('debug');
+            if (debugEl.style.display === 'none') {{
+                debugEl.style.display = 'block';
+                this.textContent = 'Hide Logs';
+            }} else {{
+                debugEl.style.display = 'none';
+                this.textContent = 'Show Logs';
+            }}
+        }};
+
+        Autodesk.Viewing.Initializer(options, function() {{
+            viewer = new Autodesk.Viewing.GuiViewer3D(document.getElementById('forgeViewer'));
+            viewer.start();
+            viewer.loadExtension('SkyboxExtension').then(ext => {{
+                skyboxExt = ext;
+            }});
+            Autodesk.Viewing.Document.load(documentId, function(doc) {{
+                var defaultModel = doc.getRoot().getDefaultGeometry();
+                viewer.loadDocumentNode(doc, defaultModel).then(() => {{
+                    viewer.fitToView();
+                }});
+            }}, function(code, msg) {{
+                debug('Error loading model: ' + code + ' - ' + msg);
+            }});
+        }});
+    </script>
+</body>
+</html>";
+
+
+
+
+                }
+
+                // Navigate to the HTML content
                 ForgeWebView.NavigateToString(htmlContent);
+
+                // Attach a handler to get JavaScript console logs (optional)
+                ForgeWebView.CoreWebView2.WebMessageReceived += (sender, e) => {
+                    Console.WriteLine($"WebView2 message: {e.WebMessageAsJson}");
+                };
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"❌ WebView2 initialization failed: {ex.Message}");
+                System.Windows.Forms.MessageBox.Show($"Error initializing viewer: {ex.Message}", "Error",
+                    System.Windows.Forms.MessageBoxButtons.OK,
+                    System.Windows.Forms.MessageBoxIcon.Error);
             }
         }
 
+
+        // Helper method to determine if a file is a PDF
+        private bool IsPdfFile(string filename)
+        {
+            return !string.IsNullOrEmpty(filename) &&
+                   System.IO.Path.GetExtension(filename).Equals(".pdf", StringComparison.OrdinalIgnoreCase);
+        }
+        private async void OpenPdfInForgeViewer(string projectId, string itemId, string fileName)
+        {
+            try
+            {
+                // Track the last active view for when we close the viewer
+                if (ModelsDataGrid.Visibility == Visibility.Visible)
+                {
+                    _lastViewType = ViewType.List;
+                }
+                else if (Grid_View.Visibility == Visibility.Visible)
+                {
+                    _lastViewType = ViewType.Grid;
+                }
+
+                // Hide both views
+                ModelsDataGrid.Visibility = Visibility.Collapsed;
+                Grid_View.Visibility = Visibility.Collapsed;
+
+                // Show the Forge Viewer
+                ForgeViewerContainer.Visibility = Visibility.Visible;
+                ForgeWebView.Visibility = Visibility.Visible;
+
+                Console.WriteLine($"📑 Opening PDF in Forge Viewer: {fileName}");
+                Console.WriteLine($"- Item ID: {itemId}");
+                Console.WriteLine($"- Project ID: {projectId}");
+
+                // Get the storage ID for the PDF file
+                string objectId;
+                FileDownloadService fileService = new FileDownloadService();
+                objectId = await fileService.GetStorageIdFromItem(projectId, itemId);
+
+                if (string.IsNullOrEmpty(objectId))
+                {
+                    MessageBox.Show("Could not retrieve PDF file information.", "PDF Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                _objectId = objectId; // Update global storage ID
+
+                // Encode URN
+                string encodedUrn = EncodeObjectIdToUrn(objectId);
+                if (string.IsNullOrEmpty(encodedUrn))
+                {
+                    MessageBox.Show("Failed to process PDF identifier.", "Processing Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                Console.WriteLine($"✅ Encoded URN for PDF: {encodedUrn}");
+
+                // Check if the PDF file is already translated
+                ModelDerivativeService modelService = new ModelDerivativeService(new HttpClient());
+                bool translationComplete = await modelService.IsTranslationCompletedAsync(encodedUrn, _accessToken);
+
+                if (!translationComplete)
+                {
+                    Console.WriteLine("🔄 Submitting PDF translation job...");
+
+                    // For PDFs, we use the specialized PDF translation method
+                    bool jobResponse = await modelService.SubmitPdfForTranslationAsync(encodedUrn, _accessToken);
+
+                    Console.WriteLine($"✅ PDF translation job submitted: {jobResponse}");
+
+                    if (!jobResponse)
+                    {
+                        MessageBox.Show("❌ PDF translation job failed to submit.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        return;
+                    }
+
+                    // Wait for translation to complete
+                    int maxRetries = 30;
+                    int delayMs = 2000;
+                    bool isReady = false;
+
+                    for (int attempt = 1; attempt <= maxRetries; attempt++)
+                    {
+                        Console.WriteLine($"⏳ Waiting for PDF translation... (Attempt {attempt}/{maxRetries})");
+
+                        isReady = await modelService.IsTranslationCompletedAsync(encodedUrn, _accessToken);
+                        if (isReady)
+                        {
+                            Console.WriteLine("✅ PDF translation completed successfully!");
+                            break;
+                        }
+
+                        await Task.Delay(delayMs);
+                    }
+
+                    if (!isReady)
+                    {
+                        MessageBox.Show("❌ PDF translation failed or timed out.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        return;
+                    }
+                }
+
+                Console.WriteLine($"🔍 Opening Forge Viewer for PDF: {fileName}");
+
+                // Load PDF in Forge Viewer - reuse your existing method with a PDF flag
+                LoadForgeViewer(encodedUrn, true);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"❌ Error opening PDF: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                Console.WriteLine($"❌ Error opening PDF: {ex.Message}\n{ex.StackTrace}");
+            }
+        }
 
         #endregion
 
@@ -4015,6 +4977,204 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
         #endregion
 
+        #region Refresh Service
+        // Initialize the timer in your MainWindow constructor or Initialize() method
+        private void InitializeBackgroundRefresh()
+        {
+            _refreshTimer = new System.Timers.Timer();
+            _refreshTimer.Interval = TimeSpan.FromMinutes(REFRESH_INTERVAL_MINUTES).TotalMilliseconds;
+            _refreshTimer.Elapsed += OnRefreshTimerElapsed;
+            _refreshTimer.AutoReset = true;
+            _refreshTimer.Start();
+
+            Console.WriteLine($"🔄 Background refresh initialized. Will refresh every {REFRESH_INTERVAL_MINUTES} minutes.");
+        }
+
+        // This method will be called when the timer elapses
+        private async void OnRefreshTimerElapsed(object sender, ElapsedEventArgs e)
+        {
+            // Prevent concurrent refreshes
+            if (_isRefreshing)
+            {
+                Console.WriteLine("⚠️ Previous refresh operation still in progress. Skipping this refresh cycle.");
+                return;
+            }
+
+            _isRefreshing = true;
+
+            try
+            {
+                Console.WriteLine($"🔄 Starting background refresh at {DateTime.Now}");
+
+                await Dispatcher.InvokeAsync(async () =>
+                {
+                    try
+                    {
+                        // Refresh the access token if needed
+                        string accessToken = TokenManager.GetToken();
+                        if (string.IsNullOrEmpty(accessToken))
+                        {
+                            accessToken = TokenManager.GetToken();
+                            _accessToken = accessToken;
+                        }
+
+                        // Refresh hubs
+                        await RefreshHubs();
+
+                        // Refresh current project data if a project is selected
+                        if (!string.IsNullOrEmpty(_selectedProjectId) && !string.IsNullOrEmpty(_folderId))
+                        {
+                            await RefreshCurrentProject();
+                        }
+
+                        // Refresh model data if a model is selected
+                        if (!string.IsNullOrEmpty(_selectedItemId))
+                        {
+                            await RefreshCurrentModel();
+                        }
+
+                        Console.WriteLine($"✅ Background refresh completed successfully at {DateTime.Now}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"❌ Error during background refresh: {ex.Message}");
+                    }
+                });
+            }
+            finally
+            {
+                _isRefreshing = false;
+            }
+        }
+
+        // Refresh hubs data
+        private async Task RefreshHubs()
+        {
+            try
+            {
+                var hubDetails = await DataManagement.GetAllHubs();
+
+                if (hubDetails != null && hubDetails.Count > 0)
+                {
+                    hubs.Clear();
+                    hubs.AddRange(hubDetails);
+
+                    // Keep the currently selected hub if it still exists
+                    bool selectedHubExists = hubs.Any(h => h.HubID == selectedHubID);
+                    if (!selectedHubExists && hubs.Count > 0)
+                    {
+                        selectedHubID = hubs[0].HubID;
+                        selectedHubName = hubs[0].HubName;
+
+                        // Update UI
+                        await Dispatcher.InvokeAsync(() =>
+                        {
+                            HubsHeaderTextBlock.Text = $"Hubs - {selectedHubName}";
+                            PopulateHubMenu();
+                        });
+                    }
+
+                    Console.WriteLine($"✅ Refreshed {hubs.Count} hubs");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error refreshing hubs: {ex.Message}");
+            }
+        }
+
+        // Refresh current project data
+        private async Task RefreshCurrentProject()
+        {
+            try
+            {
+                var models = await GetModelsFromProject(_selectedProjectId, _folderId);
+
+                if (models != null)
+                {
+                    await Dispatcher.InvokeAsync(() =>
+                    {
+                        // Update the DataGrid if it's visible
+                        if (ModelsDataGrid.Visibility == Visibility.Visible)
+                        {
+                            ModelsDataGrid.ItemsSource = null;
+                            ModelsDataGrid.ItemsSource = models;
+                            originalResults = models;
+                            Models = models;
+                        }
+
+                        // Update the Grid view if it's visible
+                        if (Grid_View.Visibility == Visibility.Visible)
+                        {
+                            ModelsContainer.Children.Clear();
+                            isModelLoaded = false;
+                            DisplayGridModels();
+                        }
+                    });
+
+                    Console.WriteLine($"✅ Refreshed {models.Count} models for project {_selectedProjectId}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error refreshing project data: {ex.Message}");
+            }
+        }
+
+        // Refresh current model data
+        private async Task RefreshCurrentModel()
+        {
+            try
+            {
+                // Refresh storage ID for the currently selected model
+                await FetchAndSetStorageId();
+
+                // Refresh model metadata
+                if (ModelInfo.Visibility == Visibility.Visible)
+                {
+                    await LoadMetadata();
+                    Console.WriteLine($"✅ Refreshed metadata for model {_selectedItemId}");
+                }
+
+                // Refresh comments if they're visible
+                if (ModelComments.Visibility == Visibility.Visible)
+                {
+                    ClearComments();
+                    ListAllComments(_selectedItemId);
+                    Console.WriteLine($"✅ Refreshed comments for model {_selectedItemId}");
+                }
+
+                // Refresh model thumbnail
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    DisplayModelThumb();
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error refreshing model data: {ex.Message}");
+            }
+        }
+
+        // Call this method to clean up the timer when the window is closed
+        private void CleanupBackgroundRefresh()
+        {
+            if (_refreshTimer != null)
+            {
+                _refreshTimer.Stop();
+                _refreshTimer.Elapsed -= OnRefreshTimerElapsed;
+                _refreshTimer.Dispose();
+                _refreshTimer = null;
+                Console.WriteLine("✅ Background refresh timer cleaned up");
+            }
+        }
+
+        // Add this to your window's Closing event or Closed event
+        private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            CleanupBackgroundRefresh();
+        }
+        #endregion
 
 
         //ZERO REFERENCES FUNCTIONS//
@@ -4652,14 +5812,205 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         //        await DisplayTags();
         //}
 
-        private void LoadComments(string modelId)
+        private void CloseSidebar_Click(object sender, RoutedEventArgs e)
         {
-            ModelDataSidebar.Width = new GridLength(250);
+            ModelDataSidebar.Width = new GridLength(0);
+
+
+            //ModelThumbnail.Visibility = Visibility.Collapsed;
+            ModelComments.Visibility = Visibility.Collapsed;
+            ModelInfo.Visibility = Visibility.Collapsed;
+        }
+
+
+        private async Task LoadModelData()
+        {
+            if (ModelDataSidebar.Width.Value != 250)
+            {
+                ModelDataSidebar.Width = new GridLength(250);
+            }
+
+            //ModelThumbnail.Visibility = Visibility.Visible;
+            ModelComments.Visibility = Visibility.Collapsed;
+            ModelInfo.Visibility = Visibility.Visible;
+
+            string visibility = await GetModelVisibility();
+
+            if (visibility == "Public")
+            {
+                PublicPrivateText.Text = "Public";
+            }
+            else if (visibility == "Private")
+            {
+                PublicPrivateText.Text = "Private";
+            }
+
+            MongoConnection database = new MongoConnection();
+            var findListing = await database.ListedModels.Find(x => x.ModelId == _selectedItemId).FirstOrDefaultAsync();
+            if (findListing != null)
+            {
+                ListModelButtonBorder.Visibility = Visibility.Collapsed;
+            }
+
+            DisplayModelThumb();
+
+            await LoadMetadata();
+
+            await DisplayTags();
+        }
+
+        private async Task LoadMetadata()
+        {
+            if (_selectedModel == null)
+            {
+                MessageBox.Show("❌ No model selected.");
+                return;
+            }
+
+            DataManagement dataManagement = new DataManagement();
+
+            // Get metadata from API
+            ModelData modelMetadata = await dataManagement.GetModelMetadataAsync(
+                _selectedModel["ProjectId"], _selectedModel["Id"]
+            );
+           
+
+            if (modelMetadata != null)
+            {
+                FileDownloadService fileDownloadService = new FileDownloadService();
+
+                var versions = await fileDownloadService.GetVersionsForItemAsync(
+                    _selectedModel["ProjectId"], _selectedModel["Id"]
+                );
+
+                // ✅ Add the manual version number extraction here
+                string latestVersionNumber = "Unknown";
+                if (versions != null && versions.Any())
+                {
+                    string versionId = versions.First().versionId;
+                    Console.WriteLine($"✅ versionId = {versionId}");
+
+                    if (versionId.Contains("version="))
+                    {
+                        string[] parts = versionId.Split(new[] { "version=" }, StringSplitOptions.None);
+                        if (parts.Length > 1)
+                        {
+                            string versionPart = parts[1];
+                            int endIndex = 0;
+                            while (endIndex < versionPart.Length && char.IsDigit(versionPart[endIndex]))
+                                endIndex++;
+
+                            latestVersionNumber = versionPart.Substring(0, endIndex);
+                        }
+                    }
+                }
+
+                // ✅ Update UI
+                string latestVersion = $"Version {latestVersionNumber}";
+                ModelVersionText.Text = latestVersion;
+                ModelVersionText.Tag = latestVersionNumber;
+
+                // ✅ Update UI fields with the full metadata
+                //IdText.Text = modelMetadata.Id;
+                ModelNameText.Text = modelMetadata.Name;
+                //HubIdText.Text = modelMetadata.HubId;
+                //HubNameText.Text = modelMetadata.HubName;
+                CreatedByText.Text = modelMetadata.CreatedBy;
+                CreatedDateText.Text = modelMetadata.CreatedDate;
+                ModifiedDateText.Text = modelMetadata.ModifiedDate;
+                ModifiedByText.Text = modelMetadata.ModifiedBy;
+
+                // Convert bytes to MB with 2 decimal precision
+                FileSizeText.Text = $"{(modelMetadata.FileSize / 1_000_000.0):0.00} MB";
+
+                //PublicPrivateText.Text = modelMetadata.PublicPrivate;
+                FolderNameText.Text = modelMetadata.Foldername;
+                //FolderIdText.Text = modelMetadata.FolderId;
+                //ModelVersionText.Text = modelMetadata.Version.ToString();
+                FormatText.Text = modelMetadata.Format;
+                PolyCountText.Text = modelMetadata.PolyCount.ToString();
+                DimensionsText.Text = modelMetadata.Dimensions;
+            }
+            else
+            {
+                MessageBox.Show("❌ Failed to load model metadata.");
+            }
+        }
+
+        private void ModelVersionButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_selectedModel == null)
+            {
+                MessageBox.Show("❌ No model selected.");
+                return;
+            }
+
+            string modelId = _selectedModel["Id"];
+            string modelName = _selectedModel["Name"];
+
+            ContextMenu versionsMenu = CreateModelVersionsMenu(modelId, modelName);
+
+            // Attach and show the menu
+            ModelVersionButton.ContextMenu = versionsMenu;
+            versionsMenu.PlacementTarget = ModelVersionButton;
+            versionsMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+            versionsMenu.IsOpen = true;
+        }
+
+
+
+
+
+
+        private async Task LoadComments()
+        {
+            if (ModelDataSidebar.Width.Value != 250)
+            {
+                ModelDataSidebar.Width = new GridLength(250);
+            }
+
+            //ModelThumbnail.Visibility = Visibility.Visible;
             ModelComments.Visibility = Visibility.Visible;
             ModelInfo.Visibility = Visibility.Collapsed;
 
+            int upvotes = await GetModelUpvoteCount(_selectedItemId);
+
+            await SetUserModelVote(_selectedItemId, _userId);
+            int vote = await GetUserModelVote(_selectedItemId, _userId);
+
+            if (vote == 1)
+            {
+                UpArrow.Kind = PackIconKind.ArrowTopBold;
+                UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#11d137"));
+                DownArrow.Kind = PackIconKind.ArrowDownBoldOutline;
+                DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+            }
+            else if (vote == -1)
+            {
+                DownArrow.Kind = PackIconKind.ArrowDownBold;
+                DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d11111"));
+                UpArrow.Kind = PackIconKind.ArrowTopBoldOutline;
+                UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+            }
+            else
+            {
+                UpArrow.Kind = PackIconKind.ArrowTopBoldOutline;
+                UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+                DownArrow.Kind = PackIconKind.ArrowDownBoldOutline;
+                DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+            }
+
             ClearComments();
 
+            DisplayModelThumb();
+
+            UpvoteTextBlock.Text = upvotes.ToString();
+
+            ListAllComments(_selectedModel["Id"]);
+        }
+
+        private async void DisplayModelThumb()
+        {
             ModelNameText.Text = _selectedModel.ContainsKey("Name") ? _selectedModel["Name"] : "Unknown Model";
 
             if (ModelImage.Parent is Grid gridParent && gridParent.Parent is Border headerBackground)
@@ -4673,8 +6024,6 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             ModelImage.HorizontalAlignment = HorizontalAlignment.Center;
 
             _ = ShowThumbnail(_selectedModel["ProjectId"], _selectedModel["Id"], ModelImage);
-
-            ListAllComments(modelId);
         }
 
         private StackPanel CreateModelThumbnailUI(Dictionary<string, string> model)
@@ -4834,30 +6183,112 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 return result.Vote;
             }
         }
-        
+
         //Model Visibility
-        private async void PublicPrivateComboBox_OnSelectionChangedComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void PublicPrivateButton_Click(object sender, RoutedEventArgs e)
         {
-            ComboBox comboBox = sender as ComboBox;
-            var selectedItem = comboBox.SelectedItem as ComboBoxItem;
-            string option = selectedItem.Content.ToString();
-            selectedItem.IsEnabled = true;
-            selectedItem.IsSelected = true;
-            
-            MongoConnection database = new MongoConnection();
-            var filter = Builders<ModelData>.Filter.Eq(x => x.Id, _selectedItemId);
-            var update = Builders<ModelData>.Update.Set(x => x.PublicPrivate, option);
-            await database.ModelData.FindOneAndUpdateAsync(filter, update);
-            //MessageBox.Show($"Model updated to {option}");
+            if (PublicPrivateButton.ContextMenu == null)
+            {
+                // ✅ Create ContextMenu dynamically if it's null
+                ContextMenu menu = new ContextMenu();
+                MenuItem publicItem = new MenuItem { Header = "Public" };
+                MenuItem privateItem = new MenuItem { Header = "Private" };
+
+                publicItem.Click += SetPublic_Click;
+                privateItem.Click += SetPrivate_Click;
+
+                menu.Items.Add(publicItem);
+                menu.Items.Add(privateItem);
+
+                // ✅ Assign the ContextMenu to the button
+                PublicPrivateButton.ContextMenu = menu;
+            }
+
+            // ✅ Set PlacementTarget and Open Menu
+            PublicPrivateButton.ContextMenu.PlacementTarget = PublicPrivateButton;
+            PublicPrivateButton.ContextMenu.IsOpen = true;
         }
-        
+
+        private async void SetPublic_Click(object sender, RoutedEventArgs e)
+        {
+            await UpdateModelVisibility("Public");
+        }
+
+        private async void SetPrivate_Click(object sender, RoutedEventArgs e)
+        {
+            await UpdateModelVisibility("Private");
+        }
+
+        private async Task UpdateModelVisibility(string visibility)
+        {
+            try
+            {
+                MongoConnection database = new MongoConnection();
+                var filter = Builders<ModelData>.Filter.Eq(x => x.Id, _selectedItemId);
+                var update = Builders<ModelData>.Update.Set(x => x.PublicPrivate, visibility);
+
+                var result = await database.ModelData.FindOneAndUpdateAsync(filter, update);
+
+                if (result != null)
+                {
+                    PublicPrivateText.Text = visibility; // Update UI
+                                                         // MessageBox.Show($"✅ Model visibility updated to {visibility}");
+                }
+                else
+                {
+                    MessageBox.Show("❌ Failed to update model visibility.");
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"❌ Error updating model visibility: {ex.Message}");
+            }
+        }
+
         private async Task<string> GetModelVisibility()
         {
-            MongoConnection database = new MongoConnection();
-            var result = await database.ModelData.Find(x => x.Id == _selectedItemId).FirstOrDefaultAsync();
-            return result.PublicPrivate;
+            try
+            {
+                MongoConnection database = new MongoConnection();
+                var result = await database.ModelData.Find(x => x.Id == _selectedItemId).FirstOrDefaultAsync();
+
+                if (result != null)
+                {
+                    PublicPrivateText.Text = result.PublicPrivate; // Ensure UI is updated
+                    return result.PublicPrivate;
+                }
+                return "Private"; // Default fallback
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"❌ Error retrieving model visibility: {ex.Message}");
+                return "Private"; // Default value on failure
+            }
         }
-        
+
+        //private async void PublicPrivateComboBox_OnSelectionChangedComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        //{
+        //    ComboBox comboBox = sender as ComboBox;
+        //    var selectedItem = comboBox.SelectedItem as ComboBoxItem;
+        //    string option = selectedItem.Content.ToString();
+        //    selectedItem.IsEnabled = true;
+        //    selectedItem.IsSelected = true;
+
+        //    MongoConnection database = new MongoConnection();
+        //    var filter = Builders<ModelData>.Filter.Eq(x => x.Id, _selectedItemId);
+        //    var update = Builders<ModelData>.Update.Set(x => x.PublicPrivate, option);
+        //    await database.ModelData.FindOneAndUpdateAsync(filter, update);
+        //    //MessageBox.Show($"Model updated to {option}");
+        //}
+
+        //private async Task<string> GetModelVisibility()
+        //{
+        //    MongoConnection database = new MongoConnection();
+        //    var result = await database.ModelData.Find(x => x.Id == _selectedItemId).FirstOrDefaultAsync();
+        //    return result.PublicPrivate;
+        //}
+
+
         //Tags
         private async void AddTags_Click(object sender, MouseButtonEventArgs e)
         {
@@ -4984,11 +6415,11 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 Button tag = new Button
                 {
                     Content = Tag,
-                    Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F25505")),
+                    Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#540754")),
                     Height = 25,
                     Width = 50,
                     Foreground = new SolidColorBrush(Colors.White),
-                    BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F25505")),
+                    BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#98730C")),
                     BorderThickness = new Thickness(2)
                 };
 
@@ -4998,6 +6429,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     BorderBrush = tag.BorderBrush,
                     BorderThickness = tag.BorderThickness,
                     CornerRadius = new CornerRadius(2),
+                    Margin = new Thickness(8, 0, 0, 0),
                     Child = tag,
                 };
                 
@@ -5633,7 +7065,12 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         {
             SortChevron.Kind = PackIconKind.ChevronDown;
         }
-        
+
+        private void BtnFantasy_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
         //COMMENTED OUT FUNCTIONS//
 
         /* private void BtnGenerate3D_Click(object sender, RoutedEventArgs e)
@@ -5830,12 +7267,19 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         }
 
 */
+<<<<<<< HEAD
+
+
+
+=======
+>>>>>>> master-tom
         private void OpenDeckView_Click(object sender, RoutedEventArgs e)
         {
             DeckView dv = new DeckView();
             dv.Show();
             
         }
+
     }
 
 }
