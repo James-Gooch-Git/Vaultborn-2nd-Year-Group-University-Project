@@ -4298,7 +4298,8 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         {
             // Display version number above the slider
             sliderValue.Text = $"Version: {markerData.VersionNumber}";
-
+            _selectedVersionNum = markerData.VersionNumber.ToString();
+            
             // Here you can do something with the VersionID (e.g., load the version or perform any action)
             Console.WriteLine($"You reached version {markerData.VersionNumber} with ID: {markerData.VersionID}");
 
