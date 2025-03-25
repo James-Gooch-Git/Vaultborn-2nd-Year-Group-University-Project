@@ -121,9 +121,23 @@ public class FileDownloadService
             return null;
         }*/
 
-    public async Task<string> GetStorageIdFromItem(string projectId, string itemId)
+    public async Task<string> GetStorageIdFromItem(string projectId, string itemId, string versionId = null)
     {
-        string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/items/{itemId}";
+        string url;
+
+        if (!string.IsNullOrEmpty(versionId))
+        {
+
+            // Fetch storage ID from a version
+            url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/versions/{versionId}";
+            Console.WriteLine($"PROJECTID: {projectId} VERSIONID: {versionId} TOKEN: {TokenManager.GetToken()}");
+        }
+        else
+        {
+            // Fetch storage ID from an item
+            url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/items/{itemId}";
+        }
+
         Console.WriteLine($"🔍 Fetching Storage ID from: {url}");
 
         using HttpClient httpClient = new HttpClient();
@@ -132,26 +146,68 @@ public class FileDownloadService
         HttpResponseMessage response = await httpClient.GetAsync(url);
         if (!response.IsSuccessStatusCode)
         {
-            Console.WriteLine($"❌ Error retrieving storage ID. Status Code: {response.StatusCode}");
+            Console.WriteLine($"❌ Error retrieving storage ID. Status Code: {response.StatusCode} - {response.ReasonPhrase}");
             return null;
         }
 
         string jsonResponse = await response.Content.ReadAsStringAsync();
+        Console.WriteLine($"🔍 Full response: {jsonResponse}");
+
         using JsonDocument doc = JsonDocument.Parse(jsonResponse);
 
+        string storageId = null;
 
-        // ✅ Extract storage ID
-        string storageId = doc.RootElement
-            .GetProperty("included")[0]
-            .GetProperty("relationships")
-            .GetProperty("storage")
-            .GetProperty("data")
-            .GetProperty("id")
-            .GetString();
+        try
+        {
+            if (!string.IsNullOrEmpty(versionId))
+            {
+                // Extract storage ID from version response
+                storageId = doc.RootElement
+                    .GetProperty("data")
+                    .GetProperty("attributes")
+                    .GetProperty("extension")
+                    .GetProperty("data")
+                    .GetProperty("storageUrn")
+                    .GetString();
+            }
+            else
+            {
+                // Extract storage ID from item response
+                JsonElement includedArray = doc.RootElement.GetProperty("included");
+                foreach (JsonElement element in includedArray.EnumerateArray())
+                {
+                    if (element.TryGetProperty("relationships", out JsonElement relationships) &&
+                        relationships.TryGetProperty("storage", out JsonElement storage) &&
+                        storage.TryGetProperty("data", out JsonElement storageData) &&
+                        storageData.TryGetProperty("id", out JsonElement idElement))
+                    {
+                        storageId = idElement.GetString();
+                        break; // Exit early once the storage ID is found
+                    }
+                }
+            }
 
-        Console.WriteLine($"📂 Storage ID: {storageId}");
-        return storageId;
+            if (string.IsNullOrEmpty(storageId))
+            {
+                Console.WriteLine("⚠️ Storage ID not found in API response.");
+                return null;
+            }
+
+            Console.WriteLine($"📂 Storage ID: {storageId}");
+            return storageId;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Error parsing storage ID: {ex.Message}");
+            return null;
+        }
     }
+
+
+
+
+
+
 
     public async Task<string> GetStorageIdFromVersion(string projectId, string versionId)
     {
