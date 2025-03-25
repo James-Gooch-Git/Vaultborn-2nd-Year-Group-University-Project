@@ -38,7 +38,7 @@ namespace AssetManager.Desktop
 {
     public partial class MainWindow : Window
     {
-        private string _accessToken;
+        public static string _accessToken;
         private Dictionary<string, string> _selectedModel;
         private string _selectedProjectId;
         private string _selectedProjectName;
@@ -2324,11 +2324,28 @@ namespace AssetManager.Desktop
                     // Load thumbnail asynchronously
                     _ = ShowThumbnail(projectId, itemId, thumbnailImage);
 
-                    UploadThumbnailToMongo(projectId, itemId, thumbnailImage);
+                    //UploadThumbnailToMongo(projectId, itemId, thumbnailImage);
 
-                    void UploadThumbnailToMongo(string s, string itemId1, Image image)
+                    void UploadThumbnailToMongo(string pId, string iId, Image image)
                     {
+                        var mongo = new MongoConnection();
+                        IMongoCollection<BsonDocument> _modeldataCollection = mongo.GetCollection("ModelData");
                         
+                        var filter = Builders<BsonDocument>.Filter.And(
+                            Builders<BsonDocument>.Filter.Eq("_folderid", pId),
+                            Builders<BsonDocument>.Filter.Eq("_id", iId)
+                        );
+
+                        var update = Builders<BsonDocument>.Update.Set("thumbnail_url", image);
+
+                        try
+                        {
+                            _modeldataCollection.UpdateOneAsync(filter, update);
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine("Could not upload thumbnail");
+                        }
                     }
 
                     TextBlock modelName = new TextBlock

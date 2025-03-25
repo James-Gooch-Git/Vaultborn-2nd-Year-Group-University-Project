@@ -8,19 +8,13 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="29dceaf0-6b38-45af-9473-223a6fd443eb" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/AssetManager.Desktop/SelectModelWindow.xaml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/AssetManager.Desktop/SelectModelWindow.xaml.cs" afterDir="false" />
+    <list default="true" id="29dceaf0-6b38-45af-9473-223a6fd443eb" name="Changes" comment="ding">
       <change beforePath="$PROJECT_DIR$/.idea/.idea.AssetManager/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.AssetManager/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/AssetManager.Core/bin/Debug/net8.0/AssetManager.Core.dll" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Core/bin/Debug/net8.0/AssetManager.Core.dll" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/AssetManager.Core/bin/Debug/net8.0/AssetManager.Core.pdb" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Core/bin/Debug/net8.0/AssetManager.Core.pdb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/AssetManager.Desktop/AddCardWindow.xaml" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Desktop/AddCardWindow.xaml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/AssetManager.Desktop/AddCardWindow.xaml.cs" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Desktop/AddCardWindow.xaml.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/AssetManager.Desktop/DeckWindow.xaml.cs" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Desktop/DeckWindow.xaml.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml.cs" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/AssetManager.Infrastructure/DOC/CreateCard.cs" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Infrastructure/DOC/CreateCard.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/AssetManager.Infrastructure/bin/Debug/net8.0/win-x64/AssetManager.Core.dll" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Infrastructure/bin/Debug/net8.0/win-x64/AssetManager.Core.dll" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/AssetManager.Infrastructure/bin/Debug/net8.0/win-x64/AssetManager.Core.pdb" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Infrastructure/bin/Debug/net8.0/win-x64/AssetManager.Core.pdb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/AssetManager.Infrastructure/Services/DataManagement.cs" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Infrastructure/Services/DataManagement.cs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/AssetManager.Infrastructure/bin/Debug/net8.0/win-x64/AssetManager.Infrastructure.dll" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Infrastructure/bin/Debug/net8.0/win-x64/AssetManager.Infrastructure.dll" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/AssetManager.Infrastructure/bin/Debug/net8.0/win-x64/AssetManager.Infrastructure.pdb" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Infrastructure/bin/Debug/net8.0/win-x64/AssetManager.Infrastructure.pdb" afterDir="false" />
     </list>
@@ -61,78 +55,12 @@
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/7fcc41fe48c43f71d1476329de953fce8565fcc5dbf3c8c6fdb81c216b19c4/ArgumentNullException.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/ce7854bb4da5f3387d19aeb7a46d9b3e214173bc14d69641477687ea285423b/Directory.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/d791c3eb25297f33ebfc088aa821fe66a8a3a295b63fbd1a1d8f4b2e77e1017/ReadOnlySpan.cs" root0="FORCE_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/App.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/App.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/App.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/App.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/App.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/App.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/App.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/App.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/App.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/App.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/App.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/App.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/App.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/App.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/App.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/App.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/App.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/App.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/DeckWindow.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/DeckWindow.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/DeckWindow.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/DeckWindow.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/DeckWindow.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/DeckWindow.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/DeckWindow.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/DeckWindow.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/DeckWindow.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/DeckWindow.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/DeckWindow.xaml.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/DeckWindow.xaml.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/DeckWindow.xaml.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/DeckWindow.xaml.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/DeckWindow.xaml.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/DeckWindow.xaml.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/DeckWindow.xaml.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/DeckWindow.xaml.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/DeckWindow.xaml.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/DeckWindow.xaml.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/AddCardWindow.xaml" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/AssetManager.Desktop/LoginWindow.xaml.cs" root0="FORCE_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/MainWindow.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/MainWindow.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/MainWindow.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/MainWindow.xaml" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml" root0="FORCE_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/MainWindow.xaml.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/MainWindow.xaml.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/MainWindow.xaml.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml.cs" root0="FORCE_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/MainWindow.xaml.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/AssetManager.Desktop/OpenFusion.cs" root0="FORCE_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/Resources/FantasyCardTemplates.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/Resources/FantasyCardTemplates.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/Resources/FantasyCardTemplates.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/Resources/FantasyCardTemplates.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/Resources/FantasyCardTemplates.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/Resources/FantasyCardTemplates.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/Resources/FantasyCardTemplates.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/Resources/FantasyCardTemplates.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/Resources/FantasyCardTemplates.xaml" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/Resources/FantasyCardTemplates.xaml" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/AssetManager.Desktop/obj/Debug/net8.0-windows/win-x64/App.g.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Infrastructure/DOC/CreateCard.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Infrastructure/DOC/CreateCard.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Infrastructure/DOC/CreateCard.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Infrastructure/DOC/CreateDeck.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Infrastructure/DOC/CreateDeck.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Infrastructure/DOC/CreateDeck.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Infrastructure/DOC/FetchDecks.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Infrastructure/DOC/FetchDecks.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Infrastructure/DOC/FetchDecks.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Infrastructure/DOC/ImageProcessor.cs" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Infrastructure/DOC/ImageProcessor.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/AssetManager.Infrastructure/Services/DataManagement.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/AssetManager.Infrastructure/Services/DeleteModel.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/AssetManager.Infrastructure/Services/ModelUpload.cs" root0="FORCE_HIGHLIGHTING" />
@@ -213,6 +141,7 @@
       <workItem from="1742393296184" duration="13729000" />
       <workItem from="1742471596910" duration="861000" />
       <workItem from="1742807448644" duration="3569000" />
+      <workItem from="1742838076714" duration="8822000" />
     </task>
     <task id="LOCAL-00001" summary="save main">
       <option name="closed" value="true" />
@@ -318,7 +247,15 @@
       <option name="project" value="LOCAL" />
       <updated>1742569699248</updated>
     </task>
-    <option name="localTasksCounter" value="14" />
+    <task id="LOCAL-00014" summary="ding">
+      <option name="closed" value="true" />
+      <created>1742838137812</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1742838137812</updated>
+    </task>
+    <option name="localTasksCounter" value="15" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -362,25 +299,7 @@
     <MESSAGE value="paypal sandbox buying works!!!" />
     <MESSAGE value="sort listed models works for list view" />
     <MESSAGE value="merge DOC progress" />
-    <option name="LAST_COMMIT_MESSAGE" value="merge DOC progress" />
-  </component>
-  <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" type="DotNet Breakpoints">
-          <url>file://$PROJECT_DIR$/AssetManager.Desktop/DeckWindow.xaml.cs</url>
-          <line>49</line>
-          <properties documentPath="C:\Users\tomgr\source\repos\AssetManager2\AssetManager.Desktop\DeckWindow.xaml.cs" containingFunctionPresentation="Method 'LoadDeckCards'">
-            <startOffsets>
-              <option value="1562" />
-            </startOffsets>
-            <endOffsets>
-              <option value="1597" />
-            </endOffsets>
-          </properties>
-          <option name="timeStamp" value="2" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
+    <MESSAGE value="ding" />
+    <option name="LAST_COMMIT_MESSAGE" value="ding" />
   </component>
 </project>

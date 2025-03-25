@@ -51,8 +51,9 @@ namespace AssetManager.Desktop
 
                 string modelName = model.GetValue("_name", "").AsString;
                 string thumbnailUrl = model.Contains("thumbnail_url") ? model["thumbnail_url"].AsString : null;
+                string thumbnail_base64 = model.Contains("thumbnail_base64") ? model["thumbnail_base64"].AsString : null;
                 
-                if (string.IsNullOrEmpty(thumbnailUrl))
+                if (string.IsNullOrEmpty(thumbnail_base64))
                 {
                     MessageBox.Show("No thumbnail available for this model.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
                     ImageUrlTextBox.Text = "";
@@ -60,7 +61,7 @@ namespace AssetManager.Desktop
                 else
                 {
                     ImageUrlTextBox.Text = "Model default thumbnail";
-                    AddThumbnail(thumbnailUrl);
+                    AddThumbnail(thumbnail_base64);
                     imageUrl = thumbnailUrl;
                 }
 
