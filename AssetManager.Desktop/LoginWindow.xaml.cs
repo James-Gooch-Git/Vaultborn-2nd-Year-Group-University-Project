@@ -16,6 +16,9 @@ using Autodesk.Authentication.Model;
 using MongoDB.Driver;
 using System.Text.Json;
 using Newtonsoft.Json.Linq;
+using AssetManager.Infrastructure.Data;
+using AssetManager.Infrastructure.Models;
+
 
 namespace AssetManager.Desktop
 {
@@ -52,18 +55,32 @@ namespace AssetManager.Desktop
         }
 
 
-        public LoginWindow(bool isLogout) // Constructor accepting a boolean
+        public LoginWindow(bool isLogout)
         {
-            //InitializeComponent();
+            InitializeComponent(); // ✅ MUST be called first
+
             _isLogout = isLogout;
 
             if (_isLogout)
             {
-                HandleLogout();
+               // HandleLogout();
             }
-            InitializeComponent();
-            InitializeWebView();
+            else
+            {
+                InitializeWebView();
+            }
         }
+        public static void PerformLogout()
+        {
+            Console.WriteLine("👤 Logging out...");
+
+            // Clear session environment variables
+            Environment.SetEnvironmentVariable("userId", "", EnvironmentVariableTarget.User);
+            Environment.SetEnvironmentVariable("accessToken", "", EnvironmentVariableTarget.User);
+            Environment.SetEnvironmentVariable("twoLeggedToken", "", EnvironmentVariableTarget.User);
+        }
+
+
 
         private void HandleLogout()
         {
@@ -168,7 +185,24 @@ namespace AssetManager.Desktop
             }
         }
 
+        private async void InsertUserDataDB(UserInfo userInfo)
+        {
+            try
+            {
+                MongoConnection database = new MongoConnection();
+                var findUser = await database.Users.Find(x => x.Id == userInfo.Sub).FirstOrDefaultAsync();
 
+                if (findUser == null)
+                {
+                    User newUser = new User { Id = userInfo.Sub, Username = userInfo.PreferredUsername, Email = userInfo.Email, ProfilePic = userInfo.Picture };
+                    await database.Users.InsertOneAsync(newUser);
+                }
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show($"Error: {e.Message}");
+            }
+        }
 
 
         /// <summary>
@@ -471,12 +505,32 @@ namespace AssetManager.Desktop
                 string userId = document.RootElement.GetProperty("userId").GetString();
                 string email = document.RootElement.GetProperty("emailId").GetString();
 
+                // 🖼️ Get profile picture if available
+                string profileImageUrl = string.Empty;
+                if (document.RootElement.TryGetProperty("profileImages", out JsonElement profileImages) &&
+                    profileImages.TryGetProperty("sizeX42", out JsonElement imageUrlElement))
+                {
+                    profileImageUrl = imageUrlElement.GetString();
+                }
+
                 Console.WriteLine($"✅ User data retrieved: {userName} ({email})");
 
+                // Store user info in environment variables if needed
                 Environment.SetEnvironmentVariable("userName", userName, EnvironmentVariableTarget.User);
                 Environment.SetEnvironmentVariable("userId", userId, EnvironmentVariableTarget.User);
 
-                // ✅ Prevent duplicate MainWindow
+                // Create a UserInfo object with the retrieved data
+                UserInfo userDataResponse = new UserInfo
+                {
+                    Sub = userId,
+                    PreferredUsername = userName,
+                    Email = email,
+                    Picture = profileImageUrl
+                };
+
+                // 🧠 Pass user info to your database handler
+                InsertUserDataDB(userDataResponse);
+
                 if (!Application.Current.Windows.OfType<MainWindow>().Any())
                 {
                     Dispatcher.Invoke(() =>
@@ -497,6 +551,8 @@ namespace AssetManager.Desktop
                 MessageBox.Show($"Error retrieving user data: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
+
 
         /// <summary>
         /// Generates a secure nonce.
