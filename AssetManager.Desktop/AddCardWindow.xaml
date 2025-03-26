@@ -3,7 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Fantasy Card Preview"
         WindowStartupLocation="CenterScreen"
-        Width="500" Height="350">
+        Width="500" Height="350"
+        ResizeMode="NoResize">
     
     <Window.Resources>
         

@@ -458,32 +458,10 @@ namespace AssetManager.Desktop
 
         private async void ListOnMarketplace_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(_deckId))
-            {
-                MessageBox.Show("Error: No deck selected.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            try
-            {
-                var filter = Builders<BsonDocument>.Filter.Eq("_id", ObjectId.Parse(_deckId));
-                var update = Builders<BsonDocument>.Update.Set("is_listed", true);
-
-                var result = await _decksCollection.UpdateOneAsync(filter, update);
-
-                if (result.ModifiedCount > 0)
-                {
-                    MessageBox.Show("Deck successfully listed on the marketplace!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-                else
-                {
-                    MessageBox.Show("Error: Deck listing failed. It may already be listed.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error updating deck: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+            Console.WriteLine("Clicked on marketplace button");
+            ListDeckPrompt listPrompt = new ListDeckPrompt(_deckId, _decksCollection);
+            listPrompt.Owner = this;
+            listPrompt.Show();
         }
         
         private async void NewDeck_Click(object sender, RoutedEventArgs e)
