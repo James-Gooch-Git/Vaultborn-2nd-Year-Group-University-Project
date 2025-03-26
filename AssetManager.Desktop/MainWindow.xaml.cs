@@ -833,16 +833,16 @@ namespace AssetManager.Desktop
 
                     foreach (JsonElement hub in hubsRoot.GetProperty("data").EnumerateArray())
                     {
-                        string hubID = hub.GetProperty("id").GetString();
+                        string hubId = hub.GetProperty("id").GetString();
                         //hubID = selectedHubID;
 
-                        string projectsUrl = $"https://developer.api.autodesk.com/project/v1/hubs/{hubID}/projects";
+                        string projectsUrl = $"https://developer.api.autodesk.com/project/v1/hubs/{hubId}/projects";
                         await Task.Delay(500);
                         HttpResponseMessage projectsResponse = await client.GetAsync(projectsUrl);
 
                         if (!projectsResponse.IsSuccessStatusCode)
                         {
-                            Console.WriteLine($"❌ Error fetching projects for hub {hubID}: {projectsResponse.StatusCode}");
+                            Console.WriteLine($"❌ Error fetching projects for hub {hubId}: {projectsResponse.StatusCode}");
                             continue;
                         }
 
@@ -856,7 +856,7 @@ namespace AssetManager.Desktop
                             string projectName = project.GetProperty("attributes").GetProperty("name").GetString();
 
 
-                            var topFolder = await DataManagement.GetTopLevelFolder(hubID, projectId);
+                            var topFolder = await DataManagement.GetTopLevelFolder(hubId, projectId);
                             string folderId = topFolder.Item1;
 
                             if (string.IsNullOrEmpty(folderId))
@@ -899,7 +899,7 @@ namespace AssetManager.Desktop
                                         { "Project", projectName },
                                         { "LastModified", lastModified }
                                     });
-                                    await GetModelData(modelId, projectId, projectName);
+                                    await GetModelData(modelId, projectId, projectName, hubId);
                                     await InsertModelVersionDB(modelId, projectId);
                                 }
                             }
@@ -4873,7 +4873,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         }
         
         //models put in db
-        private static async Task GetModelData(string modelId, string projectId, string folderName)
+        private static async Task GetModelData(string modelId, string projectId, string folderName, string hubId)
         {
             try
             {
@@ -4892,7 +4892,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     {
                         Id = modelId,
                         Name = JsonResponse.data.attributes.displayName,
-                        HubId = hubID,
+                        HubId = hubId,
                         CreatedBy = JsonResponse.data.attributes.createUserId,
                         CreatedDate = JsonResponse.data.attributes.createTime,
                         ModifiedDate = JsonResponse.data.attributes.lastModifiedTime,
