@@ -6742,29 +6742,70 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             if (e.Key == Key.Enter)
             {
                 MongoConnection database = new MongoConnection();
-                List<ListedModels> result = await database.ListedModels.Find(FilterDefinition<ListedModels>.Empty).ToListAsync();
-        
-                var modelNames = result.Select(x => x.Name).ToList();
-                var topResults = FuzzySharp.Process.ExtractTop(MarketplaceSearchTextBox.Text, modelNames, limit: 3);
-            
-                foreach (var match in topResults)
+
+                if (_selectedMarketplace == "Models")
                 {
-                    var model = result[match.Index];
-                    Console.WriteLine($"{match.Value}: {model.Name}");
-                    if (model != null)
+                    List<ListedModels> result = await database.ListedModels.Find(FilterDefinition<ListedModels>.Empty).ToListAsync();
+
+                    var modelNames = result.Select(x => x.Name).ToList();
+                    var topResults = FuzzySharp.Process.ExtractTop(MarketplaceSearchTextBox.Text, modelNames, limit: 3);
+
+                    foreach (var match in topResults)
                     {
-                        Console.WriteLine($"Found Match: {match.Value}");
-                        string sellerName = await GetUserName(model.SellerId);
-                        string projectId = await GetModelProjectId(model.ModelId);
-                        searchResults.Add(new Dictionary<string, string>
+                        var model = result[match.Index];
+                        Console.WriteLine($"{match.Value}: {model.Name}");
+                        if (model != null)
                         {
-                            { "Name", model.Name },
-                            { "Description", model.Description },
-                            { "Seller", sellerName },
-                            { "Id", model.ModelId },
-                            { "Price" , $"£{model.Price.ToString("0.00")}"} ,
-                            { "ProjectId", projectId}
-                        });
+                            Console.WriteLine($"Found Match: {match.Value}");
+                            string sellerName = await GetUserName(model.SellerId);
+                            string projectId = await GetModelProjectId(model.ModelId);
+                            bool purchased = await CheckModelPurchased(model.ModelId, _userId);
+                            searchResults.Add(new Dictionary<string, string>
+                            {
+                                { "Name", model.Name },
+                                { "Description", model.Description },
+                                { "Seller", sellerName },
+                                { "Id", model.ModelId },
+                                { "Price", $"£{model.Price.ToString("0.00")}" },
+                                { "BuyVisibility", purchased ? "Collapsed" : "Visible" },
+                                { "PurchasedVisibility", purchased ? "Visible" : "Collapsed" },
+                                { "ProjectId", projectId }
+                            });
+                        }
+                    }
+                }
+                else if (_selectedMarketplace == "Decks")
+                {
+                    var collection = database.GetCollection("Decks");
+                    var filter = Builders<BsonDocument>.Filter.Eq("is_listed", true);
+                    var decks = await collection.Find(filter).ToListAsync();
+
+                    var deckNames = decks.Select(x => x["name"].ToString()).ToList();
+                    var topResults = FuzzySharp.Process.ExtractTop(MarketplaceSearchTextBox.Text, deckNames, limit: 3);
+
+                    foreach (var match in topResults)
+                    {
+                        var deck = decks[match.Index];
+                        Console.WriteLine($"{match.Value}: {deck["name"].ToString()}");
+                        if (deck != null)
+                        {
+                            Console.WriteLine($"Found Match: {match.Value}");
+                            bool purchased = await CheckModelPurchased(deck["_id"].ToString(), _userId);
+                            string sellerName = await GetUserName(deck["owner_id"].ToString());
+                            double amount = double.Parse(deck["price"].ToString());
+                            string price = amount.ToString("0.00");
+                            searchResults.Add(new Dictionary<string, string>
+                            {
+                                { "Name", deck["name"].ToString() },
+                                { "Description", deck["description"].ToString() },
+                                { "Seller", sellerName },
+                                { "Id", deck["_id"].ToString() },
+                                { "Price", $"£{price}" },
+                                { "BuyVisibility", purchased ? "Collapsed" : "Visible" },
+                                { "PurchasedVisibility", purchased ? "Visible" : "Collapsed" },
+                                { "ProjectId", "N/A" }
+                            });
+                        }
                     }
                 }
             }
@@ -6775,7 +6816,14 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         private async void MarketplaceClearSearch_Click(object sender, MouseButtonEventArgs e)
         {
             MarketplaceSearchTextBox.Text = "";
-            await InitializeMarketplace();
+            if (_selectedMarketplace == "Models")
+            {
+                await InitializeMarketplace();
+            }
+            else if (_selectedMarketplace == "Decks")
+            {
+                await InitializeMarketplaceDecks();
+            }
         }
 
         private async Task<bool> CheckModelPurchased(string modelId, string userId)
