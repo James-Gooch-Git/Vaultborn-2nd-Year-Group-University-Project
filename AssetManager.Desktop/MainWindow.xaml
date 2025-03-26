@@ -1358,7 +1358,7 @@
 
                         <Border Cursor="Hand" MouseLeftButtonDown="MarketplaceSort_Click">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock x:Name="SortByTextBlock" Text="Sort By Names A-Z" Cursor="Hand" FontSize="13" Foreground="#4B4B4B" VerticalAlignment="Center"/>
+                                <TextBlock x:Name="SortByTextBlock" Text="Sort By Name A-Z" Cursor="Hand" FontSize="13" Foreground="#4B4B4B" VerticalAlignment="Center"/>
                                 <md:PackIcon x:Name="SortChevron" Kind="ChevronDown" Cursor="Hand" Foreground="#4B4B4B" VerticalAlignment="Center" Margin="0,0,5,0"/>
                             </StackPanel>
                         </Border>
@@ -1368,7 +1368,7 @@
                                     Width="120" Height="130">
 
                                 <ListBox x:Name="SortListBox" SelectionChanged="SortListBox_SelectionChanged" Margin="10" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Disabled">
-                                    <ListBoxItem Height="20" Foreground="White" VerticalAlignment="Center" BorderBrush="#98730c" BorderThickness="0,0,0,1">Names A-Z</ListBoxItem>
+                                    <ListBoxItem Height="20" Foreground="White" VerticalAlignment="Center" BorderBrush="#98730c" BorderThickness="0,0,0,1">Name A-Z</ListBoxItem>
                                     <ListBoxItem Height="20" Foreground="White" VerticalAlignment="Center" BorderBrush="#98730c" BorderThickness="0,0,0,1">Upvotes</ListBoxItem>
                                     <ListBoxItem Height="20" Foreground="White" VerticalAlignment="Center" BorderBrush="#98730c" BorderThickness="0,0,0,1">Price Lowest</ListBoxItem>
                                     <ListBoxItem Height="20" Foreground="White" VerticalAlignment="Center" BorderBrush="#98730c" BorderThickness="0,0,0,1">Price Highest</ListBoxItem>

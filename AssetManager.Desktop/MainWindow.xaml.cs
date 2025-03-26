@@ -6235,7 +6235,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     { "Description", model.Description },
                     { "Seller", sellerName },
                     { "Id", model.ModelId },
-                    { "Price", model.Price.ToString("0.00")},
+                    { "Price", $"£{model.Price.ToString("0.00")}"},
                     { "ProjectId", projectId},
                     { "BuyVisibility", purchased ? "Collapsed" : "Visible" },
                     { "PurchasedVisibility", purchased ? "Visible" : "Collapsed" }
@@ -6257,13 +6257,15 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             {
                 bool purchased = await CheckModelPurchased(deck["_id"].ToString(), _userId);
                 string sellerName = await GetUserName(deck["owner_id"].ToString());
+                double amount = double.Parse(deck["price"].ToString());
+                string price = amount.ToString("0.00");
                 allListedDecks.Add(new Dictionary<string, string>
                 {
                     { "Name", deck["name"].ToString() },
                     { "Description",deck["description"].ToString() },
                     { "Seller", sellerName },
                     { "Id", deck["_id"].ToString() },
-                    { "Price", deck["price"].ToString()},
+                    { "Price", $"£{price}"},
                     { "BuyVisibility", purchased ? "Collapsed" : "Visible" },
                     { "PurchasedVisibility", purchased ? "Visible" : "Collapsed" },
                     { "ProjectId", "N/A"}
@@ -6586,7 +6588,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         {
             switch (option)
             {
-                case "Names A-Z":
+                case "Name A-Z":
                     List<Dictionary<string, string>> namesAZ = models.OrderBy(x => x["Name"]).ToList();
                     MarketplaceDataGrid.ItemsSource = namesAZ;
                     DisplayMarketplaceGrid(namesAZ);
