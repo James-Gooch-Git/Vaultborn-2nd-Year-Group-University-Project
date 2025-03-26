@@ -323,7 +323,7 @@
         </Grid.ColumnDefinitions>
 
 
-        <Thumb Grid.Row="1" Grid.Column="1" Width="5" Cursor="SizeWE" DragDelta="ResizeSidebarThumb_DragDelta" Background="Transparent" />
+        <Thumb Grid.Row="1" Grid.Column="1" Width="5" Cursor="SizeWE" DragDelta="ResizeSidebarThumb_DragDelta" Background="#98730c" />
 
         <Border Grid.Row="0" Grid.ColumnSpan="5" BorderBrush="#797979" BorderThickness="0,0,0,1">
             <!-- <Border.Background>
@@ -1656,7 +1656,7 @@
             </Grid>
         </Border>
 
-        <Thumb Grid.Row="1" Grid.Column="3" Width="5" Cursor="SizeWE" DragDelta="ResizeModelSidebar_DragDelta" Background="Transparent"/>
+        <Thumb Grid.Row="1" Grid.Column="3" Width="5" Cursor="SizeWE" DragDelta="ResizeModelSidebar_DragDelta" Background="#98730c"/>
 
         <!-- Model Info Sidebar -->
         <Border Grid.Row="1" Grid.Column="4" BorderBrush="#98730c" BorderThickness="1,0,0,0" Padding="5,0,5,0">
