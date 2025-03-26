@@ -86,56 +86,67 @@
 
             <!-- ElementsLayout -->
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="1*" />
-                <!-- Deck Select -->
                 <ColumnDefinition Width="2*" />
+                <!-- Deck Select -->
+                <ColumnDefinition Width="1.5*" />
                 <!-- Card Image -->
-                <ColumnDefinition Width="1*" />
+                <ColumnDefinition Width="2*" />
                 <!-- Description -->
             </Grid.ColumnDefinitions>
 
-            <Grid Grid.Row="0" Grid.Column="0">
-                <!-- "Select Deck" Button -->
-                <StackPanel Grid.Column="0" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="60,100,0,0">
-                    <Button x:Name="SelectDeckButton"
-                            Content="Select Deck"
-                            Width="140"
-                            Height="50"
-                            Background="#1E1E30"
-                            Foreground="#FFD700"
-                            FontSize="16"
-                            FontFamily="Gabriola"
-                            FontWeight="Bold"
-                            Cursor="Hand"
-                            Click="SelectDeckButton_Click">
-                        <Button.Style>
-                            <Style TargetType="Button">
-                                <Setter Property="BorderThickness" Value="2"/>
-                                <Setter Property="BorderBrush" Value="#C0A062"/>
-                                <!-- <Setter Property="CornerRadius" Value="10"/> -->
-                                <Setter Property="Padding" Value="10"/>
-                                <Setter Property="Effect">
-                                    <Setter.Value>
-                                        <DropShadowEffect ShadowDepth="2" BlurRadius="5" Opacity="0.7" Color="Black"/>
-                                    </Setter.Value>
-                                </Setter>
-                                <Style.Triggers>
-                                    <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter Property="Background" Value="#FFD700"/>
-                                        <Setter Property="Foreground" Value="#1E1E30"/>
-                                        <Setter Property="BorderBrush" Value="#E6D9B2"/>
-                                        <Setter Property="Effect">
-                                            <Setter.Value>
-                                                <DropShadowEffect ShadowDepth="5" BlurRadius="15" Opacity="0.8" Color="#FFD700"/>
-                                            </Setter.Value>
-                                        </Setter>
-                                    </Trigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Button.Style>
-                    </Button>
-                </StackPanel>
+        <Grid Column="0">
+                <Border Panel.ZIndex="2"
+                        Background="#3F001000" 
+                        BorderBrush="#FFD700" 
+                        BorderThickness="0" 
+                        CornerRadius="10"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Margin="60,0,40,0"
+                        Height="200">
+
+                    <StackPanel Margin="15">
+                        <!-- Scroll Decoration Top -->
+                        <Path Data="M0,0 C20,-5 40,5 60,0 C80,-5 100,5 120,0" 
+                                Stroke="#FFD700" 
+                                StrokeThickness="2" 
+                                Margin="0,0,0,10"
+                                HorizontalAlignment="Center" 
+                                Width="120"
+                                Height="1"/>
+
+                        <!-- Card Name -->
+                        <TextBlock x:Name="SelectedDeckName"
+                                    FontSize="28"
+                                    Text="Select a Deck"
+                                    Style="{StaticResource HeaderTextStyle}"
+                                    TextAlignment="Center"/>
+
+                        <!-- Divider -->
+                        <Border Height="0.4" 
+                                Background="#FFD700" 
+                                BorderThickness="0.1"
+                                Margin="40,0, 40, 20" 
+                                Opacity="0.7"/>
+
+                                                
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Width="100">
+                            <StackPanel x:Name="DeckListPanel" Orientation="Vertical" />
+                            
+                        </ScrollViewer>
+
+                        <!-- Scroll Decoration Bottom -->
+                        <Path Data="M0,0 C20,5 40,-5 60,0 C80,5 100,-5 120,0" 
+                                Stroke="#FFD700" 
+                                StrokeThickness="2" 
+                                Margin="0,10,0,0"
+                                HorizontalAlignment="Center" 
+                                Width="120"
+                                Height="1"/>
+                    </StackPanel>
+                </Border>
             </Grid>
+
 
             <!-- Selected Card Display -->
 
@@ -261,16 +272,15 @@
             <!-- Card Details -->
             <Grid Column="2">
                 <Border Grid.Column="2" Panel.ZIndex="2" 
-                        Background="#1A000000" 
+                        Background="#3F001000" 
                         BorderBrush="#FFD700" 
                         BorderThickness="0" 
                         CornerRadius="10"
                         HorizontalAlignment="Center"
                         VerticalAlignment="Center"
-                        Margin="0,0,40,0">
-                    <Border.Effect>
-                        <DropShadowEffect Color="#000000" ShadowDepth="5" BlurRadius="10" Opacity="0.7"/>
-                    </Border.Effect>
+                        Margin="0,0,40,0"
+                        Height="200">
+
                     <StackPanel Margin="15">
                         <!-- Scroll Decoration Top -->
                         <Path Data="M0,0 C20,-5 40,5 60,0 C80,-5 100,5 120,0" 
