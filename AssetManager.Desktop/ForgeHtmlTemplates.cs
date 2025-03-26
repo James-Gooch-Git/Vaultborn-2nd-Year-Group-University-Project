@@ -387,7 +387,7 @@
 
     public static string GetModelViewerHtml(string encodedUrn, string accessToken)
     {
-        // Paste your 3D skybox viewer HTML template here
+        
         return $@"
 <!DOCTYPE html>
 <html>
@@ -411,6 +411,7 @@
         <button id='skybox2' class='skyboxButton'>Sunset Skybox</button>
         <button id='skybox3' class='skyboxButton'>Volcano Skybox</button>
         <button id='noSkybox' class='skyboxButton'>No Skybox</button>
+        <button id='setScene' class='skyboxButton'>Set Camera + BG</button>
         <button id='toggleLogs' class='skyboxButton'>Show Logs</button>
     </div>
     <div id='forgeViewer'></div>
@@ -525,6 +526,38 @@
             skyboxExt?.unload();
             debug('Skybox cleared');
         }};
+document.getElementById('setScene').onclick = () => {{
+    if (!viewer) return;
+
+    const THREE = Autodesk.Viewing.Private.THREE;
+
+    // Camera setup
+    const position = new THREE.Vector3(20, 15, 20); // camera position
+    const target = new THREE.Vector3(0, 0, 0);      // look-at target
+    viewer.navigation.setView(position, target);
+    debug('Camera set to custom view.');
+
+    // Load texture
+    const loader = new THREE.TextureLoader();
+    loader.setCrossOrigin('anonymous');
+    loader.load('https://my-skybox-images.s3.eu-north-1.amazonaws.com/jaygooch_00588_magical_castle_dnd_artwork_--v_6.1_247bd40c-b633-4955-8744-359909b4d7c8_3.png', function(texture) {{
+        const geometry = new THREE.PlaneGeometry(30, 20); // width, height
+        const material = new THREE.MeshBasicMaterial({{ map: texture, side: THREE.DoubleSide }});
+        const plane = new THREE.Mesh(geometry, material);
+
+        plane.position.set(0, 10, -30); // place behind the model
+        plane.name = 'CustomBackgroundPlane';
+
+        viewer.impl.scene.add(plane);
+        viewer.impl.invalidate(true, true, true);
+
+        debug('Image plane added to viewer.');
+    }}, undefined, function(err) {{
+        debug('Failed to load image.');
+    }});
+}};
+
+
         document.getElementById('toggleLogs').onclick = function() {{
             const debugEl = document.getElementById('debug');
             if (debugEl.style.display === 'none') {{
