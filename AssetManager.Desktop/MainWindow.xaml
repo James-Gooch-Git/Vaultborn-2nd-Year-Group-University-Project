@@ -68,6 +68,25 @@
             <Setter Property="Cursor" Value="SizeWE"/>
         </Style>
 
+        <Style x:Key="CustomScrollBarStyle" TargetType="ScrollBar">
+            <Setter Property="Width" Value="6"/>
+            <!-- Thinner scrollbar -->
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ScrollBar">
+                        <Grid Background="Transparent">
+                            <Track Name="PART_Track" IsDirectionReversed="true">
+                                <Track.Thumb>
+                                    <Thumb Cursor="Hand" Background="DarkViolet" Width="6" />
+                                </Track.Thumb>
+                            </Track>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+
         <ContextMenu x:Key="FilterContextMenu" Width="200" Height="400">
             <Button x:Name="BtnClearFilters" Content="Clear Filters" Click="BtnClearFilters_Click"/>
             <Button x:Name="BtnSearchFilters" Content="Search Filters" Click="BtnSearchFilters_Click"/>
@@ -1666,11 +1685,6 @@
                     <!-- Metadata Info -->
                     <StackPanel Orientation="Vertical" Margin="0,0,0,5">
 
-                        <!--<StackPanel Orientation="Horizontal" Margin="0,0,0,15">
-                            <TextBlock Text="Id: " FontWeight="Bold"/>
-                            <TextBlock x:Name="IdText"/>
-                        </StackPanel>-->
-
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,15">
                             <TextBlock Text="Model Version: " FontWeight="Bold" Foreground="Black" VerticalAlignment="Center"/>
 
@@ -1708,7 +1722,6 @@
                                 </StackPanel>
                             </Button>
                         </StackPanel>
-
 
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
                             <TextBlock Text="Created By: " FontWeight="Bold"/>
@@ -1805,28 +1818,41 @@
 
                     </StackPanel>
 
-                    <!-- Display Tags -->
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="Tags:" FontWeight="Bold" Foreground="Black" Margin="0,0,0,5"/>
 
-                        <!-- "Tags:" Label -->
-                        <TextBlock Text="Tags:" FontWeight="Bold" Foreground="Black" VerticalAlignment="Center"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="5*"/>
+                            <ColumnDefinition Width="1*"/>
+                        </Grid.ColumnDefinitions>
 
-                        <!-- Container for Tags (Buttons) & Plus Icon -->
-                        <WrapPanel x:Name="TagsWrapPanel" VerticalAlignment="Center">
+                        <Grid Grid.Column="0">
 
-                            <!-- Placeholder when no tags are selected -->
-                            <TextBlock x:Name="NoTagsText" Text="No Tags Currently selected" VerticalAlignment="Center" Visibility="Collapsed"/>
+                            <!-- Container for Tags with ScrollViewer -->
+                            <DockPanel LastChildFill="False" HorizontalAlignment="Left">
 
-                        </WrapPanel>
+                                <!-- Scrollable WrapPanel for Tags -->
+                                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" MaxHeight="300" MinHeight="50" MinWidth="100" Width="Auto">
+                                    <ScrollViewer.Resources>
+                                        <Style TargetType="ScrollBar" BasedOn="{StaticResource CustomScrollBarStyle}" />
+                                    </ScrollViewer.Resources>
 
-                        <!-- Plus Icon for Adding Tags -->
-                        <Border Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" Cursor="Hand" MouseLeftButtonDown="AddTags_Click" Margin="5,0,0,0">
-                            <md:PackIcon Cursor="Hand" VerticalAlignment="Center" FontWeight="Light" Kind="Plus" Style="{StaticResource IconHover}" Height="16" Width="16"/>
-                        </Border>
+                                    <WrapPanel x:Name="TagsWrapPanel" VerticalAlignment="Center" Margin="5,0,0,0">
+                                        <TextBlock x:Name="NoTagsText" Text="No Tags Currently selected" VerticalAlignment="Center" Foreground="Gray" FontStyle="Italic" Visibility="Collapsed" Margin="3" />
+                                    </WrapPanel>
+                                    
+                                </ScrollViewer>
 
-                    </StackPanel>
+                            </DockPanel>
+                        </Grid>
 
-
+                        <Grid Grid.Column="1">
+                            <!-- Plus Icon for Adding Tags -->
+                            <Border Background="#540754" BorderBrush="#98730C" BorderThickness="2" CornerRadius="2" Width="28" Height="28" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="5,2,0,0" Cursor="Hand" MouseLeftButtonDown="AddTags_Click">
+                                <md:PackIcon Kind="Plus" Style="{x:Null}" Height="16" Width="16" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </Grid>
+                    </Grid>
 
                     <!-- List Model Button & Popup -->
                     <Border x:Name="ListModelButtonBorder" MouseLeftButtonDown="MarketplaceGrid_Click" BorderBrush="#98730C" BorderThickness="3" CornerRadius="2" Width="90" Height="40" HorizontalAlignment="Center" Margin="0,20,0,0" Cursor="Hand">
