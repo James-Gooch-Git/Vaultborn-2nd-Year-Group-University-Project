@@ -1143,7 +1143,7 @@ namespace AssetManager.Desktop
 
             // Step 1: Get Archive folder ID
             DeleteService deleteService = new DeleteService();
-            string archiveFolderId = await deleteService.EnsureArchiveFolderExists(projectId, folderId); // Parent folder
+            //string archiveFolderId = await deleteService.EnsureArchiveFolderExists(projectId, folderId); // Parent folder
 
             // Step 2: Get current folder contents
             string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/folders/{folderId}/contents";
@@ -1160,11 +1160,11 @@ namespace AssetManager.Desktop
                 string itemId = item.GetProperty("id").GetString();
 
                 // 🔥 Skip the archive folder itself entirely
-                if (type == "folders" && itemId == archiveFolderId)
+               /* if (type == "folders" && itemId == archiveFolderId)
                 {
                     Console.WriteLine($"📦 Skipping archive folder {archiveFolderId}");
                     continue;
-                }
+                }*/
 
                 if (type == "items")
                 {
