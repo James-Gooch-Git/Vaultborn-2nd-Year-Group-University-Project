@@ -207,7 +207,19 @@ namespace AssetManager.Desktop
                 Console.WriteLine($"❌ Initialization error: {ex.Message}");
             }
         }
-        
+
+        private void ResizeThumb_DragDelta(object sender, DragDeltaEventArgs e)
+        {
+            // Get current width of sidebar
+            double currentWidth = ResizeSidebar.ActualWidth;
+            double newWidth = currentWidth + e.HorizontalChange;
+
+            // Clamp width if needed
+            if (newWidth >= 220 && newWidth <= 400)
+            {
+                ResizeSidebar.Width = new GridLength(newWidth);
+            }
+        }
 
 
         private async Task TestDataManagement()

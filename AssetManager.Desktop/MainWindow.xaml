@@ -291,12 +291,15 @@
 
         <Grid.ColumnDefinitions>
             <ColumnDefinition x:Name="ResizeSidebar" MinWidth="220" Width="Auto"/>
-            <!--<ColumnDefinition Width="5"/>-->
+            <ColumnDefinition Width="2"/>
             <ColumnDefinition Width="*"/>
             <!--<ColumnDefinition Width="5"/>-->
             <ColumnDefinition x:Name="ModelDataSidebar" Width="0"/>
         </Grid.ColumnDefinitions>
-        
+
+        <Thumb Grid.Row="1" Grid.Column="1" Width="5" Cursor="SizeWE" DragDelta="ResizeThumb_DragDelta" Background="Transparent" />
+
+
         <Border Grid.Row="0" Grid.ColumnSpan="4" BorderBrush="#797979" BorderThickness="0,0,0,1">
             <Border.Background>
                 <ImageBrush ImageSource="\Assets\ScaleBackground.png" Stretch="UniformToFill" />
@@ -497,7 +500,7 @@
         </Border>
 
         <!-- Asset Library -->
-        <Border x:Name="LibraryBorder" Grid.Row="1" Grid.Column="1">
+        <Border x:Name="LibraryBorder" Grid.Row="1" Grid.Column="2">
 
             <Grid>
                 <Grid.RowDefinitions>
@@ -510,88 +513,95 @@
 
                 <Border HorizontalAlignment="Stretch" VerticalAlignment="Bottom" BorderBrush="#4B4B4B" BorderThickness="0,1,0,0" Margin="20,0,20,0"/>
 
-                <Grid Grid.Row="1" RenderTransformOrigin="0.541,0.435">
+                <Grid Grid.Row="1" RenderTransformOrigin="0.541,0.435" Margin="2,0,-2,0">
 
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <Button x:Name="BtnUploadFile"
-        Template="{StaticResource FirstButtonTemplate}"
-        Click="BtnMarketplace_Click"
-        Width="220" Height="80"
-        FontFamily="Georgia"
-        FontSize="19"
-        FontWeight="Bold"
-        Foreground="#000000"
-        Content="Import Asset"
-        Background="Transparent"
-        BorderThickness="0"
-        Cursor="Hand" Margin="73,-4,574,-6"/>
-                    
-                    <Button x:Name="BtnMarketplace"
-        Template="{StaticResource MiddleButtonTemplate}"
-        Click="BtnMarketplace_Click"
-        Width="220" Height="80"
-        FontFamily="Georgia"
-        FontSize="19"
-        FontWeight="Bold"
-        Foreground="#000000"
-        Content="Marketplace"
-        Background="Transparent"
-        BorderThickness="0"
-        Cursor="Hand" Margin="255,-3,392,-7"/>
+                    <StackPanel Orientation="Horizontal">
+                        
+                        <Button Grid.Row="1" x:Name="BtnUploadFile" Template="{StaticResource FirstButtonTemplate}" 
+                            Click="BtnMarketplace_Click" 
+                            Width="220" 
+                            Height="80" 
+                            FontFamily="Georgia" 
+                            FontSize="19" 
+                            FontWeight="Bold" 
+                            Foreground="#000000" 
+                            Content="Import Asset" 
+                            Background="Transparent" 
+                            BorderThickness="0" 
+                            Cursor="Hand"
+                            HorizontalAlignment="Left"/>
 
-                    <Button x:Name="EmptyButton"
-        Template="{StaticResource LastButtonTemplate}"
-        Click="BtnMarketplace_Click"
-        Width="220" Height="80"
-        FontFamily="Georgia"
-        FontSize="19"
-        FontWeight="Bold"
-        Foreground="#000000"
-        Content="Enchant"
-        Background="Transparent"
-        BorderThickness="0"
-        Cursor="Hand" Margin="405,-4,242,-6"/>
+                        <Button x:Name="BtnMarketplace"
+                            Template="{StaticResource MiddleButtonTemplate}"
+                            Click="BtnMarketplace_Click"
+                            Width="220" Height="80"
+                            FontFamily="Georgia"
+                            FontSize="19"
+                            FontWeight="Bold"
+                            Foreground="#000000"
+                            Content="Marketplace"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Cursor="Hand" 
+                            Margin="-38,0,0,0"
+                            HorizontalAlignment="Left"/>
 
+                        <Button x:Name="EmptyButton"
+                            Template="{StaticResource LastButtonTemplate}"
+                            Click="BtnMarketplace_Click"
+                            Width="220" Height="80"
+                            FontFamily="Georgia"
+                            FontSize="19"
+                            FontWeight="Bold"
+                            Foreground="#000000"
+                            Content="Enchant"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Cursor="Hand"
+                            Margin="-69,0,0,0"
+                            HorizontalAlignment="Left"/>
 
-                    <Button HorizontalAlignment="Left" BorderThickness="0" x:Name="BtnViewDecks" Width="100" Height="40" Click="OpenDeckView_Click" Cursor="Hand" Margin="728,12,0,18">
+                        <Button BorderThickness="0" x:Name="BtnViewDecks" Width="100" Height="40" Click="OpenDeckView_Click" Cursor="Hand" HorizontalAlignment="Right">
 
-                        <Button.Resources>
-                            <Style TargetType="Border">
-                                <Setter Property="CornerRadius" Value="3"/>
-                            </Style>
-                        </Button.Resources>
+                            <Button.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="3"/>
+                                </Style>
+                            </Button.Resources>
 
-                        <Button.Style>
-                            <Style TargetType="{x:Type Button}">
-                                <Setter Property="Background" Value="#D97C72"/>
-                                <Setter Property="Foreground" Value="White"/>
-                                <Setter Property="Template">
-                                    <Setter.Value>
-                                        <ControlTemplate TargetType="{x:Type Button}">
-                                            <Border Background="{TemplateBinding Background}" BorderThickness="0">
-                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                            </Border>
-                                        </ControlTemplate>
-                                    </Setter.Value>
-                                </Setter>
-                                <Style.Triggers>
-                                    <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter Property="Background" Value="#D04C72"/>
-                                    </Trigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Button.Style>
+                            <Button.Style>
+                                <Style TargetType="{x:Type Button}">
+                                    <Setter Property="Background" Value="#D97C72"/>
+                                    <Setter Property="Foreground" Value="White"/>
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="{x:Type Button}">
+                                                <Border Background="{TemplateBinding Background}" BorderThickness="0">
+                                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                </Border>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                    <Style.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Background" Value="#D04C72"/>
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
 
-                        <StackPanel Orientation="Horizontal">
-                            <md:PackIcon Kind="Cards" Width="17" Height="17" VerticalAlignment="Center"/>
-                            <TextBlock Text="Decks" Margin="1,0,0,0" VerticalAlignment="Center"/>
-                        </StackPanel>
-
-                    </Button>
+                            <StackPanel Orientation="Horizontal">
+                                <md:PackIcon Kind="Cards" Width="17" Height="17" VerticalAlignment="Center"/>
+                                <TextBlock Text="Decks" Margin="1,0,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                        
+                    </StackPanel>
 
                     <!--<Border MouseLeftButtonDown="MarketplaceGrid_Click" BorderBrush="#98730C" BorderThickness="3" CornerRadius="2" Width="90" Height="40" HorizontalAlignment="Left" Margin="130,0,0,0" Cursor="Hand">
                         <Button x:Name="BtnMarketplace" Click="BtnMarketplace_Click" Content="Marketplace" BorderBrush="#98730C" BorderThickness="2" Background="#540754" Foreground="White" Width="90" Height="40" HorizontalAlignment="Center" VerticalAlignment="Center" Cursor="Hand"/>
@@ -836,30 +846,23 @@
                         <RowDefinition Height="60"/>
                     </Grid.RowDefinitions>
 
+                    <Grid Grid.Row="1" Grid.ColumnSpan="2" VerticalAlignment="Bottom" Margin="0,0,0,10">
+                        <local:FantasyLoadingBar x:Name="LoadingProgressBar" Height="50" Visibility="Collapsed" Progress="0" />
+                        <TextBlock x:Name="LoadingStatusText" Visibility="Collapsed" Foreground="#6A0DAD" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,55,0,0"/>
+                    </Grid>
+
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="2*"/>
                             <ColumnDefinition Width="13*"/>
                         </Grid.ColumnDefinitions>
-                        <Grid Grid.Row="0" Grid.ColumnSpan="2">
-                            <local:FantasyLoadingBar x:Name="LoadingProgressBar"
-                 Height="50"
-                 Visibility="Collapsed"
-                 Progress="0" />
 
-                            <TextBlock x:Name="LoadingStatusText"
-              Visibility="Collapsed"
-              Foreground="#6A0DAD"
-              FontSize="14"
-              HorizontalAlignment="Center"
-              VerticalAlignment="Bottom"
-              Margin="0,55,0,0"/>
-                        </Grid>
                         <Grid x:Name="Grid_View" Visibility="Collapsed" Grid.ColumnSpan="2">
                             <ScrollViewer VerticalScrollBarVisibility="Auto">
                                 <WrapPanel x:Name="ModelsContainer" HorizontalAlignment="Left" VerticalAlignment="Top" />
                             </ScrollViewer>
                         </Grid>
+                        
                         <Grid x:Name="ForgeViewerContainer" Visibility="Collapsed" Grid.ColumnSpan="2">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
@@ -1516,7 +1519,7 @@
         </Border>
 
         <!-- Model Info Sidebar -->
-        <Border Grid.Row="1" Grid.Column="3" BorderBrush="#797979" BorderThickness="1,0,0,0" Padding="5,0,5,0">
+        <Border Grid.Row="1" Grid.Column="4" BorderBrush="#797979" BorderThickness="1,0,0,0" Padding="5,0,5,0">
 
             <Grid>
                 <Grid.RowDefinitions>
