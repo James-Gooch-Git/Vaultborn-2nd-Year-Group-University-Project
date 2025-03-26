@@ -80,19 +80,19 @@
                 <!-- Decorative Runes -->
                 <Canvas>
                     <!-- Top Rune -->
-                    <Path Data="M5,0 L12,5 L19,0 L12,-5 Z" Fill="#C0A062" Canvas.Left="65" Canvas.Top="15"/>
+                    <Path Data="M5,0 L12,5 L19,0 L12,-5 Z" Fill="#C0A062" Canvas.Left="84" Canvas.Top="18.7"/>
                     <!-- Bottom Rune -->
-                    <Path Data="M5,0 L0,7 L5,14 L10,7 Z" Fill="#C0A062" Canvas.Left="70" Canvas.Top="188"/>
+                    <Path Data="M5,0 L0,7 L5,14 L10,7 Z" Fill="#C0A062" Canvas.Left="92" Canvas.Top="241"/>
                 </Canvas>
             </Grid>
         </Grid>
     </ControlTemplate>
     
     <!-- Card Style (For easy application) -->
-    <Style x:Key="FantasyCardStyle" TargetType="ContentControl">
+    <Style x:Key="CardStyleMed" TargetType="ContentControl">
         <Setter Property="Template" Value="{StaticResource FantasyCardTemplate}"/>
-        <Setter Property="Width" Value="150"/>
-        <Setter Property="Height" Value="210"/>
+        <Setter Property="Width" Value="190"/>
+        <Setter Property="Height" Value="268"/>
         <Setter Property="Margin" Value="5"/>
         <Style.Triggers>
             <!-- Hover Effect -->

@@ -26,19 +26,89 @@ namespace AssetManager.Desktop
         private string _selectedCardId;
         private string _deckId; 
 
-        public DeckView(string deckId)
+        public DeckView()
         {
             InitializeComponent();
-            _deckId = deckId;
             
             // MongoDB Connection
             var mongo = new MongoConnection();
             _cardsCollection = mongo.GetCollection("Cards");
             _decksCollection = mongo.GetCollection("Decks");
 
+            LoadUserDecks();
+            
+            if (!string.IsNullOrEmpty(_deckId))
+            {
+                CheckIfUserIsDeckOwner(_deckId);
+                LoadDeckCards(_deckId);
+            }
+        }
+
+        private async Task LoadUserDecks()
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(_userId))
+                {
+                    MessageBox.Show("Error: User not identified.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                // Query decks that belong to the logged-in user
+                var filter = Builders<BsonDocument>.Filter.Eq("owner_id", _userId);
+                var userDecks = await _decksCollection.Find(filter).ToListAsync();
+
+                // Ensure UI updates on the main thread
+                Dispatcher.Invoke(() =>
+                {
+                    DeckListPanel.Children.Clear(); // Clear previous items
+
+                    foreach (var deck in userDecks)
+                    {
+                        string deckId = deck["_id"].ToString();
+                        string deckName = deck.Contains("name") ? deck["name"].ToString() : "Unnamed Deck";
+
+                        // Create a button for each deck
+                        Button deckButton = new Button
+                        {
+                            Content = deckName,
+                            Tag = deckId,
+                            Width = 130,
+                            Height = 40,
+                            Background = new SolidColorBrush(Color.FromRgb(30, 30, 48)),
+                            Foreground = new SolidColorBrush(Color.FromRgb(255, 215, 0)),
+                            FontFamily = new FontFamily("Gabriola"),
+                            FontSize = 16,
+                            FontWeight = FontWeights.Bold,
+                            Cursor = Cursors.Hand,
+                            Margin = new Thickness(5),
+                        };
+
+                        deckButton.Click += SelectDeck_Click;
+                        DeckListPanel.Children.Add(deckButton);
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error loading decks: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+        private void SelectDeck_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button && button.Tag is string selectedDeckId)
+            {
+                _deckId = selectedDeckId;
+                CheckIfUserIsDeckOwner(_deckId);
+                LoadDeckCards(selectedDeckId);
+            }
+        }
+
+        private void CheckIfUserIsDeckOwner(string deckId)
+        {
             BsonDocument GetDeckById(string deckId)
             {
-                var collection = mongo.GetCollection("Decks"); 
+                var collection = _decksCollection;
                 var filter = Builders<BsonDocument>.Filter.Eq("_id", new ObjectId(deckId));
                 return collection.Find(filter).FirstOrDefault();
             }
@@ -58,19 +128,16 @@ namespace AssetManager.Desktop
             // Check if the current user is the owner
             if (_userId != ownerId)
             {
-                MessageBox.Show("You do not have permission to view this deck.", "Access Denied", MessageBoxButton.OK, MessageBoxImage.Warning);
-                Close(); // Close the window if the user isn't the owner
+                ListButton.Visibility = Visibility.Hidden;
                 return;
             }
             else
             {
                 ListButton.Visibility = Visibility.Visible;
             }
-            
-            LoadDeckCards();
         }
 
-        private async void LoadDeckCards()
+        private async void LoadDeckCards(string deckId)
         {
             try
             {
@@ -84,10 +151,36 @@ namespace AssetManager.Desktop
                 // Clear existing cards before adding new ones
                 CardListPanel.Children.Clear();
 
-                // Fetch all cards for the user's deck
-                var userDeckCards = _cardsCollection.Find(new BsonDocument { { "owner_id", _userId } }).ToList();
+                if (string.IsNullOrEmpty(deckId))
+                {
+                    MessageBox.Show("Error: No deck selected.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
 
-                foreach (var card in userDeckCards)
+                // Query the deck document
+                var filter = Builders<BsonDocument>.Filter.Eq("_id", ObjectId.Parse(deckId));
+                var deck = await _decksCollection.Find(filter).FirstOrDefaultAsync();
+
+                if (deck == null || !deck.Contains("cards"))
+                {
+                    MessageBox.Show("Error: Deck not found or has no cards.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                // Extract the "cards" array
+                var cardIds = deck["cards"].AsBsonArray.Select(c => c.ToString()).ToList();
+
+                if (!cardIds.Any())
+                {
+                    MessageBox.Show("This deck has no cards.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                // Query cards collection to fetch details of all cards in the deck
+                var cardFilter = Builders<BsonDocument>.Filter.In("_id", cardIds.Select(id => ObjectId.Parse(id)));
+                var cardList = await _cardsCollection.Find(cardFilter).ToListAsync();
+
+                foreach (var card in cardList)
                 {
                     string cardName = card["name"].ToString();
                     string cardId = card["_id"].ToString();
@@ -239,13 +332,6 @@ namespace AssetManager.Desktop
             
         }
         
-        public class CardModel
-        {
-            public string Name { get; set; }
-            public ImageSource ImageSource { get; set; }
-            // Add other card properties as needed
-        }
-        
         private async void View3DButton_Click(object sender, RoutedEventArgs e)
         {
             if (_selectedCard  == null)
@@ -286,15 +372,22 @@ namespace AssetManager.Desktop
 
         private void AddCardButton_Click(object sender, RoutedEventArgs e)
         { 
-            AddCardWindow addCardWindow = new AddCardWindow();
-            addCardWindow.Owner = this;  // Set the owner to the deck (this) window
-            addCardWindow.ShowDialog();
+            if (_deckId == null)
+            {
+                MessageBox.Show("Please select a deck first");
+            }
+            else
+            {
+                AddCardWindow addCardWindow = new AddCardWindow(_deckId);
+                addCardWindow.Owner = this; // Set the owner to the deck (this) window
+                addCardWindow.ShowDialog();
+            }
         }
 
         private void ExpandCard_Click(object sender, RoutedEventArgs e)
         {
             if (_selectedCard == null) return;
-
+            
             string cardName = SelectedCardName.Text;
             ImageSource cardImage = SelectedCardImage.Source;
             string cardDescription = SelectedCardDescription.Text;
@@ -304,14 +397,63 @@ namespace AssetManager.Desktop
             fullScreenWindow.ShowDialog();
         }
 
-        private void PurchaseCard_Click(object sender, RoutedEventArgs e)
+        private async void DrawRandomCard_Click(object sender, RoutedEventArgs e)
         {
-            throw new NotImplementedException();
-        }
+            if (string.IsNullOrEmpty(_deckId))
+            {
+                MessageBox.Show("No deck selected.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
 
-        private void DrawRandomCard_Click(object sender, RoutedEventArgs e)
-        {
-            throw new NotImplementedException();
+            try
+            {
+                // Fetch the deck document
+                var deckFilter = Builders<BsonDocument>.Filter.Eq("_id", ObjectId.Parse(_deckId));
+                var deck = await _decksCollection.Find(deckFilter).FirstOrDefaultAsync();
+
+                if (deck == null || !deck.Contains("cards") || !deck["cards"].IsBsonArray)
+                {
+                    MessageBox.Show("No cards found in this deck.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                var cardsArray = deck["cards"].AsBsonArray;
+                if (cardsArray.Count == 0)
+                {
+                    MessageBox.Show("Deck has no cards.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                // Pick a random card ID from the deck's card array
+                var random = new Random();
+                var randomIndex = random.Next(cardsArray.Count);
+                var randomCardId = cardsArray[randomIndex].AsString; // Ensure it's stored as a string
+
+                // Fetch the card details from the cards collection
+                var cardFilter = Builders<BsonDocument>.Filter.Eq("_id", ObjectId.Parse(randomCardId));
+                var card = await _cardsCollection.Find(cardFilter).FirstOrDefaultAsync();
+
+                if (card == null)
+                {
+                    MessageBox.Show("Error loading card.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+                
+                string cardImageUrl = card["snapshot_url"].AsString;
+                string cardName = card["name"].AsString;
+                string cardDescription = card["description"].AsString;
+                var statsValue = card.GetValue("stats", new BsonDocument());
+
+                ImageSource imageUrlSource = await LoadImageFromUrl(cardImageUrl);
+
+                BsonDocument stats = statsValue.IsBsonDocument ? statsValue.AsBsonDocument : new BsonDocument();
+                DisplaySelectedCard(cardName, imageUrlSource, cardDescription, stats);
+                
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error drawing a card: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }        
         }
 
         private async void ListOnMarketplace_Click(object sender, RoutedEventArgs e)
@@ -343,10 +485,20 @@ namespace AssetManager.Desktop
                 MessageBox.Show($"Error updating deck: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-
-        private void SelectDeckButton_Click(object sender, RoutedEventArgs e)
+        
+        private async void NewDeck_Click(object sender, RoutedEventArgs e)
         {
-            throw new NotImplementedException();
+            // Prompt the user for deck name and description
+            NewDeckPrompt prompt = new NewDeckPrompt();
+
+            // Show the dialog and wait for the result
+            if (prompt.ShowDialog() == true)
+            {
+                // Reload the decks to update the UI after the new deck has been created
+                await LoadUserDecks();
+            }
         }
+
+        
     }
 }

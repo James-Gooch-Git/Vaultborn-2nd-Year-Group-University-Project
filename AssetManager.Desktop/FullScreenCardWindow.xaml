@@ -12,7 +12,7 @@
     <Grid Background="#80000000">  <!-- 50% opacity black -->
         <Border Width="500" Height="750" Background="White" CornerRadius="20" Padding="10" VerticalAlignment="Center">
             <Grid>
-                <ContentControl Style="{StaticResource FantasyCardStyle}" HorizontalAlignment="Center">
+                <ContentControl Style="{StaticResource CardStyleLarge}" HorizontalAlignment="Center">
                     <Grid>
 
                             <!-- Card Image -->

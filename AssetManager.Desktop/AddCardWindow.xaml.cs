@@ -14,23 +14,25 @@ namespace AssetManager.Desktop
     {
         private readonly IMongoCollection<BsonDocument> _cardsCollection;
         private string _modelId;
+        private string _deckId;
         private string cardName;
         private string description;
         private string imageUrl;
         private string modelName;
 
-        public AddCardWindow(string modelId = null)
+        public AddCardWindow(string deckId = null, string modelId = null)
         {
+            _deckId = deckId;
             _modelId = modelId;
             InitializeComponent();
-            GetData();
+            //GetData();
         }
 
         private async void GetData()
         {
             if (_modelId == null)
             {
-                //MessageBox.Show("No model selected!", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show("No model selected!", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -56,7 +58,7 @@ namespace AssetManager.Desktop
                 if (string.IsNullOrEmpty(thumbnail_base64))
                 {
                     MessageBox.Show("No thumbnail available for this model.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    ImageUrlTextBox.Text = "";
+                    //ImageUrlTextBox.Text = "";
                 }
                 else
                 {
@@ -109,9 +111,7 @@ namespace AssetManager.Desktop
                 ImageUrlTextBox.Text = " loading . . . ";
                 GetData();            
             }
-            
         }
-
 
         private void SubmitCard_Click(object sender, RoutedEventArgs e)
         {
@@ -129,7 +129,7 @@ namespace AssetManager.Desktop
 
             try
             {
-                createCard.AddNewCard(MainWindow._userId, cardName, description, imageUrl, modelName, _modelId);
+                createCard.AddNewCard(MainWindow._userId, cardName, description, imageUrl, modelName, _modelId, _deckId);
                 
                 MessageBox.Show("Card added successfully!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
                 this.Close();
