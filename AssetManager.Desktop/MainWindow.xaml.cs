@@ -198,7 +198,7 @@ namespace AssetManager.Desktop
 
               
                 //await RefreshHubs();
-                LoadProjectsForHub(hubID);
+                await LoadProjectsForHub(hubID);
                 await DisplayNotifications();
                 await AddNotifsToCentre();
                 //FusionManager.InitializePythonEngine();
@@ -314,7 +314,7 @@ namespace AssetManager.Desktop
             }
         }
 
-        private async void LoadProjectsForHub(string hubID)
+        private async Task LoadProjectsForHub(string hubID)
         {
             // Show fantasy loading bar
             LoadingProgressBar.Visibility = Visibility.Visible;
@@ -603,6 +603,8 @@ namespace AssetManager.Desktop
             isModelLoaded = true;
 
             ModelsContainer.Children.Clear();
+
+            // Get models from the project, ensuring we filter out deleted models
             List<Dictionary<string, string>> models = await GetModelsFromProject(_selectedProjectId, _folderId);
 
             if (models == null || models.Count == 0)
@@ -611,10 +613,24 @@ namespace AssetManager.Desktop
                 return;
             }
 
+            // Create a MongoConnection and ModelService for checking deletion status
+            MongoConnection mongoConnection = new MongoConnection();
+            ModelService modelService = new ModelService(mongoConnection);
+
             foreach (var model in models)
             {
-                string projectId = _selectedProjectId;
+                // Double-check the model isn't deleted before adding it to the UI
                 string itemId = model["Id"];
+
+                // Skip if model is marked as deleted in the database
+                bool isDeleted = await modelService.IsModelDeleted(itemId);
+                if (isDeleted)
+                {
+                    Console.WriteLine($"🧹 Skipping deleted model in grid view: {model["Name"]}");
+                    continue;
+                }
+
+                string projectId = _selectedProjectId;
 
                 Border modelCard = new Border
                 {
@@ -693,7 +709,6 @@ namespace AssetManager.Desktop
                         e.Handled = true;
                     }
                 };
-
 
                 _ = ShowThumbnail(projectId, itemId, thumbnailImage);
 
@@ -823,12 +838,12 @@ namespace AssetManager.Desktop
             return false;
         }
 
-
-
-
         private async Task<List<Dictionary<string, string>>> GetAllModels()
         {
             List<Dictionary<string, string>> allModels = new List<Dictionary<string, string>>();
+            MongoConnection mongoConnection = new MongoConnection();
+            ModelService modelService = new ModelService(mongoConnection);
+            FileDownloadService fileService = new FileDownloadService();
 
             string accessToken = TokenManager.GetToken();
             if (string.IsNullOrEmpty(accessToken))
@@ -848,73 +863,101 @@ namespace AssetManager.Desktop
 
                     if (!hubsResponse.IsSuccessStatusCode)
                     {
-                        Console.WriteLine($"❌ Error fetching hubs: {hubsResponse.StatusCode} - {hubsResponse.ReasonPhrase}");
+                        Console.WriteLine(
+                            $"❌ Error fetching hubs: {hubsResponse.StatusCode} - {hubsResponse.ReasonPhrase}");
                         return null;
                     }
 
                     string hubsJson = await hubsResponse.Content.ReadAsStringAsync();
                     using JsonDocument hubsDoc = JsonDocument.Parse(hubsJson);
-                    JsonElement hubsRoot = hubsDoc.RootElement;
 
-                    foreach (JsonElement hub in hubsRoot.GetProperty("data").EnumerateArray())
+                    foreach (JsonElement hub in hubsDoc.RootElement.GetProperty("data").EnumerateArray())
                     {
-                        string hubId = hub.GetProperty("id").GetString();
-                        //hubID = selectedHubID;
+                        string hubID = hub.GetProperty("id").GetString();
+                        var projects = await DataManagement.GetAllProjectsFromHub(hubID);
 
-                        string projectsUrl = $"https://developer.api.autodesk.com/project/v1/hubs/{hubId}/projects";
-                        await Task.Delay(500);
-                        HttpResponseMessage projectsResponse = await client.GetAsync(projectsUrl);
-
-                        if (!projectsResponse.IsSuccessStatusCode)
+                        foreach (var (projectId, projectName) in projects)
                         {
-                            Console.WriteLine($"❌ Error fetching projects for hub {hubId}: {projectsResponse.StatusCode}");
-                            continue;
-                        }
-
-                        string projectsJson = await projectsResponse.Content.ReadAsStringAsync();
-                        using JsonDocument projectsDoc = JsonDocument.Parse(projectsJson);
-                        JsonElement projectsRoot = projectsDoc.RootElement;
-
-                        foreach (JsonElement project in projectsRoot.GetProperty("data").EnumerateArray())
-                        {
-                            string projectId = project.GetProperty("id").GetString();
-                            string projectName = project.GetProperty("attributes").GetProperty("name").GetString();
-
-
-                            var topFolder = await DataManagement.GetTopLevelFolder(hubId, projectId);
+                            var topFolder = await DataManagement.GetTopLevelFolder(hubID, projectId);
                             string folderId = topFolder.Item1;
 
                             if (string.IsNullOrEmpty(folderId))
                             {
-                                Console.WriteLine($"❌ No valid top-level folder found for project {projectId}");
+                                Console.WriteLine($"❌ No top-level folder found for project {projectId}");
                                 continue;
                             }
 
-                            string modelsUrl = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/folders/{folderId}/contents";
+                            HashSet<string> deletedModelIds = await modelService.GetDeletedModelIds(projectId, folderId);
+                            Console.WriteLine($"ℹ️ Found {deletedModelIds.Count} deleted models in project {projectName}");
+
+                            string modelsUrl =
+                                $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/folders/{folderId}/contents";
                             HttpResponseMessage modelsResponse = await client.GetAsync(modelsUrl);
 
                             if (!modelsResponse.IsSuccessStatusCode)
                             {
-                                Console.WriteLine($"❌ Error fetching models for folder {folderId}: {modelsResponse.StatusCode}");
+                                Console.WriteLine(
+                                    $"❌ Error fetching models for folder {folderId}: {modelsResponse.StatusCode}");
                                 continue;
                             }
 
                             string modelsJson = await modelsResponse.Content.ReadAsStringAsync();
                             using JsonDocument modelsDoc = JsonDocument.Parse(modelsJson);
-                            JsonElement modelsRoot = modelsDoc.RootElement;
 
-                            foreach (JsonElement item in modelsRoot.GetProperty("data").EnumerateArray())
+                            foreach (JsonElement item in modelsDoc.RootElement.GetProperty("data").EnumerateArray())
                             {
-                                if (item.GetProperty("type").GetString() == "items")
-                                {
-                                    var attributes = item.GetProperty("attributes");
+                                if (item.GetProperty("type").GetString() != "items") continue;
 
-                                    string modelId = item.GetProperty("id").GetString();
-                                    string modelName = attributes.GetProperty("displayName").GetString();
-                                    string lastModified = attributes.TryGetProperty("lastModifiedTime", out JsonElement modifiedTime) ? modifiedTime.GetString() : "Unknown";
-                                    string lastModifiedDate = lastModified.Split('T')[0];
-                                    string lastModifiedTime = (lastModified.Split('T')[1]).Remove(8);
-                                    lastModified = lastModifiedDate + " " + lastModifiedTime;
+                                var attributes = item.GetProperty("attributes");
+                                string modelId = item.GetProperty("id").GetString();
+
+                                if (deletedModelIds.Contains(modelId) || await modelService.IsModelDeleted(modelId))
+                                {
+                                    Console.WriteLine($"🧹 Skipping deleted model: {attributes.GetProperty("displayName").GetString()}");
+                                    continue;
+                                }
+
+                                string modelName = attributes.GetProperty("displayName").GetString();
+                                string lastModified = attributes.TryGetProperty("lastModifiedTime", out JsonElement modifiedTime)
+                                    ? modifiedTime.GetString()
+                                    : "Unknown";
+
+                                string formattedDate = "Unknown";
+                                if (lastModified != "Unknown")
+                                {
+                                    string[] parts = lastModified.Split('T');
+                                    if (parts.Length >= 2)
+                                        formattedDate = $"{parts[0]} {parts[1].Substring(0, 8)}";
+                                }
+
+                                bool modelExists = await modelService.ModelExistsById(modelId);
+                                if (!modelExists)
+                                {
+                                    string storageId = await fileService.GetStorageIdFromItem(projectId, modelId);
+                                    if (!string.IsNullOrEmpty(storageId))
+                                    {
+                                        string urn = Convert.ToBase64String(Encoding.UTF8.GetBytes(storageId))
+                                            .TrimEnd('=').Replace('+', '-').Replace('/', '_');
+
+                                        await modelService.UploadModelDB(
+                                            ownerId: _userId ?? "system",
+                                            modelName: modelName,
+                                            autodeskUrn: urn,
+                                            hubID: hubID,
+                                            projectId: projectId,
+                                            folderId: folderId,
+                                            itemId: modelId,
+                                            versionId: "",
+                                            isDeleted: false
+                                        );
+
+                                        Console.WriteLine($"✅ Added new model to database: {modelName}");
+                                    }
+                                    else
+                                    {
+                                        Console.WriteLine($"⚠️ Could not get storage ID for model: {modelName}");
+                                    }
+                                }
 
                                     allModels.Add(new Dictionary<string, string>
                                     {
@@ -922,24 +965,27 @@ namespace AssetManager.Desktop
                                         { "Name", modelName },
                                         { "ProjectId", projectId },
                                         { "Project", projectName },
-                                        { "LastModified", lastModified }
+                                        { "LastModified", formattedDate }
                                     });
-                                    await GetModelData(modelId, projectId, projectName, hubId);
+
+                                    await GetModelData(modelId, projectId, projectName);
                                     await InsertModelVersionDB(modelId, projectId);
                                 }
                             }
                         }
                     }
                 }
-            }
+            
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ Exception occurred: {ex.Message}");
-                return null;
+                Console.WriteLine($"❌ Exception occurred in GetAllModels: {ex.Message}");
             }
 
             return allModels;
         }
+
+
+        // New helper method to process subfolders recursively
 
         private async Task FetchAndSetStorageId()
         {
@@ -1156,10 +1202,12 @@ namespace AssetManager.Desktop
             }
         }
 
-
         private async Task<List<Dictionary<string, string>>> GetModelsFromProject(string projectId, string folderId)
         {
             var models = new List<Dictionary<string, string>>();
+            FileDownloadService fileService = new FileDownloadService();
+            MongoConnection mongoConnection = new MongoConnection();
+            ModelService modelService = new ModelService(mongoConnection);
 
             string accessToken = TokenManager.GetToken();
             if (string.IsNullOrEmpty(accessToken))
@@ -1168,35 +1216,47 @@ namespace AssetManager.Desktop
                 return null;
             }
 
-            // Step 1: Get Archive folder ID
-            DeleteService deleteService = new DeleteService();
-            //string archiveFolderId = await deleteService.EnsureArchiveFolderExists(projectId, folderId); // Parent folder
-
-            // Step 2: Get current folder contents
             string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/folders/{folderId}/contents";
 
-            using var client = new HttpClient();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-            var response = await client.GetAsync(url);
-            var jsonResponse = await response.Content.ReadAsStringAsync();
-            using var doc = JsonDocument.Parse(jsonResponse);
-
-            foreach (var item in doc.RootElement.GetProperty("data").EnumerateArray())
+            try
             {
-                string type = item.GetProperty("type").GetString();
-                string itemId = item.GetProperty("id").GetString();
+                using var client = new HttpClient();
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+                var response = await client.GetAsync(url);
 
-                // 🔥 Skip the archive folder itself entirely
-               /* if (type == "folders" && itemId == archiveFolderId)
+                if (!response.IsSuccessStatusCode)
                 {
-                    Console.WriteLine($"📦 Skipping archive folder {archiveFolderId}");
-                    continue;
-                }*/
+                    Console.WriteLine($"❌ API error: {response.StatusCode} - {response.ReasonPhrase}");
+                    return models;
+                }
 
-                if (type == "items")
+                string jsonResponse = await response.Content.ReadAsStringAsync();
+                if (string.IsNullOrWhiteSpace(jsonResponse))
                 {
+                    Console.WriteLine("⚠️ API returned empty response.");
+                    return models;
+                }
+
+                using var doc = JsonDocument.Parse(jsonResponse);
+
+                foreach (var item in doc.RootElement.GetProperty("data").EnumerateArray())
+                {
+                    if (item.GetProperty("type").GetString() != "items")
+                        continue;
+
+                    string itemId = item.GetProperty("id").GetString();
+
+                    // Check if the model is deleted in MongoDB
+                    bool isDeleted = await modelService.IsModelDeleted(itemId);
+                    if (isDeleted)
+                    {
+                        Console.WriteLine($"🧹 Skipping model with ID '{itemId}' — marked as deleted in database.");
+                        continue;
+                    }
+
                     var attributes = item.GetProperty("attributes");
                     string modelName = attributes.GetProperty("displayName").GetString();
+
                     string lastModified = attributes.TryGetProperty("lastModifiedTime", out var modifiedTime)
                         ? modifiedTime.GetString()
                         : "Unknown";
@@ -1210,11 +1270,11 @@ namespace AssetManager.Desktop
                             formattedDate = $"{parts[0]} {parts[1].Substring(0, 8)}";
                         }
                     }
-                    FileDownloadService fileService = new FileDownloadService();
+
                     string storageId = await fileService.GetStorageIdFromItem(projectId, itemId);
                     if (string.IsNullOrEmpty(storageId))
                     {
-                        Console.WriteLine($"🧹 Skipping {modelName} - no storage ID.");
+                        Console.WriteLine($"🧹 Skipping '{modelName}' — no storage ID (probably deleted).");
                         continue;
                     }
 
@@ -1224,14 +1284,21 @@ namespace AssetManager.Desktop
                 { "Name", modelName },
                 { "ProjectId", projectId },
                 { "FolderId", folderId },
-                { "Project", _selectedProjectName ?? "Unknown Project" },
+              { "Project", (_selectedProjectName ?? "Unknown Project").ToString() },
+
                 { "LastModified", formattedDate },
                 { "StorageId", storageId }
             });
                 }
-            }
 
-            return models;
+                return models;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Exception loading models: {ex.Message}");
+                MessageBox.Show("Error loading models. See console for details.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return models;
+            }
         }
 
 
@@ -1599,24 +1666,14 @@ namespace AssetManager.Desktop
                     return;
                 }
 
+                // ✅ This already filters out deleted models
                 var subItems = await DataManagement.GetProjectItems(projectId, folderId);
 
-                // Clear existing items, if any
-                if (parentFolder?.Items != null)
-                {
-                    parentFolder.Items.Clear();
-                }
-                else
-                {
-                    Debug.WriteLine("⚠️ Parent folder is null or has no Items collection.");
-                    return;
-                }
+                // Clear previous items
+                parentFolder.Items.Clear();
 
-                if (subItems == null || subItems.Count == 0) // ✅ FIXED: Use Count instead of .Any()
+                if (subItems == null || subItems.Count == 0)
                 {
-                    Debug.WriteLine($"⚠️ No subitems found for folderId: {folderId}");
-
-                    // **Ensure empty folders keep a placeholder**
                     parentFolder.Items.Add(new TreeViewItem { Header = " (empty)", IsEnabled = false });
                     return;
                 }
@@ -1624,34 +1681,39 @@ namespace AssetManager.Desktop
                 foreach (var (subItemId, subItemName, isSubFolder) in subItems)
                 {
                     if (string.IsNullOrEmpty(subItemId) || string.IsNullOrEmpty(subItemName))
-                    {
-                        Debug.WriteLine("⚠️ Skipping invalid subItem with missing ID or name.");
                         continue;
-                    }
 
-                    bool isPdf = !isSubFolder && Path.GetExtension(subItemName)?.ToLowerInvariant() == ".pdf";
+                    bool is3DModel = false;
+
+                    if (!isSubFolder)
+                    {
+                        string extension = Path.GetExtension(subItemName)?.ToLowerInvariant();
+                        is3DModel = Accepted3DModelExtensions.Contains(extension);
+                    }
 
                     TreeViewItem subItem = new TreeViewItem
                     {
-                        Header = isSubFolder ? $"📁 {subItemName}" : $"📄 {subItemName}",
-                        Tag = (projectId, subItemId, isSubFolder, isPdf),
+                        Header = isSubFolder
+                        ? CreateHeader("Icons2/folder_icon.svg", subItemName, 30, 30)
+                        : CreateHeader(GetIconForExtension(Path.GetExtension(subItemName)), subItemName, 30, 30),
+
+                        Tag = (projectId, subItemId, isSubFolder, is3DModel),
                         ContextMenu = CreateContextMenu(projectId, subItemId, isSubFolder)
                     };
 
                     if (isSubFolder)
                     {
-                        // **Add a dummy item to ensure the chevron remains**
+                        // Lazy load children when expanded
                         subItem.Items.Add(new TreeViewItem { Header = "Loading...", IsEnabled = false });
 
                         subItem.Expanded += async (s, e) =>
                         {
-                            if (subItem.Items.Count == 1 && subItem.Items[0] is TreeViewItem item && item.Header.ToString() == "Loading...")
+                            if (subItem.Items.Count == 1 && subItem.Items[0] is TreeViewItem dummy && dummy.Header.ToString() == "Loading...")
                             {
                                 subItem.Items.Clear();
                                 await LoadSubfoldersAsync(subItem, projectId, subItemId);
 
-                                // **Ensure an empty folder still has a placeholder**
-                                if (subItem.Items.Count == 0) // ✅ FIXED: Use Count instead of .Any()
+                                if (subItem.Items.Count == 0)
                                 {
                                     subItem.Items.Add(new TreeViewItem { Header = " (empty)", IsEnabled = false });
                                 }
@@ -1667,6 +1729,7 @@ namespace AssetManager.Desktop
                 Debug.WriteLine($"❌ Error in LoadSubfoldersAsync: {ex.Message}\n{ex.StackTrace}");
             }
         }
+
 
 
 
@@ -1764,7 +1827,7 @@ namespace AssetManager.Desktop
         {
             if (e.NewValue is TreeViewItem selectedItem)
             {
-                // Handle the expanded tuple with PDF flag
+                // Handle the expanded 4-tuple format: (projectId, itemId, isFolder, isPdf)
                 if (selectedItem.Tag is ValueTuple<string, string, bool, bool> fileData)
                 {
                     string projectId = fileData.Item1;
@@ -1775,9 +1838,23 @@ namespace AssetManager.Desktop
                     _selectedProjectId = projectId;
                     _selectedItemId = itemId;
 
-                    // Extract the item name from the header (remove the icon prefix)
-                    string header = selectedItem.Header.ToString();
-                    string displayName = header.Length > 2 ? header.Substring(2).Trim() : header;
+                    // ✅ Extract display name from StackPanel header or fallback to string
+                    string displayName = "Unknown";
+                    if (selectedItem.Header is StackPanel panel)
+                    {
+                        foreach (var child in panel.Children)
+                        {
+                            if (child is TextBlock tb)
+                            {
+                                displayName = tb.Text;
+                                break;
+                            }
+                        }
+                    }
+                    else if (selectedItem.Header is string strHeader)
+                    {
+                        displayName = strHeader.StartsWith("📁 ") ? strHeader.Substring(3) : strHeader;
+                    }
 
                     if (isFolder)
                     {
@@ -1806,7 +1883,6 @@ namespace AssetManager.Desktop
                     }
                     else if (isPdf)
                     {
-                        // It's a PDF file
                         _selectedItemName = displayName;
                         Console.WriteLine($"📑 Selected PDF: {_selectedItemName}, Item ID: {_selectedItemId}, Project ID: {_selectedProjectId}");
 
@@ -1815,22 +1891,37 @@ namespace AssetManager.Desktop
                     }
                     else
                     {
-                        // It's a regular file - handle accordingly
                         _selectedItemName = displayName;
                         Console.WriteLine($"📄 Selected File: {_selectedItemName}, Item ID: {_selectedItemId}, Project ID: {_selectedProjectId}");
 
-                        // You could add specific handling for other file types here
+                        // Handle other file types if needed
                     }
                 }
-                // Handle the original tuple format for backward compatibility
+                // Handle 3-tuple project nodes: (projectId, folderId, isFolder)
                 else if (selectedItem.Tag is ValueTuple<string, string, bool> projectData)
                 {
                     _selectedProjectId = projectData.Item1;
                     _folderId = projectData.Item2;
 
-                    // Extract the project name from the header
-                    string header = selectedItem.Header.ToString();
-                    _selectedProjectName = header.StartsWith("📁 ") ? header.Substring(3) : header;
+                    // ✅ Extract project name from StackPanel or plain string
+                    string displayName = "Unknown";
+                    if (selectedItem.Header is StackPanel panel)
+                    {
+                        foreach (var child in panel.Children)
+                        {
+                            if (child is TextBlock tb)
+                            {
+                                displayName = tb.Text;
+                                break;
+                            }
+                        }
+                    }
+                    else if (selectedItem.Header is string strHeader)
+                    {
+                        displayName = strHeader.StartsWith("📁 ") ? strHeader.Substring(3) : strHeader;
+                    }
+
+                    _selectedProjectName = displayName;
 
                     Console.WriteLine($"📌 Selected Project: {_selectedProjectName}, Project ID: {_selectedProjectId}, Folder ID: {_folderId}");
 
@@ -3309,26 +3400,52 @@ namespace AssetManager.Desktop
             }
 
             var confirm = MessageBox.Show($"Are you sure you want to archive and delete model '{_selectedItemName}'?",
-                                          "Confirm Deletion", MessageBoxButton.YesNo, MessageBoxImage.Warning);
-
+                                         "Confirm Deletion", MessageBoxButton.YesNo, MessageBoxImage.Warning);
             if (confirm != MessageBoxResult.Yes)
                 return;
 
-            DeleteService deleteService = new DeleteService();
-            bool deleted = await deleteService.DeleteModelAsync(projectId, itemId, _folderId);
-
-            if (deleted)
+            try
             {
-                MessageBox.Show("✅ Model archived and deleted successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                // Initialize connection to MongoDB and create ModelService
+                MongoConnection mongoConnection = new MongoConnection();
+                ModelService modelService = new ModelService(mongoConnection);
+
+                // First update the database to mark the model as deleted
+                Console.WriteLine($"Marking model {itemId} as deleted in database...");
+                bool dbUpdated = await modelService.SoftDeleteModel(itemId);
+
+                if (!dbUpdated)
+                {
+                    Console.WriteLine($"❌ Failed to mark model as deleted in database.");
+                    MessageBox.Show("❌ Failed to mark model as deleted in database.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                // Then proceed with the API deletion if needed
+                DeleteService deleteService = new DeleteService();
+                bool apiDeleted = await deleteService.DeleteModelAsync(projectId, itemId, _folderId);
+
+                if (apiDeleted)
+                {
+                    Console.WriteLine($"✅ Model {itemId} successfully deleted via API.");
+                    MessageBox.Show("✅ Model archived and deleted successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                else
+                {
+                    Console.WriteLine($"⚠️ API deletion failed, but model is still marked as deleted in database.");
+                    MessageBox.Show("⚠️ API deletion failed, but model is still marked as deleted in database.",
+                                   "Partial Success", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+
+                // Reload the models list to reflect changes
                 await LoadAllModels();
             }
-            else
+            catch (Exception ex)
             {
-                MessageBox.Show("❌ Model deletion failed.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                Console.WriteLine($"❌ Exception during model deletion: {ex.Message}");
+                MessageBox.Show($"❌ Error deleting model: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-
-
 
         /*
                 private async Task BtnDeleteModel_Click(string selectedItemId, string projectId)
@@ -4418,40 +4535,81 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         // Refresh current project data
         private async Task RefreshCurrentProject()
         {
+            if (string.IsNullOrEmpty(_selectedProjectId) || string.IsNullOrEmpty(_folderId))
+            {
+                Console.WriteLine("❌ Cannot refresh — no project or folder selected.");
+                return;
+            }
+
             try
             {
-                var models = await GetModelsFromProject(_selectedProjectId, _folderId);
+                Console.WriteLine($"🔄 Refreshing models for Project: {_selectedProjectId}, Folder: {_folderId}");
 
-                if (models != null)
+                MongoConnection mongoConnection = new MongoConnection();
+                ModelService modelService = new ModelService(mongoConnection);
+                FileDownloadService fileService = new FileDownloadService();
+
+                var models = await DataManagement.GetProjectItems(_selectedProjectId, _folderId);
+                if (models == null || models.Count == 0)
                 {
-                    await Dispatcher.InvokeAsync(() =>
+                    Console.WriteLine("ℹ️ No models found in this folder.");
+                    Dispatcher.Invoke(() =>
                     {
-                        // Update the DataGrid if it's visible
-                        if (ModelsDataGrid.Visibility == Visibility.Visible)
-                        {
-                            ModelsDataGrid.ItemsSource = null;
-                            ModelsDataGrid.ItemsSource = models;
-                            originalResults = models;
-                            Models = models;
-                        }
-
-                        // Update the Grid view if it's visible
-                        if (Grid_View.Visibility == Visibility.Visible)
-                        {
-                            ModelsContainer.Children.Clear();
-                            isModelLoaded = false;
-                            DisplayGridModels();
-                        }
+                        ModelsDataGrid.ItemsSource = null;
+                        ModelsDataGrid.Items.Clear();
                     });
-
-                    Console.WriteLine($"✅ Refreshed {models.Count} models for project {_selectedProjectId}");
+                    return;
                 }
+
+                var filteredModels = new List<Dictionary<string, string>>();
+
+                foreach (var (itemId, itemName, isFolder) in models)
+                {
+                    if (isFolder) continue; // Skip folders
+
+                    bool isDeleted = await modelService.IsModelDeleted(itemId);
+                    if (isDeleted)
+                    {
+                        Console.WriteLine($"🧹 Skipping deleted model: {itemName}");
+                        continue;
+                    }
+
+                    string storageId = await fileService.GetStorageIdFromItem(_selectedProjectId, itemId);
+                    if (string.IsNullOrEmpty(storageId))
+                    {
+                        Console.WriteLine($"⚠️ Skipping {itemName} — no storage ID found.");
+                        continue;
+                    }
+
+                    string lastModified = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"); // You could fetch actual metadata if needed
+
+                    filteredModels.Add(new Dictionary<string, string>
+            {
+                { "Id", itemId },
+                { "Name", itemName },
+                { "ProjectId", _selectedProjectId },
+                { "FolderId", _folderId },
+                { "Project", _selectedProjectName ?? "Unknown Project" },
+                { "LastModified", lastModified },
+                { "StorageId", storageId }
+            });
+                }
+
+                Dispatcher.Invoke(() =>
+                {
+                    ModelsDataGrid.ItemsSource = null;
+                    ModelsDataGrid.Items.Clear();
+                    ModelsDataGrid.ItemsSource = filteredModels;
+                });
+
+                Console.WriteLine($"✅ Refreshed and displayed {filteredModels.Count} models.");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ Error refreshing project data: {ex.Message}");
+                Console.WriteLine($"❌ Error refreshing current project: {ex.Message}");
             }
         }
+
 
         // Refresh current model data
         private async Task RefreshCurrentModel(string versionId = null)

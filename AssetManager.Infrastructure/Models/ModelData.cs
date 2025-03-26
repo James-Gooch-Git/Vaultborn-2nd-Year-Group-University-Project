@@ -43,6 +43,9 @@ namespace AssetManager.Infrastructure.Models
 
         [BsonElement("_upvotes")]
         public int UpvoteCount { get; set; }
+        
+        [BsonElement("isDeleted")]
+        public bool isDeleted { get; set; } = false;
 
         [BsonElement("thumbnail_url")]
         public string Thumbnail_Url { get; set; }
@@ -61,8 +64,5 @@ namespace AssetManager.Infrastructure.Models
 
         [BsonElement("_dimensions")]
         public string Dimensions { get; set; }
-
-        [BsonElement("isDeleted")]
-        public bool isDeleted { get; set; }
     }
 }
