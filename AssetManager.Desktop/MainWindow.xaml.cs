@@ -1129,10 +1129,11 @@ namespace AssetManager.Desktop
             }
         }
 
-
         private async Task<List<Dictionary<string, string>>> GetModelsFromProject(string projectId, string folderId)
         {
             var models = new List<Dictionary<string, string>>();
+
+            FileDownloadService fileService = new FileDownloadService();
 
             string accessToken = TokenManager.GetToken();
             if (string.IsNullOrEmpty(accessToken))
@@ -1141,35 +1142,38 @@ namespace AssetManager.Desktop
                 return null;
             }
 
-            // Step 1: Get Archive folder ID
-            DeleteService deleteService = new DeleteService();
-            //string archiveFolderId = await deleteService.EnsureArchiveFolderExists(projectId, folderId); // Parent folder
-
-            // Step 2: Get current folder contents
             string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/folders/{folderId}/contents";
 
-            using var client = new HttpClient();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-            var response = await client.GetAsync(url);
-            var jsonResponse = await response.Content.ReadAsStringAsync();
-            using var doc = JsonDocument.Parse(jsonResponse);
-
-            foreach (var item in doc.RootElement.GetProperty("data").EnumerateArray())
+            try
             {
-                string type = item.GetProperty("type").GetString();
-                string itemId = item.GetProperty("id").GetString();
+                using var client = new HttpClient();
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+                var response = await client.GetAsync(url);
 
-                // 🔥 Skip the archive folder itself entirely
-               /* if (type == "folders" && itemId == archiveFolderId)
+                if (!response.IsSuccessStatusCode)
                 {
-                    Console.WriteLine($"📦 Skipping archive folder {archiveFolderId}");
-                    continue;
-                }*/
+                    Console.WriteLine($"❌ API error: {response.StatusCode} - {response.ReasonPhrase}");
+                    return models;
+                }
 
-                if (type == "items")
+                string jsonResponse = await response.Content.ReadAsStringAsync();
+                if (string.IsNullOrWhiteSpace(jsonResponse))
                 {
+                    Console.WriteLine("⚠️ API returned empty response.");
+                    return models;
+                }
+
+                using var doc = JsonDocument.Parse(jsonResponse);
+
+                foreach (var item in doc.RootElement.GetProperty("data").EnumerateArray())
+                {
+                    if (item.GetProperty("type").GetString() != "items")
+                        continue;
+
+                    string itemId = item.GetProperty("id").GetString();
                     var attributes = item.GetProperty("attributes");
                     string modelName = attributes.GetProperty("displayName").GetString();
+
                     string lastModified = attributes.TryGetProperty("lastModifiedTime", out var modifiedTime)
                         ? modifiedTime.GetString()
                         : "Unknown";
@@ -1183,13 +1187,40 @@ namespace AssetManager.Desktop
                             formattedDate = $"{parts[0]} {parts[1].Substring(0, 8)}";
                         }
                     }
-                    FileDownloadService fileService = new FileDownloadService();
+
                     string storageId = await fileService.GetStorageIdFromItem(projectId, itemId);
                     if (string.IsNullOrEmpty(storageId))
                     {
-                        Console.WriteLine($"🧹 Skipping {modelName} - no storage ID.");
+                        Console.WriteLine($"🧹 Skipping '{modelName}' — no storage ID (probably deleted).");
                         continue;
                     }
+                    string urn = Convert.ToBase64String(Encoding.UTF8.GetBytes(storageId))
+                     .TrimEnd('=').Replace('+', '-').Replace('/', '_');
+
+                    string manifestUrl = $"https://developer.api.autodesk.com/modelderivative/v2/designdata/{urn}/manifest";
+
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+                    var manifestResponse = await client.GetAsync(manifestUrl);
+
+                    if (!manifestResponse.IsSuccessStatusCode)
+                    {
+                        Console.WriteLine($"❌ Skipping '{modelName}' — Manifest not found ({manifestResponse.StatusCode}).");
+                        continue;
+                    }
+
+                    string manifestJson = await manifestResponse.Content.ReadAsStringAsync();
+                    using var manifestDoc = JsonDocument.Parse(manifestJson);
+
+                    string status = manifestDoc.RootElement.GetProperty("status").GetString();
+                    if (status != "success")
+                    {
+                        Console.WriteLine($"⚠️ Skipping '{modelName}' — Manifest status: {status}");
+                        continue;
+                    }
+
+
+                    // ✅ Only add models that have a storage ID
+                   
 
                     models.Add(new Dictionary<string, string>
             {
@@ -1202,10 +1233,17 @@ namespace AssetManager.Desktop
                 { "StorageId", storageId }
             });
                 }
-            }
 
-            return models;
+                return models;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Exception loading models: {ex.Message}");
+                MessageBox.Show("Error loading models. See console for details.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return models;
+            }
         }
+
 
 
         /*       private async void LoadModelsForSelectedProject()

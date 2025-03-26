@@ -332,46 +332,111 @@ namespace AssetManager.Infrastructure.Services
             if (string.IsNullOrEmpty(accessToken))
             {
                 Console.WriteLine("❌ No valid access token.");
-                return new List<(string, string, bool)>(); // ✅ Return an empty list instead of null
+                return new List<(string, string, bool)>();
             }
 
-            string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/folders/{folderId}/contents";
+            string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/folders/{folderId}/contents?include=tip";
+            var projectItems = new List<(string, string, bool)>();
 
             try
             {
-                using (HttpClient client = new HttpClient())
+                using var client = new HttpClient();
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+                HttpResponseMessage response = await client.GetAsync(url);
+
+                if (!response.IsSuccessStatusCode)
                 {
-                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-                    HttpResponseMessage response = await client.GetAsync(url);
-
-                    if (!response.IsSuccessStatusCode)
-                    {
-                        Console.WriteLine($"❌ Error fetching folder contents: {response.StatusCode} - {response.ReasonPhrase}");
-                        return new List<(string, string, bool)>(); // ✅ Return an empty list instead of null
-                    }
-
-                    string jsonResponse = await response.Content.ReadAsStringAsync();
-                    using JsonDocument doc = JsonDocument.Parse(jsonResponse);
-                    JsonElement root = doc.RootElement;
-
-                    List<(string, string, bool)> projectItems = new List<(string, string, bool)>();
-
-                    foreach (JsonElement item in root.GetProperty("data").EnumerateArray())
-                    {
-                        string itemId = item.GetProperty("id").GetString();
-                        string itemName = item.GetProperty("attributes").GetProperty("displayName").GetString();
-                        bool isFolder = item.GetProperty("type").GetString() == "folders";
-
-                        projectItems.Add((itemId, itemName, isFolder));
-                    }
-
+                    Console.WriteLine($"❌ Error fetching folder contents: {response.StatusCode} - {response.ReasonPhrase}");
                     return projectItems;
                 }
+
+                string jsonResponse = await response.Content.ReadAsStringAsync();
+                using JsonDocument doc = JsonDocument.Parse(jsonResponse);
+                var root = doc.RootElement;
+
+                // ✅ Build version map: versionId → (extensionType, storageId)
+                Dictionary<string, (string ExtensionType, string StorageId)> versionMap = new();
+
+                if (root.TryGetProperty("included", out JsonElement includedArray))
+                {
+                    foreach (JsonElement included in includedArray.EnumerateArray())
+                    {
+                        if (included.GetProperty("type").GetString() == "versions")
+                        {
+                            string versionId = included.GetProperty("id").GetString();
+                            string extensionType = null;
+                            string storageId = null;
+
+                            if (included.TryGetProperty("attributes", out JsonElement attr) &&
+                                attr.TryGetProperty("extension", out JsonElement ext) &&
+                                ext.TryGetProperty("type", out JsonElement extType))
+                            {
+                                extensionType = extType.GetString();
+                            }
+
+                            if (included.TryGetProperty("relationships", out JsonElement relationships) &&
+                                relationships.TryGetProperty("storage", out JsonElement storage) &&
+                                storage.TryGetProperty("data", out JsonElement storageData) &&
+                                storageData.TryGetProperty("id", out JsonElement storageIdElement))
+                            {
+                                storageId = storageIdElement.GetString();
+                            }
+
+                            if (!string.IsNullOrEmpty(extensionType) && !string.IsNullOrEmpty(storageId))
+                            {
+                                versionMap[versionId] = (extensionType, storageId);
+                            }
+                        }
+                    }
+                }
+
+                // 🔁 Loop through folder contents
+                foreach (JsonElement item in root.GetProperty("data").EnumerateArray())
+                {
+                    string itemId = item.GetProperty("id").GetString();
+                    string itemName = item.GetProperty("attributes").GetProperty("displayName").GetString();
+                    bool isFolder = item.GetProperty("type").GetString() == "folders";
+
+                    if (isFolder)
+                    {
+                        projectItems.Add((itemId, itemName, true));
+                        continue;
+                    }
+
+                    // 📦 For items, find the tip version
+                    string tipVersionId = null;
+                    if (item.TryGetProperty("relationships", out JsonElement relationships) &&
+                        relationships.TryGetProperty("tip", out JsonElement tip) &&
+                        tip.TryGetProperty("data", out JsonElement tipData))
+                    {
+                        tipVersionId = tipData.GetProperty("id").GetString();
+                    }
+
+                    if (string.IsNullOrEmpty(tipVersionId) || !versionMap.ContainsKey(tipVersionId))
+                    {
+                        Console.WriteLine($"🧹 Skipping '{itemName}' — no valid tip version or missing storage.");
+                        continue;
+                    }
+
+                    var (extensionType, storageId) = versionMap[tipVersionId];
+
+                    // Only allow models with supported extensions
+                    if (!extensionType.StartsWith("versions:autodesk.") && !extensionType.Contains("fusion"))
+                    {
+                        Console.WriteLine($"⚠️ Skipping '{itemName}' — unsupported extension type: {extensionType}");
+                        continue;
+                    }
+
+                    // ✅ Passed all checks — add the model
+                    projectItems.Add((itemId, itemName, false));
+                }
+
+                return projectItems;
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"❌ Exception occurred: {ex.Message}");
-                return new List<(string, string, bool)>(); // ✅ Always return an empty list
+                return projectItems;
             }
         }
 

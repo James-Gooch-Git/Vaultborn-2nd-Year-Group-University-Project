@@ -20,6 +20,7 @@ namespace AssetManager.Infrastructure.Models
         public string ItemId { get; set; }  
         public string VersionId { get; set; }
         
+        public bool isDeleted {  get; set; }
         public string CreatedBy { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.Now;
     }
