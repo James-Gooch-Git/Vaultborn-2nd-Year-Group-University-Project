@@ -147,7 +147,7 @@ public class FileDownloadService
         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TokenManager.GetToken());
 
         HttpResponseMessage response = await httpClient.GetAsync(url);
-        Console.WriteLine($"🔍 API Response: {response}");
+        //Console.WriteLine($"🔍 API Response: {response}");
 
         if (!response.IsSuccessStatusCode)
         {
@@ -156,7 +156,7 @@ public class FileDownloadService
         }
 
         string jsonResponse = await response.Content.ReadAsStringAsync();
-        Console.WriteLine($"🔍 Full JSON Response:\n{jsonResponse}");
+
 
         using JsonDocument doc = JsonDocument.Parse(jsonResponse);
         string storageId = null;
@@ -236,7 +236,7 @@ public class FileDownloadService
         }
 
         string jsonResponse = await response.Content.ReadAsStringAsync();
-        Console.WriteLine($"🔹 API Response: {jsonResponse}"); // Debugging output
+        
 
         using JsonDocument doc = JsonDocument.Parse(jsonResponse);
 
@@ -325,7 +325,6 @@ public class FileDownloadService
         byte[] fileBytes = await response.Content.ReadAsByteArrayAsync();
         await File.WriteAllBytesAsync(filePath, fileBytes);
 
-        Console.WriteLine($"✅ File downloaded successfully: {filePath}");
     }
     public async Task<List<(string versionId, string versionName, string storageId)>> GetVersionsForItemAsync(string projectId, string itemId)
     {

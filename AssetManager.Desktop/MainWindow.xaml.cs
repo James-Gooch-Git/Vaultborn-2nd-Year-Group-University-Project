@@ -113,7 +113,7 @@ namespace AssetManager.Desktop
             _filedwnService = new FileDownloadService();
             //InitializeTreeView();
             InitializeBackgroundRefresh();
-            InitialiseFolders();
+            //InitialiseFolders();
             _payPalService = new PayPalService();
             Initialize();
         }
