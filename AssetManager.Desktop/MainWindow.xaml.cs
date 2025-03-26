@@ -80,6 +80,7 @@ namespace AssetManager.Desktop
         private string _selectedVersionNum;
         private string _selectedMarketplace;
         private readonly UpvoteService _upvoteService;
+        private readonly UserService _userService;
         //private List<Dictionary<string, string>> listedModels;
 
         private enum ViewType { Grid, List }
@@ -118,6 +119,7 @@ namespace AssetManager.Desktop
             //InitialiseFolders();
             _payPalService = new PayPalService();
             _upvoteService = new UpvoteService();
+            _userService = new UserService();
             Initialize();
         }
 
@@ -137,8 +139,8 @@ namespace AssetManager.Desktop
 
                 Console.WriteLine($"✅ Debug: Retrieved Access Token: {_accessToken}");
 
-                Username_TextBlock.Text = await GetUserName(_userId);
-                UserPic_Image.Source = new BitmapImage(new Uri(await GetUserPic(_userId)));
+                Username_TextBlock.Text = await _userService.GetUserName(_userId);
+                UserPic_Image.Source = new BitmapImage(new Uri(await _userService.GetUserPic(_userId)));
                 FusionAddinInstaller.InstallFusionAddin(_accessToken);
                 // 🔹 Initialize data
                 LoadHubsAsync();
@@ -201,8 +203,8 @@ namespace AssetManager.Desktop
                 await AddNotifsToCentre();
                 //FusionManager.InitializePythonEngine();
                 //InitialiseFolders();
-                Username_TextBlock.Text = await GetUserName(_userId);
-                UserPic_Image.Source = new BitmapImage(new Uri(await GetUserPic(_userId)));
+                Username_TextBlock.Text = await _userService.GetUserName(_userId);
+                UserPic_Image.Source = new BitmapImage(new Uri(await _userService.GetUserPic(_userId)));
                 //DisplayGridModels();
             }
             catch (Exception ex)
@@ -378,7 +380,7 @@ namespace AssetManager.Desktop
         }
 
         //NEEDS MIGRATING TO USERSERVICES || USER INFORMATION//
-        #region User Services
+        /*#region User Services
         private async Task<string> GetUserName(string userId)
         {
             MongoConnection database = new MongoConnection();
@@ -489,7 +491,7 @@ namespace AssetManager.Desktop
 
             return decks["owner_id"].ToString();
         }
-        #endregion
+        #endregion*/
 
         //NEEDS MIGRATING TO HUBS SERVICE || HUBS//
         #region HUBS
@@ -4944,7 +4946,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
             if (findModel == null)
             {
-                MessageBox.Show($"New model");
+                MessageBox.Show($"New model {modelData.Name}");
                 await database.ModelData.InsertOneAsync(modelData);
                 string message = $"New Model - {modelData.Name}";
                 await InsertNotifDB(modelData.Id, message, _userId);
@@ -5000,7 +5002,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                         if (model != null)
                         {
                             Console.WriteLine($"Found Match: {match.Value}");
-                            string name = await GetUserName(model.CreatedBy);
+                            string name = await _userService.GetUserName(model.CreatedBy);
                             //MessageBox.Show($"Result: {match.Value}, Score: {match.Score}");
                             searchResults.Add(new Dictionary<string, string>
                             {
@@ -5743,7 +5745,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             try
             {
                 List<string> tags = new List<string>();
-                ModelData result = await GetModelTags();
+                ModelData result = await _userService.GetModelTags(_selectedItemId);
                 foreach (var tag in result.Tags)
                 {
                     tags.Add(tag);
@@ -5807,12 +5809,12 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         {
             int i = 0;
             List<string> tags = new List<string>();
-            ModelData result = await GetModelTags();
+            ModelData result = await _userService.GetModelTags(_selectedItemId);
             if (result == null)
             {
                 return;
             }
-
+            
             foreach (var tag in result.Tags)
             {
                 tags.Add(tag);
@@ -5868,12 +5870,12 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             }
         }
         
-        private async Task<ModelData> GetModelTags()
+        /*private async Task<ModelData> GetModelTags()
         {
             MongoConnection database = new MongoConnection();
             var result = await database.ModelData.Find(x => x.Id == _selectedItemId).FirstOrDefaultAsync();
             return result;
-        }
+        }*/
         
         //Comments feature
         private async void BtnAddComment_Click(object sender, RoutedEventArgs e)
@@ -5920,12 +5922,12 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         {
             try
             {
-                List<Comment> comments = await GetAllComments(modelId);
+                List<Comment> comments = await _userService.GetAllComments(modelId);
                 List<CommentItem> commentItems = new List<CommentItem>();
 
                 foreach (Comment comment in comments)
                 {
-                    string name = await GetUserName(comment.UserId);
+                    string name = await _userService.GetUserName(comment.UserId);
                     string version = $"V{comment.VersionNumber}";
                     commentItems.Add(new CommentItem {User = name, Content = comment.Content, CreatedDateTime = comment.CreatedDateTime, Version = version});
                 }
@@ -5955,13 +5957,13 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         
         private async void ListNewComment(Comment commentItem)
         {
-            List<Comment> comments = await GetAllComments(_selectedItemId);
+            List<Comment> comments = await _userService.GetAllComments(_selectedItemId);
 
             foreach (Comment comment in comments)
             {
                 if (commentItem.CommentId == comment.CommentId)
                 {
-                    string name = await GetUserName(commentItem.UserId);
+                    string name = await _userService.GetUserName(commentItem.UserId);
                     string version = $"V{comment.VersionNumber}";
                     ListComments.Items.Add(new CommentItem { User = name, Content = comment.Content, CreatedDateTime = comment.CreatedDateTime, Version = version });
                 }
@@ -5972,7 +5974,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         {
             ListComments.Items.Clear();
         }
-        private async Task<List<Comment>> GetAllComments(string assetId)
+        /*private async Task<List<Comment>> GetAllComments(string assetId)
         {
             try
             {
@@ -5985,7 +5987,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 Console.WriteLine($"Error: {e.Message}");
                 throw;
             }
-        }
+        }*/
 
         private void SortByButton_Click(object sender, RoutedEventArgs e)
         {
@@ -6036,7 +6038,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             // Populate the comments list
             foreach (Comment comment in sortedComments)
             {
-                string name = await GetUserName(comment.UserId);
+                string name = await _userService.GetUserName(comment.UserId);
                 string version = $"V{comment.VersionNumber}";
                 ListComments.Items.Add(new CommentItem { User = name, Content = comment.Content, CreatedDateTime = comment.CreatedDateTime, Version = version });
             }
@@ -6056,7 +6058,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             try
             {
                 ResizeSidebarThumb.Width = new GridLength(0);
-                List<Dictionary<string, string>> allListedModels = await GetAllListedModels();
+                List<Dictionary<string, string>> allListedModels = await _userService.GetAllListedModels(_userId);
                 List<Dictionary<string, string>> namesAZ = allListedModels.OrderBy(x => x["Name"]).ToList();
                 MarketplaceDataGrid.ItemsSource = namesAZ;
                 DisplayMarketplaceGrid(namesAZ);
@@ -6074,14 +6076,14 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         private async Task InitializeMarketplaceDecks()
         {
             MarketplaceDataGrid.ItemsSource = null;
-            List<Dictionary<string, string>> allListedDecks = await GetAllListedDecks();
+            List<Dictionary<string, string>> allListedDecks = await _userService.GetAllListedDecks(_userId);
             List<Dictionary<string, string>> namesAZ = allListedDecks.OrderBy(x => x["Name"]).ToList();
             MarketplaceDataGrid.ItemsSource = namesAZ;
             DisplayMarketplaceGrid(namesAZ);
             _selectedMarketplace = "Decks";
         }
 
-        private async Task<List<Dictionary<string, string>>> GetAllListedModels()
+        /*private async Task<List<Dictionary<string, string>>> GetAllListedModels()
         {
             MongoConnection database = new MongoConnection();
             List<Dictionary<string, string>> allListedModels = new List<Dictionary<string, string>>();
@@ -6089,8 +6091,8 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             foreach (var model in listedModels)
             {
                 bool purchased = await CheckModelPurchased(model.ModelId, _userId);
-                string projectId = await GetModelProjectId(model.ModelId);
-                string sellerName = await GetUserName(model.SellerId);
+                string projectId = await _userService.GetModelProjectId(model.ModelId);
+                string sellerName = await _userService.GetUserName(model.SellerId);
                 allListedModels.Add(new Dictionary<string, string>
                 {
                     { "Name", model.Name },
@@ -6104,9 +6106,9 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 });
             }
             return allListedModels;
-        }
+        }*/
 
-        private async Task<List<Dictionary<string, string>>> GetAllListedDecks()
+        /*private async Task<List<Dictionary<string, string>>> GetAllListedDecks()
         {
             MongoConnection database = new MongoConnection();
             List<Dictionary<string, string>> allListedDecks = new List<Dictionary<string, string>>();
@@ -6118,7 +6120,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             foreach (var deck in decks)
             {
                 bool purchased = await CheckModelPurchased(deck["_id"].ToString(), _userId);
-                string sellerName = await GetUserName(deck["owner_id"].ToString());
+                string sellerName = await _userService.GetUserName(deck["owner_id"].ToString());
                 double amount = double.Parse(deck["price"].ToString());
                 string price = amount.ToString("0.00");
                 allListedDecks.Add(new Dictionary<string, string>
@@ -6135,7 +6137,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             }
             
             return allListedDecks;
-        }
+        }*/
         
         private async void BtnMarketplace_Click(object sender, RoutedEventArgs e)
         {
@@ -6207,7 +6209,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     return;
                 }
 
-                var modelTags = await GetModelTags();
+                var modelTags = await _userService.GetModelTags(_selectedItemId);
                 List<string> tags = new List<string>();
                 foreach (var tag in modelTags.Tags)
                 {
@@ -6533,7 +6535,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                         DataManagement dataService = new DataManagement();
                         string modelName = await dataService.GetModelName(_buyItemId);
                       //  string modelName = await GetModelName(_buyItemId);
-                        string sellerId = await GetModelSeller(_buyItemId);
+                        string sellerId = await _userService.GetModelSeller(_buyItemId);
                         string message = $"New purchase on {modelName}";
                         await InsertNotifDB(_buyItemId, message, sellerId);
                     }
@@ -6541,8 +6543,8 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     {
                         MessageBox.Show($"\u2705 Payment Successful \n Deck Purchased");
                         await InitializeMarketplaceDecks();
-                        string deckName = await GetDeckName(_buyItemId);
-                        string deckOwnerId = await GetDeckOwner(_buyItemId);
+                        string deckName = await _userService.GetDeckName(_buyItemId);
+                        string deckOwnerId = await _userService.GetDeckOwner(_buyItemId);
                         string message = $"New purchase on {deckName}";
                         await InsertNotifDB(_buyItemId, message, deckOwnerId);
                     }
@@ -6566,7 +6568,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         private async Task PayPal(Dictionary<string, string> models)
         {
             _buyItemId = models["Id"];
-            _buyProjectId = await GetModelProjectId(_buyItemId);
+            _buyProjectId = await _userService.GetModelProjectId(_buyItemId);
 
             string amount = models["Price"].Replace("£", "");
             Console.WriteLine($"Price: {amount}");
@@ -6622,9 +6624,9 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                         if (model != null)
                         {
                             Console.WriteLine($"Found Match: {match.Value}");
-                            string sellerName = await GetUserName(model.SellerId);
-                            string projectId = await GetModelProjectId(model.ModelId);
-                            bool purchased = await CheckModelPurchased(model.ModelId, _userId);
+                            string sellerName = await _userService.GetUserName(model.SellerId);
+                            string projectId = await _userService.GetModelProjectId(model.ModelId);
+                            bool purchased = await _userService.CheckModelPurchased(model.ModelId, _userId);
                             searchResults.Add(new Dictionary<string, string>
                             {
                                 { "Name", model.Name },
@@ -6655,8 +6657,8 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                         if (deck != null)
                         {
                             Console.WriteLine($"Found Match: {match.Value}");
-                            bool purchased = await CheckModelPurchased(deck["_id"].ToString(), _userId);
-                            string sellerName = await GetUserName(deck["owner_id"].ToString());
+                            bool purchased = await _userService.CheckModelPurchased(deck["_id"].ToString(), _userId);
+                            string sellerName = await _userService.GetUserName(deck["owner_id"].ToString());
                             double amount = double.Parse(deck["price"].ToString());
                             string price = amount.ToString("0.00");
                             searchResults.Add(new Dictionary<string, string>
@@ -6691,7 +6693,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             }
         }
 
-        private async Task<bool> CheckModelPurchased(string modelId, string userId)
+        /*public async Task<bool> CheckModelPurchased(string modelId, string userId)
         {
             MongoConnection database = new MongoConnection();
             var result = await database.Purchased.Find(x => x.ModelId == modelId && x.UserId == userId).FirstOrDefaultAsync();
@@ -6701,7 +6703,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             }
 
             return true;
-        }
+        }*/
         
         //notifs
         private void Bell_Click(object sender, MouseButtonEventArgs e)
@@ -6724,7 +6726,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             await database.Notifications.InsertOneAsync(notif);
         }
 
-        private async Task<List<Notifications>> GetPendingNotifications()
+        /*private async Task<List<Notifications>> GetPendingNotifications()
         {
             MongoConnection database = new MongoConnection();
             var result = await database.Notifications.Find(x => x.UserId == _userId && x.Pending == 1).ToListAsync();
@@ -6734,12 +6736,12 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             }
 
             return result;
-        }
+        }*/
 
         private async Task AddNotifsToCentre()
         {
             MongoConnection database = new MongoConnection();
-            List<Notifications> notifs = await GetPendingNotifications();
+            List<Notifications> notifs = await _userService.GetPendingNotifications(_userId);
             foreach (var notif in notifs)
             {
                 NotificationItem item = new NotificationItem{Id = notif.Id.ToString(), Message = notif.Message};
