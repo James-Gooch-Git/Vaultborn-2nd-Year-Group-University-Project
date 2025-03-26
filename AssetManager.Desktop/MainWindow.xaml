@@ -562,6 +562,7 @@
         Background="Transparent"
         BorderThickness="0"
         Cursor="Hand" Margin="405,-4,242,-6"/> -->
+                    <Canvas>
                     <Button x:Name="BtnUploadFile"
                     Width="220"
                     Click="BtnUploadFile_Click"
@@ -675,7 +676,7 @@
 
                         <TextBlock Text="Marketplace" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                     </Button>
-
+                    </Canvas>
 
 
 
