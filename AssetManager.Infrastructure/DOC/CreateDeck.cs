@@ -13,14 +13,15 @@ public class CreateDeck
         var mongo = new MongoConnection();
     }
     
-    public void NewDeck()
+    public void NewDeck(string deckName, string deckDescription)
     {
-        
         var newDeck = new BsonDocument
         {
-            { "name", "Dragon Masters" },
-            { "owner_id", "user123" },
-            { "cards", new BsonArray { "unique_card_id_1", "unique_card_id_2" } },
+            { "name", deckName },
+            { "owner_id", Environment.GetEnvironmentVariable("userId", EnvironmentVariableTarget.User) },  
+            { "description", deckDescription },
+            { "is_listed", false },
+            { "price", 0.0 },
             { "created_at", DateTime.UtcNow }
         };
 

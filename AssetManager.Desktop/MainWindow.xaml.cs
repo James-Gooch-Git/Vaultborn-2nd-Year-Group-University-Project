@@ -7225,7 +7225,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
         private void OpenDeckView_Click(object sender, RoutedEventArgs e)
         {
-            DeckView dv = new DeckView();
+            DeckView dv = new DeckView("67e2eb4a646f5f99df629c74");
             dv.Show();
             
         }

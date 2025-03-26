@@ -19,18 +19,53 @@ namespace AssetManager.Desktop
     public partial class DeckView : Window
     {
         private readonly IMongoCollection<BsonDocument> _cardsCollection;
-        private readonly string _userId = MainWindow._userId; // Simulating user authentication
+        private readonly IMongoCollection<BsonDocument> _decksCollection;
+        private readonly string _userId = MainWindow._userId;
         private BsonDocument _selectedCard;
         private string _selectedCardId;
+        private string _deckId; 
 
-        public DeckView()
+        public DeckView(string deckId)
         {
             InitializeComponent();
-
+            _deckId = deckId;
+            
             // MongoDB Connection
             var mongo = new MongoConnection();
             _cardsCollection = mongo.GetCollection("Cards");
+            _decksCollection = mongo.GetCollection("Decks");
 
+            BsonDocument GetDeckById(string deckId)
+            {
+                var collection = mongo.GetCollection("Decks"); 
+                var filter = Builders<BsonDocument>.Filter.Eq("_id", new ObjectId(deckId));
+                return collection.Find(filter).FirstOrDefault();
+            }
+            
+            var deck = GetDeckById(deckId);
+    
+            if (deck == null)
+            {
+                MessageBox.Show("Deck not found!", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                Close(); // Close the window if deck doesn't exist
+                return;
+            }
+
+            // Extract owner_id from the deck
+            string ownerId = deck.Contains("owner_id") ? deck["owner_id"].AsString : string.Empty;
+
+            // Check if the current user is the owner
+            if (_userId != ownerId)
+            {
+                MessageBox.Show("You do not have permission to view this deck.", "Access Denied", MessageBoxButton.OK, MessageBoxImage.Warning);
+                Close(); // Close the window if the user isn't the owner
+                return;
+            }
+            else
+            {
+                ListButton.Visibility = Visibility.Visible;
+            }
+            
             LoadDeckCards();
         }
 
@@ -265,6 +300,41 @@ namespace AssetManager.Desktop
         }
 
         private void DrawRandomCard_Click(object sender, RoutedEventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
+        private async void ListOnMarketplace_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(_deckId))
+            {
+                MessageBox.Show("Error: No deck selected.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            try
+            {
+                var filter = Builders<BsonDocument>.Filter.Eq("_id", ObjectId.Parse(_deckId));
+                var update = Builders<BsonDocument>.Update.Set("is_listed", true);
+
+                var result = await _decksCollection.UpdateOneAsync(filter, update);
+
+                if (result.ModifiedCount > 0)
+                {
+                    MessageBox.Show("Deck successfully listed on the marketplace!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                else
+                {
+                    MessageBox.Show("Error: Deck listing failed. It may already be listed.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error updating deck: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void SelectDeckButton_Click(object sender, RoutedEventArgs e)
         {
             throw new NotImplementedException();
         }
