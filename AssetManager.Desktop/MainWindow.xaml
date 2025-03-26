@@ -14,8 +14,8 @@
         FontFamily="Helvetica"
         Title="MainWindow" Height="720" Width="1280">
 
-    
-    
+
+
     <Window.Resources>
         <!--<Style TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
@@ -308,7 +308,7 @@
         <Grid.Background>
             <ImageBrush ImageSource="/Assets/mainBackground.png"/>
         </Grid.Background>
-        
+
         <Grid.RowDefinitions>
             <RowDefinition Height="50"/>
             <RowDefinition Height="*"/>
@@ -405,7 +405,7 @@
                     </Rectangle>
 
                     <Border Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" HorizontalAlignment="Center" Cursor="Hand" Margin="0,0,5,0">
-                        <Image x:Name="UserPic_Image" Width="20" Height="20"/>
+                        <Image x:Name="UserPic_Image" Width="42" Height="42"/>
                     </Border>
 
                     <Grid x:Name="User_Grid" Cursor="Hand" MouseLeftButtonDown="Chevron_Click" HorizontalAlignment="Center" VerticalAlignment="Center">
@@ -551,8 +551,8 @@
 
 
                     <StackPanel Orientation="Horizontal">
-                        
-                   
+
+
                         <!--<Button x:Name="EmptyButton"
                         Template="{StaticResource LastButtonTemplate}"
                         Click="BtnMarketplace_Click"
@@ -568,110 +568,110 @@
 
                         <!--<Canvas>-->
 
-                            <Button x:Name="BtnUploadFile" Width="150" Height="40" Click="BtnUploadFile_Click" Cursor="Hand" Margin="5,0,0,0">
+                        <Button x:Name="BtnUploadFile" Width="150" Height="40" Click="BtnUploadFile_Click" Cursor="Hand" Margin="5,0,0,0">
 
-                                <Button.Resources>
-                                    <Style TargetType="Border">
-                                        <Setter Property="CornerRadius" Value="10"/>
-                                    </Style>
-                                </Button.Resources>
+                            <Button.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="10"/>
+                                </Style>
+                            </Button.Resources>
 
-                                <Button.Style>
-                                    <Style TargetType="{x:Type Button}">
-                                        <Setter Property="Background">
-                                            <Setter.Value>
-                                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                                                    <GradientStop Color="#4b1e1e" Offset="0.0"/>
-                                                    <GradientStop Color="#933232" Offset="0.5"/>
-                                                    <GradientStop Color="#b44646" Offset="1.0"/>
-                                                </LinearGradientBrush>
-                                            </Setter.Value>
-                                        </Setter>
-                                        <Setter Property="Foreground" Value="White"/>
-                                        <Setter Property="FontFamily" Value="Georgia"/>
-                                        <Setter Property="FontSize" Value="19"/>
-                                        <Setter Property="FontWeight" Value="Bold"/>
-                                        <Setter Property="Template">
-                                            <Setter.Value>
-                                                <ControlTemplate TargetType="{x:Type Button}">
-                                                    <Border Background="{TemplateBinding Background}"
+                            <Button.Style>
+                                <Style TargetType="{x:Type Button}">
+                                    <Setter Property="Background">
+                                        <Setter.Value>
+                                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                                <GradientStop Color="#4b1e1e" Offset="0.0"/>
+                                                <GradientStop Color="#933232" Offset="0.5"/>
+                                                <GradientStop Color="#b44646" Offset="1.0"/>
+                                            </LinearGradientBrush>
+                                        </Setter.Value>
+                                    </Setter>
+                                    <Setter Property="Foreground" Value="White"/>
+                                    <Setter Property="FontFamily" Value="Georgia"/>
+                                    <Setter Property="FontSize" Value="19"/>
+                                    <Setter Property="FontWeight" Value="Bold"/>
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="{x:Type Button}">
+                                                <Border Background="{TemplateBinding Background}"
                                                 BorderBrush="#FFD700"
                                                 BorderThickness="3">
-                                                        <ContentPresenter HorizontalAlignment="Center"
+                                                    <ContentPresenter HorizontalAlignment="Center"
                                                               VerticalAlignment="Center"/>
-                                                    </Border>
-                                                </ControlTemplate>
-                                            </Setter.Value>
-                                        </Setter>
-                                        <Style.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter Property="Background">
-                                                    <Setter.Value>
-                                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                                                            <GradientStop Color="#6e2424" Offset="0.0"/>
-                                                            <GradientStop Color="#b33e3e" Offset="0.5"/>
-                                                            <GradientStop Color="#d65252" Offset="1.0"/>
-                                                        </LinearGradientBrush>
-                                                    </Setter.Value>
-                                                </Setter>
-                                            </Trigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Button.Style>
-                                <TextBlock Text="Import Asset" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                            </Button>
+                                                </Border>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                    <Style.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Background">
+                                                <Setter.Value>
+                                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                                        <GradientStop Color="#6e2424" Offset="0.0"/>
+                                                        <GradientStop Color="#b33e3e" Offset="0.5"/>
+                                                        <GradientStop Color="#d65252" Offset="1.0"/>
+                                                    </LinearGradientBrush>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                            <TextBlock Text="Import Asset" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                        </Button>
 
-                            <Button x:Name="BtnMarketplace" Width="150" Height="40" Click="BtnMarketplace_Click" Cursor="Hand" Margin="5,0,0,0">
+                        <Button x:Name="BtnMarketplace" Width="150" Height="40" Click="BtnMarketplace_Click" Cursor="Hand" Margin="5,0,0,0">
 
-                                <Button.Resources>
-                                    <Style TargetType="Border">
-                                        <Setter Property="CornerRadius" Value="10"/>
-                                    </Style>
-                                </Button.Resources>
+                            <Button.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="10"/>
+                                </Style>
+                            </Button.Resources>
 
-                                <Button.Style>
-                                    <Style TargetType="{x:Type Button}">
-                                        <Setter Property="Background">
-                                            <Setter.Value>
-                                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                                                    <GradientStop Color="#3b2d1f" Offset="0.0"/>
-                                                    <GradientStop Color="#7a5e3b" Offset="0.5"/>
-                                                    <GradientStop Color="#a78c5a" Offset="1.0"/>
-                                                </LinearGradientBrush>
-                                            </Setter.Value>
-                                        </Setter>
-                                        <Setter Property="Foreground" Value="White"/>
-                                        <Setter Property="FontFamily" Value="Georgia"/>
-                                        <Setter Property="FontSize" Value="19"/>
-                                        <Setter Property="FontWeight" Value="Bold"/>
-                                        <Setter Property="Template">
-                                            <Setter.Value>
-                                                <ControlTemplate TargetType="{x:Type Button}">
-                                                    <Border Background="{TemplateBinding Background}" BorderBrush="#DAA520" BorderThickness="3">
-                                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                    </Border>
-                                                </ControlTemplate>
-                                            </Setter.Value>
-                                        </Setter>
-                                        <Style.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter Property="Background">
-                                                    <Setter.Value>
-                                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                                                            <GradientStop Color="#5b4025" Offset="0.0"/>
-                                                            <GradientStop Color="#9a794c" Offset="0.5"/>
-                                                            <GradientStop Color="#c6a566" Offset="1.0"/>
-                                                        </LinearGradientBrush>
-                                                    </Setter.Value>
-                                                </Setter>
-                                            </Trigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Button.Style>
+                            <Button.Style>
+                                <Style TargetType="{x:Type Button}">
+                                    <Setter Property="Background">
+                                        <Setter.Value>
+                                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                                <GradientStop Color="#3b2d1f" Offset="0.0"/>
+                                                <GradientStop Color="#7a5e3b" Offset="0.5"/>
+                                                <GradientStop Color="#a78c5a" Offset="1.0"/>
+                                            </LinearGradientBrush>
+                                        </Setter.Value>
+                                    </Setter>
+                                    <Setter Property="Foreground" Value="White"/>
+                                    <Setter Property="FontFamily" Value="Georgia"/>
+                                    <Setter Property="FontSize" Value="19"/>
+                                    <Setter Property="FontWeight" Value="Bold"/>
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="{x:Type Button}">
+                                                <Border Background="{TemplateBinding Background}" BorderBrush="#DAA520" BorderThickness="3">
+                                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                </Border>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                    <Style.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Background">
+                                                <Setter.Value>
+                                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                                        <GradientStop Color="#5b4025" Offset="0.0"/>
+                                                        <GradientStop Color="#9a794c" Offset="0.5"/>
+                                                        <GradientStop Color="#c6a566" Offset="1.0"/>
+                                                    </LinearGradientBrush>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
 
-                                <TextBlock Text="Marketplace" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Marketplace" VerticalAlignment="Center" HorizontalAlignment="Center"/>
 
-                            </Button>
+                        </Button>
 
                         <!--</Canvas>-->
 
@@ -724,7 +724,7 @@
                                 <TextBlock Text="Decks" Margin="1,0,0,0" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
-                        
+
                     </StackPanel>
 
                     <!--<Border MouseLeftButtonDown="MarketplaceGrid_Click" BorderBrush="#98730C" BorderThickness="3" CornerRadius="2" Width="90" Height="40" HorizontalAlignment="Left" Margin="130,0,0,0" Cursor="Hand">
@@ -986,7 +986,7 @@
                                 <WrapPanel x:Name="ModelsContainer" HorizontalAlignment="Left" VerticalAlignment="Top" />
                             </ScrollViewer>
                         </Grid>
-                        
+
                         <Grid x:Name="ForgeViewerContainer" Visibility="Collapsed" Grid.ColumnSpan="2">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
@@ -1860,7 +1860,7 @@
                                     <WrapPanel x:Name="TagsWrapPanel" VerticalAlignment="Center" Margin="5,0,0,0">
                                         <TextBlock x:Name="NoTagsText" Text="No Tags Currently selected" VerticalAlignment="Center" Foreground="#d1d5db" FontStyle="Italic" Visibility="Collapsed" Margin="3" />
                                     </WrapPanel>
-                                    
+
                                 </ScrollViewer>
 
                             </DockPanel>
