@@ -78,6 +78,7 @@ namespace AssetManager.Desktop
         private string _buyItemId;
         private string _buyProjectId;
         private string _selectedVersionNum;
+        private string _selectedMarketplace;
         //private List<Dictionary<string, string>> listedModels;
 
         private enum ViewType { Grid, List }
@@ -439,6 +440,36 @@ namespace AssetManager.Desktop
                 return "Unknown User";
             }
             return userData.SellerId;
+        }
+
+        private async Task<string> GetDeckName(string deckId)
+        {
+            MongoConnection database = new MongoConnection();
+
+            var collection = database.GetCollection("Decks");
+            var filter = Builders<BsonDocument>.Filter.Eq("_id", ObjectId.Parse(deckId));
+            var decks = await collection.Find(filter).FirstOrDefaultAsync();
+            if (decks == null)
+            {
+                return "Unknown Deck";
+            }
+
+            return decks["name"].ToString();
+        }
+        
+        private async Task<string> GetDeckOwner(string deckId)
+        {
+            MongoConnection database = new MongoConnection();
+
+            var collection = database.GetCollection("Decks");
+            var filter = Builders<BsonDocument>.Filter.Eq("_id", ObjectId.Parse(deckId));
+            var decks = await collection.Find(filter).FirstOrDefaultAsync();
+            if (decks == null)
+            {
+                return "Unknown User";
+            }
+
+            return decks["owner_id"].ToString();
         }
         #endregion
 
@@ -6167,7 +6198,9 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 List<Dictionary<string, string>> namesAZ = allListedModels.OrderBy(x => x["Name"]).ToList();
                 MarketplaceDataGrid.ItemsSource = namesAZ;
                 DisplayMarketplaceGrid(namesAZ);
-                ModelsButton.Background = Brushes.Aqua;
+                ModelsButton.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#a32fa3"));
+                DecksButton.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#540754"));
+                _selectedMarketplace = "Models";
             }
             catch (Exception e)
             {
@@ -6183,6 +6216,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             List<Dictionary<string, string>> namesAZ = allListedDecks.OrderBy(x => x["Name"]).ToList();
             MarketplaceDataGrid.ItemsSource = namesAZ;
             DisplayMarketplaceGrid(namesAZ);
+            _selectedMarketplace = "Decks";
         }
 
         private async Task<List<Dictionary<string, string>>> GetAllListedModels()
@@ -6256,14 +6290,14 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
         private async void MarketplaceModels_Click(object sender, RoutedEventArgs e)
         {
-            ModelsButton.Background = Brushes.Aqua;
+            ModelsButton.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#a32fa3"));
             DecksButton.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#540754"));
             await InitializeMarketplace();
         }
 
         private async void MarketplaceDecks_Click(object sender, RoutedEventArgs e)
         {
-            DecksButton.Background = Brushes.Aqua;
+            DecksButton.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#a32fa3"));
             ModelsButton.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#540754"));
             await InitializeMarketplaceDecks();
         }
@@ -6618,20 +6652,33 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 bool approved = await _payPalService.CapturePayment(token, payPalAccessToken);
                 if (approved)
                 {
-                    MessageBox.Show($"\u2705 Payment Successful \n Model download");
                     webView.CoreWebView2.Navigate("about:blank");
                     BuyPopup.IsOpen = false;
-                    FileDownloadService fileDownloadService = new FileDownloadService();
-                    await fileDownloadService.DownloadModelAsync(_buyProjectId, _buyItemId);
                     MongoConnection database  = new MongoConnection();
-                    Purchased purchased = new Purchased {ModelId = _buyItemId, UserId = _userId} ;
+                    Purchased purchased = new Purchased { ModelId = _buyItemId, UserId = _userId };
                     await database.Purchased.InsertOneAsync(purchased);
-                    await InitializeMarketplace();
-                    string modelName = await GetModelName(_buyItemId);
-                    string sellerId = await GetModelSeller(_buyItemId);
-                    string message = $"New purchase on {modelName}";
-                    await InsertNotifDB(_buyItemId, message, sellerId);
                     
+                    if (_selectedMarketplace == "Models")
+                    {
+                        MessageBox.Show($"\u2705 Payment Successful \n Model download");
+                        FileDownloadService fileDownloadService = new FileDownloadService();
+                        await fileDownloadService.DownloadModelAsync(_buyProjectId, _buyItemId);
+                        
+                        await InitializeMarketplace();
+                        string modelName = await GetModelName(_buyItemId);
+                        string sellerId = await GetModelSeller(_buyItemId);
+                        string message = $"New purchase on {modelName}";
+                        await InsertNotifDB(_buyItemId, message, sellerId);
+                    }
+                    else if (_selectedMarketplace == "Decks")
+                    {
+                        MessageBox.Show($"\u2705 Payment Successful \n Deck Purchased");
+                        await InitializeMarketplaceDecks();
+                        string deckName = await GetDeckName(_buyItemId);
+                        string deckOwnerId = await GetDeckOwner(_buyItemId);
+                        string message = $"New purchase on {deckName}";
+                        await InsertNotifDB(_buyItemId, message, deckOwnerId);
+                    }
                 }
                 else
                 {
