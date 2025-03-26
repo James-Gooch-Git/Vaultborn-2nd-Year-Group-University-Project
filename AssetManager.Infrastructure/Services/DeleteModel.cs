@@ -8,7 +8,7 @@ namespace AssetManager.Infrastructure.Services
     public class DeleteService
     {
         private readonly FileDownloadService _fileService = new FileDownloadService();
-      //  MongoConnection _mongo = new MongoConnection();
+       MongoConnection _mongo = new MongoConnection();
        // ModelService _modelService = new ModelService(_mongo);
 
         public async Task<bool> DeleteModelAsync(string projectId, string itemId, string folderId)
@@ -38,7 +38,7 @@ namespace AssetManager.Infrastructure.Services
                 {
                     Console.WriteLine("⚠️ No storage ID found — skipping OSS delete.");
                 }
-                var modelService = new ModelService();
+                var modelService = new ModelService(_mongo);
                 var result = await modelService.SoftDeleteModel(itemId);
 
                 // ✅ Step 2: Soft delete in MongoDB

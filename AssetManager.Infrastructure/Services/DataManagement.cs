@@ -18,7 +18,7 @@ namespace AssetManager.Infrastructure.Services
     public class DataManagement
     {
         private static readonly HttpClient client = new HttpClient();
-
+        MongoConnection _mongoConnection = new MongoConnection();
         public static async Task<string> GetPersonalHub()
         {
             string url = "https://developer.api.autodesk.com/project/v1/hubs";
@@ -335,6 +335,14 @@ namespace AssetManager.Infrastructure.Services
                 return new List<(string, string, bool)>();
             }
 
+            // Initialize MongoDB connection and services
+            MongoConnection mongoConnection = new MongoConnection();
+            ModelService modelService = new ModelService(mongoConnection);
+
+            // Fetch all deleted model IDs for this project/folder in one query
+            var deletedModelIds = await modelService.GetDeletedModelIds(projectId, folderId);
+            Console.WriteLine($"Found {deletedModelIds.Count} deleted models in the database for this folder");
+
             string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/folders/{folderId}/contents?include=tip";
             var projectItems = new List<(string, string, bool)>();
 
@@ -403,6 +411,13 @@ namespace AssetManager.Infrastructure.Services
                         continue;
                     }
 
+                    // 🔍 Check if the model is marked as deleted in MongoDB
+                    if (deletedModelIds.Contains(itemId))
+                    {
+                        Console.WriteLine($"🧹 Skipping '{itemName}' (ID: {itemId}) — marked as deleted in database.");
+                        continue;
+                    }
+
                     // 📦 For items, find the tip version
                     string tipVersionId = null;
                     if (item.TryGetProperty("relationships", out JsonElement relationships) &&
@@ -439,7 +454,6 @@ namespace AssetManager.Infrastructure.Services
                 return projectItems;
             }
         }
-
 
         public static async Task<List<(string ItemId, string ItemName)>> GetItemsInFolder(string projectId, string folderId)
         {
