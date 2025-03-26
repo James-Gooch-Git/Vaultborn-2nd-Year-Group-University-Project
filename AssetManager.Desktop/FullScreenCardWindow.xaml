@@ -1,0 +1,42 @@
+<Window x:Class="AssetManager.Desktop.FullScreenCardWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        Background="Transparent"
+        AllowsTransparency="True"
+        WindowState="Maximized"
+        MouseDown="Window_MouseDown">
+    
+    <!-- Semi-transparent overlay -->
+    <Grid Background="#80000000">  <!-- 50% opacity black -->
+        <Border Width="500" Height="750" Background="White" CornerRadius="20" Padding="10" VerticalAlignment="Center">
+            <Grid>
+                <ContentControl Style="{StaticResource FantasyCardStyle}" HorizontalAlignment="Center">
+                    <Grid>
+
+                            <!-- Card Image -->
+                        <Image x:Name="FullScreenCardImage"
+                               Stretch="UniformToFill"
+                               Margin="10"/>
+
+                        <!-- Card Details Box -->
+                        <StackPanel Background="#AA000000" Height="250"
+                                    VerticalAlignment="Bottom">
+                            <TextBlock x:Name="FullScreenCardName"
+                                       Foreground="White" FontSize="24"
+                                       FontWeight="Bold" TextAlignment="Center"/>
+                            <TextBlock x:Name="FullScreenCardDescription"
+                                       Foreground="White" FontSize="16"
+                                       TextAlignment="Center" TextWrapping="Wrap" Margin="5"/>
+
+                            <TextBlock x:Name="FullScreenCardStats"
+                                       Foreground="White" FontSize="14"
+                                       TextAlignment="Center" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Grid>
+                </ContentControl>   
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

@@ -695,7 +695,7 @@ namespace AssetManager.Infrastructure.Services
                         Builders<BsonDocument>.Filter.Eq("_id", filterId)
                     );
 
-                    var update = Builders<BsonDocument>.Update.Set("thumbnail_url", base64Image);
+                    var update = Builders<BsonDocument>.Update.Set("thumbnail_url", thumbnailUrl).Set("thumbnail_base64", base64Image);
 
                     try
                     {

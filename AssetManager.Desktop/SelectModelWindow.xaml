@@ -1,0 +1,44 @@
+<Window x:Class="AssetManager.Desktop.SelectModelWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Select Model" Height="500" Width="800" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner">
+    
+    <Grid Margin="20">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="2*" /> <!-- Projects -->
+            <ColumnDefinition Width="3*" /> <!-- Models -->
+        </Grid.ColumnDefinitions>
+
+        <!-- Projects List -->
+        <ListBox x:Name="ProjectListBox" 
+                 SelectionChanged="ProjectListBox_SelectionChanged"
+                 DisplayMemberPath="Name"
+                 Margin="10"
+                 BorderBrush="#FFD700" BorderThickness="1"
+                 Background="#1A000000"
+                 Foreground="White"/>
+
+        <!-- Models List -->
+        <ListBox x:Name="ModelListBox" Grid.Column="1"
+                 SelectionMode="Single"
+                 Margin="10"
+                 BorderBrush="#FFD700" BorderThickness="1"
+                 Background="#1A000000"
+                 Foreground="White">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+                        <TextBlock Text="{Binding Name}" FontWeight="Bold" Foreground="White" TextAlignment="Center"/>
+                    </StackPanel>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+
+        <!-- Confirm Selection Button -->
+        <Button Content="Select Model" Grid.ColumnSpan="2"
+                Width="150" Height="40"
+                HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="10"
+                Click="SelectModelButton_Click"/>
+    </Grid>
+</Window>
