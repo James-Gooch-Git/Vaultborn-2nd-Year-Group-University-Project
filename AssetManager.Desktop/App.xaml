@@ -10,6 +10,9 @@
             <!-- Merge external dictionary -->
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="/AssetManager.Desktop;component/Resources/FantasyCardTemplates.xaml"/>
+                <ResourceDictionary Source="/AssetManager.Desktop;component/Resources/CardTemplateSmall.xaml"/>
+                <ResourceDictionary Source="/AssetManager.Desktop;component/Resources/CardTemplateMed.xaml"/>
+                <ResourceDictionary Source="/AssetManager.Desktop;component/Resources/CardTemplateBig.xaml"/>
             </ResourceDictionary.MergedDictionaries>
 
             <!-- First (Top) Button Template -->

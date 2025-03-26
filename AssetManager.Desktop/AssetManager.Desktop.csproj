@@ -129,6 +129,8 @@
       </Content>
       <None Remove="Assets\mainBackground.png" />
       <Resource Include="Assets\mainBackground.png" />
+      <None Remove="Assets\newbackground.png" />
+      <Resource Include="Assets\newbackground.png" />
     </ItemGroup>
 
     <ItemGroup>

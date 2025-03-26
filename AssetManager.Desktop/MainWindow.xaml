@@ -306,7 +306,7 @@
 
     <Grid>
         <Grid.Background>
-            <ImageBrush ImageSource="/Assets/mainBackground.png"/>
+            <ImageBrush ImageSource="/Assets/newbackground.png"/>
         </Grid.Background>
 
         <Grid.RowDefinitions>
@@ -325,7 +325,7 @@
 
         <Thumb Grid.Row="1" Grid.Column="1" Width="5" Cursor="SizeWE" DragDelta="ResizeSidebarThumb_DragDelta" Background="#98730c" />
 
-        <Border Grid.Row="0" Grid.ColumnSpan="5" BorderBrush="#797979" BorderThickness="0,0,0,1">
+        <Border Grid.Row="0" Grid.ColumnSpan="5" BorderBrush="#98730c" BorderThickness="0,0,0,1">
             <!-- <Border.Background>
                 <ImageBrush ImageSource="\Assets\ScaleBackground.png" Stretch="UniformToFill" />
             </Border.Background> -->
@@ -345,11 +345,11 @@
                         <md:PackIcon Grid.Column="1" Kind="Sync" Foreground="#d1d5db" Style="{StaticResource IconHover}" Cursor="Hand" VerticalAlignment="Center" HorizontalAlignment="Right"/>
                     </Border>
 
-                    <Border x:Name="Bell" Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" Cursor="Hand" Margin="0,0,5,0" MouseLeftButtonDown="Bell_Click">
-                        <md:PackIcon Grid.Column="1" Foreground="#d1d5db" Kind="BellOutline" Style="{StaticResource IconHover}" Cursor="Hand" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                    <Border x:Name="Bell" Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" HorizontalAlignment="Center" Cursor="Hand" Margin="0,0,5,0" MouseLeftButtonDown="Bell_Click">
+                        <md:PackIcon x:Name="BellIcon" Grid.Column="1" Foreground="#d1d5db" Kind="BellOutline" Style="{StaticResource IconHover}" Cursor="Hand" VerticalAlignment="Center" HorizontalAlignment="Right"/>
                     </Border>
 
-                    <Popup x:Name="NotificationsPopup" Placement="Bottom" PlacementTarget="{Binding ElementName=Bell}" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade" HorizontalOffset="-250">
+                    <Popup x:Name="NotificationsPopup" Placement="Bottom" PlacementTarget="{Binding ElementName=Bell}" StaysOpen="True" AllowsTransparency="True" PopupAnimation="Fade" HorizontalOffset="-250">
                         <Border x:Name="NotificationCentre" Background="#5c1c1c" CornerRadius="5"
                                 Width="300" Height="300">
                             <!-- <Border.Effect>

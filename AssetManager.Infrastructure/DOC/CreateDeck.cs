@@ -11,20 +11,30 @@ public class CreateDeck
     public CreateDeck()
     {
         var mongo = new MongoConnection();
+        _decksCollection = mongo.GetCollection("Decks");
     }
     
-    public void NewDeck(string deckName, string deckDescription)
+    public async Task AddNewDeck(string owner, string name, string description)
     {
         var newDeck = new BsonDocument
         {
-            { "name", deckName },
-            { "owner_id", Environment.GetEnvironmentVariable("userId", EnvironmentVariableTarget.User) },  
-            { "description", deckDescription },
-            { "is_listed", false },
-            { "price", 0.0 },
-            { "created_at", DateTime.UtcNow }
+            { "name", name },
+            { "owner_id", owner },
+            { "description", description },
+            { "cards", new BsonArray() }, // Empty card list
+            { "created_at", DateTime.UtcNow },
+            { "is_listed", false},
+            {"price", 0}
         };
 
-        _decksCollection.InsertOneAsync(newDeck);
+        try
+        {
+            _decksCollection.InsertOneAsync(newDeck);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            return;
+        }
     }
 }

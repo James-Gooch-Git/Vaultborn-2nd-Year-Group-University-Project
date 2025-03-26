@@ -6622,7 +6622,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         }
         
         //buy
-        private async void BtnBuy_Click(object sender, RoutedEventArgs e)
+        public async void BtnBuy_Click(object sender, RoutedEventArgs e)
         {
             try
             {
@@ -6840,7 +6840,17 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         //notifs
         private void Bell_Click(object sender, MouseButtonEventArgs e)
         {
-            NotificationsPopup.IsOpen = true;
+            if (NotificationsPopup.IsOpen == true)
+            {
+                NotificationsPopup.IsOpen = false;
+                BellIcon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d1d5db"));
+            }
+            else if (NotificationsPopup.IsOpen == false)
+            {
+                NotificationsPopup.IsOpen = true;
+                BellIcon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#98730c"));
+            }
+            
         }
 
         private static async Task InsertNotifDB(string modelId, string message, string userId)
@@ -7128,13 +7138,10 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
         private void OpenDeckView_Click(object sender, RoutedEventArgs e)
         {
-            DeckView dv = new DeckView("67e2f7a49020b20098f0e97a");
+            DeckView dv = new DeckView(); //67e2f7a49020b20098f0e97a
             dv.Show();
-            
         }
-
     }
-
 }
 
 
