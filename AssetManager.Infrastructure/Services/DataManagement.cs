@@ -1061,6 +1061,100 @@ namespace AssetManager.Infrastructure.Services
             }
         }
 
+        public static async Task<ModelData> GetModelVersionMetadata(string projectId, string itemId, string targetVersionId = null)
+        {
+            string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/items/{itemId}/versions";
+            string _accessToken = TokenManager.GetToken();
+
+            if (string.IsNullOrEmpty(_accessToken))
+            {
+                Console.WriteLine("❌ Error: Access token is missing or invalid.");
+                return null;
+            }
+
+            try
+            {
+                client.DefaultRequestHeaders.Clear();
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
+                HttpResponseMessage response = await client.GetAsync(url);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine($"❌ Error: {response.StatusCode} - {response.ReasonPhrase}");
+                    return null;
+                }
+
+                string jsonResponse = await response.Content.ReadAsStringAsync();
+                using JsonDocument doc = JsonDocument.Parse(jsonResponse);
+                JsonElement root = doc.RootElement;
+
+                JsonElement selectedVersion = default;
+                int selectedVersionNumber = -1;
+
+                foreach (JsonElement version in root.GetProperty("data").EnumerateArray())
+                {
+                    string versionId = version.GetProperty("id").GetString();
+                    int versionNumber = version.GetProperty("attributes").GetProperty("versionNumber").GetInt32();
+
+                    if (targetVersionId == null || versionId == targetVersionId)
+                    {
+                        selectedVersion = version;
+                        selectedVersionNumber = versionNumber;
+                        if (targetVersionId != null) break; // stop early if a specific version is requested
+                    }
+                }
+
+                if (selectedVersion.ValueKind == JsonValueKind.Undefined)
+                {
+                    Console.WriteLine("❌ Could not find the requested version.");
+                    return null;
+                }
+
+                // Extract metadata fields
+                var attr = selectedVersion.GetProperty("attributes");
+                string versionIdFinal = selectedVersion.GetProperty("id").GetString();
+                string name = attr.GetProperty("displayName").GetString();
+                string createdBy = attr.GetProperty("createUserName").GetString();
+                string createdDate = attr.GetProperty("createTime").GetString();
+                string modifiedBy = attr.TryGetProperty("lastModifiedUserName", out var modBy) ? modBy.GetString() : "Not available";
+                string modifiedDate = attr.TryGetProperty("lastModifiedTime", out var modTime) ? modTime.GetString() : "Not available";
+                string fileType = attr.TryGetProperty("fileType", out var format) ? format.GetString() : "Not available";
+                long rawSize = attr.TryGetProperty("storageSize", out var size) ? size.GetInt64() : 0;
+
+
+                string folderName = "Not available";
+                string polyCount = "0"; // If available in derivatives, would be separate call
+                string dimensions = "Not available"; // Likewise
+
+                // Optional: extract from relationships
+                string storageURN = selectedVersion
+                    .GetProperty("relationships")
+                    .GetProperty("storage")
+                    .GetProperty("data")
+                    .GetProperty("id")
+                    .GetString();
+
+                return new ModelData
+                {
+                    Version = selectedVersionNumber.ToString(),
+                    Name = name,
+                    CreatedBy = createdBy,
+                    CreatedDate = createdDate,
+                    ModifiedBy = modifiedBy,
+                    ModifiedDate = modifiedDate,
+                    Format = fileType,
+                    FileSize = (int)rawSize,
+                    Foldername = folderName,
+                    PolyCount = int.TryParse(polyCount, out int polyVal) ? polyVal : 0,
+                    Dimensions = dimensions
+                };
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Exception while fetching model metadata: {ex.Message}");
+                return null;
+            }
+        }
 
 
 
