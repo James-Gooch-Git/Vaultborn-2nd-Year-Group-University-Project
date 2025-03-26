@@ -1795,7 +1795,7 @@ namespace AssetManager.Desktop
         {
             if (e.NewValue is TreeViewItem selectedItem)
             {
-                // Handle the expanded tuple with PDF flag
+                // Handle the expanded 4-tuple format: (projectId, itemId, isFolder, isPdf)
                 if (selectedItem.Tag is ValueTuple<string, string, bool, bool> fileData)
                 {
                     string projectId = fileData.Item1;
@@ -1806,9 +1806,23 @@ namespace AssetManager.Desktop
                     _selectedProjectId = projectId;
                     _selectedItemId = itemId;
 
-                    // Extract the item name from the header (remove the icon prefix)
-                    string header = selectedItem.Header.ToString();
-                    string displayName = header.Length > 2 ? header.Substring(2).Trim() : header;
+                    // ✅ Extract display name from StackPanel header or fallback to string
+                    string displayName = "Unknown";
+                    if (selectedItem.Header is StackPanel panel)
+                    {
+                        foreach (var child in panel.Children)
+                        {
+                            if (child is TextBlock tb)
+                            {
+                                displayName = tb.Text;
+                                break;
+                            }
+                        }
+                    }
+                    else if (selectedItem.Header is string strHeader)
+                    {
+                        displayName = strHeader.StartsWith("📁 ") ? strHeader.Substring(3) : strHeader;
+                    }
 
                     if (isFolder)
                     {
@@ -1837,7 +1851,6 @@ namespace AssetManager.Desktop
                     }
                     else if (isPdf)
                     {
-                        // It's a PDF file
                         _selectedItemName = displayName;
                         Console.WriteLine($"📑 Selected PDF: {_selectedItemName}, Item ID: {_selectedItemId}, Project ID: {_selectedProjectId}");
 
@@ -1846,26 +1859,23 @@ namespace AssetManager.Desktop
                     }
                     else
                     {
-                        // It's a regular file - handle accordingly
                         _selectedItemName = displayName;
                         Console.WriteLine($"📄 Selected File: {_selectedItemName}, Item ID: {_selectedItemId}, Project ID: {_selectedProjectId}");
 
-                        // You could add specific handling for other file types here
+                        // Handle other file types if needed
                     }
                 }
-                // Handle the original tuple format for backward compatibility
+                // Handle 3-tuple project nodes: (projectId, folderId, isFolder)
                 else if (selectedItem.Tag is ValueTuple<string, string, bool> projectData)
                 {
                     _selectedProjectId = projectData.Item1;
                     _folderId = projectData.Item2;
 
-                    // Extract the project name from the header
-                    string header = selectedItem.Header.ToString();
+                    // ✅ Extract project name from StackPanel or plain string
                     string displayName = "Unknown";
-
-                    if (selectedItem.Header is StackPanel stack)
+                    if (selectedItem.Header is StackPanel panel)
                     {
-                        foreach (var child in stack.Children)
+                        foreach (var child in panel.Children)
                         {
                             if (child is TextBlock tb)
                             {
@@ -1880,7 +1890,6 @@ namespace AssetManager.Desktop
                     }
 
                     _selectedProjectName = displayName;
-
 
                     Console.WriteLine($"📌 Selected Project: {_selectedProjectName}, Project ID: {_selectedProjectId}, Folder ID: {_folderId}");
 
