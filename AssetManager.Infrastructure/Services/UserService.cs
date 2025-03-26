@@ -122,5 +122,107 @@ namespace AssetManager.Infrastructure.Services
 
             return decks["owner_id"].ToString();
         }
+        
+        public async Task<ModelData> GetModelTags(string modelId)
+        {
+            MongoConnection database = new MongoConnection();
+            var result = await database.ModelData.Find(x => x.Id == modelId).FirstOrDefaultAsync();
+            return result;
+        }
+        
+        public async Task<List<Comment>> GetAllComments(string assetId)
+        {
+            try
+            {
+                MongoConnection database = new MongoConnection();
+                var allComments = await database.Comments.Find(x => x.AssetId == assetId ).ToListAsync();
+                return allComments;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Error: {e.Message}");
+                throw;
+            }
+        }
+        
+        public async Task<bool> CheckModelPurchased(string modelId, string userId)
+        {
+            MongoConnection database = new MongoConnection();
+            var result = await database.Purchased.Find(x => x.ModelId == modelId && x.UserId == userId).FirstOrDefaultAsync();
+            if (result == null)
+            {
+                return false;
+            }
+
+            return true;
+        }
+        
+        public async Task<List<Dictionary<string, string>>> GetAllListedModels(string userId)
+        {
+            MongoConnection database = new MongoConnection();
+            List<Dictionary<string, string>> allListedModels = new List<Dictionary<string, string>>();
+            var listedModels = await database.ListedModels.Find(FilterDefinition<ListedModels>.Empty).ToListAsync();
+            foreach (var model in listedModels)
+            {
+                bool purchased = await CheckModelPurchased(model.ModelId, userId);
+                string projectId = await GetModelProjectId(model.ModelId);
+                string sellerName = await GetUserName(model.SellerId);
+                allListedModels.Add(new Dictionary<string, string>
+                {
+                    { "Name", model.Name },
+                    { "Description", model.Description },
+                    { "Seller", sellerName },
+                    { "Id", model.ModelId },
+                    { "Price", $"£{model.Price.ToString("0.00")}"},
+                    { "ProjectId", projectId},
+                    { "BuyVisibility", purchased ? "Collapsed" : "Visible" },
+                    { "PurchasedVisibility", purchased ? "Visible" : "Collapsed" }
+                });
+            }
+            return allListedModels;
+        }
+        
+        public async Task<List<Dictionary<string, string>>> GetAllListedDecks(string userId)
+        {
+            MongoConnection database = new MongoConnection();
+            List<Dictionary<string, string>> allListedDecks = new List<Dictionary<string, string>>();
+
+            var collection = database.GetCollection("Decks");
+            var filter = Builders<BsonDocument>.Filter.Eq("is_listed", true);
+            var decks = await collection.Find(filter).ToListAsync();
+
+            foreach (var deck in decks)
+            {
+                bool purchased = await CheckModelPurchased(deck["_id"].ToString(), userId);
+                string sellerName = await GetUserName(deck["owner_id"].ToString());
+                double amount = double.Parse(deck["price"].ToString());
+                string price = amount.ToString("0.00");
+                allListedDecks.Add(new Dictionary<string, string>
+                {
+                    { "Name", deck["name"].ToString() },
+                    { "Description",deck["description"].ToString() },
+                    { "Seller", sellerName },
+                    { "Id", deck["_id"].ToString() },
+                    { "Price", $"£{price}"},
+                    { "BuyVisibility", purchased ? "Collapsed" : "Visible" },
+                    { "PurchasedVisibility", purchased ? "Visible" : "Collapsed" },
+                    { "ProjectId", "N/A"}
+                });
+            }
+            
+            return allListedDecks;
+        }
+        
+        public async Task<List<Notifications>> GetPendingNotifications(string userId)
+        {
+            MongoConnection database = new MongoConnection();
+            var result = await database.Notifications.Find(x => x.UserId == userId && x.Pending == 1).ToListAsync();
+            if (result == null)
+            {
+                return null;
+            }
+
+            return result;
+        }
     }
 }
