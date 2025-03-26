@@ -1099,6 +1099,8 @@ namespace AssetManager.Desktop
 
         private async Task<List<Dictionary<string, string>>> GetModelsFromProject(string projectId, string folderId)
         {
+            var models = new List<Dictionary<string, string>>();
+
             string accessToken = TokenManager.GetToken();
             if (string.IsNullOrEmpty(accessToken))
             {
@@ -1106,100 +1108,72 @@ namespace AssetManager.Desktop
                 return null;
             }
 
+            // Step 1: Get Archive folder ID
+            DeleteService deleteService = new DeleteService();
+            string archiveFolderId = await deleteService.EnsureArchiveFolderExists(projectId, folderId); // Parent folder
+
+            // Step 2: Get current folder contents
             string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/folders/{folderId}/contents";
 
-            try
+            using var client = new HttpClient();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+            var response = await client.GetAsync(url);
+            var jsonResponse = await response.Content.ReadAsStringAsync();
+            using var doc = JsonDocument.Parse(jsonResponse);
+
+            foreach (var item in doc.RootElement.GetProperty("data").EnumerateArray())
             {
-                using (HttpClient client = new HttpClient())
+                string type = item.GetProperty("type").GetString();
+                string itemId = item.GetProperty("id").GetString();
+
+                // 🔥 Skip the archive folder itself entirely
+                if (type == "folders" && itemId == archiveFolderId)
                 {
-                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-                    HttpResponseMessage response = await client.GetAsync(url);
+                    Console.WriteLine($"📦 Skipping archive folder {archiveFolderId}");
+                    continue;
+                }
 
-                    if (!response.IsSuccessStatusCode)
+                if (type == "items")
+                {
+                    var attributes = item.GetProperty("attributes");
+                    string modelName = attributes.GetProperty("displayName").GetString();
+                    string lastModified = attributes.TryGetProperty("lastModifiedTime", out var modifiedTime)
+                        ? modifiedTime.GetString()
+                        : "Unknown";
+
+                    string formattedDate = "Unknown";
+                    if (lastModified != "Unknown")
                     {
-                        Console.WriteLine($"❌ Error: {response.StatusCode} - {response.ReasonPhrase}");
-                        return null;
-                    }
-
-                    string jsonResponse = await response.Content.ReadAsStringAsync();
-                    using JsonDocument doc = JsonDocument.Parse(jsonResponse);
-                    JsonElement root = doc.RootElement;
-
-                    List<Dictionary<string, string>> models = new List<Dictionary<string, string>>();
-
-                    foreach (JsonElement item in root.GetProperty("data").EnumerateArray())
-                    {
-                        if (item.GetProperty("type").GetString() == "items")
+                        string[] parts = lastModified.Split('T');
+                        if (parts.Length >= 2)
                         {
-                            var attributes = item.GetProperty("attributes");
-                            string itemId = item.GetProperty("id").GetString();
-                            string modelName = attributes.GetProperty("displayName").GetString();
-
-                            string lastModified = attributes.TryGetProperty("lastModifiedTime", out JsonElement modifiedTime)
-                                ? modifiedTime.GetString()
-                                : "Unknown";
-
-                            string formattedDate = "Unknown";
-                            if (lastModified != "Unknown")
-                            {
-                                string[] dateParts = lastModified.Split('T');
-                                if (dateParts.Length >= 2)
-                                {
-                                    string date = dateParts[0];
-                                    string time = dateParts[1].Substring(0, Math.Min(8, dateParts[1].Length));
-                                    formattedDate = $"{date} {time}";
-                                }
-                            }
-
-                            // Create model dictionary with all necessary IDs
-                            var modelDict = new Dictionary<string, string>
-                            {
-                                { "Id", itemId },
-                                { "Name", modelName },
-                                { "ProjectId", projectId },
-                                { "FolderId", folderId },
-                                { "Project", _selectedProjectName ?? "Unknown Project" },
-                                { "LastModified", formattedDate }
-                            };
-
-                            Console.WriteLine("Project Name: " + _selectedProjectName);
-
-                            // Add to models list
-                            models.Add(modelDict);
-
-                            // Pre-fetch storage IDs for each model - but don't block the UI thread
-                            _ = Task.Run(async () => {
-                                try
-                                {
-                                    FileDownloadService fileService = new FileDownloadService();
-                                    string storageId = await fileService.GetStorageIdFromItem(projectId, itemId);
-                                    if (!string.IsNullOrEmpty(storageId))
-                                    {
-                                        // We need to use Dispatcher to safely update the dictionary from a background thread
-                                        Application.Current.Dispatcher.Invoke(() => {
-                                            modelDict["StorageId"] = storageId;
-                                        });
-                                        Console.WriteLine($"✅ Added StorageId for {modelName}: {storageId}");
-                                    }
-                                }
-                                catch (Exception ex)
-                                {
-                                    Console.WriteLine($"❌ Failed to fetch storage ID for {modelName}: {ex.Message}");
-                                }
-                            });
+                            formattedDate = $"{parts[0]} {parts[1].Substring(0, 8)}";
                         }
                     }
+                    FileDownloadService fileService = new FileDownloadService();
+                    string storageId = await fileService.GetStorageIdFromItem(projectId, itemId);
+                    if (string.IsNullOrEmpty(storageId))
+                    {
+                        Console.WriteLine($"🧹 Skipping {modelName} - no storage ID.");
+                        continue;
+                    }
 
-                    return models;
+                    models.Add(new Dictionary<string, string>
+            {
+                { "Id", itemId },
+                { "Name", modelName },
+                { "ProjectId", projectId },
+                { "FolderId", folderId },
+                { "Project", _selectedProjectName ?? "Unknown Project" },
+                { "LastModified", formattedDate },
+                { "StorageId", storageId }
+            });
                 }
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"❌ Exception occurred: {ex.Message}");
-                Console.WriteLine(ex.StackTrace);
-                return null;
-            }
+
+            return models;
         }
+
 
         /*       private async void LoadModelsForSelectedProject()
                {
