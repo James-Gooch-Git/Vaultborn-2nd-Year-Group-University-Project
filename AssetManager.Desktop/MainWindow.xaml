@@ -14,10 +14,9 @@
         FontFamily="Helvetica"
         Title="MainWindow" Height="720" Width="1280">
 
-
+    
+    
     <Window.Resources>
-
-
         <!--<Style TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderBrush" Value="Transparent"/>
@@ -287,7 +286,10 @@
     </Window.Resources>
 
     <Grid>
-
+        <Grid.Background>
+            <ImageBrush ImageSource="/Assets/mainBackground.png"/>
+        </Grid.Background>
+        
         <Grid.RowDefinitions>
             <RowDefinition Height="50"/>
             <RowDefinition Height="*"/>
@@ -301,10 +303,10 @@
             <ColumnDefinition x:Name="ModelDataSidebar" Width="0"/>
         </Grid.ColumnDefinitions>
 
-        <Border Grid.Row="0" Grid.ColumnSpan="4" BorderBrush="#797979" BorderThickness="0,0,0,1">
-            <Border.Background>
+        <Border Grid.Row="0" Grid.ColumnSpan="4" BorderBrush="#98730c" BorderThickness="0,0,0,1">
+            <!--<Border.Background>
                 <ImageBrush ImageSource="\Assets\ScaleBackground.png" Stretch="UniformToFill" />
-            </Border.Background>
+            </Border.Background>-->
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -390,7 +392,7 @@
                             <TextBlock Grid.Column="1" MouseLeftButtonDown="Chevron_Click" x:Name="Username_TextBlock" FontSize="12" Foreground="#4B4b4b" VerticalAlignment="Center" HorizontalAlignment="Right"/>
 
                             <Border Background="Transparent" MouseLeftButtonDown="Chevron_Click" BorderBrush="Transparent" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,0,10,0">
-                                <md:PackIcon Grid.Column="1" Name="ChevronDownClick" Kind="ChevronDown" MouseLeftButtonDown="Chevron_Click" Foreground="#4B4b4b" VerticalAlignment="Center" HorizontalAlignment="Right">
+                                <md:PackIcon Grid.Column="1" Name="ChevronDownClick" Kind="ChevronDown" MouseLeftButtonDown="Chevron_Click" Foreground="#d1d5db" VerticalAlignment="Center" HorizontalAlignment="Right">
 
                                     <md:PackIcon.ContextMenu>
                                         <ContextMenu Name="ChevronContextMenu" Placement="Bottom">
@@ -504,7 +506,7 @@
         </Border>
 
         <!-- Asset Library -->
-        <Border x:Name="LibraryBorder" Grid.Row="1" Grid.Column="1">
+        <Border x:Name="LibraryBorder" Background="Transparent" Grid.Row="1" Grid.Column="1">
 
             <Grid>
                 <Grid.RowDefinitions>
@@ -513,9 +515,9 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <TextBlock Text="Asset Library" FontSize="20" Foreground="#4B4b4b" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="20,0,0,0"/>
+                <TextBlock Text="Asset Library" FontSize="20" Foreground="#d1d5db" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="20,0,0,0"/>
 
-                <Border HorizontalAlignment="Stretch" VerticalAlignment="Bottom" BorderBrush="#4B4B4B" BorderThickness="0,1,0,0" Margin="20,0,20,0"/>
+                <Border HorizontalAlignment="Stretch" VerticalAlignment="Bottom" BorderBrush="#98730c" BorderThickness="0,1,0,0" Margin="20,0,20,0"/>
 
                 <Grid Grid.Row="1" RenderTransformOrigin="0.541,0.435">
 
@@ -883,7 +885,7 @@
                         </Rectangle>-->
 
                         <Border MouseLeftButtonDown="Filter_Click" Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" Cursor="Hand" Margin="0,0,5,0">
-                            <md:PackIcon Kind="FilterOutline" Cursor="Hand" Style="{StaticResource IconHover}" VerticalAlignment="Center"/>
+                            <md:PackIcon Foreground="#d1d5db" Kind="FilterOutline" Cursor="Hand" Style="{StaticResource IconHover}" VerticalAlignment="Center"/>
                         </Border>
 
                         <Rectangle Fill="#A3A3A3" Height="20" Width="1" RenderTransformOrigin="0.5,0.5" Margin="0,0,5,0">
@@ -898,11 +900,11 @@
                         </Rectangle>
 
                         <Border x:Name="Grid_Border" MouseLeftButtonDown="Grid_Click" Background="Transparent" BorderBrush="Transparent" CornerRadius="3" VerticalAlignment="Center" HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" Cursor="Hand" Margin="0,0,5,0">
-                            <md:PackIcon x:Name="Grid_Icon" MouseLeftButtonDown="Grid_Click" Kind="ViewGridOutline" Cursor="Hand" Style="{StaticResource IconHover}" VerticalAlignment="Center"/>
+                            <md:PackIcon Foreground="#d1d5db" x:Name="Grid_Icon" MouseLeftButtonDown="Grid_Click" Kind="ViewGridOutline" Cursor="Hand" Style="{StaticResource IconHover}" VerticalAlignment="Center"/>
                         </Border>
 
-                        <Border x:Name="List_Border" MouseLeftButtonDown="List_Click" Background="#E9E9E9" BorderBrush="Transparent" CornerRadius="3" VerticalAlignment="Center" HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" Cursor="Hand" Margin="0,0,5,0">
-                            <md:PackIcon x:Name="List_Icon" MouseLeftButtonDown="List_Click" Grid.Row="1" Grid.Column="1" Kind="FormatListBulleted" Cursor="Hand" Style="{StaticResource IconHover}" VerticalAlignment="Center"/>
+                        <Border x:Name="List_Border" MouseLeftButtonDown="List_Click" Background="Transparent" BorderBrush="Transparent" CornerRadius="3" VerticalAlignment="Center" HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" Cursor="Hand" Margin="0,0,5,0">
+                            <md:PackIcon Foreground="#d1d5db" x:Name="List_Icon" MouseLeftButtonDown="List_Click" Grid.Row="1" Grid.Column="1" Kind="FormatListBulleted" Cursor="Hand" Style="{StaticResource IconHover}" VerticalAlignment="Center"/>
                         </Border>
 
                         <Rectangle Fill="#A3A3A3" Height="20" Width="1" RenderTransformOrigin="0.5,0.5" Margin="0,0,8,0">
@@ -916,7 +918,7 @@
                             </Rectangle.RenderTransform>
                         </Rectangle>
 
-                        <Button x:Name="SearchButton" Cursor="IBeam" Focusable="False"  Width="115" Height="24" Background="Transparent" BorderBrush="#4B4B4B" Margin="0,0,20,0">
+                        <Button x:Name="SearchButton" Cursor="IBeam" Focusable="False"  Width="115" Height="24" Background="Transparent" BorderBrush="#d1d5db" Margin="0,0,20,0">
 
                             <Button.Resources>
                                 <Style TargetType="Border">
@@ -925,7 +927,7 @@
                             </Button.Resources>
 
                             <StackPanel Orientation="Horizontal">
-                                <md:PackIcon Kind="Magnify" Width="14" Height="14" VerticalAlignment="Center" Foreground="#4B4B4B" Margin="0,0,0,0"/>
+                                <md:PackIcon Kind="Magnify" Width="14" Height="14" VerticalAlignment="Center" Foreground="#d1d5db" Margin="0,0,0,0"/>
                                 <TextBox x:Name="SearchText_Box" VerticalAlignment="Center" VerticalContentAlignment="Center" BorderBrush="Transparent" Width="92" FontSize="10" Height="19"  KeyDown="SearchText_Box_OnKeyDown">
                                     <TextBox.Style>
                                         <Style TargetType="TextBox">
@@ -1030,7 +1032,7 @@
                                         <Setter.Value>
                                             <ControlTemplate TargetType="DataGridColumnHeader">
                                                 <Grid Background="Transparent">
-                                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" TextBlock.FontSize="16" TextBlock.FontWeight="Bold"/>
+                                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" TextBlock.Foreground="#d1d5db" TextBlock.FontSize="16" TextBlock.FontWeight="Bold"/>
                                                 </Grid>
                                             </ControlTemplate>
                                         </Setter.Value>
@@ -1046,6 +1048,7 @@
                                         <Style TargetType="TextBlock">
                                             <Setter Property="HorizontalAlignment" Value="Center"/>
                                             <Setter Property="TextAlignment" Value="Center"/>
+                                            <Setter Property="Foreground" Value="White"/>
                                             <Setter Property="FontSize" Value="15"/>
                                         </Style>
                                     </DataGridTextColumn.ElementStyle>
@@ -1054,10 +1057,10 @@
                                         <Style TargetType="DataGridColumnHeader">
                                             <Setter Property="HorizontalContentAlignment" Value="Center"/>
                                             <Setter Property="Background" Value="Transparent"/>
-                                            <Setter Property="BorderBrush" Value="#4B4B4B"/>
+                                            <Setter Property="BorderBrush" Value="#98730c"/>
                                             <Setter Property="BorderThickness" Value="0,0,0,1"/>
                                             <Setter Property="FontSize" Value="16"/>
-                                            <Setter Property="Foreground" Value="#4B4B4B"/>
+                                            <Setter Property="Foreground" Value="#d1d5db"/>
                                             <Setter Property="Margin" Value="0,10,0,5"/>
                                             <Setter Property="Padding" Value="0,0,0,10"/>
                                         </Style>
@@ -1075,6 +1078,7 @@
                                         <Style TargetType="TextBlock">
                                             <Setter Property="HorizontalAlignment" Value="Center"/>
                                             <Setter Property="TextAlignment" Value="Center"/>
+                                            <Setter Property="Foreground" Value="White"/>
                                             <Setter Property="FontSize" Value="15"/>
                                         </Style>
                                     </DataGridTextColumn.ElementStyle>
@@ -1083,10 +1087,10 @@
                                         <Style TargetType="DataGridColumnHeader">
                                             <Setter Property="HorizontalContentAlignment" Value="Center"/>
                                             <Setter Property="Background" Value="Transparent"/>
-                                            <Setter Property="BorderBrush" Value="#4B4B4B"/>
+                                            <Setter Property="BorderBrush" Value="#98730c"/>
                                             <Setter Property="BorderThickness" Value="0,0,0,1"/>
                                             <Setter Property="FontSize" Value="16"/>
-                                            <Setter Property="Foreground" Value="#4B4B4B"/>
+                                            <Setter Property="Foreground" Value="#d1d5db"/>
                                             <Setter Property="Margin" Value="0,10,0,5"/>
                                             <Setter Property="Padding" Value="0,0,0,10"/>
                                         </Style>
@@ -1103,6 +1107,7 @@
                                     <DataGridTextColumn.ElementStyle>
                                         <Style TargetType="TextBlock">
                                             <Setter Property="HorizontalAlignment" Value="Center"/>
+                                            <Setter Property="Foreground" Value="White"/>
                                             <Setter Property="TextAlignment" Value="Center"/>
                                             <Setter Property="FontSize" Value="15"/>
                                         </Style>
@@ -1112,10 +1117,10 @@
                                         <Style TargetType="DataGridColumnHeader">
                                             <Setter Property="HorizontalContentAlignment" Value="Center"/>
                                             <Setter Property="Background" Value="Transparent"/>
-                                            <Setter Property="BorderBrush" Value="#4B4B4B"/>
+                                            <Setter Property="BorderBrush" Value="#98730c"/>
                                             <Setter Property="BorderThickness" Value="0,0,0,1"/>
                                             <Setter Property="FontSize" Value="16"/>
-                                            <Setter Property="Foreground" Value="#4B4B4B"/>
+                                            <Setter Property="Foreground" Value="#d1d5db"/>
                                             <Setter Property="Margin" Value="0,10,0,5"/>
                                             <Setter Property="Padding" Value="0,0,0,10"/>
                                         </Style>
@@ -1137,10 +1142,10 @@
                                         <Style TargetType="DataGridColumnHeader">
                                             <Setter Property="HorizontalContentAlignment" Value="Center"/>
                                             <Setter Property="Background" Value="Transparent"/>
-                                            <Setter Property="BorderBrush" Value="#4B4B4B"/>
+                                            <Setter Property="BorderBrush" Value="#98730c"/>
                                             <Setter Property="BorderThickness" Value="0,0,0,1"/>
                                             <Setter Property="FontSize" Value="16"/>
-                                            <Setter Property="Foreground" Value="#4B4B4B"/>
+                                            <Setter Property="Foreground" Value="#d1d5db"/>
                                             <Setter Property="Margin" Value="0,10,0,5"/>
                                             <Setter Property="Padding" Value="0,0,0,10"/>
                                         </Style>
@@ -1158,7 +1163,7 @@
                                         <DataTemplate>
                                             <Border Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" HorizontalAlignment="Center" Cursor="Hand" Margin="0,0,5,0" MouseEnter="Border_Enter" MouseLeave="Border_Leave">
                                                 <Button Background="Transparent" BorderBrush="Transparent" Click="PackIcon_Click" Padding="0" Cursor="Hand" HorizontalAlignment="Center" VerticalAlignment="Center" ToolTip="Actions">
-                                                    <md:PackIcon Kind="DotsVertical" Width="20" Height="20" Foreground="#4B4B4B" Style="{StaticResource IconHover}" />
+                                                    <md:PackIcon Kind="DotsVertical" Width="20" Height="20" Foreground="#d1d5db" Style="{StaticResource IconHover}" />
                                                 </Button>
                                             </Border>
                                         </DataTemplate>
