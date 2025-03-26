@@ -1656,6 +1656,104 @@ namespace AssetManager.Desktop
           }*/
 
 
+        //private async Task LoadSubfoldersAsync(TreeViewItem parentFolder, string projectId, string folderId)
+        //{
+        //    try
+        //    {
+        //        if (parentFolder == null || string.IsNullOrEmpty(projectId) || string.IsNullOrEmpty(folderId))
+        //        {
+        //            Debug.WriteLine("⚠️ LoadSubfoldersAsync was called with null or empty values.");
+        //            return;
+        //        }
+
+        //        var subItems = await DataManagement.GetProjectItems(projectId, folderId);
+
+        //        // Clear previous items
+        //        parentFolder.Items.Clear();
+
+        //        if (subItems == null || subItems.Count == 0)
+        //        {
+        //            Debug.WriteLine($"⚠️ No subitems found for folderId: {folderId}");
+
+        //            // **Ensure empty folders keep a placeholder**
+        //            parentFolder.Items.Add(new TreeViewItem { Header = "📂 This folder is empty", IsEnabled = false });
+        //            return;
+        //        }
+
+        //        // Group items into folders and files
+        //        var groupedItems = subItems
+        //            .GroupBy(item => item.Item3) // Group by folder vs file
+        //            .ToDictionary(g => g.Key, g => g.ToList());
+
+        //        // **First, process folders**
+        //        if (groupedItems.ContainsKey(true)) // Key is 'true' for folders
+        //        {
+        //            if (string.IsNullOrEmpty(subItemId) || string.IsNullOrEmpty(subItemName))
+        //                continue;
+
+        //            bool is3DModel = false;
+
+        //            if (!isSubFolder)
+        //            {
+        //                string extension = Path.GetExtension(subItemName)?.ToLowerInvariant();
+        //                is3DModel = Accepted3DModelExtensions.Contains(extension);
+        //            }
+        //        }
+
+        //        // **Next, process files**
+        //        if (groupedItems.ContainsKey(false)) // Key is 'false' for files
+        //        {
+        //            foreach (var (subItemId, subItemName, isSubFolder) in groupedItems[false])
+        //            {
+        //                bool isPdf = !isSubFolder && Path.GetExtension(subItemName)?.ToLowerInvariant() == ".pdf";
+
+        //            TreeViewItem subItem = new TreeViewItem
+        //            {
+        //                Header = isSubFolder
+        //                ? CreateHeader("Icons2/folder_icon.svg", subItemName, 30, 30)
+        //                : CreateHeader(GetIconForExtension(Path.GetExtension(subItemName)), subItemName, 30, 30),
+
+        //                Tag = (projectId, subItemId, isSubFolder, is3DModel),
+        //                ContextMenu = CreateContextMenu(projectId, subItemId, isSubFolder)
+        //            };
+
+        //                parentFolder.Items.Add(subItem);
+        //            }
+        //        }
+
+        //        // After loading subfolders and files, handle lazy loading for folders when expanded
+        //        foreach (TreeViewItem subItem in parentFolder.Items)
+        //        {
+        //            if (subItem.Tag is (string subProjectId, string subFolderId, bool isSubFolder) && isSubFolder)
+        //            {
+        //                // Lazy load children when expanded
+        //                subItem.Items.Add(new TreeViewItem { Header = "Loading...", IsEnabled = false });
+
+        //                subItem.Expanded += async (s, e) =>
+        //                {
+        //                    if (subItem.Items.Count == 1 && subItem.Items[0] is TreeViewItem dummy && dummy.Header.ToString() == "Loading...")
+        //                    {
+        //                        subItem.Items.Clear();
+
+        //                        // Load the subfolder items again (one-time load)
+        //                        await LoadSubfoldersAsync(subItem, subProjectId, subFolderId);
+
+        //                        if (subItem.Items.Count == 0)
+        //                        {
+        //                            subItem.Items.Add(new TreeViewItem { Header = "📂 This folder is empty", IsEnabled = false });
+        //                        }
+        //                    }
+        //                };
+        //            }
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Debug.WriteLine($"❌ Error in LoadSubfoldersAsync: {ex.Message}\n{ex.StackTrace}");
+        //    }
+        //}
+
+
         private async Task LoadSubfoldersAsync(TreeViewItem parentFolder, string projectId, string folderId)
         {
             try
@@ -1735,9 +1833,6 @@ namespace AssetManager.Desktop
 
 
 
-
-
-
         private ContextMenu CreateContextMenu(string projectId, string itemId, bool isFolder)
         {
             ContextMenu menu = new ContextMenu();
@@ -1758,6 +1853,7 @@ namespace AssetManager.Desktop
             string folderName = PromptForFolderName();
             if (string.IsNullOrWhiteSpace(folderName)) return;
 
+            // Disable the context menu while creating the folder to prevent multiple clicks
             ContextMenu currentMenu = ContextMenuService.GetContextMenu(ProjectTreeView);
             if (currentMenu != null) currentMenu.IsEnabled = false;
 
@@ -1767,14 +1863,27 @@ namespace AssetManager.Desktop
 
             if (success)
             {
-                MessageBox.Show($"✅ Folder '{folderName}' created successfully!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                // Find the parent item in the TreeView
                 TreeViewItem parentItem = FindTreeViewItem(ProjectTreeView.Items, parentFolderId);
                 if (parentItem != null)
                 {
+                    // Remove the "empty folder" message if it exists
+                    var emptyFolderItem = parentItem.Items.OfType<TreeViewItem>()
+                        .FirstOrDefault(item => item.Header.ToString() == "📂 This folder is empty");
+
+                    if (emptyFolderItem != null)
+                    {
+                        parentItem.Items.Remove(emptyFolderItem);
+                    }
+
+                    // Add the new folder to the TreeView
                     await AddNewFolderToTreeView(parentItem, projectId, parentFolderId, folderName);
                 }
             }
         }
+
+        //await LoadProjectsForHub(selectedHubID);
+
 
 
         private async Task AddNewFolderToTreeView(TreeViewItem parentItem, string projectId, string parentFolderId, string folderName)
@@ -5354,64 +5463,29 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             await DisplayTags();
         }
 
-
         private async Task LoadMetadata(string versionId = null)
         {
-            if (versionId == null)
-            {
-                Console.WriteLine("VERSION ID IS NULL");
-            }
-            else
-            {
-                Console.WriteLine($"        model versionId {versionId}");
-            }
-
             if (_selectedModel == null)
             {
                 MessageBox.Show("❌ No model selected.");
                 return;
             }
 
-            ModelData modelMetadata = null;
-
-            // If no versionId is provided, fetch the latest version using GetItemVersions
-            if (versionId == null)
+            try
             {
-                try
+                string actualVersionId = versionId;
+
+                // If no versionId is provided, determine the latest version ID first
+                if (actualVersionId == null)
                 {
-                    // Fetch all versions for the selected model using DataManagement.GetItemVersions (static method)
                     var versionsList = await DataManagement.GetItemVersions(_selectedModel["ProjectId"], _selectedModel["Id"]);
 
                     if (versionsList != null && versionsList.Any())
                     {
-                        // Get the latest version (highest version number)
                         var latestVersion = versionsList.OrderByDescending(v => v.VersionNumber).FirstOrDefault();
+                        actualVersionId = latestVersion.VersionID;
 
-                        if (latestVersion != default)
-                        {
-                            // Fetch and map the version-specific metadata into ModelData
-                            modelMetadata = new ModelData
-                            {
-                                Version = latestVersion.VersionNumber.ToString(),
-                                Name = _selectedModel["Name"],  // You can update this if the name is fetched elsewhere
-                                CreatedBy = latestVersion.CreatedBy,
-                                CreatedDate = latestVersion.CreateTime,
-                                ModifiedDate = "Not available",  // This may not be available in GetItemVersions
-                                ModifiedBy = "Not available",   // This may not be available in GetItemVersions
-                                FileSize = 0, // You might need to adjust this field if you have the size info
-                                Foldername = "Not available",   // Update this if folder info is available
-                                Format = "Not available",       // Format may be unavailable here, but you can map it
-                                PolyCount = 0,  // Update this if poly count data is available
-                                Dimensions = "Not available"   // Update if dimension data is available
-                            };
-
-                            Console.WriteLine("                 Metadata fetched for latest version.");
-                        }
-                        else
-                        {
-                            MessageBox.Show("❌ Latest version not found.");
-                            return;
-                        }
+                        Console.WriteLine($"ℹ️ Using latest version ID: {actualVersionId}");
                     }
                     else
                     {
@@ -5419,66 +5493,20 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                         return;
                     }
                 }
-                catch (Exception ex)
+
+                // Fetch metadata for the given (or latest) version
+                var modelMetadata = await DataManagement.GetModelVersionMetadata(
+                    _selectedModel["ProjectId"],
+                    _selectedModel["Id"],
+                    actualVersionId
+                );
+
+                if (modelMetadata == null)
                 {
-                    MessageBox.Show($"❌ Error fetching latest version metadata: {ex.Message}");
+                    MessageBox.Show("❌ Failed to load model metadata.");
                     return;
                 }
-            }
-            else // If versionId is provided, fetch metadata for that specific version
-            {
-                try
-                {
-                    // Fetch all versions for the selected model using DataManagement.GetItemVersions (static method)
-                    var versionsList = await DataManagement.GetItemVersions(_selectedModel["ProjectId"], _selectedModel["Id"]);
 
-                    if (versionsList != null && versionsList.Any())
-                    {
-                        // Find the version with the specified versionId
-                        var selectedVersion = versionsList.FirstOrDefault(v => v.VersionID == versionId);
-
-                        if (selectedVersion != default)
-                        {
-                            // Fetch and map the version-specific metadata into ModelData
-                            modelMetadata = new ModelData
-                            {
-                                Version = selectedVersion.VersionNumber.ToString(),
-                                Name = _selectedModel["Name"],  // Or fetch actual name if available
-                                CreatedBy = selectedVersion.CreatedBy,
-                                CreatedDate = selectedVersion.CreateTime,
-                                ModifiedDate = "Not available", // This may not be available in GetItemVersions
-                                ModifiedBy = "Not available",  // This may not be available in GetItemVersions
-                                FileSize = 0, // You might need to adjust this field if you have the size info
-                                Foldername = "Not available",  // Update if folder info is available
-                                Format = "Not available",      // Format may be unavailable here, but you can map it
-                                PolyCount = 0,                 // Update this if poly count data is available
-                                Dimensions = "Not available"  // Update if dimension data is available
-                            };
-
-                            Console.WriteLine("                 Metadata fetched for specified version.");
-                        }
-                        else
-                        {
-                            MessageBox.Show("❌ Specified version not found.");
-                            return;
-                        }
-                    }
-                    else
-                    {
-                        MessageBox.Show("❌ No versions found for the selected model.");
-                        return;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"❌ Error fetching version metadata: {ex.Message}");
-                    return;
-                }
-            }
-
-            if (modelMetadata != null)
-            {
-                // Log to verify the metadata
                 Console.WriteLine($"✅ Successfully fetched metadata for Version: {modelMetadata.Version ?? "latest"}");
 
                 // Update UI fields with the metadata
@@ -5488,28 +5516,21 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 ModifiedDateText.Text = modelMetadata.ModifiedDate;
                 ModifiedByText.Text = modelMetadata.ModifiedBy;
 
-                // Convert bytes to MB with 2 decimal precision
                 FileSizeText.Text = $"{(modelMetadata.FileSize / 1_000_000.0):0.00} MB";
-
                 FolderNameText.Text = modelMetadata.Foldername;
                 FormatText.Text = modelMetadata.Format;
                 PolyCountText.Text = modelMetadata.PolyCount.ToString();
                 DimensionsText.Text = modelMetadata.Dimensions;
 
-                Console.WriteLine($"Version number: {modelMetadata.Version}");
-
-                // Update version info using the version number from the metadata
-                string versionInfo = modelMetadata.Version ?? "Latest Version";  // Using modelMetadata.Version here
+                string versionInfo = modelMetadata.Version ?? "Latest Version";
                 ModelVersionText.Text = $"Version {versionInfo}";
-                ModelVersionText.Tag = modelMetadata.Version;  // Store the version number in the tag
+                ModelVersionText.Tag = modelMetadata.Version;
             }
-            else
+            catch (Exception ex)
             {
-                MessageBox.Show("❌ Failed to load model metadata.");
+                MessageBox.Show($"❌ Error loading model metadata: {ex.Message}");
             }
         }
-
-
 
         // Example method to fetch file size for a version
         private async Task<long> GetFileSizeForVersion(string projectId, string itemId, string versionId)
