@@ -5770,6 +5770,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             List<string> tags = new List<string>();
             ModelData result = await _userService.GetModelTags(_selectedItemId);
             if (result == null)
+            {
                 return;
             }
             
