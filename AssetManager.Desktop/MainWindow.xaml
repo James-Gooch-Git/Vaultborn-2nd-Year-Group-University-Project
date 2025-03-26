@@ -389,7 +389,7 @@
                     <Grid x:Name="User_Grid" Cursor="Hand" MouseLeftButtonDown="Chevron_Click" HorizontalAlignment="Center" VerticalAlignment="Center">
 
                         <StackPanel Orientation="Horizontal" MouseLeftButtonDown="Chevron_Click" HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <TextBlock Grid.Column="1" MouseLeftButtonDown="Chevron_Click" x:Name="Username_TextBlock" FontSize="12" Foreground="#4B4b4b" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                            <TextBlock Grid.Column="1" MouseLeftButtonDown="Chevron_Click" x:Name="Username_TextBlock" FontSize="12" Foreground="#d1d5db" VerticalAlignment="Center" HorizontalAlignment="Right"/>
 
                             <Border Background="Transparent" MouseLeftButtonDown="Chevron_Click" BorderBrush="Transparent" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,0,10,0">
                                 <md:PackIcon Grid.Column="1" Name="ChevronDownClick" Kind="ChevronDown" MouseLeftButtonDown="Chevron_Click" Foreground="#d1d5db" VerticalAlignment="Center" HorizontalAlignment="Right">
@@ -414,7 +414,7 @@
         </Border>
 
 
-        <Border x:Name="ProjectsBorder" Grid.Row="1" Grid.Column="0" BorderBrush="#797979" BorderThickness="0,0,1,0" Padding="5,0,5,0">
+        <Border x:Name="ProjectsBorder" Grid.Row="1" Grid.Column="0" BorderBrush="#98730c" BorderThickness="0,0,1,0" Padding="5,0,5,0">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -426,7 +426,7 @@
                 </Grid.RowDefinitions>
 
                 <!-- Hubs Selection Header -->
-                <Border Grid.Row="0" Background="#F0F0F0" BorderBrush="#D3D3D3" BorderThickness="0,0,0,1" Padding="5" Margin="-5,0,-5,0">
+                <Border Grid.Row="0" Background="Transparent" BorderBrush="#98730c" BorderThickness="0,0,0,1" Padding="5" Margin="-5,0,-5,0">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
@@ -435,12 +435,12 @@
 
                         <!-- Dynamic Hubs Header -->
                         <TextBlock x:Name="HubsHeaderTextBlock" Text="Hubs - (Loading...)" 
-                           FontSize="12" Foreground="#4B4b4b" FontWeight="Bold" 
+                           FontSize="12" Foreground="#d1d5db" FontWeight="Bold" 
                            VerticalAlignment="Center" HorizontalAlignment="Left"/>
 
                         <!-- Dropdown Arrow for Selecting a Hub -->
                         <Border Grid.Column="1" Background="Transparent" VerticalAlignment="Center" HorizontalAlignment="Right" MouseLeftButtonDown="ToggleHubsMenu">
-                            <md:PackIcon Kind="ChevronDown" Width="16" Height="16" Foreground="#4B4B4B" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="Bold" Cursor="Hand"/>
+                            <md:PackIcon Kind="ChevronDown" Width="16" Height="16" Foreground="#d1d5db" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="Bold" Cursor="Hand"/>
                         </Border>
                     </Grid>
                 </Border>
@@ -461,7 +461,7 @@
 
                     <Border Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" HorizontalAlignment="Left" 
                             MouseEnter="TextBlockBorder_Enter" MouseLeave="TextBlockBorder_Leave" Cursor="Hand" Margin="5,8,0,0">
-                        <TextBlock MouseLeftButtonDown="ProjectsText_Click" Text="PROJECTS" FontSize="12" Foreground="#4B4B4B" FontWeight="Bold" VerticalAlignment="Center" HorizontalAlignment="Left" Height="16" Width="57"/>
+                        <TextBlock MouseLeftButtonDown="ProjectsText_Click" Text="PROJECTS" FontSize="12" Foreground="#d1d5db" FontWeight="Bold" VerticalAlignment="Center" HorizontalAlignment="Left" Height="16" Width="57"/>
                     </Border>
 
                     <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
@@ -469,27 +469,27 @@
                         HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" 
                         Cursor="Hand" Margin="0,6.5,2,0">
                             <md:PackIcon Cursor="Hand" HorizontalAlignment="Right" FontWeight="Light"  
-                                 Kind="Magnify" Style="{StaticResource IconHover}" Height="15" Width="15"/>
+                                 Kind="Magnify" Style="{StaticResource IconHover}" Height="15" Width="15" Foreground="#d1d5db"/>
                         </Border>
 
                         <Border Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" 
                         HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" 
                         Cursor="Hand" Margin="0,6,2,0">
                             <md:PackIcon Cursor="Hand" HorizontalAlignment="Right" FontWeight="Light" 
-                                 Kind="CogOutline" Style="{StaticResource IconHover}" Height="15" Width="15"/>
+                                 Kind="CogOutline" Style="{StaticResource IconHover}" Height="15" Width="15" Foreground="#d1d5db"/>
                         </Border>
 
                         <Border Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" 
                         HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" 
                         Cursor="Hand" Margin="0,5,2,0">
                             <md:PackIcon Cursor="Hand" HorizontalAlignment="Right" FontWeight="Light" 
-                                 Kind="Plus" Style="{StaticResource IconHover}" Height="16" Width="16"/>
+                                 Kind="Plus" Style="{StaticResource IconHover}" Height="16" Width="16" Foreground="#d1d5db"/>
                         </Border>
                     </StackPanel>
                 </Grid>
 
                 <!-- TreeView for Projects -->
-                <TreeView Grid.Row="2" x:Name="ProjectTreeView" BorderThickness="0" Margin="0,10,0,10"
+                <TreeView Grid.Row="2" x:Name="ProjectTreeView" Background="Transparent" BorderThickness="0" Margin="0,10,0,10"
                   SelectedItemChanged="ProjectTreeView_SelectedItemChanged" 
                   MouseDoubleClick="ProjectTreeView_MouseDoubleClick" 
                   MouseLeftButtonDown="ProjectTreeView_MouseLeftButtonDown">
@@ -497,6 +497,7 @@
                         <Style TargetType="TreeViewItem">
                             <EventSetter Event="Expanded" Handler="TreeViewItem_Expanded"/>
                             <Setter Property="FontSize" Value="16"/>
+                            <Setter Property="Foreground" Value="#d1d5db"/>
                             <!--<Setter Property="FontWeight" Value="Bold"/>-->
                             <Setter Property="Padding" Value="3"/>
                         </Style>
@@ -899,11 +900,11 @@
                             </Rectangle.RenderTransform>
                         </Rectangle>
 
-                        <Border x:Name="Grid_Border" MouseLeftButtonDown="Grid_Click" Background="Transparent" BorderBrush="Transparent" CornerRadius="3" VerticalAlignment="Center" HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" Cursor="Hand" Margin="0,0,5,0">
+                        <Border x:Name="Grid_Border" MouseLeftButtonDown="Grid_Click" Background="Transparent" BorderBrush="Transparent" CornerRadius="3" VerticalAlignment="Center" HorizontalAlignment="Center" Cursor="Hand" Margin="0,0,5,0">
                             <md:PackIcon Foreground="#d1d5db" x:Name="Grid_Icon" MouseLeftButtonDown="Grid_Click" Kind="ViewGridOutline" Cursor="Hand" Style="{StaticResource IconHover}" VerticalAlignment="Center"/>
                         </Border>
 
-                        <Border x:Name="List_Border" MouseLeftButtonDown="List_Click" Background="Transparent" BorderBrush="Transparent" CornerRadius="3" VerticalAlignment="Center" HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" Cursor="Hand" Margin="0,0,5,0">
+                        <Border x:Name="List_Border" MouseLeftButtonDown="List_Click" Background="Transparent" BorderBrush="Transparent" CornerRadius="3" VerticalAlignment="Center" HorizontalAlignment="Center" Cursor="Hand" Margin="0,0,5,0">
                             <md:PackIcon Foreground="#d1d5db" x:Name="List_Icon" MouseLeftButtonDown="List_Click" Grid.Row="1" Grid.Column="1" Kind="FormatListBulleted" Cursor="Hand" Style="{StaticResource IconHover}" VerticalAlignment="Center"/>
                         </Border>
 
@@ -1656,7 +1657,7 @@
         </Border>
 
         <!-- Model Info Sidebar -->
-        <Border Grid.Row="1" Grid.Column="3" BorderBrush="#797979" BorderThickness="1,0,0,0" Padding="5,0,5,0">
+        <Border Grid.Row="1" Grid.Column="3" BorderBrush="#98730c" BorderThickness="1,0,0,0" Padding="5,0,5,0">
 
             <Grid>
                 <Grid.RowDefinitions>
@@ -1677,7 +1678,7 @@
                         </Button.Template>
 
 
-                        <md:PackIcon Kind="Close" Width="10" Height="10" Foreground="#4B4B4B" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                        <md:PackIcon Kind="Close" Width="10" Height="10" Foreground="#d1d5db" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                     </Button>
 
                     <!-- Model Thumbnail and Name -->
@@ -1691,7 +1692,7 @@
                         </Border>
 
                         <!-- Model Name -->
-                        <TextBlock x:Name="ModelNameText" Text="Model Name" Foreground="#4B4b4b" FontSize="18" FontWeight="Bold" TextAlignment="Center" HorizontalAlignment="Center" Margin="0,10,0,5"/>
+                        <TextBlock x:Name="ModelNameText" Text="Model Name" Foreground="#d1d5db" FontSize="18" FontWeight="Bold" TextAlignment="Center" HorizontalAlignment="Center" Margin="0,10,0,5"/>
 
                     </StackPanel>
 
@@ -1708,9 +1709,9 @@
                         </StackPanel>-->
 
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,15">
-                            <TextBlock Text="Model Version: " FontWeight="Bold" Foreground="Black" VerticalAlignment="Center"/>
+                            <TextBlock Text="Model Version: " FontWeight="Bold" Foreground="#d1d5db" VerticalAlignment="Center"/>
 
-                            <Button x:Name="ModelVersionButton" Foreground="Black" Background="Transparent" BorderThickness="0" Cursor="Hand" Margin="5,0,0,0" Click="ModelVersionButton_Click" VerticalAlignment="Center">
+                            <Button x:Name="ModelVersionButton" Foreground="#d1d5db" Background="Transparent" BorderThickness="0" Cursor="Hand" Margin="5,0,0,0" Click="ModelVersionButton_Click" VerticalAlignment="Center">
                                 <Button.Style>
                                     <Style TargetType="Button">
                                         <Setter Property="Template">
@@ -1724,7 +1725,7 @@
                                         </Setter>
                                         <Setter Property="Background" Value="Transparent"/>
                                         <Setter Property="BorderBrush" Value="Transparent"/>
-                                        <Setter Property="Foreground" Value="Black"/>
+                                        <Setter Property="Foreground" Value="#d1d5db"/>
                                         <Style.Triggers>
                                             <Trigger Property="IsMouseOver" Value="True">
                                                 <Setter Property="Background" Value="Transparent"/>
@@ -1740,62 +1741,62 @@
 
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                     <TextBlock x:Name="ModelVersionText" Text="" VerticalAlignment="Center"/>
-                                    <md:PackIcon Kind="ChevronDown" Width="16" Height="16" Foreground="#4B4B4B" Margin="2,-1,0,0" VerticalAlignment="Center"/>
+                                    <md:PackIcon Kind="ChevronDown" Width="16" Height="16" Foreground="#d1d5db" Margin="2,-1,0,0" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
                         </StackPanel>
 
 
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
-                            <TextBlock Text="Created By: " FontWeight="Bold"/>
-                            <TextBlock x:Name="CreatedByText"/>
+                            <TextBlock Text="Created By: " FontWeight="Bold" Foreground="#d1d5db"/>
+                            <TextBlock x:Name="CreatedByText" Foreground="#d1d5db"/>
                         </StackPanel>
 
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
-                            <TextBlock Text="Date Created: " FontWeight="Bold"/>
-                            <TextBlock x:Name="CreatedDateText"/>
+                            <TextBlock Text="Date Created: " FontWeight="Bold" Foreground="#d1d5db"/>
+                            <TextBlock x:Name="CreatedDateText" Foreground="#d1d5db"/>
                         </StackPanel>
 
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
-                            <TextBlock Text="Last Modified: " FontWeight="Bold"/>
-                            <TextBlock x:Name="ModifiedDateText"/>
+                            <TextBlock Text="Last Modified: " FontWeight="Bold" Foreground="#d1d5db"/>
+                            <TextBlock x:Name="ModifiedDateText" Foreground="#d1d5db"/>
                         </StackPanel>
 
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
-                            <TextBlock Text="Modified By: " FontWeight="Bold"/>
-                            <TextBlock x:Name="ModifiedByText"/>
+                            <TextBlock Text="Modified By: " FontWeight="Bold" Foreground="#d1d5db"/>
+                            <TextBlock x:Name="ModifiedByText" Foreground="#d1d5db"/>
                         </StackPanel>
 
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
-                            <TextBlock Text="Project: " FontWeight="Bold"/>
-                            <TextBlock x:Name="FolderNameText"/>
+                            <TextBlock Text="Project: " FontWeight="Bold" Foreground="#d1d5db"/>
+                            <TextBlock x:Name="FolderNameText" Foreground="#d1d5db"/>
                         </StackPanel>
 
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
-                            <TextBlock Text="File Size: " FontWeight="Bold"/>
-                            <TextBlock x:Name="FileSizeText"/>
+                            <TextBlock Text="File Size: " FontWeight="Bold" Foreground="#d1d5db"/>
+                            <TextBlock x:Name="FileSizeText" Foreground="#d1d5db"/>
                         </StackPanel>
 
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
-                            <TextBlock Text="File Format: " FontWeight="Bold"/>
-                            <TextBlock x:Name="FormatText"/>
+                            <TextBlock Text="File Format: " FontWeight="Bold" Foreground="#d1d5db"/>
+                            <TextBlock x:Name="FormatText" Foreground="#d1d5db"/>
                         </StackPanel>
 
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
-                            <TextBlock Text="Dimensions: " FontWeight="Bold"/>
-                            <TextBlock x:Name="DimensionsText"/>
+                            <TextBlock Text="Dimensions: " FontWeight="Bold" Foreground="#d1d5db"/>
+                            <TextBlock x:Name="DimensionsText" Foreground="#d1d5db"/>
                         </StackPanel>
 
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
-                            <TextBlock Text="Poly Count: " FontWeight="Bold"/>
-                            <TextBlock x:Name="PolyCountText"/>
+                            <TextBlock Text="Poly Count: " FontWeight="Bold" Foreground="#d1d5db"/>
+                            <TextBlock x:Name="PolyCountText" Foreground="#d1d5db"/>
                         </StackPanel>
 
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,15">
-                            <TextBlock Text="Public/Private:" FontWeight="Bold" Foreground="Black" VerticalAlignment="Center"/>
+                            <TextBlock Text="Public/Private:" FontWeight="Bold" Foreground="#d1d5db" VerticalAlignment="Center"/>
 
                             <!-- Public/Private Selection as a Button -->
-                            <Button x:Name="PublicPrivateButton" Foreground="Black" Background="Transparent" BorderThickness="0" Cursor="Hand" Margin="5,0,0,0" Click="PublicPrivateButton_Click" VerticalAlignment="Center">
+                            <Button x:Name="PublicPrivateButton" Foreground="#d1d5db" Background="Transparent" BorderThickness="0" Cursor="Hand" Margin="5,0,0,0" Click="PublicPrivateButton_Click" VerticalAlignment="Center">
 
                                 <Button.Style>
                                     <Style TargetType="Button">
@@ -1810,7 +1811,7 @@
                                         </Setter>
                                         <Setter Property="Background" Value="Transparent"/>
                                         <Setter Property="BorderBrush" Value="Transparent"/>
-                                        <Setter Property="Foreground" Value="Black"/>
+                                        <Setter Property="Foreground" Value="#d1d5db"/>
                                         <Style.Triggers>
                                             <Trigger Property="IsMouseOver" Value="True">
                                                 <Setter Property="Background" Value="Transparent"/>
@@ -1826,7 +1827,7 @@
 
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                     <TextBlock x:Name="PublicPrivateText" Text="Private" VerticalAlignment="Center"/>
-                                    <md:PackIcon Kind="ChevronDown" Width="16" Height="16" Foreground="#4B4B4B" Margin="2,-1,0,0" VerticalAlignment="Center"/>
+                                    <md:PackIcon Kind="ChevronDown" Width="16" Height="16" Foreground="#d1d5db" Margin="2,-1,0,0" VerticalAlignment="Center"/>
                                 </StackPanel>
 
                                 <!-- Attach ContextMenu -->
@@ -1845,19 +1846,19 @@
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
 
                         <!-- "Tags:" Label -->
-                        <TextBlock Text="Tags:" FontWeight="Bold" Foreground="Black" VerticalAlignment="Center"/>
+                        <TextBlock Text="Tags:" FontWeight="Bold" Foreground="#d1d5db" VerticalAlignment="Center"/>
 
                         <!-- Container for Tags (Buttons) & Plus Icon -->
                         <WrapPanel x:Name="TagsWrapPanel" VerticalAlignment="Center">
 
                             <!-- Placeholder when no tags are selected -->
-                            <TextBlock x:Name="NoTagsText" Text="No Tags Currently selected" VerticalAlignment="Center" Visibility="Collapsed"/>
+                            <TextBlock x:Name="NoTagsText" Foreground="#d1d5db" Text="No Tags Currently selected" VerticalAlignment="Center" Visibility="Collapsed"/>
 
                         </WrapPanel>
 
                         <!-- Plus Icon for Adding Tags -->
                         <Border Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" Cursor="Hand" MouseLeftButtonDown="AddTags_Click" Margin="5,0,0,0">
-                            <md:PackIcon Cursor="Hand" VerticalAlignment="Center" FontWeight="Light" Kind="Plus" Style="{StaticResource IconHover}" Height="16" Width="16"/>
+                            <md:PackIcon Foreground="#d1d5db" Cursor="Hand" VerticalAlignment="Center" FontWeight="Light" Kind="Plus" Style="{StaticResource IconHover}" Height="16" Width="16"/>
                         </Border>
 
                     </StackPanel>
@@ -1904,19 +1905,19 @@
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,10">
 
                         <Border MouseLeftButtonDown="UpArrow_Click" x:Name="UpArrowBorder" Background="Transparent" Cursor="Hand" MouseEnter="Border_Enter" MouseLeave="Border_Leave">
-                            <md:PackIcon x:Name="UpArrow" Foreground="#4B4b4b" Kind="ArrowUpBoldOutline" Height="25" Width="25"/>
+                            <md:PackIcon x:Name="UpArrow" Foreground="#d1d5db" Kind="ArrowUpBoldOutline" Height="25" Width="25"/>
                         </Border>
 
-                        <TextBlock x:Name="UpvoteTextBlock" Text="0" Foreground="#4B4b4b" FontSize="16" FontWeight="Bold" Margin="10,0,10,0" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="UpvoteTextBlock" Text="0" Foreground="#d1d5db" FontSize="16" FontWeight="Bold" Margin="10,0,10,0" VerticalAlignment="Center"/>
 
                         <Border MouseLeftButtonDown="DownArrow_Click" x:Name="DownArrowBorder" Background="Transparent" Cursor="Hand" MouseEnter="Border_Enter" MouseLeave="Border_Leave">
-                            <md:PackIcon x:Name="DownArrow" Foreground="#4B4b4b" Kind="ArrowDownBoldOutline" Height="25" Width="25"/>
+                            <md:PackIcon x:Name="DownArrow" Foreground="#d1d5db" Kind="ArrowDownBoldOutline" Height="25" Width="25"/>
                         </Border>
 
                     </StackPanel>
 
                     <!-- Comments Header -->
-                    <TextBlock Text="All Comments (0)" x:Name="CommentsAmount" Foreground="#4B4b4b" FontSize="16" FontWeight="Bold" Margin="0,0,0,10"/>
+                    <TextBlock Text="All Comments (0)" x:Name="CommentsAmount" Foreground="#d1d5db" FontSize="16" FontWeight="Bold" Margin="0,0,0,10"/>
 
                     <!-- Add Comment Section -->
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,10" Width="Auto">
@@ -1971,10 +1972,10 @@
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,10">
 
                         <!-- "Sort By" Text -->
-                        <TextBlock Text="Sort By" FontSize="14" Foreground="Black" VerticalAlignment="Center"/>
+                        <TextBlock Text="Sort By" FontSize="14" Foreground="#d1d5db" VerticalAlignment="Center"/>
 
                         <!-- Sort Button with Dropdown -->
-                        <Button x:Name="SortByButton" FontSize="14" Foreground="Black" Background="Transparent" BorderThickness="0" Cursor="Hand" Padding="5,2,5,2" Click="SortByButton_Click" VerticalAlignment="Center">
+                        <Button x:Name="SortByButton" FontSize="14" Foreground="#d1d5db" Background="Transparent" BorderThickness="0" Cursor="Hand" Padding="5,2,5,2" Click="SortByButton_Click" VerticalAlignment="Center">
 
                             <Button.Style>
                                 <Style TargetType="Button">
@@ -1989,7 +1990,7 @@
                                     </Setter>
                                     <Setter Property="Background" Value="Transparent"/>
                                     <Setter Property="BorderBrush" Value="Transparent"/>
-                                    <Setter Property="Foreground" Value="Black"/>
+                                    <Setter Property="Foreground" Value="#d1d5db"/>
                                     <Style.Triggers>
                                         <Trigger Property="IsMouseOver" Value="True">
                                             <Setter Property="Background" Value="Transparent"/>
@@ -2005,7 +2006,7 @@
 
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                 <TextBlock x:Name="SortByText" Text="Newest" FontSize="14" VerticalAlignment="Center"/>
-                                <md:PackIcon Kind="ChevronDown" Width="16" Height="16" Foreground="#4B4B4B" Margin="2,-1,0,0" VerticalAlignment="Center"/>
+                                <md:PackIcon Kind="ChevronDown" Width="16" Height="16" Foreground="#d1d5db" Margin="2,-1,0,0" VerticalAlignment="Center"/>
                             </StackPanel>
 
                             <!-- Attach ContextMenu Properly Inside Resources -->
@@ -2033,12 +2034,12 @@
 
                                         <!-- Comment Content -->
                                         <StackPanel Orientation="Vertical">
-                                            <TextBlock Text="{Binding User}" FontWeight="Bold"/>
-                                            <TextBlock Text="{Binding Content}" TextWrapping="Wrap" Width="140"/>
-                                            <TextBlock Text="{Binding CreatedDateTime}" FontSize="10" Foreground="Gray"/>
+                                            <TextBlock Text="{Binding User}" FontWeight="Bold" Foreground="#d1d5db"/>
+                                            <TextBlock Text="{Binding Content}" TextWrapping="Wrap" Width="140" Foreground="#d1d5db"/>
+                                            <TextBlock Text="{Binding CreatedDateTime}" FontSize="10" Foreground="#d1d5db"/>
                                         </StackPanel>
 
-                                        <TextBlock Text="{Binding Version}" FontWeight="Bold" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                        <TextBlock Text="{Binding Version}" Foreground="#d1d5db" FontWeight="Bold" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0,0,10,0"/>
 
                                     </StackPanel>
                                 </DataTemplate>

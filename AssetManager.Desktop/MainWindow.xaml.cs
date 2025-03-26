@@ -1479,7 +1479,8 @@ namespace AssetManager.Desktop
             {
                 Text = displayName,
                 FontSize = 14,
-                VerticalAlignment = VerticalAlignment.Center
+                VerticalAlignment = VerticalAlignment.Center,
+                Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d1d5db"))
             };
 
             stack.Children.Add(svgIcon);
@@ -1908,7 +1909,7 @@ namespace AssetManager.Desktop
             }
             else if (icon != null && icon.Kind != PackIconKind.ArrowTopBold && icon.Kind != PackIconKind.ArrowDownBold)
             {
-                icon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F25505"));
+                icon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#188f87"));
             }
         }
 
@@ -1919,7 +1920,7 @@ namespace AssetManager.Desktop
 
             if (icon != null && icon.Kind != PackIconKind.ArrowTopBold && icon.Kind != PackIconKind.ArrowDownBold)
             {
-                icon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+                icon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d1d5db"));
             }
         }
 
@@ -2165,8 +2166,8 @@ namespace AssetManager.Desktop
             {
                 MessageBox.Show($"❌ Error loading models: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
-            Grid_Border.Background = Brushes.Transparent;
-            List_Border.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
+            Grid_Icon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d1d5db"));
+            List_Icon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#98730c"));
         }
 
         private void PackIcon_Click(object sender, RoutedEventArgs e)
@@ -2470,8 +2471,8 @@ namespace AssetManager.Desktop
             }
 
             // Update UI styles to reflect active view mode
-            List_Border.Background = Brushes.Transparent;
-            Grid_Border.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
+            List_Icon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d1d5db"));
+            Grid_Icon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#98730c"));
         }
 
 
@@ -4850,7 +4851,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             var border = sender as Border;
             if (border != null && border.Child is TextBlock textBlock)
             {
-                textBlock.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F25505"));
+                textBlock.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#188f87"));
             }
         }
         
@@ -4859,7 +4860,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             var border = sender as Border;
             if (border != null && border.Child is TextBlock textBlock)
             {
-                textBlock.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+                textBlock.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d1d5db"));
             }
         }
         
@@ -5446,21 +5447,21 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 UpArrow.Kind = PackIconKind.ArrowTopBold;
                 UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#11d137"));
                 DownArrow.Kind = PackIconKind.ArrowDownBoldOutline;
-                DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+                DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d1d5db"));
             }
             else if (vote == -1)
             {
                 DownArrow.Kind = PackIconKind.ArrowDownBold;
                 DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d11111"));
                 UpArrow.Kind = PackIconKind.ArrowTopBoldOutline;
-                UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+                UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d1d5db"));
             }
             else
             {
                 UpArrow.Kind = PackIconKind.ArrowTopBoldOutline;
-                UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+                UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d1d5db"));
                 DownArrow.Kind = PackIconKind.ArrowDownBoldOutline;
-                DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+                DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d1d5db"));
             }
 
             ClearComments();
@@ -5549,7 +5550,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 if (DownArrow.Kind == PackIconKind.ArrowDownBold)
                 {
                     DownArrow.Kind = PackIconKind.ArrowDownBoldOutline;
-                    DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+                    DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d1d5db"));
                     await UpdateModelUpvoteCount(2, _selectedItemId); //remove downvote and add upvote
                 }
                 else
@@ -5576,7 +5577,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 if (UpArrow.Kind == PackIconKind.ArrowTopBold)
                 {
                     UpArrow.Kind = PackIconKind.ArrowTopBoldOutline;
-                    UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+                    UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d1d5db"));
                     await UpdateModelUpvoteCount(-2, _selectedItemId); //remove upvote and add downvote
                 }
                 else
