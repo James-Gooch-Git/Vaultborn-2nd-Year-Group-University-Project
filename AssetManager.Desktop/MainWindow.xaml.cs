@@ -210,7 +210,32 @@ namespace AssetManager.Desktop
                 Console.WriteLine($"❌ Initialization error: {ex.Message}");
             }
         }
-        
+
+        private void ResizeSidebarThumb_DragDelta(object sender, DragDeltaEventArgs e)
+        {
+            // Get current width of sidebar
+            double currentWidth = ResizeSidebar.ActualWidth;
+            double newWidth = currentWidth + e.HorizontalChange;
+
+            // Clamp width if needed
+            if (newWidth >= 0 && newWidth <= 400)
+            {
+                ResizeSidebar.Width = new GridLength(newWidth);
+            }
+        }
+
+        private void ResizeModelSidebar_DragDelta(object sender, DragDeltaEventArgs e)
+        {
+            double currentWidth = ModelDataSidebar.ActualWidth;
+            double newWidth = currentWidth - e.HorizontalChange; // Drag left to shrink
+
+            // Clamp to prevent weird behavior
+            if (newWidth >= 0 && newWidth <= 400)
+            {
+                ModelDataSidebar.Width = new GridLength(newWidth);
+            }
+        }
+
 
 
         private async Task TestDataManagement()
@@ -5156,6 +5181,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         private void CloseSidebar_Click(object sender, RoutedEventArgs e)
         {
             ModelDataSidebar.Width = new GridLength(0);
+            ModelDataSidebarThumb.Width = new GridLength(0);
 
 
             //ModelThumbnail.Visibility = Visibility.Collapsed;
@@ -5169,6 +5195,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             if (ModelDataSidebar.Width.Value != 250)
             {
                 ModelDataSidebar.Width = new GridLength(250);
+                ModelDataSidebarThumb.Width = new GridLength(5);
             }
 
             // ModelThumbnail.Visibility = Visibility.Visible;
@@ -5428,6 +5455,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             if (ModelDataSidebar.Width.Value != 250)
             {
                 ModelDataSidebar.Width = new GridLength(250);
+                ModelDataSidebarThumb.Width = new GridLength(5);
             }
 
             //ModelThumbnail.Visibility = Visibility.Visible;
@@ -5780,6 +5808,11 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             int i = 0;
             List<string> tags = new List<string>();
             ModelData result = await GetModelTags();
+            if (result == null)
+            {
+                return;
+            }
+
             foreach (var tag in result.Tags)
             {
                 tags.Add(tag);
@@ -6022,6 +6055,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         {
             try
             {
+                ResizeSidebarThumb.Width = new GridLength(0);
                 List<Dictionary<string, string>> allListedModels = await GetAllListedModels();
                 List<Dictionary<string, string>> namesAZ = allListedModels.OrderBy(x => x["Name"]).ToList();
                 MarketplaceDataGrid.ItemsSource = namesAZ;
@@ -6116,6 +6150,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             MarketplaceBorder.Visibility = Visibility.Collapsed;
             ProjectsBorder.Visibility = Visibility.Visible;
             LibraryBorder.Visibility = Visibility.Visible;
+            ResizeSidebarThumb.Width = new GridLength(5);
         }
 
         private async void MarketplaceModels_Click(object sender, RoutedEventArgs e)

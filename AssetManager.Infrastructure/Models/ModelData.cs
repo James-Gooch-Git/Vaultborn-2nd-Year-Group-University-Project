@@ -50,6 +50,9 @@ namespace AssetManager.Infrastructure.Models
         [BsonElement("thumbnail_base64")]
         public string Thumbnail_Base64 { get; set; }
 
+        [BsonElement("thumbnail_base64")]
+        public string Thumbnail_Base64 { get; set; }
+
         [BsonElement("_version")]
         public string Version { get; set; }
 
