@@ -319,17 +319,6 @@ namespace AssetManager.Desktop
                 
                 SelectedCardStatsPanel.Children.Add(statText);
             }
-            
-            // + Add stats
-            SelectedCardStatsPanel.Children.Add(new TextBlock
-            {
-                Style = (Style)FindResource("StatsTextStyle"),
-                Text = $"+ Add Stats for {name}",
-                FontSize = 10,
-                Margin = new Thickness(0, 2, 0, 2)
-            });
-
-            
         }
         
         private async void View3DButton_Click(object sender, RoutedEventArgs e)
@@ -477,6 +466,43 @@ namespace AssetManager.Desktop
             }
         }
 
+
+        private async void AddStats_Click(object sender, RoutedEventArgs e)
+        {
+            var statName = Microsoft.VisualBasic.Interaction.InputBox("Enter stat name:", "Add Stat", "");
+            var statValue = Microsoft.VisualBasic.Interaction.InputBox($"Enter value for {statName}:", "Add Stat", "");
+
+            // Ensure both name and value are provided
+            if (!string.IsNullOrWhiteSpace(statName) && !string.IsNullOrWhiteSpace(statValue))
+            {
+                // Create a new TextBlock to display the stat
+                TextBlock newStat = new TextBlock
+                {
+                    Text = $"{statName}: {statValue}",
+                    Foreground = Brushes.White,
+                    FontSize = 14,
+                    Margin = new Thickness(5, 2, 5, 2)
+                };
+
+                // Add the stat to the panel
+                SelectedCardStatsPanel.Children.Add(newStat);
+
+                // Upload stat to MongoDB
+                await UploadStatToMongo(statName, statValue);
+            }
+            
+        }
         
+        private async Task UploadStatToMongo(string statName, string statValue)
+        {
+            var statDocument = new BsonDocument
+            {
+                { "CardId", _selectedCardId },  // Ensure you have a way to track the selected card
+                { "StatName", statName },
+                { "StatValue", statValue }
+            };
+
+            await _decksCollection.InsertOneAsync(statDocument);
+        }
     }
 }

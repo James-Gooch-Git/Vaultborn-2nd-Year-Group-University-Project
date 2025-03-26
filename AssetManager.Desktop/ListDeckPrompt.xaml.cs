@@ -17,8 +17,6 @@ public partial class ListDeckPrompt : Window
         //var mongo = new MongoConnection();
         _decksCollection = deckCollection;
         InitializeComponent();
-        Console.WriteLine("Redirected to list deck");
-
     }
 
     private async void SubmitListing_Click(object sender, RoutedEventArgs e)
@@ -46,10 +44,13 @@ public partial class ListDeckPrompt : Window
             {
                 MessageBox.Show("Error: Deck listing failed. It may already be listed.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+            Close();
         }
         catch (Exception ex)
         {
             MessageBox.Show($"Error updating deck: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            Close();
+
         }
     }
 
