@@ -1897,13 +1897,13 @@
                     <!-- Upvotes Section -->
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,10">
 
-                        <Border MouseLeftButtonDown="UpArrow_Click" x:Name="UpArrowBorder" Background="Transparent" Cursor="Hand">
+                        <Border MouseLeftButtonDown="UpArrow_Click" x:Name="UpArrowBorder" Background="Transparent" Cursor="Hand" MouseEnter="Border_Enter" MouseLeave="Border_Leave">
                             <md:PackIcon x:Name="UpArrow" Foreground="#4B4b4b" Kind="ArrowUpBoldOutline" Height="25" Width="25"/>
                         </Border>
 
                         <TextBlock x:Name="UpvoteTextBlock" Text="0" Foreground="#4B4b4b" FontSize="16" FontWeight="Bold" Margin="10,0,10,0" VerticalAlignment="Center"/>
 
-                        <Border MouseLeftButtonDown="DownArrow_Click" x:Name="DownArrowBorder" Background="Transparent" Cursor="Hand">
+                        <Border MouseLeftButtonDown="DownArrow_Click" x:Name="DownArrowBorder" Background="Transparent" Cursor="Hand" MouseEnter="Border_Enter" MouseLeave="Border_Leave">
                             <md:PackIcon x:Name="DownArrow" Foreground="#4B4b4b" Kind="ArrowDownBoldOutline" Height="25" Width="25"/>
                         </Border>
 

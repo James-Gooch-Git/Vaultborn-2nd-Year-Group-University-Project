@@ -79,6 +79,7 @@ namespace AssetManager.Desktop
         private string _buyProjectId;
         private string _selectedVersionNum;
         private string _selectedMarketplace;
+        private readonly UpvoteService _upvoteService;
         //private List<Dictionary<string, string>> listedModels;
 
         private enum ViewType { Grid, List }
@@ -116,6 +117,7 @@ namespace AssetManager.Desktop
             InitializeBackgroundRefresh();
             InitialiseFolders();
             _payPalService = new PayPalService();
+            _upvoteService = new UpvoteService();
             Initialize();
         }
 
@@ -5486,10 +5488,10 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             ModelComments.Visibility = Visibility.Visible;
             ModelInfo.Visibility = Visibility.Collapsed;
 
-            int upvotes = await GetModelUpvoteCount(_selectedItemId);
+            int upvotes = await _upvoteService.GetModelUpvoteCount(_selectedItemId);
 
-            await SetUserModelVote(_selectedItemId, _userId);
-            int vote = await GetUserModelVote(_selectedItemId, _userId);
+            await _upvoteService.SetUserModelVote(_selectedItemId, _userId);
+            int vote = await _upvoteService.GetUserModelVote(_selectedItemId, _userId);
 
             if (vote == 1)
             {
@@ -5608,14 +5610,14 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 }
                 UpArrow.Kind = PackIconKind.ArrowTopBold;
                 UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#11d137"));
-                await UpdateUserModelVote(_selectedItemId, _userId, 1);
+                await _upvoteService.UpdateUserModelVote(_selectedItemId, _userId, 1);
             }
             else
             {
                 UpArrow.Kind = PackIconKind.ArrowTopBoldOutline;
                 UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#11d137"));
                 await UpdateModelUpvoteCount(-1, _selectedItemId); //remove upvote
-                await UpdateUserModelVote(_selectedItemId, _userId, 0);
+                await _upvoteService.UpdateUserModelVote(_selectedItemId, _userId, 0);
             }
         }
 
@@ -5635,26 +5637,15 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 }
                 DownArrow.Kind = PackIconKind.ArrowDownBold;
                 DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d11111"));
-                await UpdateUserModelVote(_selectedItemId, _userId, -1);
+                await _upvoteService.UpdateUserModelVote(_selectedItemId, _userId, -1);
             }
             else
             {
                 DownArrow.Kind = PackIconKind.ArrowDownBoldOutline;
                 DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d11111"));
                 await UpdateModelUpvoteCount(1, _selectedItemId); //remove downvote
-                await UpdateUserModelVote(_selectedItemId, _userId, 0);
+                await _upvoteService.UpdateUserModelVote(_selectedItemId, _userId, 0);
             }
-        }
-        
-        private async Task<int> GetModelUpvoteCount(string id)
-        {
-            MongoConnection database = new MongoConnection();
-            var userData = await database.ModelData.Find(x => x.Id == id).FirstOrDefaultAsync();
-            if (userData == null)
-            {
-                return 0;
-            }
-            return userData.UpvoteCount;
         }
 
         private async Task UpdateModelUpvoteCount(int num, string id)
@@ -5663,48 +5654,8 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             var filter = Builders<ModelData>.Filter.Eq("Id", id);
             var update = Builders<ModelData>.Update.Inc("UpvoteCount", num);
             await database.ModelData.UpdateOneAsync(filter, update);
-            int upvoteCount = await GetModelUpvoteCount(id);
+            int upvoteCount = await _upvoteService.GetModelUpvoteCount(id);
             UpvoteTextBlock.Text = upvoteCount.ToString();
-        }
-
-        private async Task SetUserModelVote(string modelId, string userId)
-        {
-            MongoConnection database = new MongoConnection();
-            var findVote = await database.Upvotes.Find(x => x.ModelId == modelId && x.UserId == userId).FirstOrDefaultAsync();
-
-            if (findVote == null)
-            {
-                Upvotes upvote = new Upvotes()
-                {
-                    Id = new ObjectId(), ModelId = modelId, UserId = userId, Vote = 0
-                };
-                await database.Upvotes.InsertOneAsync(upvote);
-            }
-            
-        }
-
-        private async Task UpdateUserModelVote(string modelId, string userId, int vote)
-        {
-            MongoConnection database = new MongoConnection();
-            var filter = Builders<Upvotes>.Filter.And(
-                Builders<Upvotes>.Filter.Eq("ModelId", modelId),
-                            Builders<Upvotes>.Filter.Eq("UserId", userId));
-            var update = Builders<Upvotes>.Update.Set("Vote", vote);
-            await database.Upvotes.UpdateOneAsync(filter, update);
-        }
-        
-        private async Task<int> GetUserModelVote(string modelId, string userId)
-        {
-            MongoConnection database = new MongoConnection();
-            var result = await database.Upvotes.Find(x => x.ModelId == modelId && x.UserId == userId).FirstOrDefaultAsync();
-            if (result == null)
-            {
-                return 0;
-            }
-            else
-            {
-                return result.Vote;
-            }
         }
 
         //Model Visibility
@@ -5877,29 +5828,6 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             await database.ModelData.FindOneAndUpdateAsync(filter, update);
             await DisplayTags();
         }
-
-        /*private async Task InitialiseTagsListBox()
-        {
-            try
-            {
-                ModelData result = await GetModelTags();
-                foreach (string tag in result.Tags)
-                {
-                    foreach (CheckBox checkBox in TagsListBox.Items)
-                    {
-                        if (checkBox.Content.ToString() == tag)
-                        {
-                            checkBox.IsChecked = true;
-                        }
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                MessageBox.Show($"Error checking boxes: {e.Message}");
-                throw;
-            }
-        }*/
         
         private async Task DisplayTags()
         {
@@ -5967,15 +5895,6 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             var result = await database.ModelData.Find(x => x.Id == _selectedItemId).FirstOrDefaultAsync();
             return result;
         }
-
-        /*private void UncheckTags()
-        {
-            foreach (CheckBox checkBox in TagsListBox.Items)
-            {
-                checkBox.IsChecked = false;
-            }
-        }*/
-
         
         //Comments feature
         private async void BtnAddComment_Click(object sender, RoutedEventArgs e)
@@ -6143,43 +6062,6 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 ListComments.Items.Add(new CommentItem { User = name, Content = comment.Content, CreatedDateTime = comment.CreatedDateTime, Version = version });
             }
         }
-
-
-        //private void SortByComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        //{
-        //    ComboBox comboBox = sender as ComboBox;
-        //    var selectedItem = comboBox.SelectedItem as ComboBoxItem;
-        //    string sortOption = selectedItem.Content.ToString();
-        //    ClearComments();
-        //    SortComments(sortOption, _selectedItemId);
-        //}
-
-        //private async void SortComments(string i, string assetId)
-        //{
-        //    MongoConnection database = new MongoConnection();
-        //    var newest = Builders<Comment>.Sort.Descending(x => x.CreatedDateTime);
-        //    var oldest = Builders<Comment>.Sort.Ascending(x => x.CreatedDateTime);
-
-        //    switch (i)
-        //    {
-        //        case "Newest":
-        //            List<Comment> newestComments = await database.Comments.Find(x => x.AssetId == assetId).Sort(newest).ToListAsync();
-        //            foreach (Comment comment in newestComments)
-        //            {
-        //                string name = await GetUserName(comment.UserId);
-        //                ListComments.Items.Add(new CommentItem { User = name, Content = comment.Content, CreatedDateTime = comment.CreatedDateTime });
-        //            }
-        //            break;
-        //        case "Oldest":
-        //            List<Comment> oldestComments = await database.Comments.Find(x => x.AssetId == assetId).Sort(oldest).ToListAsync();
-        //            foreach (Comment comment in oldestComments)
-        //            {
-        //                string name = await GetUserName(comment.UserId);
-        //                ListComments.Items.Add(new CommentItem { User = name, Content = comment.Content, CreatedDateTime = comment.CreatedDateTime });
-        //            }
-        //            break;
-        //    }
-        //}
 
         private class CommentItem
         {
@@ -6597,7 +6479,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     List<Dictionary<string, string>> upvotes = new List<Dictionary<string, string>>();
                     foreach (var item in models)
                     {
-                        int upvoteAmount = await GetModelUpvoteCount(item["Id"]);
+                        int upvoteAmount = await _upvoteService.GetModelUpvoteCount(item["Id"]);
                         item.Add("Upvotes", upvoteAmount.ToString());
                         upvotes.Add(item);
                     }
