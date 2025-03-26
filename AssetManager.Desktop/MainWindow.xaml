@@ -489,20 +489,6 @@
                     <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                         <Border Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" 
                         HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" 
-                        Cursor="Hand" Margin="0,6.5,2,0">
-                            <md:PackIcon Cursor="Hand" HorizontalAlignment="Right" FontWeight="Light"  
-                                 Kind="Magnify" Style="{StaticResource IconHover}" Height="15" Width="15" Foreground="#d1d5db"/>
-                        </Border>
-
-                        <Border Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" 
-                        HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" 
-                        Cursor="Hand" Margin="0,6,2,0">
-                            <md:PackIcon Cursor="Hand" HorizontalAlignment="Right" FontWeight="Light" 
-                                 Kind="CogOutline" Style="{StaticResource IconHover}" Height="15" Width="15" Foreground="#d1d5db"/>
-                        </Border>
-
-                        <Border Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" 
-                        HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" 
                         Cursor="Hand" Margin="0,5,2,0">
                             <md:PackIcon Cursor="Hand" HorizontalAlignment="Right" FontWeight="Light" 
                                  Kind="Plus" Style="{StaticResource IconHover}" Height="16" Width="16" Foreground="#d1d5db"/>
