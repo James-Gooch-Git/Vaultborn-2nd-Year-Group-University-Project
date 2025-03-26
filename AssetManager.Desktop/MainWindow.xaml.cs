@@ -192,7 +192,6 @@ namespace AssetManager.Desktop
                 Console.WriteLine($"Hub ID: {hubID}, Name: {hubName}, Type: {hubType}");
 
                 LoadProjectsForHub(hubID);
-                await TestDataManagement();
                 await RefreshHubs();
                 await DisplayNotifications();
                 await AddNotifsToCentre();
@@ -1586,99 +1585,138 @@ namespace AssetManager.Desktop
 
         private async Task LoadSubfoldersAsync(TreeViewItem parentFolder, string projectId, string folderId)
         {
-            var subItems = await DataManagement.GetProjectItems(projectId, folderId);
-
-            if (subItems == null || !subItems.Any())
+            try
             {
-                return;
+                if (parentFolder == null || string.IsNullOrEmpty(projectId) || string.IsNullOrEmpty(folderId))
+                {
+                    Debug.WriteLine("⚠️ LoadSubfoldersAsync was called with null or empty values.");
+                    return;
+                }
+
+                var subItems = await DataManagement.GetProjectItems(projectId, folderId);
+
+                // Clear existing items, if any
+                if (parentFolder?.Items != null)
+                {
+                    parentFolder.Items.Clear();
+                }
+                else
+                {
+                    Debug.WriteLine("⚠️ Parent folder is null or has no Items collection.");
+                    return;
+                }
+
+                if (subItems == null || subItems.Count == 0) // ✅ FIXED: Use Count instead of .Any()
+                {
+                    Debug.WriteLine($"⚠️ No subitems found for folderId: {folderId}");
+
+                    // **Ensure empty folders keep a placeholder**
+                    parentFolder.Items.Add(new TreeViewItem { Header = " (empty)", IsEnabled = false });
+                    return;
+                }
+
+                foreach (var (subItemId, subItemName, isSubFolder) in subItems)
+                {
+                    if (string.IsNullOrEmpty(subItemId) || string.IsNullOrEmpty(subItemName))
+                    {
+                        Debug.WriteLine("⚠️ Skipping invalid subItem with missing ID or name.");
+                        continue;
+                    }
+
+                    bool isPdf = !isSubFolder && Path.GetExtension(subItemName)?.ToLowerInvariant() == ".pdf";
+
+                    TreeViewItem subItem = new TreeViewItem
+                    {
+                        Header = isSubFolder ? $"📁 {subItemName}" : $"📄 {subItemName}",
+                        Tag = (projectId, subItemId, isSubFolder, isPdf),
+                        ContextMenu = CreateContextMenu(projectId, subItemId, isSubFolder)
+                    };
+
+                    if (isSubFolder)
+                    {
+                        // **Add a dummy item to ensure the chevron remains**
+                        subItem.Items.Add(new TreeViewItem { Header = "Loading...", IsEnabled = false });
+
+                        subItem.Expanded += async (s, e) =>
+                        {
+                            if (subItem.Items.Count == 1 && subItem.Items[0] is TreeViewItem item && item.Header.ToString() == "Loading...")
+                            {
+                                subItem.Items.Clear();
+                                await LoadSubfoldersAsync(subItem, projectId, subItemId);
+
+                                // **Ensure an empty folder still has a placeholder**
+                                if (subItem.Items.Count == 0) // ✅ FIXED: Use Count instead of .Any()
+                                {
+                                    subItem.Items.Add(new TreeViewItem { Header = " (empty)", IsEnabled = false });
+                                }
+                            }
+                        };
+                    }
+
+                    parentFolder.Items.Add(subItem);
+                }
             }
-
-            foreach (var (subItemId, subItemName, isSubFolder) in subItems)
+            catch (Exception ex)
             {
-                bool isPdf = false;
-                if (!isSubFolder)
-                {
-                    string extension = Path.GetExtension(subItemName)?.ToLowerInvariant();
-                    isPdf = extension == ".pdf";
-                }
-
-                TreeViewItem subItem = new TreeViewItem
-                {
-                    Header = isSubFolder ? $"📁 {subItemName}" : $"📄 {subItemName}",
-                    Tag = (projectId, subItemId, isSubFolder, isPdf),
-                    ContextMenu = CreateContextMenu(projectId, subItemId, isSubFolder)
-                };
-
-                if (isSubFolder)
-                {
-                    await LoadSubfoldersAsync(subItem, projectId, subItemId);
-                }
-
-                parentFolder.Items.Add(subItem);
+                Debug.WriteLine($"❌ Error in LoadSubfoldersAsync: {ex.Message}\n{ex.StackTrace}");
             }
         }
+
+
+
+
+
+
 
 
         private ContextMenu CreateContextMenu(string projectId, string itemId, bool isFolder)
         {
             ContextMenu menu = new ContextMenu();
-
-            // Only show "Create Folder" for items under the top-level project, excluding subfolders
-            //if (!isFolder)
             {
-                MenuItem createFolderItem = new MenuItem { Header = "📁 Create New Folder" };
-                createFolderItem.Click += async (s, e) => await CreateNewFolder(projectId);
-                menu.Items.Add(createFolderItem);
+                if (isFolder)
+                {
+                    MenuItem createFolderItem = new MenuItem { Header = "📁 Create New Folder" };
+                    createFolderItem.Click += async (s, e) => await CreateNewFolder(projectId, itemId); // Use selected folder
+                    menu.Items.Add(createFolderItem);
+                }
             }
-
             return menu;
         }
 
-        private async Task CreateNewFolder(string projectId)
+
+        private async Task CreateNewFolder(string projectId, string parentFolderId)
         {
             string folderName = PromptForFolderName();
             if (string.IsNullOrWhiteSpace(folderName)) return;
 
-            // Disable menu temporarily
             ContextMenu currentMenu = ContextMenuService.GetContextMenu(ProjectTreeView);
-            if (currentMenu != null)
-            {
-                currentMenu.IsEnabled = false;
-            }
-
-            // Get the top-level folder for the project
-            var topFolder = await DataManagement.GetTopLevelFolder(projectId, projectId);
-            var parentFolderId = topFolder.Item1;
+            if (currentMenu != null) currentMenu.IsEnabled = false;
 
             bool success = await DataManagement.CreateNewFolder(projectId, parentFolderId, folderName);
 
-            if (currentMenu != null)
-            {
-                currentMenu.IsEnabled = true;
-            }
+            if (currentMenu != null) currentMenu.IsEnabled = true;
 
             if (success)
             {
                 MessageBox.Show($"✅ Folder '{folderName}' created successfully!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
-
-                // Add the new folder to the top-level folder
                 TreeViewItem parentItem = FindTreeViewItem(ProjectTreeView.Items, parentFolderId);
                 if (parentItem != null)
                 {
-                    // Only add the new folder, without loading subfolders from the parent
                     await AddNewFolderToTreeView(parentItem, projectId, parentFolderId, folderName);
                 }
             }
         }
+
 
         private async Task AddNewFolderToTreeView(TreeViewItem parentItem, string projectId, string parentFolderId, string folderName)
         {
             TreeViewItem newFolderItem = new TreeViewItem
             {
                 Header = $"📁 {folderName}",
-                Tag = (projectId, parentFolderId, true),
-                ContextMenu = CreateContextMenu(projectId, parentFolderId, true) // Add context menu for folder operations
+                Tag = (projectId, parentFolderId, true, false), // Correct tuple structure
+                ContextMenu = CreateContextMenu(projectId, parentFolderId, true)
             };
+
 
             // Add the new folder to the parent folder’s items
             parentItem.Items.Add(newFolderItem);
