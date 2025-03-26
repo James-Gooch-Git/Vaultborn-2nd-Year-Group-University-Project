@@ -968,7 +968,7 @@ namespace AssetManager.Desktop
                                         { "LastModified", formattedDate }
                                     });
 
-                                    await GetModelData(modelId, projectId, projectName);
+                                    await GetModelData(modelId, projectId, projectName, hubID);
                                     await InsertModelVersionDB(modelId, projectId);
                                 }
                             }
