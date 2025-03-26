@@ -11,6 +11,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using AssetManager.Infrastructure.Data;
 using AssetManager.Infrastructure.DOC;
+using AssetManager.Infrastructure.Services;
 using MongoDB.Bson;
 using MongoDB.Driver;
 
@@ -140,7 +141,7 @@ namespace AssetManager.Desktop
         {
             if (imageUrl.StartsWith("https://developer.api.autodesk.com"))
             {
-                return await LoadImageFromAPI(imageUrl, MainWindow._accessToken);
+                return await LoadImageFromAPI(imageUrl, TokenManager.GetToken());
             }
 
             BitmapImage bitmap = new BitmapImage();
@@ -245,7 +246,7 @@ namespace AssetManager.Desktop
             // Add other card properties as needed
         }
         
-        private void View3DButton_Click(object sender, RoutedEventArgs e)
+        private async void View3DButton_Click(object sender, RoutedEventArgs e)
         {
             if (_selectedCard  == null)
             {
@@ -267,11 +268,20 @@ namespace AssetManager.Desktop
                 return;
             }
             
-            string modelUrn = selectedCardData["model_id"].ToString();
+            string selectedItemId = _selectedCard["item_id"].ToString();
 
-            // Open the Forge Viewer Window with the model URN
-            ForgeViewerWindow viewerWindow = new ForgeViewerWindow(modelUrn);
-            viewerWindow.Show();
+            // Get reference to MainWindow
+            if (Application.Current.MainWindow is MainWindow mainWindow)
+            {
+                await mainWindow.ViewModelInEmbeddedViewerAsync(selectedItemId);
+            }
+            else
+            {
+                MessageBox.Show("Main window not accessible.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            
+            string modelUrn = selectedCardData["model_id"].ToString();
+            
         }
 
         private void AddCardButton_Click(object sender, RoutedEventArgs e)

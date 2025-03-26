@@ -53,7 +53,7 @@ namespace AssetManager.Desktop
         private string _selectedProjectName;
         private string _selectedItemId;
         private string _selectedItemName;
-        private string selectedHubID;
+        public static string selectedHubID;
         private string _folderId;
         private static string hubID;
         private string _objectId;
@@ -62,7 +62,7 @@ namespace AssetManager.Desktop
         private readonly ModelUpload _uploadService;
         private readonly FileDownloadService _filedwnService;
         private List<Dictionary<string, string>> Models;
-        private static string _userId = Environment.GetEnvironmentVariable("userId", EnvironmentVariableTarget.User);
+        public static string _userId = Environment.GetEnvironmentVariable("userId", EnvironmentVariableTarget.User);
         private static readonly HttpClient client = new HttpClient();
         private string selectedHubName = "Loading..."; // Default value before hubs load
         private bool isModelLoaded = false;
@@ -7032,7 +7032,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
         private void OpenDeckView_Click(object sender, RoutedEventArgs e)
         {
-            DeckView dv = new DeckView();
+            DeckView dv = new DeckView("67e2f7a49020b20098f0e97a");
             dv.Show();
             
         }

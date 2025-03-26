@@ -82,15 +82,14 @@
             
             <Grid.Background>  
                 <ImageBrush ImageSource="pack://application:,,,/Assets/deckBG3.png"></ImageBrush>  
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="1*" /> <!-- Deck Select -->
-                    <ColumnDefinition Width="5*" /> <!-- Card Image -->
-                    <ColumnDefinition Width="3*" /> <!-- Description -->
-                </Grid.ColumnDefinitions>
             </Grid.Background> 
             
             <!-- ElementsLayout -->
-
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1*" /> <!-- Deck Select -->
+                <ColumnDefinition Width="5*" /> <!-- Card Image -->
+                <ColumnDefinition Width="3*" /> <!-- Description -->
+            </Grid.ColumnDefinitions>
             
             <!-- "Select Deck" Button -->
             <StackPanel Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="10">
@@ -109,7 +108,7 @@
                         <Style TargetType="Button">
                             <Setter Property="BorderThickness" Value="2"/>
                             <Setter Property="BorderBrush" Value="#C0A062"/>
-                            <Setter Property="CornerRadius" Value="10"/>
+                            <!-- <Setter Property="CornerRadius" Value="10"/> -->
                             <Setter Property="Padding" Value="10"/>
                             <Setter Property="Effect">
                                 <Setter.Value>
