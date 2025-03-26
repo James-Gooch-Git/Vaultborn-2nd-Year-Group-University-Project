@@ -127,6 +127,8 @@
       <Content Include="Assets\deckBG3.png">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </Content>
+      <None Remove="Assets\mainBackground.png" />
+      <Resource Include="Assets\mainBackground.png" />
     </ItemGroup>
 
     <ItemGroup>
