@@ -74,253 +74,259 @@
     </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="3*" /> <!-- Enlarged Card Display -->
+            <RowDefinition Height="4*" /> <!-- Enlarged Card Display -->
             <RowDefinition Height="1.2*" /> <!-- Card Selection Bar -->
         </Grid.RowDefinitions>
-    
+
         <Grid Row="0">
-            
-            <Grid.Background>  
-                <ImageBrush ImageSource="pack://application:,,,/Assets/deckBG3.png"></ImageBrush>  
-            </Grid.Background> 
-            
+
+            <Grid.Background>
+                <ImageBrush ImageSource="pack://application:,,,/Assets/deckBG3.png"></ImageBrush>
+            </Grid.Background>
+
             <!-- ElementsLayout -->
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="1*" /> <!-- Deck Select -->
-                <ColumnDefinition Width="5*" /> <!-- Card Image -->
-                <ColumnDefinition Width="3*" /> <!-- Description -->
+                <ColumnDefinition Width="1*" />
+                <!-- Deck Select -->
+                <ColumnDefinition Width="2*" />
+                <!-- Card Image -->
+                <ColumnDefinition Width="1*" />
+                <!-- Description -->
             </Grid.ColumnDefinitions>
-            
-            <!-- "Select Deck" Button -->
-            <StackPanel Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="10">
-                <Button x:Name="SelectDeckButton"
-                        Content="Select Deck"
-                        Width="140"
-                        Height="50"
-                        Background="#1E1E30"
-                        Foreground="#FFD700"
-                        FontSize="16"
-                        FontFamily="Gabriola"
-                        FontWeight="Bold"
-                        Cursor="Hand"
-                        Click="SelectDeckButton_Click">
-                    <Button.Style>
-                        <Style TargetType="Button">
-                            <Setter Property="BorderThickness" Value="2"/>
-                            <Setter Property="BorderBrush" Value="#C0A062"/>
-                            <!-- <Setter Property="CornerRadius" Value="10"/> -->
-                            <Setter Property="Padding" Value="10"/>
-                            <Setter Property="Effect">
-                                <Setter.Value>
-                                    <DropShadowEffect ShadowDepth="2" BlurRadius="5" Opacity="0.7" Color="Black"/>
-                                </Setter.Value>
-                            </Setter>
-                            <Style.Triggers>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter Property="Background" Value="#FFD700"/>
-                                    <Setter Property="Foreground" Value="#1E1E30"/>
-                                    <Setter Property="BorderBrush" Value="#E6D9B2"/>
-                                    <Setter Property="Effect">
-                                        <Setter.Value>
-                                            <DropShadowEffect ShadowDepth="5" BlurRadius="15" Opacity="0.8" Color="#FFD700"/>
-                                        </Setter.Value>
-                                    </Setter>
-                                </Trigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Button.Style>
-                </Button>
-            </StackPanel>
+
+            <Grid Grid.Row="0" Grid.Column="0">
+                <!-- "Select Deck" Button -->
+                <StackPanel Grid.Column="0" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="60,100,0,0">
+                    <Button x:Name="SelectDeckButton"
+                            Content="Select Deck"
+                            Width="140"
+                            Height="50"
+                            Background="#1E1E30"
+                            Foreground="#FFD700"
+                            FontSize="16"
+                            FontFamily="Gabriola"
+                            FontWeight="Bold"
+                            Cursor="Hand"
+                            Click="SelectDeckButton_Click">
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Setter Property="BorderThickness" Value="2"/>
+                                <Setter Property="BorderBrush" Value="#C0A062"/>
+                                <!-- <Setter Property="CornerRadius" Value="10"/> -->
+                                <Setter Property="Padding" Value="10"/>
+                                <Setter Property="Effect">
+                                    <Setter.Value>
+                                        <DropShadowEffect ShadowDepth="2" BlurRadius="5" Opacity="0.7" Color="Black"/>
+                                    </Setter.Value>
+                                </Setter>
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="#FFD700"/>
+                                        <Setter Property="Foreground" Value="#1E1E30"/>
+                                        <Setter Property="BorderBrush" Value="#E6D9B2"/>
+                                        <Setter Property="Effect">
+                                            <Setter.Value>
+                                                <DropShadowEffect ShadowDepth="5" BlurRadius="15" Opacity="0.8" Color="#FFD700"/>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                </StackPanel>
+            </Grid>
 
             <!-- Selected Card Display -->
-            
-                <!-- Enlarged Selected Card -->
-                <Grid Column="1" Margin="30">
-                    <!-- Animated Glowing Runes (simulated with ellipses) -->
-                    <Canvas HorizontalAlignment="Center" VerticalAlignment="Center" Width="300" Height="300" Panel.ZIndex="1">
-                        <Ellipse Width="270" Height="270" Canvas.Left="15" Canvas.Top="15" Stroke="#9370DB" StrokeThickness="1" Opacity="0.6">
-                            <Ellipse.Triggers>
-                                <EventTrigger RoutedEvent="Ellipse.Loaded">
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <DoubleAnimation
-                                                Storyboard.TargetProperty="Opacity"
-                                                From="0.2" To="0.8" Duration="0:0:2"
-                                                AutoReverse="True" RepeatBehavior="Forever"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </EventTrigger>
-                            </Ellipse.Triggers>
-                        </Ellipse>
-                        <Ellipse Width="250" Height="250" Canvas.Left="25" Canvas.Top="25" Stroke="#FFD700" StrokeThickness="1" StrokeDashArray="5,5">
-                            <Ellipse.Triggers>
-                                <EventTrigger RoutedEvent="Ellipse.Loaded">
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <DoubleAnimation
-                                                Storyboard.TargetProperty="Opacity"
-                                                From="0.8" To="0.2" Duration="0:0:3"
-                                                AutoReverse="True" RepeatBehavior="Forever"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </EventTrigger>
-                            </Ellipse.Triggers>
-                        </Ellipse>
-                    </Canvas>
-                
-                    <!-- Button Panel Above Enlarged Image -->
-                    <StackPanel Orientation="Horizontal"
-                                HorizontalAlignment="Center"
-                                VerticalAlignment="Bottom"
-                                Margin="20,0,0,0"
-                                Panel.ZIndex="5">
-                
-                        <!-- View in 3D Button -->
-                        <Border Background="#333333" 
-                                Width="36" Height="36" 
-                                CornerRadius="10" 
-                                Margin="0,0,10,0">
-                            <Button Background="Transparent"
-                                    ToolTip="View in 3D"
-                                    BorderThickness="0"
-                                    Click="View3DButton_Click">
-                            </Button>
-                        </Border>
 
-                        <!-- Expand Fullscreen Button -->
-                        <Border Background="#333333" 
-                                Width="36" Height="36" 
-                                CornerRadius="10"
-                                Margin="0,0,10,0">
-                            <Button Background="Transparent"
-                                    ToolTip="View Fullscreen"
-                                    BorderThickness="0"
-                                    Click="ExpandCard_Click">
-                            </Button>
-                        </Border>
-                        
-                        <!-- Purchase button -->
-                        <Border Background="#333333" 
-                                Width="36" Height="36" 
-                                CornerRadius="10" 
-                                Margin="0,0,10,0">
-                            <Button Background="Transparent"
-                                    ToolTip="View in 3D"
-                                    BorderThickness="0"
-                                    Click="PurchaseCard_Click">
-                            </Button>
-                        </Border>
-                        
-                        <!-- Draw random Button -->
-                        <Border Background="#333333" 
-                                Width="36" Height="36" 
-                                CornerRadius="10" 
-                                Margin="0,0,10,0">
-                            <Button Background="Transparent"
-                                    ToolTip="View in 3D"
-                                    BorderThickness="0"
-                                    Click="DrawRandomCard_Click">
-                            </Button>
-                        </Border>
-                        
-                        <!-- List deck on marketplace -->
-                        <Border Background="#333333" 
-                                Width="36" Height="36" 
-                                CornerRadius="10" 
-                                Margin="0,0,10,0"
-                                Visibility="Collapsed"
-                                x:Name="ListButton">
-                            <Button Background="Transparent"
-                                    ToolTip="View in 3D"
-                                    BorderThickness="0"
-                                    Click="ListOnMarketplace_Click">
-                                List
-                            </Button>
-                        </Border>
-                    </StackPanel>
-                    
+            <!-- Enlarged Selected Card -->
+            <Grid Column="1">
+                <!-- Animated Glowing Runes (simulated with ellipses) -->
+                <Canvas HorizontalAlignment="Center" VerticalAlignment="Center" Width="300" Height="300" Panel.ZIndex="1">
+                    <Ellipse Width="270" Height="270" Canvas.Left="15" Canvas.Top="15" Stroke="#9370DB" StrokeThickness="1" Opacity="0.6">
+                        <Ellipse.Triggers>
+                            <EventTrigger RoutedEvent="Ellipse.Loaded">
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation
+                                            Storyboard.TargetProperty="Opacity"
+                                            From="0.2" To="0.8" Duration="0:0:2"
+                                            AutoReverse="True" RepeatBehavior="Forever"/>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </EventTrigger>
+                        </Ellipse.Triggers>
+                    </Ellipse>
+                    <Ellipse Width="250" Height="250" Canvas.Left="25" Canvas.Top="25" Stroke="#FFD700" StrokeThickness="1" StrokeDashArray="5,5">
+                        <Ellipse.Triggers>
+                            <EventTrigger RoutedEvent="Ellipse.Loaded">
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation
+                                            Storyboard.TargetProperty="Opacity"
+                                            From="0.8" To="0.2" Duration="0:0:3"
+                                            AutoReverse="True" RepeatBehavior="Forever"/>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </EventTrigger>
+                        </Ellipse.Triggers>
+                    </Ellipse>
+                </Canvas>
+
+                <!-- Button Panel Above Enlarged Image -->
+                <StackPanel Orientation="Horizontal"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Bottom"
+                            Margin="16,0,0,50"
+                            Panel.ZIndex="5">
+
+                    <!-- View in 3D Button -->
+                    <Border Background="#333333" 
+                            Width="36" Height="36" 
+                            CornerRadius="10" 
+                            Margin="0,0,10,0">
+                        <Button Background="Transparent"
+                                ToolTip="View in 3D"
+                                BorderThickness="0"
+                                Click="View3DButton_Click">
+                        </Button>
+                    </Border>
+
+                    <!-- Expand Fullscreen Button -->
+                    <Border Background="#333333" 
+                            Width="36" Height="36" 
+                            CornerRadius="10"
+                            Margin="0,0,10,0">
+                        <Button Background="Transparent"
+                                ToolTip="View Fullscreen"
+                                BorderThickness="0"
+                                Click="ExpandCard_Click">
+                        </Button>
+                    </Border>
+
+                    <!-- Purchase button -->
+                    <Border Background="#333333" 
+                            Width="36" Height="36" 
+                            CornerRadius="10" 
+                            Margin="0,0,10,0">
+                        <Button Background="Transparent"
+                                ToolTip="View in 3D"
+                                BorderThickness="0"
+                                Click="PurchaseCard_Click">
+                        </Button>
+                    </Border>
+
+                    <!-- Draw random Button -->
+                    <Border Background="#333333" 
+                            Width="36" Height="36" 
+                            CornerRadius="10" 
+                            Margin="0,0,10,0">
+                        <Button Background="Transparent"
+                                ToolTip="View in 3D"
+                                BorderThickness="0"
+                                Click="DrawRandomCard_Click">
+                        </Button>
+                    </Border>
+
+                    <!-- List deck on marketplace -->
+                    <Border Background="#333333" 
+                            Width="36" Height="36" 
+                            CornerRadius="10" 
+                            Margin="0,0,10,0"
+                            Visibility="Collapsed"
+                            x:Name="ListButton">
+                        <Button Background="Transparent"
+                                ToolTip="View in 3D"
+                                BorderThickness="0"
+                                Click="ListOnMarketplace_Click">
+                            List
+                        </Button>
+                    </Border>
+                </StackPanel>
+
                 <!-- Card Image -->
                 <!-- Enlarged Fantasy Card -->
-                <Grid Column="1">
-                    <ContentControl Style="{StaticResource FantasyCardStyle}"
-                                    Width="500" Height="520"
-                                    Tag="{Binding SelectedCardName}"
-                                    HorizontalAlignment="Center"
-                                    VerticalAlignment="Center"
-                                    Panel.ZIndex="2">
-                        <Image x:Name = "SelectedCardImage"
-                               Stretch="UniformToFill"
-                               RenderOptions.BitmapScalingMode="HighQuality"/>
-                    </ContentControl>
-                </Grid>
-
-                <!-- Card Details -->
-                <Grid Column="2">
-                    <Border Grid.Column="2" Margin="60" Panel.ZIndex="2" 
-                            Background="#1A000000" 
-                            BorderBrush="#FFD700" 
-                            BorderThickness="0" 
-                            CornerRadius="10">
-                        <Border.Effect>
-                            <DropShadowEffect Color="#000000" ShadowDepth="5" BlurRadius="10" Opacity="0.7"/>
-                        </Border.Effect>
-                        <StackPanel Margin="15">
-                            <!-- Scroll Decoration Top -->
-                            <Path Data="M0,0 C20,-5 40,5 60,0 C80,-5 100,5 120,0" 
-                                  Stroke="#FFD700" 
-                                  StrokeThickness="2" 
-                                  Margin="0,0,0,10"
-                                  HorizontalAlignment="Center" 
-                                  Width="120"
-                                  Height="1"/>
-                            
-                            <!-- Card Name -->
-                            <TextBlock x:Name="SelectedCardName"
-                                       FontSize="28"
-                                       Text="Select a Card"
-                                       Style="{StaticResource HeaderTextStyle}"
-                                       TextAlignment="Center"/>
-                            
-                            <!-- Divider -->
-                            <Border Height="0.4" 
-                                    Background="#FFD700" 
-                                    BorderThickness="0.1"
-                                    Margin="40,0, 40, 20" 
-                                    Opacity="0.7"/>
-                            
-                            <!-- Card Description -->
-                            <TextBlock x:Name="SelectedCardDescription"
-                                       FontSize="16"
-                                       Text="Ancient knowledge awaits your selection..."
-                                       Style="{StaticResource DescriptionTextStyle}"
-                                       Margin="0,10,0,15"/>
-                            
-                            <!-- Card Stats -->
-                            <Border Background="#1A000000" 
-                                    BorderBrush="#FFD700" 
-                                    BorderThickness="0.1" 
-                                    CornerRadius="5" 
-                                    Padding="10">
-                                <StackPanel x:Name="SelectedCardStatsPanel">
-                                    <!-- Stats will be added dynamically here -->
-                                </StackPanel>
-                            </Border>
-                            
-                            <!-- Scroll Decoration Bottom -->
-                            <Path Data="M0,0 C20,5 40,-5 60,0 C80,5 100,-5 120,0" 
-                                  Stroke="#FFD700" 
-                                  StrokeThickness="2" 
-                                  Margin="0,10,0,0"
-                                  HorizontalAlignment="Center" 
-                                  Width="120"
-                                  Height="1"/>
-                        </StackPanel>
-                    </Border>
-                </Grid>
+                <ContentControl Style="{StaticResource FantasyCardStyle}"
+                                
+                                Tag="{Binding SelectedCardName}"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Panel.ZIndex="2">
+                    <Image x:Name = "SelectedCardImage"
+                            Stretch="UniformToFill"
+                            RenderOptions.BitmapScalingMode="HighQuality"/>
+                </ContentControl>
             </Grid>
-        </Grid> <!-- (Close Grid row=0) -->
-                
-            <!-- Deck of Cards (Bottom Row) -->
+
+            <!-- Card Details -->
+            <Grid Column="2">
+                <Border Grid.Column="2" Panel.ZIndex="2" 
+                        Background="#1A000000" 
+                        BorderBrush="#FFD700" 
+                        BorderThickness="0" 
+                        CornerRadius="10"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Margin="0,0,40,0">
+                    <Border.Effect>
+                        <DropShadowEffect Color="#000000" ShadowDepth="5" BlurRadius="10" Opacity="0.7"/>
+                    </Border.Effect>
+                    <StackPanel Margin="15">
+                        <!-- Scroll Decoration Top -->
+                        <Path Data="M0,0 C20,-5 40,5 60,0 C80,-5 100,5 120,0" 
+                                Stroke="#FFD700" 
+                                StrokeThickness="2" 
+                                Margin="0,0,0,10"
+                                HorizontalAlignment="Center" 
+                                Width="120"
+                                Height="1"/>
+
+                        <!-- Card Name -->
+                        <TextBlock x:Name="SelectedCardName"
+                                    FontSize="28"
+                                    Text="Select a Card"
+                                    Style="{StaticResource HeaderTextStyle}"
+                                    TextAlignment="Center"/>
+
+                        <!-- Divider -->
+                        <Border Height="0.4" 
+                                Background="#FFD700" 
+                                BorderThickness="0.1"
+                                Margin="40,0, 40, 20" 
+                                Opacity="0.7"/>
+
+                        <!-- Card Description -->
+                        <TextBlock x:Name="SelectedCardDescription"
+                                    FontSize="16"
+                                    Text="Ancient knowledge awaits your selection..."
+                                    Style="{StaticResource DescriptionTextStyle}"
+                                    Margin="0,10,0,15"/>
+
+                        <!-- Card Stats -->
+                        <Border Background="#1A000000" 
+                                BorderBrush="#FFD700" 
+                                BorderThickness="0.1" 
+                                CornerRadius="5" 
+                                Padding="10">
+                            <StackPanel x:Name="SelectedCardStatsPanel">
+                                <!-- Stats will be added dynamically here -->
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Scroll Decoration Bottom -->
+                        <Path Data="M0,0 C20,5 40,-5 60,0 C80,5 100,-5 120,0" 
+                                Stroke="#FFD700" 
+                                StrokeThickness="2" 
+                                Margin="0,10,0,0"
+                                HorizontalAlignment="Center" 
+                                Width="120"
+                                Height="1"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Grid>
+
+        <!-- Deck of Cards (Bottom Row) -->
         <Grid Row="1">
             <Border
                     Background="Transparent"
@@ -360,21 +366,21 @@
 
             <Grid HorizontalAlignment="Right" Margin="10,0,30,0">
                 <Button x:Name="AddCardButton"
-                        Width="150" Height="210"
+                        Width="120" Height="110"
                         Cursor="Hand"
                         Background="Transparent"
                         BorderThickness="0"
                         Click="AddCardButton_Click">
                     <Grid>
                         <!-- Card Background -->
-                        <Border CornerRadius="7" Background="#0F0F1A" Width="150" Height="210">
+                        <Border CornerRadius="7" Background="#0F0F1A">
                             <Border.Effect>
                                 <DropShadowEffect ShadowDepth="2" BlurRadius="5" Opacity="0.7" Color="Black"/>
                             </Border.Effect>
                         </Border>
 
                         <!-- Inner Card -->
-                        <Border Margin="5" CornerRadius="5" Background="#1A1A2E" Width="140" Height="200">
+                        <Border Margin="5" CornerRadius="5" Background="#1A1A2E" Width="120" Height="110">
                             <Border.Effect>
                                 <DropShadowEffect ShadowDepth="1" BlurRadius="2" Opacity="0.5" Color="Black"/>
                             </Border.Effect>
@@ -385,7 +391,8 @@
                                    FontSize="48" FontWeight="Bold"
                                    Foreground="#C0A062"
                                    HorizontalAlignment="Center"
-                                   VerticalAlignment="Center"/>
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,0,14"/>
                     </Grid>
                 </Button>
             </Grid>
