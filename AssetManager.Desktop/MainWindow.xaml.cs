@@ -378,9 +378,48 @@ namespace AssetManager.Desktop
         {
             MongoConnection database = new MongoConnection();
             var userData = await database.Users.Find(x => x.Id == userId).FirstOrDefaultAsync();
-            return userData.ProfilePic;
+
+            if (userData == null)
+            {
+                // Failsafe: shouldn't happen if InsertUserDataDB runs properly
+                return "https://your-bucket.s3.amazonaws.com/fallback.png";
+            }
+
+            // List of your official AWS profile pic URLs
+            List<string> awsProfilePics = new List<string>
+{
+    "https://usericonsvaultborn.s3.eu-north-1.amazonaws.com/Angel.png",
+    "https://usericonsvaultborn.s3.eu-north-1.amazonaws.com/BusinessMan.png",
+    "https://usericonsvaultborn.s3.eu-north-1.amazonaws.com/Cthulu.png",
+    "https://usericonsvaultborn.s3.eu-north-1.amazonaws.com/Unicorn.png",
+    "https://usericonsvaultborn.s3.eu-north-1.amazonaws.com/Vampire.png",
+    "https://usericonsvaultborn.s3.eu-north-1.amazonaws.com/Werewolf.png",
+    "https://usericonsvaultborn.s3.eu-north-1.amazonaws.com/Witch.jpeg",
+    "https://usericonsvaultborn.s3.eu-north-1.amazonaws.com/Wizard.png"
+};
+
+
+            string currentPic = userData.ProfilePic;
+
+            // ✅ If the saved MongoDB profile pic is not one of your approved AWS images
+            if (!string.IsNullOrEmpty(currentPic) && !awsProfilePics.Contains(currentPic))
+            {
+                Random rng = new Random();
+                string newPic = awsProfilePics[rng.Next(awsProfilePics.Count)];
+
+                // Update the user document in MongoDB with the new profile picture
+                var update = Builders<User>.Update.Set(u => u.ProfilePic, newPic);
+                await database.Users.UpdateOneAsync(x => x.Id == userId, update);
+
+                return newPic;
+            }
+
+            // ✅ If it's already one of your official pics, just return it
+            return currentPic;
         }
-        
+
+
+
         private async Task<string> GetModelName(string modelId)
         {
             MongoConnection database = new MongoConnection();
@@ -901,7 +940,7 @@ namespace AssetManager.Desktop
 
 
 
-        public async Task ShowThumbnail(string projectId, string itemId, Image targetImage)
+        public async Task ShowThumbnail(string projectId, string itemId, Image targetImage, string versionId = null)
         {
             try
             {
@@ -911,7 +950,7 @@ namespace AssetManager.Desktop
                     client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
                     FileDownloadService _fileService = new FileDownloadService();
-                    string objectId = await _fileService.GetStorageIdFromItem(projectId, itemId);
+                    string objectId = await _fileService.GetStorageIdFromItem(projectId, itemId, versionId);
                     if (string.IsNullOrEmpty(objectId))
                     {
                         Console.WriteLine("❌ Could not retrieve object ID.");
@@ -961,12 +1000,14 @@ namespace AssetManager.Desktop
                                     return;
                                 }
                             }
-
                         }
                     }
 
                     // ✅ Fetch the thumbnail **AFTER** translation is ready
-                    string thumbnailUrl = await DataManagement.GetLatestItemThumbnail(projectId, itemId, encodedUrn);
+                    string thumbnailUrl = string.IsNullOrEmpty(versionId)
+                        ? await DataManagement.GetLatestItemThumbnail(projectId, itemId, encodedUrn) // Fetch thumbnail of the latest version
+                        : await DataManagement.GetVersionThumbnail(projectId, itemId, encodedUrn, versionId); // Fetch thumbnail of a specific version
+
                     if (string.IsNullOrEmpty(thumbnailUrl))
                     {
                         Console.WriteLine("❌ Thumbnail URL is null or empty.");
@@ -1023,6 +1064,7 @@ namespace AssetManager.Desktop
                 Console.WriteLine($"❌ Unexpected error: {ex.Message}");
             }
         }
+
 
         public static string EncodeObjectIdToUrn(string objectId)
         {
@@ -2371,7 +2413,6 @@ namespace AssetManager.Desktop
             try
             {
                 DataManagement dataService = new DataManagement();
-                // Call your existing method to get versions
                 var versionsList = await dataService.GetVersionsForItemAsync(_selectedProjectId, modelId);
 
                 if (versionsList != null && versionsList.Any())
@@ -2379,20 +2420,23 @@ namespace AssetManager.Desktop
                     foreach (var (versionId, versionName, storageId) in versionsList)
                     {
                         // Extract version number from the versionId
-                        string versionNumber = "Unknown";
+                        string versionNumber = "Unknown"; // Default fallback
                         if (versionId.Contains("version="))
                         {
-                            // Parse out the actual version number
                             string[] parts = versionId.Split(new[] { "version=" }, StringSplitOptions.None);
                             if (parts.Length > 1)
                             {
-                                // Remove any non-numeric characters after the version number
                                 string versionPart = parts[1];
                                 int endIndex = 0;
+
+                                // Extract digits only to determine the version number
                                 while (endIndex < versionPart.Length && char.IsDigit(versionPart[endIndex]))
                                     endIndex++;
 
-                                versionNumber = versionPart.Substring(0, endIndex);
+                                if (endIndex > 0)
+                                {
+                                    versionNumber = versionPart.Substring(0, endIndex);
+                                }
                             }
                         }
 
@@ -2407,7 +2451,7 @@ namespace AssetManager.Desktop
 
                     // Sort versions by version number in descending order (newest first)
                     versions = versions
-                        .OrderByDescending(v => int.TryParse(v["VersionNumber"], out int num) ? num : 0)
+                        .OrderByDescending(v => int.TryParse(v["VersionNumber"], out int num) ? num : int.MinValue)
                         .ToList();
                 }
             }
@@ -2420,21 +2464,19 @@ namespace AssetManager.Desktop
             return versions;
         }
 
+
         // Function to handle version selection
         private void LoadModelVersion(string modelId, string versionId)
         {
             Console.WriteLine($"🔍 Selected version {versionId} for model {modelId}");
 
             // Display a notification
-            MessageBox.Show($"Selected Version ID: {versionId} for Model ID: {modelId}",
-                            "Version Selected",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Information);
+            //MessageBox.Show($"Selected Version ID: {versionId} for Model ID: {modelId}",
+            //                "Version Selected",
+            //                MessageBoxButton.OK,
+            //                MessageBoxImage.Information);
 
-            // You can add additional functionality here:
-            // - Load the version details
-            // - Display the version in a viewer
-            // - Enable specific actions for this version
+            RefreshCurrentModel(versionId);
         }
 
         private async void Grid_Click(object sender, MouseButtonEventArgs e)
@@ -3332,13 +3374,17 @@ namespace AssetManager.Desktop
 
         private void BtnLogout_Click(object sender, RoutedEventArgs e)
         {
-            Console.WriteLine("👤 Logging out...");
+            // Step 1: Clear tokens and session
+            LoginWindow.PerformLogout();
 
-            // Close the current window and show the login screen
-            LoginWindow loginWindow = new LoginWindow(true);
-            this.Close();
+            // Step 2: Open a fresh LoginWindow
+            var loginWindow = new LoginWindow();
             loginWindow.Show();
+
+            // Step 3: Close the current MainWindow
+            this.Close();
         }
+
 
         private void BtnDownload_Click(object sender, RoutedEventArgs e)
         {
@@ -3399,72 +3445,78 @@ namespace AssetManager.Desktop
 
         //FORGE VIEWER 
         #region Forge Viewer
-        private async void BtnViewInApp_Click(object sender, RoutedEventArgs e)
-        {
-            ModelsDataGrid.Visibility = Visibility.Collapsed;
-            Grid_View.Visibility = Visibility.Collapsed;
 
-            // Show Forge Viewer
-            ForgeViewerContainer.Visibility = Visibility.Visible;
-            ForgeWebView.Visibility = Visibility.Visible;
+        /*     private async void BtnViewInApp_Click(string selectedItemId)
+             {
+                 // ✅ Track the last active view
+                 if (ModelsDataGrid.Visibility == Visibility.Visible)
+                 {
+                     _lastViewType = ViewType.List;
+                 }
+                 else if (Grid_View.Visibility == Visibility.Visible)
+                 {
+                     _lastViewType = ViewType.Grid;
+                 }
 
-            Console.WriteLine($"View in App button clicked. Using global IDs:");
-            Console.WriteLine($"- Selected Item ID: {_selectedItemId}");
-            Console.WriteLine($"- Selected Project ID: {_selectedProjectId}");
-            Console.WriteLine($"- Storage ID: {_objectId}");
+                 // Hide both views
+                 ModelsDataGrid.Visibility = Visibility.Collapsed;
+                 Grid_View.Visibility = Visibility.Collapsed;
 
-            if (string.IsNullOrEmpty(_selectedItemId) || string.IsNullOrEmpty(_selectedProjectId))
-            {
-                MessageBox.Show("❌ Please select a model before viewing.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
+                 // Show the Forge Viewer
+                 ForgeViewerContainer.Visibility = Visibility.Visible;
+                 ForgeWebView.Visibility = Visibility.Visible;
 
-            // If we already have the storage ID, use it directly
-            string objectId = _objectId;
+                 Console.WriteLine($"View in App button clicked. Returning to: {_lastViewType} view after closing.");
 
-            // If not available, fetch it on demand
-            if (string.IsNullOrEmpty(objectId))
-            {
-                Console.WriteLine("🔍 Storage ID not set globally, fetching now...");
-                FileDownloadService fileService = new FileDownloadService();
-                objectId = await fileService.GetStorageIdFromItem(_selectedProjectId, _selectedItemId);
-                if (string.IsNullOrEmpty(objectId))
-                {
-                    MessageBox.Show("Could not retrieve model information.", "Model Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-                _objectId = objectId; // Update global storage ID
-            }
+                 ModelsDataGrid.Visibility = Visibility.Collapsed;
+                 Grid_View.Visibility = Visibility.Collapsed;
 
-            // Encode URN
-            string encodedUrn = EncodeObjectIdToUrn(objectId);
-            if (string.IsNullOrEmpty(encodedUrn))
-            {
-                MessageBox.Show("Failed to process model identifier.", "Processing Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
+                 // Show Forge Viewer
+                 ForgeViewerContainer.Visibility = Visibility.Visible;
+                 ForgeWebView.Visibility = Visibility.Visible;
 
-            Console.WriteLine($"✅ Encoded URN: {encodedUrn}");
+                 Console.WriteLine($"View in App button clicked. Using global IDs:");
+                 Console.WriteLine($"- Selected Item ID: {_selectedItemId}");
+                 Console.WriteLine($"- Selected Project ID: {_selectedProjectId}");
+                 Console.WriteLine($"- Storage ID: {_objectId}");
 
-            // Continue with model viewer loading...
-            ModelDerivativeService modelService = new ModelDerivativeService(new HttpClient());
-            bool translationComplete = await modelService.IsTranslationCompletedAsync(encodedUrn, _accessToken);
+                 if (string.IsNullOrEmpty(_selectedItemId) || string.IsNullOrEmpty(_selectedProjectId))
+                 {
+                     MessageBox.Show("❌ Please select a model before viewing.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                     return;
+                 }
 
-            if (!translationComplete)
-            {
-                Console.WriteLine("🔄 Submitting translation job...");
-                bool jobResponse = await modelService.SubmitModelForTranslationAsync(encodedUrn, _accessToken);
+                 // If we already have the storage ID, use it directly
+                 string objectId = _objectId;
 
-                Console.WriteLine($"✅ Translation job submitted: {jobResponse}");
+                 // If not available, fetch it on demand
+                 if (string.IsNullOrEmpty(objectId))
+                 {
+                     Console.WriteLine("🔍 Storage ID not set globally, fetching now...");
+                     FileDownloadService fileService = new FileDownloadService();
+                     objectId = await fileService.GetStorageIdFromItem(_selectedProjectId, _selectedItemId);
+                     if (string.IsNullOrEmpty(objectId))
+                     {
+                         MessageBox.Show("Could not retrieve model information.", "Model Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                         return;
+                     }
+                     _objectId = objectId; // Update global storage ID
+                 }
 
-                if (!jobResponse)
-                {
-                    MessageBox.Show("❌ Translation job failed to submit.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-            }
+                 // Encode URN
+                 string encodedUrn = EncodeObjectIdToUrn(objectId);
+                 if (string.IsNullOrEmpty(encodedUrn))
+                 {
+                     MessageBox.Show("Failed to process model identifier.", "Processing Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                     return;
+                 }
 
-            Console.WriteLine($"🔍 Opening Forge Viewer for Model: {_selectedItemId}");
+                 Console.WriteLine($"✅ Encoded URN: {encodedUrn}");
+
+                 // Continue with model viewer loading...
+                 ModelDerivativeService modelService = new ModelDerivativeService(new HttpClient());
+                 bool translationComplete = await modelService.IsTranslationCompletedAsync(encodedUrn, _accessToken);
+
 
             // Open Forge Viewer in a new window
             //ForgeViewerWindow forgeViewer = new ForgeViewerWindow(encodedUrn);
@@ -3472,146 +3524,195 @@ namespace AssetManager.Desktop
             LoadForgeViewer(encodedUrn);
 
         }
+
+                 if (!translationComplete)
+                 {
+                     Console.WriteLine("🔄 Submitting translation job...");
+                     bool jobResponse = await modelService.SubmitModelForTranslationAsync(encodedUrn, _accessToken);
+
+
+                     Console.WriteLine($"✅ Translation job submitted: {jobResponse}");
+
+                     if (!jobResponse)
+                     {
+                         MessageBox.Show("❌ Translation job failed to submit.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                         return;
+                     }
+                 }
+
+                 Console.WriteLine($"🔍 Opening Forge Viewer for Model: {_selectedItemId}");
+
+                 // Open Forge Viewer in a new window
+                 //ForgeViewerWindow forgeViewer = new ForgeViewerWindow(encodedUrn);
+                 // forgeViewer.Show();
+                 LoadForgeViewer(encodedUrn);
+                 int numberOfVersions = await GetNumberOfVersions();
+                 GenerateMarkers(numberOfVersions);
+
+                 Grid versionSlider = VersionSlider;
+                 versionSlider.Visibility = Visibility.Visible;
+             }*/
 
         private async void BtnViewInApp_Click(string selectedItemId)
         {
-            // ✅ Track the last active view
-            if (ModelsDataGrid.Visibility == Visibility.Visible)
-            {
-                _lastViewType = ViewType.List;
-            }
-            else if (Grid_View.Visibility == Visibility.Visible)
-            {
-                _lastViewType = ViewType.Grid;
-            }
-
-            // Hide both views
-            ModelsDataGrid.Visibility = Visibility.Collapsed;
-            Grid_View.Visibility = Visibility.Collapsed;
-
-            // Show the Forge Viewer
-            ForgeViewerContainer.Visibility = Visibility.Visible;
-            ForgeWebView.Visibility = Visibility.Visible;
-
-            Console.WriteLine($"View in App button clicked. Returning to: {_lastViewType} view after closing.");
-
-            ModelsDataGrid.Visibility = Visibility.Collapsed;
-            Grid_View.Visibility = Visibility.Collapsed;
-
-            // Show Forge Viewer
-            ForgeViewerContainer.Visibility = Visibility.Visible;
-            ForgeWebView.Visibility = Visibility.Visible;
-
-            Console.WriteLine($"View in App button clicked. Using global IDs:");
-            Console.WriteLine($"- Selected Item ID: {_selectedItemId}");
-            Console.WriteLine($"- Selected Project ID: {_selectedProjectId}");
-            Console.WriteLine($"- Storage ID: {_objectId}");
-
-            if (string.IsNullOrEmpty(_selectedItemId) || string.IsNullOrEmpty(_selectedProjectId))
-            {
-                MessageBox.Show("❌ Please select a model before viewing.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            // If we already have the storage ID, use it directly
-            string objectId = _objectId;
-
-            // If not available, fetch it on demand
-            if (string.IsNullOrEmpty(objectId))
-            {
-                Console.WriteLine("🔍 Storage ID not set globally, fetching now...");
-                FileDownloadService fileService = new FileDownloadService();
-                objectId = await fileService.GetStorageIdFromItem(_selectedProjectId, _selectedItemId);
-                if (string.IsNullOrEmpty(objectId))
-                {
-                    MessageBox.Show("Could not retrieve model information.", "Model Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-                _objectId = objectId; // Update global storage ID
-            }
-
-            // Encode URN
-            string encodedUrn = EncodeObjectIdToUrn(objectId);
-            if (string.IsNullOrEmpty(encodedUrn))
-            {
-                MessageBox.Show("Failed to process model identifier.", "Processing Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            Console.WriteLine($"✅ Encoded URN: {encodedUrn}");
-
-            // Continue with model viewer loading...
-            ModelDerivativeService modelService = new ModelDerivativeService(new HttpClient());
-            bool translationComplete = await modelService.IsTranslationCompletedAsync(encodedUrn, _accessToken);
-
-            if (!translationComplete)
-            {
-                Console.WriteLine("🔄 Submitting translation job...");
-                bool jobResponse = await modelService.SubmitModelForTranslationAsync(encodedUrn, _accessToken);
-
-                Console.WriteLine($"✅ Translation job submitted: {jobResponse}");
-
-                if (!jobResponse)
-                {
-                    MessageBox.Show("❌ Translation job failed to submit.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-            }
-
-            Console.WriteLine($"🔍 Opening Forge Viewer for Model: {_selectedItemId}");
-
-            // Open Forge Viewer in a new window
-            //ForgeViewerWindow forgeViewer = new ForgeViewerWindow(encodedUrn);
-            // forgeViewer.Show();
-            LoadForgeViewer(encodedUrn);
-            GenerateMarkers();
-
-            Grid versionSlider = VersionSlider;
-            versionSlider.Visibility = Visibility.Visible;
-            Button versionButton = VersionsSelectButton;
-            versionButton.Visibility = Visibility.Visible;
-        }
-
-        //In app viewer for different versions
-        private async void BtnViewInApp_Click(string selectedItemId, string selectedVersionId)
-        {
-            string objectId = await new FileDownloadService().GetStorageIdFromVersion(_selectedProjectId, selectedVersionId);
-
-            _objectId = objectId; // Store it globally
-
-            // Encode Storage ID to URN
-            string encodedUrn = EncodeObjectIdToUrn(objectId);
-            if (string.IsNullOrEmpty(encodedUrn))
-            {
-                MessageBox.Show("Failed to process model identifier.", "Processing Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            // Check if the model translation is available
-            bool isModelReady = await ModelDerivativeService.IsModelDerivativeReady(encodedUrn);
-
-            // Check if the translation is completed
-            ModelDerivativeService modelService = new ModelDerivativeService(new HttpClient());
-            bool isTranslationCompleted = await modelService.IsTranslationCompletedAsync(encodedUrn, _accessToken);
-
-            if (!isTranslationCompleted)
-            {
-                //MessageBox.Show("Model translation is still in progress or failed. Please try again later.", "Translation In Progress", MessageBoxButton.OK, MessageBoxImage.Information);
-                VersionError.IsOpen = true;
-                return;
-            }
-
-            // Load the model in the viewer
             try
             {
-                LoadForgeViewer(encodedUrn);
+                // ✅ Track the last active view
+                if (ModelsDataGrid.Visibility == Visibility.Visible)
+                {
+                    _lastViewType = ViewType.List;
+                }
+                else if (Grid_View.Visibility == Visibility.Visible)
+                {
+                    _lastViewType = ViewType.Grid;
+                }
+
+                ModelsDataGrid.Visibility = Visibility.Collapsed;
+                Grid_View.Visibility = Visibility.Collapsed;
+                ForgeViewerContainer.Visibility = Visibility.Visible;
+                ForgeWebView.Visibility = Visibility.Visible;
+
+                Console.WriteLine($"View in App button clicked. Returning to: {_lastViewType} view after closing.");
+                Console.WriteLine($"- Selected Item ID: {_selectedItemId}");
+                Console.WriteLine($"- Selected Project ID: {_selectedProjectId}");
+                Console.WriteLine($"- Storage ID: {_objectId}");
+
+                if (string.IsNullOrEmpty(_selectedItemId) || string.IsNullOrEmpty(_selectedProjectId))
+                {
+                    MessageBox.Show("❌ Please select a model before viewing.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                string objectId = _objectId;
+
+                if (string.IsNullOrEmpty(objectId))
+                {
+                    Console.WriteLine("🔍 Storage ID not set globally, fetching now...");
+                    var fileService = new FileDownloadService();
+                    objectId = await fileService.GetStorageIdFromItem(_selectedProjectId, _selectedItemId);
+                    if (string.IsNullOrEmpty(objectId))
+                    {
+                        MessageBox.Show("Could not retrieve model information.", "Model Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        return;
+                    }
+
+                    _objectId = objectId;
+                }
+
+                string encodedUrn = EncodeObjectIdToUrn(objectId);
+                if (string.IsNullOrEmpty(encodedUrn))
+                {
+                    MessageBox.Show("Failed to process model identifier.", "Processing Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                Console.WriteLine($"✅ Encoded URN: {encodedUrn}");
+
+                var viewerService = new ForgeViewerService(_accessToken);
+                string? html = await viewerService.GetModelViewerHtmlAsync(encodedUrn);
+
+                if (string.IsNullOrEmpty(html))
+                {
+                    MessageBox.Show("❌ Failed to generate Forge Viewer HTML.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                await LoadHtmlIntoForgeWebViewAsync(html);
+
+                int numberOfVersions = await GetNumberOfVersions();
+                GenerateMarkers();
+                VersionSlider.Visibility = Visibility.Visible;
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error loading the model viewer. Please check the logs for more details.", "Viewer Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"❌ Error loading model: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                Console.WriteLine($"❌ Exception: {ex.Message}\n{ex.StackTrace}");
+            }
+        }
+        public async Task BtnViewInApp_Click(string selectedItemId, string selectedVersionId)
+        {
+            try
+            {
+                // Track last visible view type
+                if (ModelsDataGrid.Visibility == Visibility.Visible)
+                    _lastViewType = ViewType.List;
+                else if (Grid_View.Visibility == Visibility.Visible)
+                    _lastViewType = ViewType.Grid;
+
+                // Show the Forge Viewer, hide other UI elements
+                ModelsDataGrid.Visibility = Visibility.Collapsed;
+                Grid_View.Visibility = Visibility.Collapsed;
+                ForgeViewerContainer.Visibility = Visibility.Visible;
+                ForgeWebView.Visibility = Visibility.Visible;
+
+                // Get objectId from version
+                var fileService = new FileDownloadService();
+                string objectId = await fileService.GetStorageIdFromVersion(_selectedProjectId, selectedVersionId);
+
+                if (string.IsNullOrEmpty(objectId))
+                {
+                    MessageBox.Show("Could not retrieve model information from version.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                _objectId = objectId; // store globally if needed later
+                string encodedUrn = EncodeObjectIdToUrn(objectId);
+
+                if (string.IsNullOrEmpty(encodedUrn))
+                {
+                    MessageBox.Show("Failed to process model identifier.", "Processing Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                // Initialize ForgeViewerService
+                var viewerService = new ForgeViewerService(_accessToken);
+
+                // Generate viewer HTML
+                string? html = await viewerService.GetModelViewerHtmlAsync(encodedUrn);
+                if (string.IsNullOrEmpty(html))
+                {
+                    VersionError.IsOpen = true; // If you use a custom popup instead of MessageBox
+                    return;
+                }
+
+                // Load into WebView
+                await LoadHtmlIntoForgeWebViewAsync(html);
+
+                // Show versioning controls (if needed)
+                VersionSlider.Visibility = Visibility.Visible;
+                VersionsSelectButton.Visibility = Visibility.Visible;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error loading model: {ex.Message}", "Viewer Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                Console.WriteLine($"❌ Exception: {ex.Message}\n{ex.StackTrace}");
             }
         }
 
+        public async Task ViewModelInEmbeddedViewerAsync(string selectedItemId)
+        {
+            BtnViewInApp_Click(selectedItemId);
+        }
+
+        private async Task LoadHtmlIntoForgeWebViewAsync(string html)
+        {
+            if (ForgeWebView.CoreWebView2 == null)
+                await ForgeWebView.EnsureCoreWebView2Async();
+
+            ForgeWebView.NavigateToString(html);
+
+            ForgeWebView.CoreWebView2.WebMessageReceived += (sender, e) =>
+            {
+                Console.WriteLine($"WebView2 message: {e.WebMessageAsJson}");
+            };
+
+            VersionSlider.Visibility = Visibility.Visible;
+            VersionsSelectButton.Visibility = Visibility.Visible;
+        }
+
+
+        //In app viewer for different versions
+     
 
         private void Btn_CloseViewer_Click(object sender, RoutedEventArgs e)
         {
@@ -3645,7 +3746,7 @@ namespace AssetManager.Desktop
             versionButton.Visibility = Visibility.Collapsed;
 
             slider.Value = 100;
-
+            showLatestVersions = true;
         }
 
         //Trying the SKybox
@@ -3798,613 +3899,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             }
         }*/
 
-        private async void LoadForgeViewer(string encodedUrn, bool isPdf = false)
-        {
-            try
-            {
-                ForgeWebView.Visibility = Visibility.Visible;
-
-                // Initialize WebView2 if needed
-                if (ForgeWebView.CoreWebView2 == null)
-                {
-                    await ForgeWebView.EnsureCoreWebView2Async();
-                }
-
-                string accessToken = TokenManager.GetToken();
-                if (string.IsNullOrEmpty(accessToken))
-                {
-                    Console.WriteLine("❌ Access token is missing.");
-                    System.Windows.Forms.MessageBox.Show("Authentication error. Please log in again.", "Error",
-                        System.Windows.Forms.MessageBoxButtons.OK,
-                        System.Windows.Forms.MessageBoxIcon.Error);
-                    return;
-                }
-
-                Console.WriteLine($"🔄 Initializing WebView2 for {(isPdf ? "PDF" : "3D model")}...");
-                await ForgeWebView.EnsureCoreWebView2Async();
-                Console.WriteLine("✅ WebView2 initialized successfully.");
-
-                string htmlContent;
-
-                if (isPdf)
-                {
-                    // HTML content specifically for PDF viewing - remains the same
-                    htmlContent = $@"<!DOCTYPE html>
-                  <html>
-                  <head>
-                      <meta charset='UTF-8'>
-                      <meta http-equiv='X-UA-Compatible' content='IE=Edge' />
-                      <title>PDF Viewer</title>
-                      <script src='https://developer.api.autodesk.com/modelderivative/v2/viewers/7.*/viewer3D.js'></script>
-                      <link rel='stylesheet' href='https://developer.api.autodesk.com/modelderivative/v2/viewers/7.*/style.css' type='text/css'>
-                      <style>
-                          body, html {{ height: 100%; margin: 0; padding: 0; overflow: hidden; }}
-                          #toolbar {{ position: absolute; top: 10px; left: 10px; z-index: 1000; background: rgba(255,255,255,0.9); padding: 5px; border-radius: 5px; }}
-                          #forgeViewer {{ width: 100%; height: 100vh; position: relative; }}
-                          #log {{ position: fixed; bottom: 10px; left: 10px; right: 10px; height: 150px; background: rgba(0,0,0,0.7); color: white; overflow: auto; padding: 10px; font-family: monospace; z-index: 1000; display: block; }}
-                          #pageLabel {{ margin-left: 20px; font-weight: bold; }}
-                          #pageControls {{ margin-left: 10px; }}
-                          .pageButton {{ margin: 0 2px; padding: 2px 8px; cursor: pointer; }}
-                      </style>
-                  </head>
-                  <body>
-                      <div id='toolbar'>
-                          <label for='pageSelect'>Page:</label>
-                          <select id='pageSelect'></select>
-                          <span id='pageControls'>
-                              <button id='prevPage' class='pageButton'>←</button>
-                              <button id='nextPage' class='pageButton'>→</button>
-                          </span>
-                          <span id='pageLabel'>Page 1 of 1</span>
-                          <button id='toggleLog' style='margin-left: 20px;'>Hide Logs</button>
-                      </div>
-                      <div id='forgeViewer'></div>
-                      <div id='log'></div>
-
-                      <script>
-                          // Debug logging function
-                          function log(message) {{
-                              console.log(message);
-                              var logDiv = document.getElementById('log');
-                              var date = new Date();
-                              var timestamp = date.getHours() + ':' + date.getMinutes() + ':' + date.getSeconds() + '.' + date.getMilliseconds();
-                              var formattedMsg = '[' + timestamp + '] ' + (typeof message === 'object' ? JSON.stringify(message) : message);
       
-                              var line = document.createElement('div');
-                              line.textContent = formattedMsg;
-                              logDiv.appendChild(line);
-                              logDiv.scrollTop = logDiv.scrollHeight;
-                          }}
-                     
-
-                          document.getElementById('toggleLog').addEventListener('click', function() {{
-                              var logDiv = document.getElementById('log');
-                              if (logDiv.style.display === 'none') {{
-                                  logDiv.style.display = 'block';
-                                  this.textContent = 'Hide Logs';
-                              }} else {{
-                                  logDiv.style.display = 'none';
-                                  this.textContent = 'Show Logs';
-                              }}
-                          }});
-
-                          log('Script started');
-  
-                          // Handle any errors
-                          window.addEventListener('error', function(event) {{
-                              log('ERROR: ' + event.message + ' at ' + event.filename + ':' + event.lineno);
-                          }});
-
-                          var viewer;
-                          var doc;
-                          var viewables = [];
-                          var currentModel = null;
-                          var currentPageIndex = 0;
-
-                          var options = {{
-                              env: 'AutodeskProduction',
-                              api: 'derivativeV2',
-                              getAccessToken: function(onTokenReady) {{
-                                  log('Getting access token');
-                                  onTokenReady('{accessToken}', 3599);
-                              }}
-                          }};
-
-                          var documentId = 'urn:{encodedUrn}';
-                          log('Document ID: ' + documentId);
-
-                          try {{
-                              log('Initializing Autodesk Viewer...');
-                              Autodesk.Viewing.Initializer(options, function () {{
-                                  log('Viewer initialized successfully');
-          
-                                  try {{
-                                      // Create the viewer
-                                      var viewerDiv = document.getElementById('forgeViewer');
-                                      log('Creating viewer in div: ' + (viewerDiv ? 'Found' : 'Not found'));
-              
-                                      // Initialize with PDF extension and enable debugging
-                                      viewer = new Autodesk.Viewing.GuiViewer3D(viewerDiv, {{ 
-                                          extensions: ['Autodesk.PDF'],
-                                          loaderExtensions: {{ pdf: true }},
-                                          enablePDFJS: true
-                                      }});
-              
-                                      log('Starting viewer...');
-                                      var startedViewer = viewer.start();
-                                      log('Viewer start result: ' + startedViewer);
-              
-                                      // Set background color for better visibility
-                                      viewer.setBackgroundColor(250, 250, 250, 250, 250, 250);
-              
-                                      log('Loading document: ' + documentId);
-              
-                                      Autodesk.Viewing.Document.load(
-                                          documentId, 
-                                          // onLoadSuccess
-                                          function (loadedDoc) {{
-                                              log('Document loaded successfully');
-                                              doc = loadedDoc;
-                      
-                                              try {{
-                                                  // Log document structure for debugging
-                                                  var rootItem = doc.getRoot();
-                                                  log('Root item: ' + (rootItem ? 'Found' : 'Not found'));
-                          
-                                                  if (rootItem) {{
-                                                      log('Root item type: ' + rootItem.type);
-                                                      log('Children count: ' + (rootItem.children ? rootItem.children.length : 0));
-                                                  }}
-                          
-                                                  // Method 1: Direct recursive search
-                                                  var items = [];
-                          
-                                                  function getAllLeafNodes(node) {{
-                                                      if (!node) return;
-                                                      log('Examining node: ' + (node.data ? node.data.guid : 'No GUID'));
-                              
-                                                      if (node.children && node.children.length > 0) {{
-                                                          log('Node has ' + node.children.length + ' children');
-                                                          node.children.forEach(getAllLeafNodes);
-                                                      }} else {{
-                                                          log('Leaf node found. Role: ' + (node.data ? node.data.role : 'unknown'));
-                                                          if (node.data && (node.data.role === '2d' || node.data.role === 'thumbnail')) {{
-                                                              items.push(node);
-                                                              log('Found PDF page: ' + (node.data.name || 'Unnamed') + ', GUID: ' + node.data.guid);
-                                                          }}
-                                                      }}
-                                                  }}
-                          
-                                                  getAllLeafNodes(doc.getRoot());
-                                                  log('Method 1 - Found ' + items.length + ' pages');
-                          
-                                                  // Method 2: Use API method (sometimes more reliable)
-                                                  try {{
-                                                      var items2 = Autodesk.Viewing.Document.getSubItemsWithProperties(
-                                                          doc.getRoot(), 
-                                                          {{ 'type': 'geometry', 'role': '2d' }}, 
-                                                          true
-                                                      );
-                                                      log('Method 2 - Found ' + (items2 ? items2.length : 0) + ' pages');
-                                                  }} catch (e) {{
-                                                      log('Error in Method 2: ' + e.message);
-                                                      items2 = [];
-                                                  }}
-                          
-                                                  // Use whichever method found pages
-                                                  viewables = items.length > 0 ? items : (items2 && items2.length > 0 ? items2 : []);
-                          
-                                                  // If we found viewables, set up the page selector
-                                                  if (viewables && viewables.length > 0) {{
-                                                      log('Found ' + viewables.length + ' viewables to display');
-                                                      populatePageSelector(viewables);
-                                                      loadPage(0); // Load first page
-                                                      updatePageLabel(1, viewables.length);
-                                                      setupPageControls(viewables.length);
-                                                  }} else {{
-                                                      // No 2D viewables found, try default geometry
-                                                      log('No 2D viewables found, trying default geometry...');
-                              
-                                                      // Try to get default geometry
-                                                      var defaultGeometry;
-                                                      try {{
-                                                          defaultGeometry = doc.getRoot().getDefaultGeometry();
-                                                          log('Default geometry: ' + (defaultGeometry ? 'Found' : 'Not found'));
-                                                      }} catch (e) {{
-                                                          log('Error getting default geometry: ' + e.message);
-                                                      }}
-                              
-                                                      if (defaultGeometry) {{
-                                                          log('Loading default geometry: ' + (defaultGeometry.guid || 'unknown'));
-                                                          viewer.loadDocumentNode(doc, defaultGeometry)
-                                                              .then(function(model) {{
-                                                                  log('Default geometry loaded successfully');
-                                                                  currentModel = model;
-                                                              }})
-                                                              .catch(function(err) {{
-                                                                  log('Error loading default geometry: ' + err.message);
-                                                              }});
-                                                      }} else {{
-                                                          log('No default geometry found, trying bubble geometry...');
-                                  
-                                                          // Last-ditch effort: Try to find any geometry to display
-                                                          try {{
-                                                              var bubbleNode = doc.getRoot();
-                                                              var allViewables = [];
-                                      
-                                                              // Try to find any geometry
-                                                              function findAnyGeometry(node) {{
-                                                                  if (!node) return;
-                                          
-                                                                  if (node.data && node.data.type === 'geometry') {{
-                                                                      allViewables.push(node);
-                                                                      log('Found a geometry node: ' + (node.data.name || 'Unnamed'));
-                                                                  }}
-                                          
-                                                                  if (node.children && node.children.length > 0) {{
-                                                                      node.children.forEach(findAnyGeometry);
-                                                                  }}
-                                                              }}
-                                      
-                                                              findAnyGeometry(bubbleNode);
-                                                              log('Found ' + allViewables.length + ' total geometry items');
-                                      
-                                                              if (allViewables.length > 0) {{
-                                                                  var anyViewable = allViewables[0];
-                                                                  log('Attempting to load any viewable: ' + (anyViewable.data ? anyViewable.data.guid : 'unknown'));
-                                                                  viewer.loadDocumentNode(doc, anyViewable)
-                                                                      .then(function(model) {{
-                                                                          log('Viewable loaded successfully');
-                                                                          currentModel = model;
-                                                                      }})
-                                                                      .catch(function(err) {{
-                                                                          log('Error loading viewable: ' + err.message);
-                                                                      }});
-                                                              }} else {{
-                                                                  log('No viewables found at all. Check translation status.');
-                                          
-                                                                  // Final attempt - try to access the first page directly
-                                                                  log('Attempting one final method to find viewable...');
-                                                                  try {{
-                                                                      if (bubbleNode && bubbleNode.children && bubbleNode.children.length > 0) {{
-                                                                          var firstChild = bubbleNode.children[0];
-                                                                          log('Loading first child node as last resort');
-                                                                          viewer.loadDocumentNode(doc, firstChild)
-                                                                              .then(function(model) {{
-                                                                                  log('First child node loaded successfully');
-                                                                                  currentModel = model;
-                                                                              }})
-                                                                              .catch(function(err) {{
-                                                                                  log('Error loading first child node: ' + err.message);
-                                                                              }});
-                                                                      }}
-                                                                  }} catch (e) {{
-                                                                      log('Final attempt failed: ' + e.message);
-                                                                  }}
-                                                              }}
-                                                          }} catch (e) {{
-                                                              log('Error in last-ditch effort: ' + e.message);
-                                                          }}
-                                                      }}
-                                                  }}
-                                              }} catch (docError) {{
-                                                  log('Error processing document: ' + docError.message);
-                                              }}
-                                          }}, 
-                                          // onLoadError
-                                          function (errorCode, errorMsg) {{
-                                              log('Error loading document: ' + errorCode + ' - ' + errorMsg);
-                                          }},
-                                          // options
-                                          {{ checkAEC: false }}
-                                      );
-                                  }} catch (e) {{
-                                      log('Error in viewer creation/document loading: ' + e.message);
-                                  }}
-                              }});
-                          }} catch (e) {{
-                              log('Fatal error initializing viewer: ' + e.message);
-                          }}
-
-                          function updatePageLabel(current, total) {{
-                              document.getElementById('pageLabel').textContent = 'Page ' + current + ' of ' + total;
-                          }}
-
-                          function setupPageControls(totalPages) {{
-                              var prevButton = document.getElementById('prevPage');
-                              var nextButton = document.getElementById('nextPage');
-      
-                              prevButton.addEventListener('click', function() {{
-                                  if (currentPageIndex > 0) {{
-                                      currentPageIndex--;
-                                      loadPage(currentPageIndex);
-                                      document.getElementById('pageSelect').value = currentPageIndex;
-                                      updatePageLabel(currentPageIndex + 1, totalPages);
-                                  }}
-                              }});
-      
-                              nextButton.addEventListener('click', function() {{
-                                  if (currentPageIndex < totalPages - 1) {{
-                                      currentPageIndex++;
-                                      loadPage(currentPageIndex);
-                                      document.getElementById('pageSelect').value = currentPageIndex;
-                                      updatePageLabel(currentPageIndex + 1, totalPages);
-                                  }}
-                              }});
-                          }}
-
-                          function populatePageSelector(viewables) {{
-                              try {{
-                                  var select = document.getElementById('pageSelect');
-                                  select.innerHTML = ''; // Clear any existing options
-          
-                                  viewables.forEach(function (v, i) {{
-                                      var option = document.createElement('option');
-                                      option.value = i;
-              
-                                      // Create better page labels
-                                      var pageName = 'Page ' + (i + 1);
-              
-                                      // If the viewable has metadata, try to use that
-                                      if (v.data) {{
-                                          if (v.data.name && v.data.name !== 'Initial') {{
-                                              pageName = v.data.name;
-                                          }}
-                  
-                                          // Log some additional data for debugging
-                                          log('Page ' + (i + 1) + ' metadata: ' +
-                                              'name=' + (v.data.name || 'N/A') +
-                                              ', guid=' + (v.data.guid || 'N/A'));
-                                      }}
-              
-                                      option.text = pageName;
-                                      select.appendChild(option);
-                                      log('Added option for ' + pageName);
-                                  }});
-          
-                                  select.addEventListener('change', function() {{
-                                      var pageIndex = parseInt(this.value);
-                                      currentPageIndex = pageIndex;
-                                      log('Page selector changed to index: ' + pageIndex);
-                                      loadPage(pageIndex);
-                                      updatePageLabel(pageIndex + 1, viewables.length);
-                                  }});
-                              }} catch (e) {{
-                                  log('Error in populatePageSelector: ' + e.message);
-                              }}
-                          }}
-  
-                          function loadPage(index) {{
-                              try {{
-                                  if (!doc || !viewer || !viewables[index]) {{
-                                      log('Cannot load page: Viewer or document not ready');
-                                      return;
-                                  }}
-
-                                  if (currentModel) {{
-                                      log('Unloading current model');
-                                      viewer.unloadModel(currentModel);
-                                      currentModel = null;
-                                  }}
-
-                                  const viewable = viewables[index];
-                                  log('Loading page ' + (index + 1) + ', viewable ID: ' + (viewable.data ? viewable.data.guid : 'unknown'));
-
-                                  viewer.loadDocumentNode(doc, viewable)
-                                      .then(function(model) {{
-                                          currentModel = model;
-                                          log('Successfully loaded page ' + (index + 1));
-                                          currentPageIndex = index;
-
-                                          // Fit to view
-                                          viewer.fitToView();
-                                      }})
-                                      .catch(function(err) {{
-                                          log('Failed to load page: ' + (err.message || JSON.stringify(err)));
-                                      }});
-                              }} catch (e) {{
-                                  log('Error in loadPage: ' + e.message);
-                              }}
-                          }}
-                      </script>
-                  </body>
-                  </html>";
-
-                }
-
-
-                else
-                {
-                    // HTML content for 3D models WITH SKYBOX (fixed formatting)
-                    htmlContent = $@"
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset='UTF-8'>
-    <meta http-equiv='X-UA-Compatible' content='IE=Edge' />
-    <title>Forge Viewer with Environment Skybox</title>
-    <script src='https://developer.api.autodesk.com/modelderivative/v2/viewers/7.*/viewer3D.js'></script>
-    <link rel='stylesheet' href='https://developer.api.autodesk.com/modelderivative/v2/viewers/7.*/style.css' type='text/css'>
-    <style>
-        html, body {{ margin: 0; padding: 0; height: 100%; overflow: hidden; }}
-        #forgeViewer {{ width: 100%; height: 100vh; }}
-        #skyboxControls {{ position: absolute; top: 10px; left: 10px; background: rgba(255,255,255,0.9); padding: 10px; border-radius: 5px; z-index: 1000; }}
-        .skyboxButton {{ margin-right: 5px; padding: 5px 10px; cursor: pointer; }}
-        #debug {{ position: fixed; bottom: 0; left: 0; right: 0; height: 100px; background: rgba(0,0,0,0.7); color: #0f0; font-family: monospace; overflow-y: auto; display: none; z-index: 1000; }}
-    </style>
-</head>
-<body>
-    <div id='skyboxControls'>
-        <button id='skybox1' class='skyboxButton'>Space Skybox</button>
-        <button id='skybox2' class='skyboxButton'>Sunset Skybox</button>
-        <button id='skybox3' class='skyboxButton'>Volcano Skybox</button>
-        <button id='noSkybox' class='skyboxButton'>No Skybox</button>
-        <button id='toggleLogs' class='skyboxButton'>Show Logs</button>
-    </div>
-    <div id='forgeViewer'></div>
-    <div id='debug'></div>
-
-    <script>
-        function debug(msg) {{
-            console.log(msg);
-            var d = document.getElementById('debug');
-            var line = document.createElement('div');
-            line.textContent = msg;
-            d.appendChild(line);
-            d.scrollTop = d.scrollHeight;
-        }}
-
-        class SkyboxExtension extends Autodesk.Viewing.Extension {{
-            constructor(viewer, options) {{
-                super(viewer, options);
-                this.viewer = viewer;
-                this.skyboxes = {{
-                    space: [
-                        'https://firebasestorage.googleapis.com/v0/b/skybox-test-a3ffd.appspot.com/o/space%2Fright.png?alt=media',
-                        'https://firebasestorage.googleapis.com/v0/b/skybox-test-a3ffd.appspot.com/o/space%2Fleft.png?alt=media',
-                        'https://firebasestorage.googleapis.com/v0/b/skybox-test-a3ffd.appspot.com/o/space%2Ftop.png?alt=media',
-                        'https://firebasestorage.googleapis.com/v0/b/skybox-test-a3ffd.appspot.com/o/space%2Fbottom.png?alt=media',
-                        'https://firebasestorage.googleapis.com/v0/b/skybox-test-a3ffd.appspot.com/o/space%2Ffront.png?alt=media',
-                        'https://firebasestorage.googleapis.com/v0/b/skybox-test-a3ffd.appspot.com/o/space%2Fback.png?alt=media'
-                    ],
-                    sunset: [
-                        'https://firebasestorage.googleapis.com/v0/b/skybox-test-a3ffd.appspot.com/o/sunset%2Fright.png?alt=media',
-                        'https://firebasestorage.googleapis.com/v0/b/skybox-test-a3ffd.appspot.com/o/sunset%2Fleft.png?alt=media',
-                        'https://firebasestorage.googleapis.com/v0/b/skybox-test-a3ffd.appspot.com/o/sunset%2Ftop.png?alt=media',
-                        'https://firebasestorage.googleapis.com/v0/b/skybox-test-a3ffd.appspot.com/o/sunset%2Fbottom.png?alt=media',
-                        'https://firebasestorage.googleapis.com/v0/b/skybox-test-a3ffd.appspot.com/o/sunset%2Ffront.png?alt=media',
-                        'https://firebasestorage.googleapis.com/v0/b/skybox-test-a3ffd.appspot.com/o/sunset%2Fback.png?alt=media'
-                    ],
-                    volcano: [
-                        'https://my-skybox-images.s3.eu-north-1.amazonaws.com/px.png',
-                        'https://my-skybox-images.s3.eu-north-1.amazonaws.com/nx.png',
-                        'https://my-skybox-images.s3.eu-north-1.amazonaws.com/py.png',
-                        'https://my-skybox-images.s3.eu-north-1.amazonaws.com/ny.png',
-                        'https://my-skybox-images.s3.eu-north-1.amazonaws.com/pz.png',
-                        'https://my-skybox-images.s3.eu-north-1.amazonaws.com/nz.png'
-                    ]
-                }};
-            }}
-
-            load() {{
-                debug('SkyboxExtension loaded');
-                return true;
-            }}
-
-            unload() {{
-                this.viewer.impl.scene.environmentMap = null;
-                this.viewer.setLightPreset(1);
-                this.viewer.impl.invalidate(true, true, true);
-                return true;
-            }}
-
-            setSkybox(name) {{
-                const viewer = this.viewer;
-                const urls = this.skyboxes[name];
-                if (!urls || !viewer) return;
-
-                let THREE = Autodesk?.Viewing?.Private?.THREE;
-                if (!THREE || !THREE.TextureLoader || !THREE.CubeTexture) {{
-                    debug('Missing THREE.TextureLoader or CubeTexture');
-                    return;
-                }}
-
-                const loader = new THREE.TextureLoader();
-                loader.setCrossOrigin('Anonymous');
-
-                const faces = [];
-                let loaded = 0;
-                for (let i = 0; i < 6; i++) {{
-                    loader.load(urls[i], function(texture) {{
-                        faces[i] = texture.image;
-                        loaded++;
-                        if (loaded === 6) {{
-                            const cubeMap = new THREE.CubeTexture(faces);
-                            cubeMap.needsUpdate = true;
-                            viewer.impl.setEnvironmentMap(cubeMap);
-                            viewer.setLightPreset(0);
-                            viewer.impl.invalidate(true, true, true);
-                            debug('Skybox applied: ' + name);
-                        }}
-                    }}, undefined, function(err) {{
-                        debug('Error loading texture ' + urls[i]);
-                    }});
-                }}
-            }}
-        }}
-
-        Autodesk.Viewing.theExtensionManager.registerExtension('SkyboxExtension', SkyboxExtension);
-
-        var viewer;
-        var skyboxExt;
-        var options = {{
-            env: 'AutodeskProduction',
-            api: 'derivativeV2',
-            getAccessToken: function(onTokenReady) {{
-                onTokenReady('{accessToken}', 3599);
-            }}
-        }};
-        var documentId = 'urn:{encodedUrn}';
-
-        document.getElementById('skybox1').onclick = () => skyboxExt && skyboxExt.setSkybox('space');
-        document.getElementById('skybox2').onclick = () => skyboxExt && skyboxExt.setSkybox('sunset');
-        document.getElementById('skybox3').onclick = () => skyboxExt && skyboxExt.setSkybox('volcano');
-        document.getElementById('noSkybox').onclick = () => {{
-            skyboxExt?.unload();
-            debug('Skybox cleared');
-        }};
-        document.getElementById('toggleLogs').onclick = function() {{
-            const debugEl = document.getElementById('debug');
-            if (debugEl.style.display === 'none') {{
-                debugEl.style.display = 'block';
-                this.textContent = 'Hide Logs';
-            }} else {{
-                debugEl.style.display = 'none';
-                this.textContent = 'Show Logs';
-            }}
-        }};
-
-        Autodesk.Viewing.Initializer(options, function() {{
-            viewer = new Autodesk.Viewing.GuiViewer3D(document.getElementById('forgeViewer'));
-            viewer.start();
-            viewer.loadExtension('SkyboxExtension').then(ext => {{
-                skyboxExt = ext;
-            }});
-            Autodesk.Viewing.Document.load(documentId, function(doc) {{
-                var defaultModel = doc.getRoot().getDefaultGeometry();
-                viewer.loadDocumentNode(doc, defaultModel).then(() => {{
-                    viewer.fitToView();
-                }});
-            }}, function(code, msg) {{
-                debug('Error loading model: ' + code + ' - ' + msg);
-            }});
-        }});
-    </script>
-</body>
-</html>";
-
-
-
-
-                }
-
-                // Navigate to the HTML content
-                ForgeWebView.NavigateToString(htmlContent);
-
-                // Attach a handler to get JavaScript console logs (optional)
-                ForgeWebView.CoreWebView2.WebMessageReceived += (sender, e) => {
-                    Console.WriteLine($"WebView2 message: {e.WebMessageAsJson}");
-                };
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"❌ WebView2 initialization failed: {ex.Message}");
-                System.Windows.Forms.MessageBox.Show($"Error initializing viewer: {ex.Message}", "Error",
-                    System.Windows.Forms.MessageBoxButtons.OK,
-                    System.Windows.Forms.MessageBoxIcon.Error);
-            }
-        }
-
 
         // Helper method to determine if a file is a PDF
         private bool IsPdfFile(string filename)
@@ -4412,111 +3907,151 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             return !string.IsNullOrEmpty(filename) &&
                    System.IO.Path.GetExtension(filename).Equals(".pdf", StringComparison.OrdinalIgnoreCase);
         }
+        /*  private async void OpenPdfInForgeViewer(string projectId, string itemId, string fileName)
+          {
+              try
+              {
+                  // Track the last active view for when we close the viewer
+                  if (ModelsDataGrid.Visibility == Visibility.Visible)
+                  {
+                      _lastViewType = ViewType.List;
+                  }
+                  else if (Grid_View.Visibility == Visibility.Visible)
+                  {
+                      _lastViewType = ViewType.Grid;
+                  }
+
+                  // Hide both views
+                  ModelsDataGrid.Visibility = Visibility.Collapsed;
+                  Grid_View.Visibility = Visibility.Collapsed;
+
+                  // Show the Forge Viewer
+                  ForgeViewerContainer.Visibility = Visibility.Visible;
+                  ForgeWebView.Visibility = Visibility.Visible;
+
+                  Console.WriteLine($"📑 Opening PDF in Forge Viewer: {fileName}");
+                  Console.WriteLine($"- Item ID: {itemId}");
+                  Console.WriteLine($"- Project ID: {projectId}");
+
+                  // Get the storage ID for the PDF file
+                  string objectId;
+                  FileDownloadService fileService = new FileDownloadService();
+                  objectId = await fileService.GetStorageIdFromItem(projectId, itemId);
+
+                  if (string.IsNullOrEmpty(objectId))
+                  {
+                      MessageBox.Show("Could not retrieve PDF file information.", "PDF Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                      return;
+                  }
+
+                  _objectId = objectId; // Update global storage ID
+
+                  // Encode URN
+                  string encodedUrn = EncodeObjectIdToUrn(objectId);
+                  if (string.IsNullOrEmpty(encodedUrn))
+                  {
+                      MessageBox.Show("Failed to process PDF identifier.", "Processing Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                      return;
+                  }
+
+                  Console.WriteLine($"✅ Encoded URN for PDF: {encodedUrn}");
+
+                  // Check if the PDF file is already translated
+                  ModelDerivativeService modelService = new ModelDerivativeService(new HttpClient());
+                  bool translationComplete = await modelService.IsTranslationCompletedAsync(encodedUrn, _accessToken);
+
+                  if (!translationComplete)
+                  {
+                      Console.WriteLine("🔄 Submitting PDF translation job...");
+
+                      // For PDFs, we use the specialized PDF translation method
+                      bool jobResponse = await modelService.SubmitPdfForTranslationAsync(encodedUrn, _accessToken);
+
+                      Console.WriteLine($"✅ PDF translation job submitted: {jobResponse}");
+
+                      if (!jobResponse)
+                      {
+                          MessageBox.Show("❌ PDF translation job failed to submit.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                          return;
+                      }
+
+                      // Wait for translation to complete
+                      int maxRetries = 30;
+                      int delayMs = 2000;
+                      bool isReady = false;
+
+                      for (int attempt = 1; attempt <= maxRetries; attempt++)
+                      {
+                          Console.WriteLine($"⏳ Waiting for PDF translation... (Attempt {attempt}/{maxRetries})");
+
+                          isReady = await modelService.IsTranslationCompletedAsync(encodedUrn, _accessToken);
+                          if (isReady)
+                          {
+                              Console.WriteLine("✅ PDF translation completed successfully!");
+                              break;
+                          }
+
+                          await Task.Delay(delayMs);
+                      }
+
+                      if (!isReady)
+                      {
+                          MessageBox.Show("❌ PDF translation failed or timed out.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                          return;
+                      }
+                  }
+
+                  Console.WriteLine($"🔍 Opening Forge Viewer for PDF: {fileName}");
+
+                  // Load PDF in Forge Viewer - reuse your existing method with a PDF flag
+                  LoadForgeViewer(encodedUrn, true);
+              }
+              catch (Exception ex)
+              {
+                  MessageBox.Show($"❌ Error opening PDF: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                  Console.WriteLine($"❌ Error opening PDF: {ex.Message}\n{ex.StackTrace}");
+              }
+          }*/
         private async void OpenPdfInForgeViewer(string projectId, string itemId, string fileName)
         {
             try
             {
-                // Track the last active view for when we close the viewer
+                // Track current view
                 if (ModelsDataGrid.Visibility == Visibility.Visible)
-                {
                     _lastViewType = ViewType.List;
-                }
                 else if (Grid_View.Visibility == Visibility.Visible)
-                {
                     _lastViewType = ViewType.Grid;
-                }
 
-                // Hide both views
+                // Hide views, show viewer
                 ModelsDataGrid.Visibility = Visibility.Collapsed;
                 Grid_View.Visibility = Visibility.Collapsed;
-
-                // Show the Forge Viewer
                 ForgeViewerContainer.Visibility = Visibility.Visible;
                 ForgeWebView.Visibility = Visibility.Visible;
 
                 Console.WriteLine($"📑 Opening PDF in Forge Viewer: {fileName}");
-                Console.WriteLine($"- Item ID: {itemId}");
                 Console.WriteLine($"- Project ID: {projectId}");
+                Console.WriteLine($"- Item ID: {itemId}");
 
-                // Get the storage ID for the PDF file
-                string objectId;
-                FileDownloadService fileService = new FileDownloadService();
-                objectId = await fileService.GetStorageIdFromItem(projectId, itemId);
+                // Use service to get viewer HTML
+                var viewerService = new ForgeViewerService(_accessToken);
+                string? html = await viewerService.GetPdfViewerHtmlAsync(projectId, itemId);
 
-                if (string.IsNullOrEmpty(objectId))
+                if (string.IsNullOrEmpty(html))
                 {
-                    MessageBox.Show("Could not retrieve PDF file information.", "PDF Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show("❌ Failed to prepare PDF for viewing.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
-                _objectId = objectId; // Update global storage ID
-
-                // Encode URN
-                string encodedUrn = EncodeObjectIdToUrn(objectId);
-                if (string.IsNullOrEmpty(encodedUrn))
-                {
-                    MessageBox.Show("Failed to process PDF identifier.", "Processing Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-
-                Console.WriteLine($"✅ Encoded URN for PDF: {encodedUrn}");
-
-                // Check if the PDF file is already translated
-                ModelDerivativeService modelService = new ModelDerivativeService(new HttpClient());
-                bool translationComplete = await modelService.IsTranslationCompletedAsync(encodedUrn, _accessToken);
-
-                if (!translationComplete)
-                {
-                    Console.WriteLine("🔄 Submitting PDF translation job...");
-
-                    // For PDFs, we use the specialized PDF translation method
-                    bool jobResponse = await modelService.SubmitPdfForTranslationAsync(encodedUrn, _accessToken);
-
-                    Console.WriteLine($"✅ PDF translation job submitted: {jobResponse}");
-
-                    if (!jobResponse)
-                    {
-                        MessageBox.Show("❌ PDF translation job failed to submit.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                        return;
-                    }
-
-                    // Wait for translation to complete
-                    int maxRetries = 30;
-                    int delayMs = 2000;
-                    bool isReady = false;
-
-                    for (int attempt = 1; attempt <= maxRetries; attempt++)
-                    {
-                        Console.WriteLine($"⏳ Waiting for PDF translation... (Attempt {attempt}/{maxRetries})");
-
-                        isReady = await modelService.IsTranslationCompletedAsync(encodedUrn, _accessToken);
-                        if (isReady)
-                        {
-                            Console.WriteLine("✅ PDF translation completed successfully!");
-                            break;
-                        }
-
-                        await Task.Delay(delayMs);
-                    }
-
-                    if (!isReady)
-                    {
-                        MessageBox.Show("❌ PDF translation failed or timed out.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                        return;
-                    }
-                }
-
-                Console.WriteLine($"🔍 Opening Forge Viewer for PDF: {fileName}");
-
-                // Load PDF in Forge Viewer - reuse your existing method with a PDF flag
-                LoadForgeViewer(encodedUrn, true);
+                // Load the HTML into WebView2
+                await LoadHtmlIntoForgeWebViewAsync(html);
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"❌ Error opening PDF: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                Console.WriteLine($"❌ Error opening PDF: {ex.Message}\n{ex.StackTrace}");
+                Console.WriteLine($"❌ Exception: {ex.Message}\n{ex.StackTrace}");
             }
         }
+
 
         #endregion
 
@@ -4925,18 +4460,18 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         }
 
         // Refresh current model data
-        private async Task RefreshCurrentModel()
+        private async Task RefreshCurrentModel(string versionId = null)
         {
             try
             {
                 // Refresh storage ID for the currently selected model
                 await FetchAndSetStorageId();
 
-                // Refresh model metadata
+                // Refresh model metadata with the versionId if provided
                 if (ModelInfo.Visibility == Visibility.Visible)
                 {
-                    await LoadMetadata();
-                    Console.WriteLine($"✅ Refreshed metadata for model {_selectedItemId}");
+                    await LoadMetadata(versionId);
+                    Console.WriteLine($"✅ Refreshed metadata for model {_selectedItemId} (Version: {versionId ?? "latest"})");
                 }
 
                 // Refresh comments if they're visible
@@ -4950,7 +4485,14 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 // Refresh model thumbnail
                 await Dispatcher.InvokeAsync(() =>
                 {
-                    DisplayModelThumb();
+                    if (versionId == null)
+                    {
+                        DisplayModelThumb();
+                    }
+                    else
+                    {
+                        DisplayModelThumb(versionId);
+                    }
                 });
             }
             catch (Exception ex)
@@ -4958,6 +4500,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 Console.WriteLine($"❌ Error refreshing model data: {ex.Message}");
             }
         }
+
 
         // Call this method to clean up the timer when the window is closed
         private void CleanupBackgroundRefresh()
@@ -5654,14 +5197,14 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         }
 
 
-        private async Task LoadModelData()
+        private async Task LoadModelData(string versionId = null)
         {
             if (ModelDataSidebar.Width.Value != 250)
             {
                 ModelDataSidebar.Width = new GridLength(250);
             }
 
-            //ModelThumbnail.Visibility = Visibility.Visible;
+            // ModelThumbnail.Visibility = Visibility.Visible;
             ModelComments.Visibility = Visibility.Collapsed;
             ModelInfo.Visibility = Visibility.Visible;
 
@@ -5683,70 +5226,150 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 ListModelButtonBorder.Visibility = Visibility.Collapsed;
             }
 
-            DisplayModelThumb();
+            if (versionId == null)
+            {
+                DisplayModelThumb();
+            }
+            else
+            {
+                DisplayModelThumb(versionId);
+            }
 
-            await LoadMetadata();
+                // Load metadata with the provided versionId (if any)
+                await LoadMetadata(versionId);
 
             await DisplayTags();
         }
 
-        private async Task LoadMetadata()
+
+        private async Task LoadMetadata(string versionId = null)
         {
+            if (versionId == null)
+            {
+                Console.WriteLine("VERSION ID IS NULL");
+            }
+            else
+            {
+                Console.WriteLine($"        model versionId {versionId}");
+            }
+
             if (_selectedModel == null)
             {
                 MessageBox.Show("❌ No model selected.");
                 return;
             }
 
-            DataManagement dataManagement = new DataManagement();
+            ModelData modelMetadata = null;
 
-            // Get metadata from API
-            ModelData modelMetadata = await dataManagement.GetModelMetadataAsync(
-                _selectedModel["ProjectId"], _selectedModel["Id"]
-            );
-           
+            // If no versionId is provided, fetch the latest version using GetItemVersions
+            if (versionId == null)
+            {
+                try
+                {
+                    // Fetch all versions for the selected model using DataManagement.GetItemVersions (static method)
+                    var versionsList = await DataManagement.GetItemVersions(_selectedModel["ProjectId"], _selectedModel["Id"]);
+
+                    if (versionsList != null && versionsList.Any())
+                    {
+                        // Get the latest version (highest version number)
+                        var latestVersion = versionsList.OrderByDescending(v => v.VersionNumber).FirstOrDefault();
+
+                        if (latestVersion != default)
+                        {
+                            // Fetch and map the version-specific metadata into ModelData
+                            modelMetadata = new ModelData
+                            {
+                                Version = latestVersion.VersionNumber.ToString(),
+                                Name = _selectedModel["Name"],  // You can update this if the name is fetched elsewhere
+                                CreatedBy = latestVersion.CreatedBy,
+                                CreatedDate = latestVersion.CreateTime,
+                                ModifiedDate = "Not available",  // This may not be available in GetItemVersions
+                                ModifiedBy = "Not available",   // This may not be available in GetItemVersions
+                                FileSize = 0, // You might need to adjust this field if you have the size info
+                                Foldername = "Not available",   // Update this if folder info is available
+                                Format = "Not available",       // Format may be unavailable here, but you can map it
+                                PolyCount = 0,  // Update this if poly count data is available
+                                Dimensions = "Not available"   // Update if dimension data is available
+                            };
+
+                            Console.WriteLine("                 Metadata fetched for latest version.");
+                        }
+                        else
+                        {
+                            MessageBox.Show("❌ Latest version not found.");
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        MessageBox.Show("❌ No versions found for the selected model.");
+                        return;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"❌ Error fetching latest version metadata: {ex.Message}");
+                    return;
+                }
+            }
+            else // If versionId is provided, fetch metadata for that specific version
+            {
+                try
+                {
+                    // Fetch all versions for the selected model using DataManagement.GetItemVersions (static method)
+                    var versionsList = await DataManagement.GetItemVersions(_selectedModel["ProjectId"], _selectedModel["Id"]);
+
+                    if (versionsList != null && versionsList.Any())
+                    {
+                        // Find the version with the specified versionId
+                        var selectedVersion = versionsList.FirstOrDefault(v => v.VersionID == versionId);
+
+                        if (selectedVersion != default)
+                        {
+                            // Fetch and map the version-specific metadata into ModelData
+                            modelMetadata = new ModelData
+                            {
+                                Version = selectedVersion.VersionNumber.ToString(),
+                                Name = _selectedModel["Name"],  // Or fetch actual name if available
+                                CreatedBy = selectedVersion.CreatedBy,
+                                CreatedDate = selectedVersion.CreateTime,
+                                ModifiedDate = "Not available", // This may not be available in GetItemVersions
+                                ModifiedBy = "Not available",  // This may not be available in GetItemVersions
+                                FileSize = 0, // You might need to adjust this field if you have the size info
+                                Foldername = "Not available",  // Update if folder info is available
+                                Format = "Not available",      // Format may be unavailable here, but you can map it
+                                PolyCount = 0,                 // Update this if poly count data is available
+                                Dimensions = "Not available"  // Update if dimension data is available
+                            };
+
+                            Console.WriteLine("                 Metadata fetched for specified version.");
+                        }
+                        else
+                        {
+                            MessageBox.Show("❌ Specified version not found.");
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        MessageBox.Show("❌ No versions found for the selected model.");
+                        return;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"❌ Error fetching version metadata: {ex.Message}");
+                    return;
+                }
+            }
 
             if (modelMetadata != null)
             {
-                FileDownloadService fileDownloadService = new FileDownloadService();
+                // Log to verify the metadata
+                Console.WriteLine($"✅ Successfully fetched metadata for Version: {modelMetadata.Version ?? "latest"}");
 
-                var versions = await fileDownloadService.GetVersionsForItemAsync(
-                    _selectedModel["ProjectId"], _selectedModel["Id"]
-                );
-
-                // ✅ Add the manual version number extraction here
-                string latestVersionNumber = "Unknown";
-                if (versions != null && versions.Any())
-                {
-                    string versionId = versions.First().versionId;
-                    Console.WriteLine($"✅ versionId = {versionId}");
-
-                    if (versionId.Contains("version="))
-                    {
-                        string[] parts = versionId.Split(new[] { "version=" }, StringSplitOptions.None);
-                        if (parts.Length > 1)
-                        {
-                            string versionPart = parts[1];
-                            int endIndex = 0;
-                            while (endIndex < versionPart.Length && char.IsDigit(versionPart[endIndex]))
-                                endIndex++;
-
-                            latestVersionNumber = versionPart.Substring(0, endIndex);
-                        }
-                    }
-                }
-
-                // ✅ Update UI
-                string latestVersion = $"Version {latestVersionNumber}";
-                ModelVersionText.Text = latestVersion;
-                ModelVersionText.Tag = latestVersionNumber;
-                _selectedVersionNum = latestVersionNumber;
-
-                // ✅ Update UI fields with the full metadata
-                //IdText.Text = modelMetadata.Id;
+                // Update UI fields with the metadata
                 ModelNameText.Text = modelMetadata.Name;
-                //HubIdText.Text = modelMetadata.HubId;
-                //HubNameText.Text = modelMetadata.HubName;
                 CreatedByText.Text = modelMetadata.CreatedBy;
                 CreatedDateText.Text = modelMetadata.CreatedDate;
                 ModifiedDateText.Text = modelMetadata.ModifiedDate;
@@ -5755,19 +5378,58 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 // Convert bytes to MB with 2 decimal precision
                 FileSizeText.Text = $"{(modelMetadata.FileSize / 1_000_000.0):0.00} MB";
 
-                //PublicPrivateText.Text = modelMetadata.PublicPrivate;
                 FolderNameText.Text = modelMetadata.Foldername;
-                //FolderIdText.Text = modelMetadata.FolderId;
-                //ModelVersionText.Text = modelMetadata.Version.ToString();
                 FormatText.Text = modelMetadata.Format;
                 PolyCountText.Text = modelMetadata.PolyCount.ToString();
                 DimensionsText.Text = modelMetadata.Dimensions;
+
+                Console.WriteLine($"Version number: {modelMetadata.Version}");
+
+                // Update version info using the version number from the metadata
+                string versionInfo = modelMetadata.Version ?? "Latest Version";  // Using modelMetadata.Version here
+                ModelVersionText.Text = $"Version {versionInfo}";
+                ModelVersionText.Tag = modelMetadata.Version;  // Store the version number in the tag
             }
             else
             {
                 MessageBox.Show("❌ Failed to load model metadata.");
             }
         }
+
+
+
+        // Example method to fetch file size for a version
+        private async Task<long> GetFileSizeForVersion(string projectId, string itemId, string versionId)
+        {
+            // Implement logic to fetch file size for the version
+            // This could involve making an API call to fetch storage details and retrieving the file size
+            // For example, fetching storage info or using the appropriate API endpoint to get file size.
+            return 12345678; // Replace with actual file size retrieval logic
+        }
+
+        // Example method to fetch project name based on projectId
+        private async Task<string> GetProjectName(string projectId)
+        {
+            // Implement logic to fetch project name by projectId
+            // You can use an API to retrieve project details
+            return "Sample Project Name"; // Replace with actual project fetching logic
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         private void ModelVersionButton_Click(object sender, RoutedEventArgs e)
         {
@@ -5841,7 +5503,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             ListAllComments(_selectedModel["Id"]);
         }
 
-        private async void DisplayModelThumb()
+        private async void DisplayModelThumb(string versionId = null)
         {
             ModelNameText.Text = _selectedModel.ContainsKey("Name") ? _selectedModel["Name"] : "Unknown Model";
 
@@ -5855,7 +5517,17 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             ModelImage.Height = 120;
             ModelImage.HorizontalAlignment = HorizontalAlignment.Center;
 
-            _ = ShowThumbnail(_selectedModel["ProjectId"], _selectedModel["Id"], ModelImage);
+            if(versionId == null)
+            {
+                _ = ShowThumbnail(_selectedModel["ProjectId"], _selectedModel["Id"], ModelImage);
+
+            }
+            else
+            {
+                _ = ShowThumbnail(_selectedModel["ProjectId"], _selectedModel["Id"], ModelImage, versionId);
+
+            }
+
         }
 
         private StackPanel CreateModelThumbnailUI(Dictionary<string, string> model)
@@ -6507,12 +6179,22 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 List<Dictionary<string, string>> namesAZ = allListedModels.OrderBy(x => x["Name"]).ToList();
                 MarketplaceDataGrid.ItemsSource = namesAZ;
                 DisplayMarketplaceGrid(namesAZ);
+                ModelsButton.Background = Brushes.Aqua;
             }
             catch (Exception e)
             {
                 MessageBox.Show($"Error: {e.Message}");
                 throw;
             }
+        }
+
+        private async Task InitializeMarketplaceDecks()
+        {
+            MarketplaceDataGrid.ItemsSource = null;
+            List<Dictionary<string, string>> allListedDecks = await GetAllListedDecks();
+            List<Dictionary<string, string>> namesAZ = allListedDecks.OrderBy(x => x["Name"]).ToList();
+            MarketplaceDataGrid.ItemsSource = namesAZ;
+            DisplayMarketplaceGrid(namesAZ);
         }
 
         private async Task<List<Dictionary<string, string>>> GetAllListedModels()
@@ -6539,6 +6221,35 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             }
             return allListedModels;
         }
+
+        private async Task<List<Dictionary<string, string>>> GetAllListedDecks()
+        {
+            MongoConnection database = new MongoConnection();
+            List<Dictionary<string, string>> allListedDecks = new List<Dictionary<string, string>>();
+
+            var collection = database.GetCollection("Decks");
+            var filter = Builders<BsonDocument>.Filter.Eq("is_listed", true);
+            var decks = await collection.Find(filter).ToListAsync();
+
+            foreach (var deck in decks)
+            {
+                bool purchased = await CheckModelPurchased(deck["_id"].ToString(), _userId);
+                string sellerName = await GetUserName(deck["owner_id"].ToString());
+                allListedDecks.Add(new Dictionary<string, string>
+                {
+                    { "Name", deck["name"].ToString() },
+                    { "Description",deck["description"].ToString() },
+                    { "Seller", sellerName },
+                    { "Id", deck["_id"].ToString() },
+                    { "Price", deck["price"].ToString()},
+                    { "BuyVisibility", purchased ? "Collapsed" : "Visible" },
+                    { "PurchasedVisibility", purchased ? "Visible" : "Collapsed" },
+                    { "ProjectId", "N/A"}
+                });
+            }
+            
+            return allListedDecks;
+        }
         
         private async void BtnMarketplace_Click(object sender, RoutedEventArgs e)
         {
@@ -6553,6 +6264,20 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             MarketplaceBorder.Visibility = Visibility.Collapsed;
             ProjectsBorder.Visibility = Visibility.Visible;
             LibraryBorder.Visibility = Visibility.Visible;
+        }
+
+        private async void MarketplaceModels_Click(object sender, RoutedEventArgs e)
+        {
+            ModelsButton.Background = Brushes.Aqua;
+            DecksButton.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#540754"));
+            await InitializeMarketplace();
+        }
+
+        private async void MarketplaceDecks_Click(object sender, RoutedEventArgs e)
+        {
+            DecksButton.Background = Brushes.Aqua;
+            ModelsButton.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#540754"));
+            await InitializeMarketplaceDecks();
         }
         
         //list models
