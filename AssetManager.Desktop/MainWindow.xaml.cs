@@ -5132,52 +5132,6 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             }
         }
 
-        //initalise models sidebar
-        //private async Task InitializeModelsInfoSidebar()
-        //{
-        //    //display upvotes
-        //        int upvotes = await GetModelUpvoteCount(_selectedItemId);
-
-        //        await SetUserModelVote(_selectedItemId, _userId);
-        //        int vote = await GetUserModelVote(_selectedItemId, _userId);
-        //        if (vote == 1)
-        //        {
-        //            UpArrow.Kind = PackIconKind.ArrowTopBold;
-        //            UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#11d137"));
-        //            DownArrow.Kind = PackIconKind.ArrowDownBoldOutline;
-        //            DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
-        //        }
-        //        else if (vote == -1)
-        //        {
-        //            DownArrow.Kind = PackIconKind.ArrowDownBold;
-        //            DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d11111"));
-        //            UpArrow.Kind = PackIconKind.ArrowTopBoldOutline;
-        //            UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
-        //        }
-        //        else
-        //        {
-        //            UpArrow.Kind = PackIconKind.ArrowTopBoldOutline;
-        //            UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
-        //            DownArrow.Kind = PackIconKind.ArrowDownBoldOutline;
-        //            DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
-        //        }
-
-        //        string visibility = await GetModelVisibility();
-        //        if (visibility == "Public")
-        //        {
-        //            Public.IsSelected = true;
-        //        }
-        //        else if (visibility == "Private")
-        //        {
-        //            Private.IsSelected = true;
-        //        }
-
-        //        UpvoteTextBlock.Text = upvotes.ToString();
-        //        ClearComments();
-        //        //ListAllComments();
-        //        await DisplayTags();
-        //}
-
         private void CloseSidebar_Click(object sender, RoutedEventArgs e)
         {
             ModelDataSidebar.Width = new GridLength(0);
@@ -5218,6 +5172,10 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             if (findListing != null)
             {
                 ListModelButtonBorder.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                ListModelButtonBorder.Visibility = Visibility.Visible;
             }
 
             if (versionId == null)
@@ -5802,72 +5760,57 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             await database.ModelData.FindOneAndUpdateAsync(filter, update);
             await DisplayTags();
         }
-        
+
         private async Task DisplayTags()
         {
-            int i = 0;
+            TagsWrapPanel.Children.Clear(); // Clear all existing children (tags)
+
             List<string> tags = new List<string>();
             ModelData result = await GetModelTags();
+
             if (result == null)
-            {
                 return;
+
+            tags = result.Tags ?? new List<string>();
+
+            // Toggle the visibility of NoTagsText based on the tags
+            NoTagsText.Visibility = tags.Count > 0 ? Visibility.Collapsed : Visibility.Visible;
+
+            if (tags.Count == 0)
+            {
+                TagsWrapPanel.Children.Add(NoTagsText);
             }
 
-            foreach (var tag in result.Tags)
+            foreach (string tagText in tags)
             {
-                tags.Add(tag);
-            }
-
-            if (tags.Count > 0)
-            {
-                //TagsWrapPanel.Children.Remove(NoTagsText);
-                NoTagsText.Visibility = Visibility.Collapsed;
-            }
-            else
-            {
-                NoTagsText.Visibility = Visibility.Visible;
-            }
-            
-            //remove existing displayed tags
-            for (int j = TagsWrapPanel.Children.Count-1; j > -1; j--)
-            {
-                if (TagsWrapPanel.Children[j] is Border border)
+                var tagButton = new Button
                 {
-                    if (border.Child is Button)
-                    {
-                        TagsWrapPanel.Children.RemoveAt(j);
-                    }
-                }
-            }
-            
-            foreach (string Tag in tags)
-            {
-                Button tag = new Button
-                {
-                    Content = Tag,
+                    Content = tagText,
+                    Padding = new Thickness(10, 2, 10, 2),
+                    Margin = new Thickness(3),
                     Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#540754")),
-                    Height = 25,
-                    Width = 50,
-                    Foreground = new SolidColorBrush(Colors.White),
+                    Foreground = Brushes.White,
                     BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#98730C")),
-                    BorderThickness = new Thickness(2)
+                    BorderThickness = new Thickness(2),
+                    FontSize = 12,
+                    FontWeight = FontWeights.SemiBold,
+                    MinWidth = 40,
+                    HorizontalAlignment = HorizontalAlignment.Left
                 };
 
                 var border = new Border
                 {
-                    Background = tag.Background,
-                    BorderBrush = tag.BorderBrush,
-                    BorderThickness = tag.BorderThickness,
-                    CornerRadius = new CornerRadius(2),
-                    Margin = new Thickness(8, 0, 0, 0),
-                    Child = tag,
+                    Background = tagButton.Background,
+                    BorderBrush = tagButton.BorderBrush,
+                    BorderThickness = tagButton.BorderThickness,
+                    CornerRadius = new CornerRadius(3),
+                    Child = tagButton
                 };
-                
-                TagsWrapPanel.Children.Insert(i, border);
-                i++;
+
+                TagsWrapPanel.Children.Add(border);
             }
         }
-        
+
         private async Task<ModelData> GetModelTags()
         {
             MongoConnection database = new MongoConnection();
@@ -6139,9 +6082,14 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         
         private async void BtnMarketplace_Click(object sender, RoutedEventArgs e)
         {
+            ModelDataSidebar.Width = new GridLength(0);
+            ModelDataSidebarThumb.Width = new GridLength(0);
             MarketplaceBorder.Visibility = Visibility.Visible;
             ProjectsBorder.Visibility = Visibility.Collapsed;
             LibraryBorder.Visibility = Visibility.Collapsed;
+            ModelInfo.Visibility = Visibility.Collapsed;
+            ModelComments.Visibility = Visibility.Collapsed;
+
             await InitializeMarketplace();
         }
         
