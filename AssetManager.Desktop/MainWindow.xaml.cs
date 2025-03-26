@@ -6627,7 +6627,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         }
         
         //buy
-        private async void BtnBuy_Click(object sender, RoutedEventArgs e)
+        public async void BtnBuy_Click(object sender, RoutedEventArgs e)
         {
             try
             {
@@ -7070,13 +7070,10 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
         private void OpenDeckView_Click(object sender, RoutedEventArgs e)
         {
-            DeckView dv = new DeckView("67e2f7a49020b20098f0e97a");
+            DeckView dv = new DeckView(); //67e2f7a49020b20098f0e97a
             dv.Show();
-            
         }
-
     }
-
 }
 
 
