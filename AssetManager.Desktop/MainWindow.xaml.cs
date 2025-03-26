@@ -198,7 +198,7 @@ namespace AssetManager.Desktop
 
               
                 //await RefreshHubs();
-                LoadProjectsForHub(hubID);
+                await LoadProjectsForHub(hubID);
                 await DisplayNotifications();
                 await AddNotifsToCentre();
                 //FusionManager.InitializePythonEngine();
@@ -314,7 +314,7 @@ namespace AssetManager.Desktop
             }
         }
 
-        private async void LoadProjectsForHub(string hubID)
+        private async Task LoadProjectsForHub(string hubID)
         {
             // Show fantasy loading bar
             LoadingProgressBar.Visibility = Visibility.Visible;
@@ -1616,49 +1616,74 @@ namespace AssetManager.Desktop
                     Debug.WriteLine($"⚠️ No subitems found for folderId: {folderId}");
 
                     // **Ensure empty folders keep a placeholder**
-                    parentFolder.Items.Add(new TreeViewItem { Header = " (empty)", IsEnabled = false });
+                    parentFolder.Items.Add(new TreeViewItem { Header = "📂 This folder is empty", IsEnabled = false });
                     return;
                 }
 
-                foreach (var (subItemId, subItemName, isSubFolder) in subItems)
+                // Group items into folders and files
+                var groupedItems = subItems
+                    .GroupBy(item => item.Item3) // Group by folder vs file
+                    .ToDictionary(g => g.Key, g => g.ToList());
+
+                // **First, process folders**
+                if (groupedItems.ContainsKey(true)) // Key is 'true' for folders
                 {
-                    if (string.IsNullOrEmpty(subItemId) || string.IsNullOrEmpty(subItemName))
+                    foreach (var (subItemId, subItemName, isSubFolder) in groupedItems[true])
                     {
-                        Debug.WriteLine("⚠️ Skipping invalid subItem with missing ID or name.");
-                        continue;
-                    }
+                        TreeViewItem subItem = new TreeViewItem
+                        {
+                            Header = $"📁 {subItemName}",
+                            Tag = (projectId, subItemId, true),
+                            ContextMenu = CreateContextMenu(projectId, subItemId, true)
+                        };
 
-                    bool isPdf = !isSubFolder && Path.GetExtension(subItemName)?.ToLowerInvariant() == ".pdf";
-
-                    TreeViewItem subItem = new TreeViewItem
-                    {
-                        Header = isSubFolder ? $"📁 {subItemName}" : $"📄 {subItemName}",
-                        Tag = (projectId, subItemId, isSubFolder, isPdf),
-                        ContextMenu = CreateContextMenu(projectId, subItemId, isSubFolder)
-                    };
-
-                    if (isSubFolder)
-                    {
-                        // **Add a dummy item to ensure the chevron remains**
+                        // Add a dummy item to indicate the folder has subfolders or files (lazy load)
                         subItem.Items.Add(new TreeViewItem { Header = "Loading...", IsEnabled = false });
 
+                        parentFolder.Items.Add(subItem);
+                    }
+                }
+
+                // **Next, process files**
+                if (groupedItems.ContainsKey(false)) // Key is 'false' for files
+                {
+                    foreach (var (subItemId, subItemName, isSubFolder) in groupedItems[false])
+                    {
+                        bool isPdf = !isSubFolder && Path.GetExtension(subItemName)?.ToLowerInvariant() == ".pdf";
+
+                        TreeViewItem subItem = new TreeViewItem
+                        {
+                            Header = $"📄 {subItemName}",
+                            Tag = (projectId, subItemId, false, isPdf),
+                            ContextMenu = CreateContextMenu(projectId, subItemId, false)
+                        };
+
+                        parentFolder.Items.Add(subItem);
+                    }
+                }
+
+                // After loading subfolders and files, handle lazy loading for folders when expanded
+                foreach (TreeViewItem subItem in parentFolder.Items)
+                {
+                    if (subItem.Tag is (string subProjectId, string subFolderId, bool isSubFolder) && isSubFolder)
+                    {
                         subItem.Expanded += async (s, e) =>
                         {
                             if (subItem.Items.Count == 1 && subItem.Items[0] is TreeViewItem item && item.Header.ToString() == "Loading...")
                             {
                                 subItem.Items.Clear();
-                                await LoadSubfoldersAsync(subItem, projectId, subItemId);
 
-                                // **Ensure an empty folder still has a placeholder**
-                                if (subItem.Items.Count == 0) // ✅ FIXED: Use Count instead of .Any()
+                                // Load the subfolder items again (one-time load)
+                                await LoadSubfoldersAsync(subItem, subProjectId, subFolderId);
+
+                                // Ensure empty folders show a message
+                                if (subItem.Items.Count == 0)
                                 {
-                                    subItem.Items.Add(new TreeViewItem { Header = " (empty)", IsEnabled = false });
+                                    subItem.Items.Add(new TreeViewItem { Header = "📂 This folder is empty", IsEnabled = false });
                                 }
                             }
                         };
                     }
-
-                    parentFolder.Items.Add(subItem);
                 }
             }
             catch (Exception ex)
@@ -1666,6 +1691,7 @@ namespace AssetManager.Desktop
                 Debug.WriteLine($"❌ Error in LoadSubfoldersAsync: {ex.Message}\n{ex.StackTrace}");
             }
         }
+
 
 
 
@@ -1694,6 +1720,7 @@ namespace AssetManager.Desktop
             string folderName = PromptForFolderName();
             if (string.IsNullOrWhiteSpace(folderName)) return;
 
+            // Disable the context menu while creating the folder to prevent multiple clicks
             ContextMenu currentMenu = ContextMenuService.GetContextMenu(ProjectTreeView);
             if (currentMenu != null) currentMenu.IsEnabled = false;
 
@@ -1703,14 +1730,27 @@ namespace AssetManager.Desktop
 
             if (success)
             {
-                MessageBox.Show($"✅ Folder '{folderName}' created successfully!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                // Find the parent item in the TreeView
                 TreeViewItem parentItem = FindTreeViewItem(ProjectTreeView.Items, parentFolderId);
                 if (parentItem != null)
                 {
+                    // Remove the "empty folder" message if it exists
+                    var emptyFolderItem = parentItem.Items.OfType<TreeViewItem>()
+                        .FirstOrDefault(item => item.Header.ToString() == "📂 This folder is empty");
+
+                    if (emptyFolderItem != null)
+                    {
+                        parentItem.Items.Remove(emptyFolderItem);
+                    }
+
+                    // Add the new folder to the TreeView
                     await AddNewFolderToTreeView(parentItem, projectId, parentFolderId, folderName);
                 }
             }
         }
+
+        //await LoadProjectsForHub(selectedHubID);
+
 
 
         private async Task AddNewFolderToTreeView(TreeViewItem parentItem, string projectId, string parentFolderId, string folderName)
