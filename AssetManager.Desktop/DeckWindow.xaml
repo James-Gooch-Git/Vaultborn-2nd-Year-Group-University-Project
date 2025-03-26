@@ -342,7 +342,8 @@
                         HorizontalAlignment="Center"
                         VerticalAlignment="Center"
                         Margin="0,0,40,0"
-                        Height="200">
+                        MinHeight="220"
+                        MaxHeight="320">
 
                     <StackPanel Margin="15">
                         <!-- Scroll Decoration Top -->
@@ -387,6 +388,7 @@
                                     <!-- Stats will be added dynamically here -->
                                 </StackPanel>
                         </Border>
+
                         <Border>
                             <Button Content="+ Add Stats" 
                                     HorizontalAlignment="Center" 
@@ -394,7 +396,7 @@
                                     Style="{StaticResource StatsButtonStyle}"
                                     Click="AddStats_Click"/>
                         </Border>
-
+                        
                         <!-- Scroll Decoration Bottom -->
                         <Path Data="M0,0 C20,5 40,-5 60,0 C80,5 100,-5 120,0" 
                                 Stroke="#FFD700" 
@@ -403,6 +405,8 @@
                                 HorizontalAlignment="Center" 
                                 Width="120"
                                 Height="1"/>
+                        
+                        
                     </StackPanel>
                 </Border>
             </Grid>
@@ -413,16 +417,16 @@
             <!-- Background Panel Behind Cards -->
             <Border Background="#00001a" BorderBrush="#1E0A30" BorderThickness="0"
                     HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
-                    Panel.ZIndex="-1"/> 
+                    Panel.ZIndex="0"/> 
 
             <!-- Horizontal Scrolling Deck -->
             <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" 
-                          Height="150" Width="750" HorizontalAlignment="Left">
+                          Height="Auto" Width="750" HorizontalAlignment="Left" Panel.ZIndex="2"> 
                 <StackPanel x:Name="CardListPanel"
                             Orientation="Horizontal"
                             HorizontalAlignment="Left"
                             VerticalAlignment="Top"
-                            Margin="0, 0, -10, 30">
+                            Margin="0, 0, -10, -20">
                     <!-- Cards will be added dynamically here -->
                 </StackPanel>
             </ScrollViewer>

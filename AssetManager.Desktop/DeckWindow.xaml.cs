@@ -475,20 +475,30 @@ namespace AssetManager.Desktop
             // Ensure both name and value are provided
             if (!string.IsNullOrWhiteSpace(statName) && !string.IsNullOrWhiteSpace(statValue))
             {
-                // Create a new TextBlock to display the stat
-                TextBlock newStat = new TextBlock
+                if (_decksCollection != null && _deckId != null && _selectedCard != null)
                 {
-                    Text = $"{statName}: {statValue}",
-                    Foreground = Brushes.White,
-                    FontSize = 14,
-                    Margin = new Thickness(5, 2, 5, 2)
-                };
+                    TextBlock newStat = new TextBlock
+                    {
+                        Text = $"{statName}: {statValue}",
+                        Foreground = Brushes.White,
+                        FontSize = 14,
+                        Margin = new Thickness(5, 2, 5, 2)
+                    };
 
-                // Add the stat to the panel
-                SelectedCardStatsPanel.Children.Add(newStat);
+                    // Add the stat to the panel
+                    SelectedCardStatsPanel.Children.Add(newStat);
 
-                // Upload stat to MongoDB
-                await UploadStatToMongo(statName, statValue);
+                    // Upload stat to MongoDB
+                    await UploadStatToMongo(statName, statValue);
+                }
+                else
+                {
+                    MessageBox.Show("Please select a deck and card", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            else
+            {
+                MessageBox.Show("PLease fill all fields", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             
         }
