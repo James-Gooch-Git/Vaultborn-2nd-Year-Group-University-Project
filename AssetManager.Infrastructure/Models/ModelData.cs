@@ -65,7 +65,5 @@ namespace AssetManager.Infrastructure.Models
         [BsonElement("_dimensions")]
         public string Dimensions { get; set; }
 
-        [BsonElement("isDeleted")]
-        public bool isDeleted { get; set; }
     }
 }

@@ -1656,6 +1656,104 @@ namespace AssetManager.Desktop
           }*/
 
 
+        //private async Task LoadSubfoldersAsync(TreeViewItem parentFolder, string projectId, string folderId)
+        //{
+        //    try
+        //    {
+        //        if (parentFolder == null || string.IsNullOrEmpty(projectId) || string.IsNullOrEmpty(folderId))
+        //        {
+        //            Debug.WriteLine("⚠️ LoadSubfoldersAsync was called with null or empty values.");
+        //            return;
+        //        }
+
+        //        var subItems = await DataManagement.GetProjectItems(projectId, folderId);
+
+        //        // Clear previous items
+        //        parentFolder.Items.Clear();
+
+        //        if (subItems == null || subItems.Count == 0)
+        //        {
+        //            Debug.WriteLine($"⚠️ No subitems found for folderId: {folderId}");
+
+        //            // **Ensure empty folders keep a placeholder**
+        //            parentFolder.Items.Add(new TreeViewItem { Header = "📂 This folder is empty", IsEnabled = false });
+        //            return;
+        //        }
+
+        //        // Group items into folders and files
+        //        var groupedItems = subItems
+        //            .GroupBy(item => item.Item3) // Group by folder vs file
+        //            .ToDictionary(g => g.Key, g => g.ToList());
+
+        //        // **First, process folders**
+        //        if (groupedItems.ContainsKey(true)) // Key is 'true' for folders
+        //        {
+        //            if (string.IsNullOrEmpty(subItemId) || string.IsNullOrEmpty(subItemName))
+        //                continue;
+
+        //            bool is3DModel = false;
+
+        //            if (!isSubFolder)
+        //            {
+        //                string extension = Path.GetExtension(subItemName)?.ToLowerInvariant();
+        //                is3DModel = Accepted3DModelExtensions.Contains(extension);
+        //            }
+        //        }
+
+        //        // **Next, process files**
+        //        if (groupedItems.ContainsKey(false)) // Key is 'false' for files
+        //        {
+        //            foreach (var (subItemId, subItemName, isSubFolder) in groupedItems[false])
+        //            {
+        //                bool isPdf = !isSubFolder && Path.GetExtension(subItemName)?.ToLowerInvariant() == ".pdf";
+
+        //            TreeViewItem subItem = new TreeViewItem
+        //            {
+        //                Header = isSubFolder
+        //                ? CreateHeader("Icons2/folder_icon.svg", subItemName, 30, 30)
+        //                : CreateHeader(GetIconForExtension(Path.GetExtension(subItemName)), subItemName, 30, 30),
+
+        //                Tag = (projectId, subItemId, isSubFolder, is3DModel),
+        //                ContextMenu = CreateContextMenu(projectId, subItemId, isSubFolder)
+        //            };
+
+        //                parentFolder.Items.Add(subItem);
+        //            }
+        //        }
+
+        //        // After loading subfolders and files, handle lazy loading for folders when expanded
+        //        foreach (TreeViewItem subItem in parentFolder.Items)
+        //        {
+        //            if (subItem.Tag is (string subProjectId, string subFolderId, bool isSubFolder) && isSubFolder)
+        //            {
+        //                // Lazy load children when expanded
+        //                subItem.Items.Add(new TreeViewItem { Header = "Loading...", IsEnabled = false });
+
+        //                subItem.Expanded += async (s, e) =>
+        //                {
+        //                    if (subItem.Items.Count == 1 && subItem.Items[0] is TreeViewItem dummy && dummy.Header.ToString() == "Loading...")
+        //                    {
+        //                        subItem.Items.Clear();
+
+        //                        // Load the subfolder items again (one-time load)
+        //                        await LoadSubfoldersAsync(subItem, subProjectId, subFolderId);
+
+        //                        if (subItem.Items.Count == 0)
+        //                        {
+        //                            subItem.Items.Add(new TreeViewItem { Header = "📂 This folder is empty", IsEnabled = false });
+        //                        }
+        //                    }
+        //                };
+        //            }
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Debug.WriteLine($"❌ Error in LoadSubfoldersAsync: {ex.Message}\n{ex.StackTrace}");
+        //    }
+        //}
+
+
         private async Task LoadSubfoldersAsync(TreeViewItem parentFolder, string projectId, string folderId)
         {
             try
@@ -1666,6 +1764,7 @@ namespace AssetManager.Desktop
                     return;
                 }
 
+                // ✅ This already filters out deleted models
                 var subItems = await DataManagement.GetProjectItems(projectId, folderId);
 
                 // Clear previous items
@@ -1673,20 +1772,11 @@ namespace AssetManager.Desktop
 
                 if (subItems == null || subItems.Count == 0)
                 {
-                    Debug.WriteLine($"⚠️ No subitems found for folderId: {folderId}");
-
-                    // **Ensure empty folders keep a placeholder**
-                    parentFolder.Items.Add(new TreeViewItem { Header = "📂 This folder is empty", IsEnabled = false });
+                    parentFolder.Items.Add(new TreeViewItem { Header = " (empty)", IsEnabled = false });
                     return;
                 }
 
-                // Group items into folders and files
-                var groupedItems = subItems
-                    .GroupBy(item => item.Item3) // Group by folder vs file
-                    .ToDictionary(g => g.Key, g => g.ToList());
-
-                // **First, process folders**
-                if (groupedItems.ContainsKey(true)) // Key is 'true' for folders
+                foreach (var (subItemId, subItemName, isSubFolder) in subItems)
                 {
                     if (string.IsNullOrEmpty(subItemId) || string.IsNullOrEmpty(subItemName))
                         continue;
@@ -1698,14 +1788,6 @@ namespace AssetManager.Desktop
                         string extension = Path.GetExtension(subItemName)?.ToLowerInvariant();
                         is3DModel = Accepted3DModelExtensions.Contains(extension);
                     }
-                }
-
-                // **Next, process files**
-                if (groupedItems.ContainsKey(false)) // Key is 'false' for files
-                {
-                    foreach (var (subItemId, subItemName, isSubFolder) in groupedItems[false])
-                    {
-                        bool isPdf = !isSubFolder && Path.GetExtension(subItemName)?.ToLowerInvariant() == ".pdf";
 
                     TreeViewItem subItem = new TreeViewItem
                     {
@@ -1717,14 +1799,7 @@ namespace AssetManager.Desktop
                         ContextMenu = CreateContextMenu(projectId, subItemId, isSubFolder)
                     };
 
-                        parentFolder.Items.Add(subItem);
-                    }
-                }
-
-                // After loading subfolders and files, handle lazy loading for folders when expanded
-                foreach (TreeViewItem subItem in parentFolder.Items)
-                {
-                    if (subItem.Tag is (string subProjectId, string subFolderId, bool isSubFolder) && isSubFolder)
+                    if (isSubFolder)
                     {
                         // Lazy load children when expanded
                         subItem.Items.Add(new TreeViewItem { Header = "Loading...", IsEnabled = false });
@@ -1734,17 +1809,17 @@ namespace AssetManager.Desktop
                             if (subItem.Items.Count == 1 && subItem.Items[0] is TreeViewItem dummy && dummy.Header.ToString() == "Loading...")
                             {
                                 subItem.Items.Clear();
-
-                                // Load the subfolder items again (one-time load)
-                                await LoadSubfoldersAsync(subItem, subProjectId, subFolderId);
+                                await LoadSubfoldersAsync(subItem, projectId, subItemId);
 
                                 if (subItem.Items.Count == 0)
                                 {
-                                    subItem.Items.Add(new TreeViewItem { Header = "📂 This folder is empty", IsEnabled = false });
+                                    subItem.Items.Add(new TreeViewItem { Header = " (empty)", IsEnabled = false });
                                 }
                             }
                         };
                     }
+
+                    parentFolder.Items.Add(subItem);
                 }
             }
             catch (Exception ex)
@@ -1752,9 +1827,6 @@ namespace AssetManager.Desktop
                 Debug.WriteLine($"❌ Error in LoadSubfoldersAsync: {ex.Message}\n{ex.StackTrace}");
             }
         }
-
-
-
 
 
 
