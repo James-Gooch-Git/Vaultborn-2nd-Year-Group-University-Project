@@ -1342,6 +1342,65 @@ namespace AssetManager.Infrastructure.Services
 
 
 
+        public async Task<string> GetModelName(string modelId, string projectId = null)
+        {
+            // Step 1: Try MongoDB first
+            MongoConnection database = new MongoConnection();
+            var modelData = await database.ModelData.Find(x => x.Id == modelId).FirstOrDefaultAsync();
+
+            if (modelData != null && !string.IsNullOrEmpty(modelData.Name))
+            {
+                return modelData.Name;
+            }
+
+            Console.WriteLine("🔎 Model name not found in Mongo. Attempting to fetch from Autodesk Hub...");
+
+            // Step 2: Try Autodesk Hub
+            try
+            {
+                string accessToken = TokenManager.GetToken();
+
+                if (string.IsNullOrEmpty(accessToken))
+                {
+                    Console.WriteLine("❌ Missing access token.");
+                    return "Unknown Name";
+                }
+
+                if (string.IsNullOrEmpty(projectId))
+                {
+                    Console.WriteLine("⚠️ projectId is required to get model name from the Hub.");
+                    return "Unknown Name";
+                }
+
+                string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/items/{modelId}";
+
+                using var client = new HttpClient();
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+                HttpResponseMessage response = await client.GetAsync(url);
+                if (!response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine($"❌ Failed to get model from Hub: {response.StatusCode}");
+                    return "Unknown Name";
+                }
+
+                string jsonResponse = await response.Content.ReadAsStringAsync();
+                using JsonDocument doc = JsonDocument.Parse(jsonResponse);
+                JsonElement data = doc.RootElement.GetProperty("data");
+
+                if (data.TryGetProperty("attributes", out JsonElement attributes) &&
+                    attributes.TryGetProperty("displayName", out JsonElement displayNameElement))
+                {
+                    return displayNameElement.GetString() ?? "Unknown Name";
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Exception fetching model name from Hub: {ex.Message}");
+            }
+
+            return "Unknown Name";
+        }
 
 
 

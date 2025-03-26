@@ -191,8 +191,9 @@ namespace AssetManager.Desktop
                 var (hubID, hubName, hubType) = hubDetails.Value;
                 Console.WriteLine($"Hub ID: {hubID}, Name: {hubName}, Type: {hubType}");
 
+              
+                //await RefreshHubs();
                 LoadProjectsForHub(hubID);
-                await RefreshHubs();
                 await DisplayNotifications();
                 await AddNotifsToCentre();
                 //FusionManager.InitializePythonEngine();
@@ -407,16 +408,7 @@ namespace AssetManager.Desktop
 
 
 
-        private async Task<string> GetModelName(string modelId)
-        {
-            MongoConnection database = new MongoConnection();
-            var userData = await database.ModelData.Find(x => x.Id == modelId).FirstOrDefaultAsync();
-            if (userData == null)
-            {
-                return "Unknown Name";
-            }
-            return userData.Name;
-        }
+ 
         
         private async Task<string> GetModelProjectId(string modelId)
         {
@@ -1490,27 +1482,6 @@ namespace AssetManager.Desktop
 
 
 
-        /*private void InitializeTreeView()
-        {
-            ProjectTreeView.Items.Clear();
-
-            // ✅ Add Local "Grand Table Top Game" folder
-            string localRoot = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Grand Table Top Game");
-
-            TreeViewItem localRootItem = new TreeViewItem
-            {
-                Header = "💾 Local: Grand Table Top Game",
-                Tag = localRoot,
-                Items = { null } // Placeholder to allow expansion
-            };
-
-            ProjectTreeView.Items.Add(localRootItem);
-
-            // ✅ Load Autodesk Forge Projects (if applicable)
-            LoadProjectsForHub(hubID);
-        }*/
-
-
         /*  private async void TreeViewItem_Expanded(object sender, RoutedEventArgs e)
           {
               if (sender is TreeViewItem item)
@@ -2116,52 +2087,11 @@ namespace AssetManager.Desktop
                 ModelsDataGrid.ItemsSource = models;
                 Console.WriteLine($"✅ Loaded {models.Count} models.");
 
-                // Ensure SelectionChanged event is attached
-                // Note: Since you already have a comprehensive ModelsDataGrid_SelectionChanged method,
-                // this ensures it's properly attached when switching to list view
+
                 ModelsDataGrid.SelectionChanged -= ModelsDataGrid_SelectionChanged;
                 ModelsDataGrid.SelectionChanged += ModelsDataGrid_SelectionChanged;
 
-                // ✅ Add Versions column if it doesn't exist yet
-                //if (!ModelsDataGrid.Columns.Any(col => col.Header?.ToString() == "Versions"))
-                //{
-                //    var versionsColumn = new DataGridTemplateColumn
-                //    {
-                //        Header = "Versions",
-                //        Width = new DataGridLength(80)
-                //    };
-                //    var versionTemplate = new DataTemplate();
-                //    var versionButtonFactory = new FrameworkElementFactory(typeof(Button));
-                //    versionButtonFactory.SetValue(Button.ContentProperty, "Versions ▼");
-                //    versionButtonFactory.SetValue(Button.WidthProperty, 70.0);
-                //    versionButtonFactory.SetValue(Button.CursorProperty, Cursors.Hand);
-                //    versionButtonFactory.SetValue(Button.ToolTipProperty, "Show model versions");
-                //    versionButtonFactory.SetValue(Button.BackgroundProperty, Brushes.Transparent);
-                //    versionButtonFactory.SetValue(Button.BorderBrushProperty, Brushes.Transparent);
-
-                //    // Open versions menu when button is clicked
-                //    versionButtonFactory.AddHandler(Button.ClickEvent, new RoutedEventHandler((s, ev) =>
-                //    {
-                //        if (s is Button btn && btn.DataContext is Dictionary<string, string> selectedModel)
-                //        {
-                //            // Note: We don't need to manually update _selectedItemId here since
-                //            // clicking the button will also select the row, triggering the SelectionChanged event
-
-                //            ContextMenu versionsMenu = CreateModelVersionsMenu(selectedModel["Id"], selectedModel["Name"]);
-                //            versionsMenu.PlacementTarget = btn;
-                //            versionsMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
-                //            versionsMenu.IsOpen = true;
-                //        }
-                //    }));
-
-                //    versionTemplate.VisualTree = versionButtonFactory;
-                //    versionsColumn.CellTemplate = versionTemplate;
-
-                //    // Add at the beginning (index 0) so it appears on the left
-                //    ModelsDataGrid.Columns.Insert(0, versionsColumn);
-                //}
-
-                // ✅ Ensure "Actions" column exists only once
+            
                 if (!ModelsDataGrid.Columns.Any(col => col.Header?.ToString() == "Actions"))
                 {
                     var actionsColumn = new DataGridTemplateColumn
@@ -3335,68 +3265,71 @@ namespace AssetManager.Desktop
             MessageBox.Show("✅ Upload Successful!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
-        private async void BtnDeleteModel_Click(object sender, RoutedEventArgs e)
+        private async void BtnDeleteModel_Click(string itemId, string projectId)
         {
-            try
+            if (string.IsNullOrEmpty(itemId) || string.IsNullOrEmpty(projectId))
             {
-                string itemId = _selectedItemId; // Replace with dynamic item ID
-                string projectId = _selectedProjectId;
-                string accessToken = _accessToken; // Retrieve this dynamically from your authentication system
-
-                Console.WriteLine($"Attempting to delete item: {itemId} from project: {projectId}");
-
-                DeleteModel deleteModel = new(accessToken);
-                bool isDeleted = await deleteModel.DeleteLatestModelVersionAsync(projectId, itemId);
-
-                if (isDeleted)
-                {
-                    MessageBox.Show("Model deleted successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-                else
-                {
-                    MessageBox.Show("Failed to delete the model. Please check the logs.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
+                MessageBox.Show("No model selected.", "Delete Failed", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
             }
-            catch (Exception ex)
+
+            var confirm = MessageBox.Show($"Are you sure you want to archive and delete model '{_selectedItemName}'?",
+                                          "Confirm Deletion", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+
+            if (confirm != MessageBoxResult.Yes)
+                return;
+
+            DeleteService deleteService = new DeleteService();
+            bool deleted = await deleteService.DeleteModelAsync(projectId, itemId, _folderId);
+
+            if (deleted)
             {
-                MessageBox.Show($"An error occurred: {ex.Message}", "Exception", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("✅ Model archived and deleted successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                await LoadAllModels();
+            }
+            else
+            {
+                MessageBox.Show("❌ Model deletion failed.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
-        private async Task BtnDeleteModel_Click(string selectedItemId, string projectId)
-        {
-            try
-            {
-                if (string.IsNullOrEmpty(selectedItemId))
+
+
+        /*
+                private async Task BtnDeleteModel_Click(string selectedItemId, string projectId)
                 {
-                    MessageBox.Show("No item selected for deletion.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
+                    try
+                    {
+                        if (string.IsNullOrEmpty(selectedItemId))
+                        {
+                            MessageBox.Show("No item selected for deletion.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                            return;
+                        }
+
+                        string itemId = _selectedItemId;
+                        projectId = _selectedProjectId;
+                        string accessToken = _accessToken; // Retrieve this dynamically from your authentication system
+
+                        Console.WriteLine($"Attempting to delete item: {itemId} from project: {projectId}");
+
+                        DeleteModel deleteModel = new(accessToken);
+                        bool isDeleted = await deleteModel.DeleteLatestModelVersionAsync(projectId, itemId);
+
+                        if (isDeleted)
+                        {
+                            MessageBox.Show("Model deleted successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                        }
+                        else
+                        {
+                            MessageBox.Show("Failed to delete the model. Please check the logs.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"An error occurred: {ex.Message}", "Exception", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
                 }
-
-                string itemId = _selectedItemId;
-                projectId = _selectedProjectId;
-                string accessToken = _accessToken; // Retrieve this dynamically from your authentication system
-
-                Console.WriteLine($"Attempting to delete item: {itemId} from project: {projectId}");
-
-                DeleteModel deleteModel = new(accessToken);
-                bool isDeleted = await deleteModel.DeleteLatestModelVersionAsync(projectId, itemId);
-
-                if (isDeleted)
-                {
-                    MessageBox.Show("Model deleted successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-                else
-                {
-                    MessageBox.Show("Failed to delete the model. Please check the logs.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"An error occurred: {ex.Message}", "Exception", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
+        */
 
         private void BtnLogout_Click(object sender, RoutedEventArgs e)
         {
@@ -5007,7 +4940,8 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 var filter = Builders<Versions>.Filter.Eq(x => x.Id, modelId);
                 var update = Builders<Versions>.Update.Set("VersionNumber", verNum);
                 await database.Versions.UpdateOneAsync(filter, update);
-                string modelName = await GetModelName(modelId);
+                DataManagement dataService = new DataManagement();
+                string modelName = await dataService.GetModelName(modelId);
                 string message = $"New version {verNum} on model - {modelName}";
                 await InsertNotifDB(modelId, message, _userId);
             }
@@ -6352,8 +6286,8 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 {
                     tags.Add(tag);
                 }
-
-                string modelName = await GetModelName(_selectedItemId);
+                DataManagement dataService = new DataManagement();
+                string modelName = await dataService.GetModelName(_selectedItemId);
                 
                 ListedModels models = new ListedModels()
                 {
@@ -6665,7 +6599,8 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     Purchased purchased = new Purchased {ModelId = _buyItemId, UserId = _userId} ;
                     await database.Purchased.InsertOneAsync(purchased);
                     await InitializeMarketplace();
-                    string modelName = await GetModelName(_buyItemId);
+                    DataManagement dataService = new DataManagement();
+                    string modelName = await dataService.GetModelName(_buyItemId);
                     string sellerId = await GetModelSeller(_buyItemId);
                     string message = $"New purchase on {modelName}";
                     await InsertNotifDB(_buyItemId, message, sellerId);

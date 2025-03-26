@@ -214,9 +214,6 @@ public class FileDownloadService
 
 
 
-
-
-
     public async Task<string> GetStorageIdFromVersion(string projectId, string versionId)
     {
         // ✅ URL-encode versionId to avoid API errors
@@ -259,7 +256,7 @@ public class FileDownloadService
 
 
 
-    private (string bucketKey, string objectKey) ExtractBucketAndObjectKeys(string storageId)
+    public (string bucketKey, string objectKey) ExtractBucketAndObjectKeys(string storageId)
     {
         if (string.IsNullOrEmpty(storageId) || !storageId.StartsWith("urn:adsk.objects:os.object:"))
         {
