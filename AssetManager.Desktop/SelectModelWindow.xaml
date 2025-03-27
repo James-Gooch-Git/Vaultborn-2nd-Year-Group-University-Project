@@ -77,7 +77,8 @@
                 BorderThickness="0"
                 Click="SelectModelButton_Click">
                 <Grid>
-                      <TextBlock Text="Confirm" Foreground="Azure" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="16"/>
+                    <TextBlock Text="..........................." HorizontalAlignment="Center" VerticalAlignment="Center" Background="Black" Opacity="0.6" />
+                    <TextBlock Text="Confirm" Foreground="Azure" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="16"/>
                       <Image Source = "pack://application:,,,/Assets/buttongold.png" Stretch="Fill"/> 
                 </Grid>
         </Button>   
