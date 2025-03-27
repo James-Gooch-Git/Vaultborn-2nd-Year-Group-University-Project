@@ -980,9 +980,9 @@
                             </Grid.RowDefinitions>
 
                             <!-- Close Viewer Button -->
-                            <Border Grid.Row="0" Background="#F0F0F0">
+                            <Border Grid.Row="0" Background="Transparent">
                                 <StackPanel Orientation="Horizontal" Margin="5">
-                                    <Button x:Name="BtnCloseViewer" Content="× Close" Background="Transparent" BorderBrush="#CCCCCC" Margin="10,5" Padding="8,3" Click="Btn_CloseViewer_Click"/>
+                                    <Button x:Name="BtnCloseViewer" Content="× Close" Foreground="#d1d5db" Background="#540754" BorderBrush="#98730c" BorderThickness="3" Margin="10,5" Padding="8,3" Click="Btn_CloseViewer_Click" Cursor="Hand"/>
                                 </StackPanel>
                             </Border>
 
