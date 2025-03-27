@@ -48,6 +48,7 @@ public partial class SelectModelWindow : Window
 
     private async void ProjectListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
+
         if (ProjectListBox.SelectedItem is ListBoxItem selectedItem)
         {
             string selectedProjectId = selectedItem.Tag as string;
