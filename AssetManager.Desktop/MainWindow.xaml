@@ -979,6 +979,7 @@
                                   BorderThickness="0" 
                                   HorizontalAlignment="Left" 
                                   SelectionChanged="ModelsDataGrid_SelectionChanged" 
+                                  MouseDoubleClick="ModelsDataGrid_MouseDoubleClick"
                                   GridLinesVisibility="None" 
                                   RowBackground="Transparent" 
                                   AlternatingRowBackground="Transparent" 

@@ -94,26 +94,6 @@
         <Setter Property="Width" Value="190"/>
         <Setter Property="Height" Value="268"/>
         <Setter Property="Margin" Value="5"/>
-        <Style.Triggers>
-            <!-- Hover Effect -->
-            <Trigger Property="IsMouseOver" Value="True">
-                <Setter Property="RenderTransform">
-                    <Setter.Value>
-                        <ScaleTransform ScaleX="1.05" ScaleY="1.05"/>
-                    </Setter.Value>
-                </Setter>
-                <Setter Property="Panel.ZIndex" Value="10"/>
-                <Setter Property="Effect">
-                    <Setter.Value>
-                        <DropShadowEffect ShadowDepth="5" BlurRadius="15" Opacity="0.6" Color="#C0A062"/>
-                    </Setter.Value>
-                </Setter>
-            </Trigger>
-            <!-- Selected Effect (Using IsEnabled as a toggle) -->
-            <Trigger Property="IsEnabled" Value="False">
-                <Setter Property="Opacity" Value="0.7"/>
-            </Trigger>
-        </Style.Triggers>
     </Style>
     
     <!-- Example of how to use the card in collection generation -->
