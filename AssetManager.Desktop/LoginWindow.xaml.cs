@@ -34,6 +34,7 @@ namespace AssetManager.Desktop
 
         private readonly string userSession;
         private readonly string aToken;
+        private readonly string refreshToken;
 
         private bool _isLogout;
 
@@ -42,6 +43,8 @@ namespace AssetManager.Desktop
             InitializeComponent();
             userSession = Environment.GetEnvironmentVariable("userId", EnvironmentVariableTarget.User);
             aToken = Environment.GetEnvironmentVariable("accessToken", EnvironmentVariableTarget.User);
+            refreshToken = Environment.GetEnvironmentVariable("refresh_token", EnvironmentVariableTarget.User);
+            TokenManager.SetRefreshToken(refreshToken);
 
             if (!string.IsNullOrEmpty(userSession) && !string.IsNullOrEmpty(aToken))
             {
@@ -499,6 +502,7 @@ namespace AssetManager.Desktop
                 // Save to environment variables
                 Environment.SetEnvironmentVariable("accessToken", token, EnvironmentVariableTarget.User);
                 Environment.SetEnvironmentVariable("twoLeggedToken", twoLeggedToken, EnvironmentVariableTarget.User);
+                Environment.SetEnvironmentVariable("refresh_token", TokenManager.GetRefreshToken(), EnvironmentVariableTarget.User);
                 Console.WriteLine("✅ Tokens stored in environment variables");
 
                 // Now get user data with the token we just received
