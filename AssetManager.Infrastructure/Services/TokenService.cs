@@ -241,7 +241,8 @@ public class TokenService
                 {
                     string refreshToken = refreshTokenElement.GetString();
                     TokenManager.SetRefreshToken(refreshToken);
-                    Console.WriteLine("? Refresh token stored");
+                    Console.WriteLine($"? Refresh token stored {refreshToken}");
+                    Environment.SetEnvironmentVariable("refresh_token", refreshToken, EnvironmentVariableTarget.User);
                 }
 
                 return token;

@@ -34,6 +34,7 @@ namespace AssetManager.Desktop
 
         private readonly string userSession;
         private readonly string aToken;
+        private readonly string refreshToken;
 
         private bool _isLogout;
 
@@ -42,6 +43,8 @@ namespace AssetManager.Desktop
             InitializeComponent();
             userSession = Environment.GetEnvironmentVariable("userId", EnvironmentVariableTarget.User);
             aToken = Environment.GetEnvironmentVariable("accessToken", EnvironmentVariableTarget.User);
+            refreshToken = Environment.GetEnvironmentVariable("refresh_token", EnvironmentVariableTarget.User);
+            TokenManager.SetRefreshToken(refreshToken);
 
             if (!string.IsNullOrEmpty(userSession) && !string.IsNullOrEmpty(aToken))
             {
@@ -90,6 +93,7 @@ namespace AssetManager.Desktop
             Environment.SetEnvironmentVariable("userId", "", EnvironmentVariableTarget.User);
             Environment.SetEnvironmentVariable("accessToken", "", EnvironmentVariableTarget.User);
             Environment.SetEnvironmentVariable("twoLeggedToken", "", EnvironmentVariableTarget.User);
+            Environment.SetEnvironmentVariable("refreshToken", "", EnvironmentVariableTarget.User);
 
             MessageBox.Show("⚠️ Your session has expired. Please log in again.", "Session Expired", MessageBoxButton.OK, MessageBoxImage.Warning);
 
@@ -158,7 +162,7 @@ namespace AssetManager.Desktop
 
             if (!string.IsNullOrEmpty(userSession) && !string.IsNullOrEmpty(storedAccessToken))
             {
-                bool isTokenValid = IsTokenValid(storedAccessToken) && await VerifyTokenWithApiAsync(storedAccessToken);
+                bool isTokenValid = await IsTokenValid(storedAccessToken) && await VerifyTokenWithApiAsync(storedAccessToken);
 
                 if (isTokenValid)
                 {
@@ -218,7 +222,7 @@ namespace AssetManager.Desktop
         /// <summary>
         /// Validates if a JWT token is still valid.
         /// </summary>
-        private bool IsTokenValid(string token)
+        private async Task<bool> IsTokenValid(string token)
         {
 
             if (string.IsNullOrEmpty(token))
@@ -262,7 +266,20 @@ namespace AssetManager.Desktop
                     if (DateTime.Now > expDateTime)
                     {
                         Console.WriteLine($"❌ Token expired at {expDateTime}");
-                        return false;
+                        string[] scopes = new[] {
+                            "data:read",
+                            "data:write",
+                            "bucket:read",
+                            "bucket:create",
+                            "viewables:read"
+                        };
+
+                        // Pass the scopes parameter to Get2LeggedTokenAsync
+                        string twoLeggedToken = await _tokenService.Get2LeggedTokenAsync(scopes);
+                        TokenManager.SetTwoLeggedToken(twoLeggedToken);
+                        Environment.SetEnvironmentVariable("twoLeggedToken", twoLeggedToken, EnvironmentVariableTarget.User);
+                        await RefreshToken();
+                        return true;
                     }
 
                     // Token is valid and not expired
@@ -330,6 +347,36 @@ namespace AssetManager.Desktop
             {
                 Console.WriteLine($"❌ Exception verifying token with API: {ex.Message}");
                 return false;
+            }
+        }
+        
+        private static async Task RefreshToken()
+        {
+            string clientID = ClientID;
+            Console.WriteLine($"Client ID: {clientID}");
+            string tokenURL = "https://developer.api.autodesk.com/authentication/v2/token";
+            string refreshToken = TokenManager.GetRefreshToken();
+            Console.WriteLine($"Refresh Token: {refreshToken}");
+
+            using (HttpClient client = new HttpClient())
+            {
+                var tokenContent = new Dictionary<string, string>
+                {
+                    { "grant_type", "refresh_token" },
+                    { "refresh_token", refreshToken },
+                    { "client_id", clientID },
+                    {  "scope", "data:read data:write data:create bucket:read bucket:create bucket:update account:write" } ,
+                };
+
+                var tokenParameters = new FormUrlEncodedContent(tokenContent);
+                var tokenResponse = await client.PostAsync(tokenURL, tokenParameters);
+                var tokenResponseContent = await tokenResponse.Content.ReadAsStringAsync();
+                Console.WriteLine($"Refresh Token function response: {tokenResponseContent}");
+                var tokenData = JsonConvert.DeserializeObject<TokenData>(tokenResponseContent);
+                TokenManager.SetToken(tokenData.access_token);
+                TokenManager.SetRefreshToken(tokenData.refresh_token);
+                Environment.SetEnvironmentVariable("accessToken", tokenData.access_token, EnvironmentVariableTarget.User);
+                Environment.SetEnvironmentVariable("refresh_token", tokenData.refresh_token, EnvironmentVariableTarget.User);
             }
         }
 
@@ -457,6 +504,7 @@ namespace AssetManager.Desktop
                 // Save to environment variables
                 Environment.SetEnvironmentVariable("accessToken", token, EnvironmentVariableTarget.User);
                 Environment.SetEnvironmentVariable("twoLeggedToken", twoLeggedToken, EnvironmentVariableTarget.User);
+                Environment.SetEnvironmentVariable("refresh_token", TokenManager.GetRefreshToken(), EnvironmentVariableTarget.User);
                 Console.WriteLine("✅ Tokens stored in environment variables");
 
                 // Now get user data with the token we just received

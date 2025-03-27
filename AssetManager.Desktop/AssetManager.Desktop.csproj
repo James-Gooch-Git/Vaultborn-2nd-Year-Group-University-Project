@@ -150,6 +150,8 @@
       <Resource Include="Assets\mainBackground.png" />
       <None Remove="Assets\newbackground.png" />
       <Resource Include="Assets\newbackground.png" />
+      <None Remove="Assets\decks.png" />
+      <Resource Include="Assets\decks.png" />
     </ItemGroup>
 
     <ItemGroup>
