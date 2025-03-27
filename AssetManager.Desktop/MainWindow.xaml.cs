@@ -88,7 +88,7 @@ namespace AssetManager.Desktop
         private enum ViewType { Grid, List }
         private ViewType _lastViewType = ViewType.List; // Default to List View
 
-  
+
 
         // Constructor
         public MainWindow()
@@ -97,11 +97,11 @@ namespace AssetManager.Desktop
 
 
 
-       
+
             //InitializeWebView2();
             //  ModelDataGrid.SelectionChanged += ModelDataGrid_SelectionChanged;
             Initialize();
-          
+
         }
         private async void InitialiseFolders()
         {
@@ -146,40 +146,40 @@ namespace AssetManager.Desktop
                 FusionAddinInstaller.InstallFusionAddin(_accessToken);
                 // 🔹 Initialize data
                 LoadHubsAsync();
-               /* await LoadAllModels();
-                if (!ModelsDataGrid.Columns.Any(col => col.Header?.ToString() == "Actions"))
-                {
-                    var actionsColumn = new DataGridTemplateColumn
-                    {
-                        Header = "Actions",
-                        Width = new DataGridLength(50)
-                    };
+                /* await LoadAllModels();
+                 if (!ModelsDataGrid.Columns.Any(col => col.Header?.ToString() == "Actions"))
+                 {
+                     var actionsColumn = new DataGridTemplateColumn
+                     {
+                         Header = "Actions",
+                         Width = new DataGridLength(50)
+                     };
 
-                    var cellTemplate = new DataTemplate();
-                    var buttonFactory = new FrameworkElementFactory(typeof(Button));
+                     var cellTemplate = new DataTemplate();
+                     var buttonFactory = new FrameworkElementFactory(typeof(Button));
 
-                    buttonFactory.SetValue(Button.ContentProperty, "⋮"); // Three-dot menu
-                    buttonFactory.SetValue(Button.CursorProperty, Cursors.Hand);
-                    buttonFactory.SetValue(Button.ToolTipProperty, "Click for options");
+                     buttonFactory.SetValue(Button.ContentProperty, "⋮"); // Three-dot menu
+                     buttonFactory.SetValue(Button.CursorProperty, Cursors.Hand);
+                     buttonFactory.SetValue(Button.ToolTipProperty, "Click for options");
 
-                    // ✅ Open ContextMenu when button is clicked
-                    buttonFactory.AddHandler(Button.ClickEvent, new RoutedEventHandler((s, ev) =>
-                    {
-                        if (s is Button btn && btn.DataContext is Dictionary<string, string> selectedModel)
-                        {
-                            ContextMenu dynamicContextMenu = CreateModelContextMenu(selectedModel["Id"], selectedModel["Name"]);
-                            dynamicContextMenu.PlacementTarget = btn;
-                            dynamicContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
-                            dynamicContextMenu.IsOpen = true;
-                        }
-                    }));
+                     // ✅ Open ContextMenu when button is clicked
+                     buttonFactory.AddHandler(Button.ClickEvent, new RoutedEventHandler((s, ev) =>
+                     {
+                         if (s is Button btn && btn.DataContext is Dictionary<string, string> selectedModel)
+                         {
+                             ContextMenu dynamicContextMenu = CreateModelContextMenu(selectedModel["Id"], selectedModel["Name"]);
+                             dynamicContextMenu.PlacementTarget = btn;
+                             dynamicContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+                             dynamicContextMenu.IsOpen = true;
+                         }
+                     }));
 
-                    cellTemplate.VisualTree = buttonFactory;
-                    actionsColumn.CellTemplate = cellTemplate;
+                     cellTemplate.VisualTree = buttonFactory;
+                     actionsColumn.CellTemplate = cellTemplate;
 
-                    ModelsDataGrid.Columns.Add(actionsColumn);
-                }
-*/
+                     ModelsDataGrid.Columns.Add(actionsColumn);
+                 }
+ */
                 var hubDetails = await DataManagement.GetPersonalHubDetails();
 
                 if (hubDetails == null)
@@ -198,7 +198,7 @@ namespace AssetManager.Desktop
                 var (hubID, hubName, hubType) = hubDetails.Value;
                 Console.WriteLine($"Hub ID: {hubID}, Name: {hubName}, Type: {hubType}");
 
-              
+
                 //await RefreshHubs();
                 await LoadProjectsForHub(hubID);
                 await DisplayNotifications();
@@ -835,7 +835,7 @@ namespace AssetManager.Desktop
                 {
                     return true;
                 }
-                  
+
                 source = VisualTreeHelper.GetParent(source);
             }
             return false;
@@ -962,7 +962,7 @@ namespace AssetManager.Desktop
                                     }
                                 }
 
-                                    allModels.Add(new Dictionary<string, string>
+                                allModels.Add(new Dictionary<string, string>
                                     {
                                         { "Id", modelId },
                                         { "Name", modelName },
@@ -971,14 +971,14 @@ namespace AssetManager.Desktop
                                         { "LastModified", formattedDate }
                                     });
 
-                                    await GetModelData(modelId, projectId, projectName, hubID);
-                                    await InsertModelVersionDB(modelId, projectId);
-                                }
+                                await GetModelData(modelId, projectId, projectName, hubID);
+                                await InsertModelVersionDB(modelId, projectId);
                             }
                         }
                     }
                 }
-            
+            }
+
             catch (Exception ex)
             {
                 Console.WriteLine($"❌ Exception occurred in GetAllModels: {ex.Message}");
@@ -1714,9 +1714,12 @@ namespace AssetManager.Desktop
             if (sender is TreeViewItem item && item.Tag is (string projectId, string folderId, bool isFolder))
             {
                 // Add the current folder/item to the dictionary
-                itemLookup[folderId] = item;
+                if (!itemLookup.ContainsKey(folderId)) // Prevent overwriting if it already exists
+                {
+                    itemLookup[folderId] = item;
+                }
 
-                // Check if it's the first time the item is expanded
+                // Check if it's the first time the item is expanded (and has no subitems yet)
                 if (item.Items.Count == 1 && item.Items[0] == null)
                 {
                     item.Items.Clear();
@@ -1725,7 +1728,7 @@ namespace AssetManager.Desktop
 
                     if (items == null || !items.Any())
                     {
-                        item.Items.Add(new TreeViewItem { Header = "❌ No items found" });
+                        item.Items.Add(new TreeViewItem { Header = "Empty" });
                         return;
                     }
 
@@ -1749,17 +1752,25 @@ namespace AssetManager.Desktop
                             ContextMenu = CreateContextMenu(projectId, itemId, isFolderItem)
                         };
 
+                        // Add the item to the dictionary (either folder or file)
+                        if (!itemLookup.ContainsKey(itemId)) // Prevent overwriting if it already exists
+                        {
+                            itemLookup[itemId] = fileItem;
+                        }
+
                         // If it's a folder, load subfolders
                         if (isFolderItem)
                         {
                             await LoadSubfoldersAsync(fileItem, projectId, itemId);
                         }
 
+                        // Add the newly created item to the current folder
                         item.Items.Add(fileItem);
                     }
                 }
             }
         }
+
 
 
 
@@ -1781,14 +1792,18 @@ namespace AssetManager.Desktop
 
                 if (subItems == null || subItems.Count == 0)
                 {
-                    parentFolder.Items.Add(new TreeViewItem { Header = "No subfolders found", IsEnabled = false });
+                    parentFolder.Items.Add(new TreeViewItem { Header = "Empty", IsEnabled = false });
                     return;
                 }
 
                 foreach (var (subItemId, subItemName, isSubFolder) in subItems)
                 {
                     if (string.IsNullOrEmpty(subItemId) || string.IsNullOrEmpty(subItemName))
+                    {
+                        // Log invalid subitems but continue processing others
+                        Debug.WriteLine($"⚠️ Skipping invalid subitem: {subItemId} / {subItemName}");
                         continue;
+                    }
 
                     bool is3DModel = false;
 
@@ -1809,6 +1824,9 @@ namespace AssetManager.Desktop
 
                     // Add the subfolder to the dictionary for future reference
                     itemLookup[subItemId] = subItem;
+
+                    // Log the item added to the dictionary for debugging
+                    Debug.WriteLine($"Added {subItemName} (ID: {subItemId}) to dictionary.");
 
                     if (isSubFolder)
                     {
@@ -1850,6 +1868,7 @@ namespace AssetManager.Desktop
 
 
 
+
         private string PromptForFolderName()
         {
             // Create a simple input dialog
@@ -1883,7 +1902,6 @@ namespace AssetManager.Desktop
                 if (string.IsNullOrEmpty(itemId))
                 {
                     // It's better to provide a more friendly message if itemId is null or empty
-                    MessageBox.Show("This folder cannot be modified as it does not contain a valid item ID.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return menu; // Exit early if no valid itemId
                 }
 
@@ -1899,7 +1917,7 @@ namespace AssetManager.Desktop
                     }
                     else
                     {
-                        MessageBox.Show($"New folder created successfully with ID: {newFolderId}", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                        Console.WriteLine($"New folder created successfully with ID: {newFolderId}", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
                     }
                 };
 
@@ -1917,7 +1935,9 @@ namespace AssetManager.Desktop
             ContextMenu currentMenu = ContextMenuService.GetContextMenu(ProjectTreeView);
             if (currentMenu != null) currentMenu.IsEnabled = false;
 
+
             string folderId = await DataManagement.CreateNewFolder(projectId, parentFolderId, folderName);
+
 
             if (currentMenu != null) currentMenu.IsEnabled = true;
 
@@ -1927,14 +1947,12 @@ namespace AssetManager.Desktop
                 return null;
             }
 
-            MessageBox.Show($"Successfully added new folder to Hub\n Project id: {projectId} \n Parent folder ID: {parentFolderId}");
-
             // Fetch the parent item directly from the dictionary
             if (itemLookup.TryGetValue(parentFolderId, out TreeViewItem parentItem))
             {
                 // Remove the "empty folder" message if it exists
                 var emptyFolderItem = parentItem.Items.OfType<TreeViewItem>()
-                    .FirstOrDefault(item => item.Header.ToString() == "📂 This folder is empty");
+                    .FirstOrDefault(item => item.Header.ToString() == "Empty");
 
                 if (emptyFolderItem != null)
                 {
@@ -1954,6 +1972,8 @@ namespace AssetManager.Desktop
         }
 
 
+
+
         private async Task AddNewFolderToTreeView(TreeViewItem parentItem, string projectId, string folderId, string folderName)
         {
             // Create the new folder TreeViewItem
@@ -1968,7 +1988,7 @@ namespace AssetManager.Desktop
             parentItem.Items.Add(newFolderItem);
 
             // Add "empty" item to indicate the folder is empty
-            newFolderItem.Items.Add(new TreeViewItem { Header = "📂 This folder is empty", IsEnabled = false });
+            newFolderItem.Items.Add(new TreeViewItem { Header = "Empty", IsEnabled = false });
 
             // Add the new folder item to the dictionary for future access
             itemLookup[folderId] = newFolderItem;
@@ -2003,11 +2023,6 @@ namespace AssetManager.Desktop
         //}
 
 
-
-
-
-
-
         #endregion
 
 
@@ -2020,21 +2035,20 @@ namespace AssetManager.Desktop
                 return;
             }
 
-            var parentFolder = await DataManagement.GetTopLevelFolder(selectedHubID, _selectedProjectId);
+            var itemId = await DataManagement.GetTopLevelFolder(selectedHubID, _selectedProjectId);
 
-            if (parentFolder.Equals(default) || string.IsNullOrWhiteSpace(parentFolder.FolderId) || string.IsNullOrWhiteSpace(parentFolder.FolderName))
+
+            string newFolderId = await CreateNewFolder(_selectedProjectId, itemId.FolderId);
+            if (string.IsNullOrEmpty(newFolderId))
             {
-                MessageBox.Show("Failed to retrieve the top-level folder. Please try again later.");
-                return;
+                MessageBox.Show("Failed to create the new folder. Please try again.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
-
-
-
-            var parentFolderId = parentFolder.FolderId;
-
-            // Proceed with creating a new folder
-            await CreateNewFolder(_selectedProjectId, parentFolderId, true);
+            else
+            {
+                Console.WriteLine($"New folder created successfully with ID: {newFolderId}", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
         }
+
 
         //private async Task ExpandFolderByProjectId(string projectId)
         //{
@@ -2175,7 +2189,7 @@ namespace AssetManager.Desktop
                         // Open the PDF in the Forge Viewer
                         OpenPdfInForgeViewer(_selectedProjectId, _selectedItemId, _selectedItemName);
 
-                        
+
                     }
                     else
                     {
@@ -2505,7 +2519,7 @@ namespace AssetManager.Desktop
                 ModelsDataGrid.SelectionChanged -= ModelsDataGrid_SelectionChanged;
                 ModelsDataGrid.SelectionChanged += ModelsDataGrid_SelectionChanged;
 
-            
+
                 if (!ModelsDataGrid.Columns.Any(col => col.Header?.ToString() == "Actions"))
                 {
                     var actionsColumn = new DataGridTemplateColumn
@@ -3449,7 +3463,7 @@ namespace AssetManager.Desktop
             try
             {
                 // 1. Install the Fusion 360 add-in if not already installed
-               // AssetManagement.Infrastructure.Fusion.FusionAddinInstaller.InstallFusionAddin();
+                // AssetManagement.Infrastructure.Fusion.FusionAddinInstaller.InstallFusionAddin();
 
                 // 2. Get the path to the Fusion 360 executable
                 string fusionPath = GetFusion360ExecutablePath();
@@ -3504,7 +3518,7 @@ namespace AssetManager.Desktop
         {
             string fusionBasePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Autodesk", "webdeploy", "production");
             Console.WriteLine("fusion location: " + fusionBasePath);
-            
+
             if (Directory.Exists(fusionBasePath))
             {
                 var fusionExecutables = Directory.GetFiles(fusionBasePath, "Fusion360.exe", SearchOption.AllDirectories);
@@ -3520,7 +3534,7 @@ namespace AssetManager.Desktop
         private string FindExistingModelFile(string modelName)
         {
             string ModelStoragePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "DownloadedModels");
-                
+
             var files = Directory.GetFiles(ModelStoragePath);
 
             foreach (var file in files)
@@ -3954,6 +3968,7 @@ namespace AssetManager.Desktop
 
         private async void BtnViewInApp_Click(string selectedItemId)
         {
+            MessageBox.Show(selectedItemId);
             try
             {
                 // ✅ Track the last active view
@@ -4111,7 +4126,7 @@ namespace AssetManager.Desktop
 
 
         //In app viewer for different versions
-     
+
 
         private void Btn_CloseViewer_Click(object sender, RoutedEventArgs e)
         {
@@ -4298,7 +4313,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             }
         }*/
 
-      
+
 
         // Helper method to determine if a file is a PDF
         private bool IsPdfFile(string filename)
@@ -4689,7 +4704,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             // Display version number above the slider
             sliderValue.Text = $"Version: {markerData.VersionNumber}";
             _selectedVersionNum = markerData.VersionNumber.ToString();
-            
+
             // Here you can do something with the VersionID (e.g., load the version or perform any action)
             Console.WriteLine($"You reached version {markerData.VersionNumber} with ID: {markerData.VersionID}");
 
@@ -4735,7 +4750,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             try
             {
                 Console.WriteLine($"🔄 Starting background refresh at {DateTime.Now}");
-                
+
                 await Dispatcher.InvokeAsync(async () =>
                 {
                     try
@@ -4964,10 +4979,10 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 Console.WriteLine($"Refresh already in progress");
                 return;
             }
-            
+
             OnRefreshTimerElapsed(null, null);
         }
-        
+
         private async Task CheckModelVersions()
         {
             await GetAllModels();
@@ -5139,7 +5154,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             }
         }
 
-   
+
         public async Task<string> GetItemUrn(string projectId, string itemId)
         {
             try
@@ -5311,7 +5326,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             }
         }
         #endregion
-        
+
         //project text
         private void TextBlockBorder_Enter(object sender, MouseEventArgs e)
         {
@@ -5321,7 +5336,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 textBlock.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#188f87"));
             }
         }
-        
+
         private void TextBlockBorder_Leave(object sender, MouseEventArgs e)
         {
             var border = sender as Border;
@@ -5330,7 +5345,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 textBlock.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d1d5db"));
             }
         }
-        
+
         private async void ProjectsText_Click(object sender, MouseButtonEventArgs e)
         {
             ModelsDataGrid.Columns[1].Header = "Project";
@@ -5339,7 +5354,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             await LoadAllModels();
             DisplayGridModels();
         }
-        
+
         //models put in db
         private static async Task GetModelData(string modelId, string projectId, string folderName, string hubId)
         {
@@ -5354,7 +5369,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     var response = await client.GetAsync(url);
                     string responseString = await response.Content.ReadAsStringAsync();
                     var JsonResponse = JsonConvert.DeserializeObject<dynamic>(responseString);
-                    
+
                     //MessageBox.Show("Item: " + responseString);
                     ModelData data = new ModelData
                     {
@@ -5371,7 +5386,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                         FolderId = projectId,
                         UpvoteCount = 0
                     };
-                    
+
                     InsertModelDB(data);
                 }
             }
@@ -5380,8 +5395,8 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 MessageBox.Show($"Error getting model data: {e.Message}");
                 throw;
             }
-        } 
-        
+        }
+
         private async static void InsertModelDB(ModelData modelData)
         {
             MongoConnection database = new MongoConnection();
@@ -5403,9 +5418,9 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             var versions = await GetModelVersions(modelId);
             int verNum = int.Parse(versions[0]["VersionNumber"]);
             Versions model = new Versions { Id = modelId, VersionNumber = verNum };
-            
+
             var findModelVersion = await database.Versions.Find(x => x.Id == modelId).FirstOrDefaultAsync();
-            
+
             if (findModelVersion == null)
             {
                 await database.Versions.InsertOneAsync(model);
@@ -5423,7 +5438,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 await InsertNotifDB(modelId, message, _userId);
             }
         }
-        
+
         //Fuzzy search
         private async void SearchText_Box_OnKeyDown(object sender, KeyEventArgs e)
         {
@@ -5434,10 +5449,10 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 {
                     MongoConnection database = new MongoConnection();
                     List<ModelData> result = await database.ModelData.Find(x => x.PublicPrivate == "Public" || x.HubId == hubID).ToListAsync();
-            
+
                     var modelNames = result.Select(x => x.Name).ToList();
                     var topResults = FuzzySharp.Process.ExtractTop(SearchText_Box.Text, modelNames, limit: 3);
-                
+
                     foreach (var match in topResults)
                     {
                         var model = result[match.Index];
@@ -5476,7 +5491,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             Models = searchResults;
             DisplayGridModels();
         }
-        
+
         //Filter tags
         private void Filter_Click(object sender, MouseButtonEventArgs e)
         {
@@ -5485,7 +5500,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 var icon = sender as Border;
                 if (icon != null)
                 {
-                    ContextMenu filterMenu =  this.FindResource("FilterContextMenu") as ContextMenu;
+                    ContextMenu filterMenu = this.FindResource("FilterContextMenu") as ContextMenu;
                     if (filterMenu != null)
                     {
                         filterMenu.PlacementTarget = icon;
@@ -5521,9 +5536,9 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 List<Dictionary<string, string>> models = new List<Dictionary<string, string>>();
                 List<string> selectedTags = new List<string>();
                 List<string> IDs = new List<string>();
-            
+
                 MongoConnection database = new MongoConnection();
-                
+
                 ContextMenu filterMenu = FindResource("FilterContextMenu") as ContextMenu;
                 foreach (var item in filterMenu.Items)
                 {
@@ -5535,7 +5550,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                         }
                     }
                 }
-                
+
                 foreach (var item in ModelsDataGrid.Items)
                 {
                     if (item is Dictionary<string, string> modelData && modelData.ContainsKey("Id"))
@@ -5544,14 +5559,14 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                         IDs.Add(Id);
                     }
                 }
-                
+
                 ModelsDataGrid.ItemsSource = null;
-                
+
                 foreach (var id in IDs)
                 {
                     var filter = Builders<ModelData>.Filter.And(Builders<ModelData>.Filter.Eq("Id", id),
                         Builders<ModelData>.Filter.In("Tags", selectedTags));
-                
+
                     var result = await database.ModelData.Find(filter).FirstOrDefaultAsync();
 
                     if (result != null)
@@ -5566,7 +5581,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                         });
                     }
                 }
-                
+
                 ModelsDataGrid.ItemsSource = models;
                 Models = models;
                 DisplayGridModels();
@@ -5632,8 +5647,8 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 DisplayModelThumb(versionId);
             }
 
-                // Load metadata with the provided versionId (if any)
-                await LoadMetadata(versionId);
+            // Load metadata with the provided versionId (if any)
+            await LoadMetadata(versionId);
 
             await DisplayTags();
         }
@@ -5827,7 +5842,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             ModelImage.Height = 120;
             ModelImage.HorizontalAlignment = HorizontalAlignment.Center;
 
-            if(versionId == null)
+            if (versionId == null)
             {
                 _ = ShowThumbnail(_selectedModel["ProjectId"], _selectedModel["Id"], ModelImage);
 
@@ -6063,11 +6078,11 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 {
                     tags.Add(tag);
                 }
-                
+
                 var icon = sender as Border;
                 if (icon != null)
                 {
-                    ContextMenu tagsMenu =  this.FindResource("AddTagsContextMenu") as ContextMenu;
+                    ContextMenu tagsMenu = this.FindResource("AddTagsContextMenu") as ContextMenu;
                     if (tagsMenu != null)
                     {
                         tagsMenu.PlacementTarget = icon;
@@ -6105,14 +6120,14 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     }
                 }
             }
-            
+
             MongoConnection database = new MongoConnection();
-            
+
             var filter = Builders<ModelData>.Filter.Eq(x => x.Id, _selectedItemId);
-            var clear = Builders<ModelData>.Update.Set(x => x.Tags, new List<string>() );
+            var clear = Builders<ModelData>.Update.Set(x => x.Tags, new List<string>());
             await database.ModelData.UpdateOneAsync(filter, clear);
-            
-            
+
+
             var update = Builders<ModelData>.Update.AddToSetEach(x => x.Tags, selectedTags);
             await database.ModelData.FindOneAndUpdateAsync(filter, update);
             await DisplayTags();
@@ -6128,7 +6143,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             {
                 return;
             }
-            
+
             foreach (var tag in result.Tags)
             {
                 tags.Add(tag);
@@ -6171,14 +6186,14 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 TagsWrapPanel.Children.Add(border);
             }
         }
-        
+
         /*private async Task<ModelData> GetModelTags()
         {
             MongoConnection database = new MongoConnection();
             var result = await database.ModelData.Find(x => x.Id == _selectedItemId).FirstOrDefaultAsync();
             return result;
         }*/
-        
+
         //Comments feature
         private async void BtnAddComment_Click(object sender, RoutedEventArgs e)
         {
@@ -6198,7 +6213,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     {
                         verNum = int.Parse(_selectedVersionNum);
                     }
-                    
+
                     MongoConnection database = new MongoConnection();
                     Comment commentContent = new Comment
                     {
@@ -6219,7 +6234,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 Console.WriteLine($"Error: {ex.Message}");
             }
         }
-        
+
         private async void ListAllComments(string modelId)
         {
             try
@@ -6231,9 +6246,9 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 {
                     string name = await _userService.GetUserName(comment.UserId);
                     string version = $"V{comment.VersionNumber}";
-                    commentItems.Add(new CommentItem {User = name, Content = comment.Content, CreatedDateTime = comment.CreatedDateTime, Version = version});
+                    commentItems.Add(new CommentItem { User = name, Content = comment.Content, CreatedDateTime = comment.CreatedDateTime, Version = version });
                 }
-                
+
                 CommentsAmount.Text = $"All Comments ({commentItems.Count})";
 
                 if (commentItems.Count != 0)
@@ -6247,7 +6262,9 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 {
                     ListComments.Items.Add(new CommentItem
                     {
-                        User = String.Empty, Content = "There are no Comments", CreatedDateTime = DateTime.MinValue
+                        User = String.Empty,
+                        Content = "There are no Comments",
+                        CreatedDateTime = DateTime.MinValue
                     });
                 }
             }
@@ -6256,7 +6273,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 MessageBox.Show($"Error: {e.Message}");
             }
         }
-        
+
         private async void ListNewComment(Comment commentItem)
         {
             List<Comment> comments = await _userService.GetAllComments(_selectedItemId);
@@ -6271,7 +6288,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 }
             }
         }
-        
+
         private void ClearComments()
         {
             ListComments.Items.Clear();
@@ -6353,7 +6370,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             public DateTime CreatedDateTime { get; set; }
             public string Version { get; set; }
         }
-        
+
         //marketplace
         private async Task InitializeMarketplace()
         {
@@ -6440,7 +6457,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             
             return allListedDecks;
         }*/
-        
+
         private async void BtnMarketplace_Click(object sender, RoutedEventArgs e)
         {
             ModelDataSidebar.Width = new GridLength(0);
@@ -6453,7 +6470,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
             await InitializeMarketplace();
         }
-        
+
         private void BtnLibrary_Click(object sender, RoutedEventArgs e)
         {
             MarketplaceBorder.Visibility = Visibility.Collapsed;
@@ -6475,19 +6492,19 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             ModelsButton.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#540754"));
             await InitializeMarketplaceDecks();
         }
-        
+
         //list models
         private void BtnListModel_Click(object sender, RoutedEventArgs e)
         {
             ListModelPopup.IsOpen = true;
         }
-        
+
         private async void BtnList_Click(object sender, RoutedEventArgs e)
         {
             try
             {
                 MongoConnection database = new MongoConnection();
-                
+
                 if ((PriceTextBox.Text == "Enter Price" || string.IsNullOrEmpty(PriceTextBox.Text)) ||
                     (DescriptionTextBox.Text == "Enter Description") || string.IsNullOrEmpty(DescriptionTextBox.Text))
                 {
@@ -6498,7 +6515,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 if (double.TryParse(PriceTextBox.Text, out double price))
                 {
                     string[] part = PriceTextBox.Text.Split('.');
-                    if (part.Length != 2 )
+                    if (part.Length != 2)
                     {
                         MessageBox.Show("Please enter a valid price");
                         return;
@@ -6524,7 +6541,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 }
                 DataManagement dataService = new DataManagement();
                 string modelName = await dataService.GetModelName(_selectedItemId);
-                
+
                 ListedModels models = new ListedModels()
                 {
                     ModelId = _selectedItemId,
@@ -6535,14 +6552,14 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     Description = DescriptionTextBox.Text
                 };
                 await database.ListedModels.InsertOneAsync(models);
-                
+
                 MessageBox.Show($"Model listing successful!");
             }
             catch (Exception exception)
             {
                 MessageBox.Show($"Error: {exception.Message}");
             }
-            
+
         }
 
         private void MarketplaceGrid_Click(object sender, MouseButtonEventArgs e)
@@ -6552,7 +6569,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             MarketplaceGridBorder.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
             MarketplaceListBorder.Background = Brushes.Transparent;
         }
-        
+
         private void MarketplaceList_Click(object sender, MouseButtonEventArgs e)
         {
             MarketplaceGridView.Visibility = Visibility.Collapsed;
@@ -6587,16 +6604,16 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 };
 
                 Grid grid = new Grid();
-                grid.RowDefinitions.Add(new RowDefinition{ Height = new GridLength(170)});
-                grid.RowDefinitions.Add(new RowDefinition{ Height = GridLength.Auto });
-                
+                grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(170) });
+                grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
                 Border headerBackground = new Border
                 {
-                    Background = new SolidColorBrush(Color.FromRgb(230,230,230)),
+                    Background = new SolidColorBrush(Color.FromRgb(230, 230, 230)),
                     HorizontalAlignment = HorizontalAlignment.Stretch,
                     Margin = new Thickness(5)
                 };
-                
+
                 Grid.SetRow(headerBackground, 0);
                 grid.Children.Add(headerBackground);
 
@@ -6608,7 +6625,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     HorizontalAlignment = HorizontalAlignment.Center,
                     VerticalAlignment = VerticalAlignment.Center,
                 };
-                
+
                 _ = ShowThumbnail(model["ProjectId"], model["Id"], thumbnailImage);
                 Grid.SetRow(thumbnailImage, 0);
                 grid.Children.Add(thumbnailImage);
@@ -6616,7 +6633,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 Grid infoGrid = new Grid();
                 Grid.SetRow(infoGrid, 1);
                 grid.Children.Add(infoGrid);
-                
+
                 infoGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(125) });
                 infoGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(125) });
 
@@ -6625,9 +6642,9 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     Orientation = Orientation.Vertical,
                     VerticalAlignment = VerticalAlignment.Center,
                     HorizontalAlignment = HorizontalAlignment.Left,
-                    Margin = new Thickness(8,5,5,2)
+                    Margin = new Thickness(8, 5, 5, 2)
                 };
-                
+
                 Grid.SetColumn(textContent, 0);
                 infoGrid.Children.Add(textContent);
 
@@ -6652,21 +6669,21 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     HorizontalAlignment = HorizontalAlignment.Left,
                     TextWrapping = TextWrapping.Wrap
                 };
-                
+
                 textContent.Children.Add(name);
                 textContent.Children.Add(description);
-                
+
                 StackPanel priceContent = new StackPanel
                 {
                     Orientation = Orientation.Vertical,
                     VerticalAlignment = VerticalAlignment.Center,
                     HorizontalAlignment = HorizontalAlignment.Left,
-                    Margin = new Thickness(8,5,5,2)
+                    Margin = new Thickness(8, 5, 5, 2)
                 };
-                
+
                 Grid.SetColumn(priceContent, 1);
                 infoGrid.Children.Add(priceContent);
-                
+
                 TextBlock price = new TextBlock
                 {
                     Text = $"{model["Price"]}",
@@ -6726,17 +6743,17 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                         HorizontalAlignment = HorizontalAlignment.Left,
                         TextWrapping = TextWrapping.Wrap
                     };
-                    
+
                     priceContent.Children.Add(bought);
                 }
-                
+
                 priceContent.Children.Add(price);
-                
+
                 modelSquare.Child = grid;
                 MarketplaceModelsContainer.Children.Add(modelSquare);
             }
         }
-        
+
         //sort 
         private void MarketplaceSort_Click(object sender, MouseButtonEventArgs e)
         {
@@ -6773,7 +6790,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                         item.Add("Upvotes", upvoteAmount.ToString());
                         upvotes.Add(item);
                     }
-                    
+
                     upvotes = upvotes.OrderByDescending(x => x["Upvotes"]).ToList();
                     MarketplaceDataGrid.ItemsSource = upvotes;
                     DisplayMarketplaceGrid(upvotes);
@@ -6795,7 +6812,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     break;
             }
         }
-        
+
         //buy
         public async void BtnBuy_Click(object sender, RoutedEventArgs e)
         {
@@ -6812,7 +6829,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 MessageBox.Show($"Error: {exception.Message}");
             }
         }
-        
+
         private async void Redirected(object sender, CoreWebView2NavigationStartingEventArgs args)
         {
             if (args.Uri.StartsWith("https://localhost:8080/return"))
@@ -6828,20 +6845,20 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 {
                     webView.CoreWebView2.Navigate("about:blank");
                     BuyPopup.IsOpen = false;
-                    MongoConnection database  = new MongoConnection();
+                    MongoConnection database = new MongoConnection();
                     Purchased purchased = new Purchased { ModelId = _buyItemId, UserId = _userId };
                     await database.Purchased.InsertOneAsync(purchased);
-                    
+
                     if (_selectedMarketplace == "Models")
                     {
                         MessageBox.Show($"\u2705 Payment Successful \n Model download");
                         FileDownloadService fileDownloadService = new FileDownloadService();
                         await fileDownloadService.DownloadModelAsync(_buyProjectId, _buyItemId);
-                        
+
                         await InitializeMarketplace();
                         DataManagement dataService = new DataManagement();
                         string modelName = await dataService.GetModelName(_buyItemId);
-                      //  string modelName = await GetModelName(_buyItemId);
+                        //  string modelName = await GetModelName(_buyItemId);
                         string sellerId = await _userService.GetModelSeller(_buyItemId);
                         string message = $"New purchase on {modelName}";
                         await InsertNotifDB(_buyItemId, message, sellerId);
@@ -6897,7 +6914,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 webView.CoreWebView2.Navigate(approvalUrl);
             }
         }
-        
+
         private void SortPopup_Closed(object? sender, EventArgs e)
         {
             SortChevron.Kind = PackIconKind.ChevronDown;
@@ -6908,7 +6925,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
         }
 
-        
+
         //search
         private async void MarketplaceSearch_OnKeyDown(object sender, KeyEventArgs e)
         {
@@ -7011,7 +7028,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
             return true;
         }*/
-        
+
         //notifs
         private void Bell_Click(object sender, MouseButtonEventArgs e)
         {
@@ -7025,7 +7042,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 NotificationsPopup.IsOpen = true;
                 BellIcon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#98730c"));
             }
-            
+
         }
 
         private static async Task InsertNotifDB(string modelId, string message, string userId)
@@ -7039,7 +7056,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 Message = message,
                 Pending = 1
             };
-            
+
             await database.Notifications.InsertOneAsync(notif);
         }
 
@@ -7061,7 +7078,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             List<Notifications> notifs = await _userService.GetPendingNotifications(_userId);
             foreach (var notif in notifs)
             {
-                NotificationItem item = new NotificationItem{Id = notif.Id.ToString(), Message = notif.Message};
+                NotificationItem item = new NotificationItem { Id = notif.Id.ToString(), Message = notif.Message };
                 NotificationsListBox.Items.Add(item);
                 var filter = Builders<Notifications>.Filter.Eq(x => x.Id, notif.Id);
                 var update = Builders<Notifications>.Update.Set("Pending", 0);
@@ -7073,17 +7090,17 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         {
             MongoConnection database = new MongoConnection();
             var result = await database.Notifications.Find(x => x.UserId == _userId && x.Pending == 0).ToListAsync();
-            
+
             if (result != null)
             {
                 foreach (var item in result)
                 {
-                    NotificationItem notif = new NotificationItem { Id = item.Id.ToString(), Message = item.Message};
+                    NotificationItem notif = new NotificationItem { Id = item.Id.ToString(), Message = item.Message };
                     NotificationsListBox.Items.Add(notif);
                 }
             }
         }
-        
+
         private async void ClearNotifications_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -7111,7 +7128,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             public string Id { get; set; }
             public string Message { get; set; }
         }
-        
+
         //COMMENTED OUT FUNCTIONS//
 
         /* private void BtnGenerate3D_Click(object sender, RoutedEventArgs e)
