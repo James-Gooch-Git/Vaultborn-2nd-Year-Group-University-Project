@@ -17,32 +17,26 @@ namespace ForgeViewerApp
        
 
 
-        //  string ClientId = "eK6vNFNyFAin4PouWXfN00RfePKGZwSqeh6RTcjKAvHAqyOW";
-        //  string ClientSecret = "EqBJJlqKczzkLfZSJO2cg3BajCxkZGGTGwHWFhn5jrpGSEledCG1deeBVALq734W";
+        string ClientId = "eK6vNFNyFAin4PouWXfN00RfePKGZwSqeh6RTcjKAvHAqyOW";
+        string ClientSecret = "EqBJJlqKczzkLfZSJO2cg3BajCxkZGGTGwHWFhn5jrpGSEledCG1deeBVALq734W";
         private readonly HttpClient _client = new HttpClient();
         private readonly TokenService _tokenService;
-        private readonly string ClientId;
-        private readonly string ClientSecret;
+        private readonly string _ClientId;
+        private readonly string _ClientSecret;
+  
+
+
         public AutodeskApiService(TokenService tokenService, string clientId, string clientSecret)
         {
             _client = new HttpClient();
             _tokenService = tokenService;
-            ClientId = clientId;
-            ClientSecret = clientSecret;
+            _ClientId = clientId;
+            _ClientSecret = clientSecret;
 
-            Console.WriteLine("ID: " + ClientId);
-            Console.WriteLine("Secret: " + ClientSecret);
+            Console.WriteLine("ID: " + _ClientId);
+            Console.WriteLine("Secret: " + _ClientSecret);
         }
 
-
-
-        public AutodeskApiService(TokenService tokenService)
-        {
-            _client = new HttpClient();
-            _tokenService = tokenService;
-            Console.WriteLine("ID: " + ClientId);
-            Console.WriteLine("Secret: " + ClientSecret);
-        }
 
         public class SignedUrlResponse
         {
