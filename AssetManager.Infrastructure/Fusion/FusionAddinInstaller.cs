@@ -199,61 +199,70 @@ namespace AssetManagement.Infrastructure.Fusion
         {
             try
             {
-                // Locate Fusion 360's Python installation directory
-                string fusionPythonBasePath = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                    "Autodesk", "webdeploy", "production"
-                );
+                string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+                string sourcePath = Path.Combine(baseDir, "Resources", "requests");
 
-                // Find the correct Python folder inside Fusion 360
-                string[] pythonDirs = Directory.GetDirectories(fusionPythonBasePath, "Python", SearchOption.AllDirectories);
-                if (pythonDirs.Length == 0)
+                Console.WriteLine($"Source path: {sourcePath}");
+                if (!Directory.Exists(sourcePath))
                 {
-                    Console.WriteLine("⚠️ Warning: Could not find Fusion 360's Python environment.");
+                    Console.WriteLine("❌ Source 'requests' folder not found.");
                     return;
                 }
 
-                // Get the site-packages path
-                string sitePackagesPath = Path.Combine(pythonDirs[0], "Lib", "site-packages");
+                // ⚠️ Update this to the actual Fusion 360 Python site-packages path on your system
+                string fusionPythonPath = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "Autodesk",
+                    "webdeploy",
+                    "production"
+                );
 
-                if (!Directory.Exists(sitePackagesPath))
+                // Find the correct Fusion deployment subfolder
+                var fusionDirs = Directory.GetDirectories(fusionPythonPath)
+                    .Where(d => File.Exists(Path.Combine(d, "Fusion360.exe")))  // crude but helpful filter
+                    .ToList();
+
+                if (fusionDirs.Count == 0)
                 {
-                    Directory.CreateDirectory(sitePackagesPath);
+                    Console.WriteLine("❌ Could not find Fusion 360 install directory.");
+                    return;
                 }
 
-                // Copy the requests module directly to site-packages
-                string sourceRequestsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "requests");
-                string destinationRequestsPath = Path.Combine(sitePackagesPath, "requests");
-
-                if (Directory.Exists(sourceRequestsPath))
+                string sitePackagesPath = null;
+                foreach (var dir in fusionDirs)
                 {
-                    // Delete existing requests folder if it exists
-                    if (Directory.Exists(destinationRequestsPath))
+                    string potential = Path.Combine(dir, "Python", "lib", "site-packages");
+                    if (Directory.Exists(potential))
                     {
-                        try
-                        {
-                            Directory.Delete(destinationRequestsPath, true);
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine($"⚠️ Warning: Could not remove existing requests module: {ex.Message}");
-                        }
+                        sitePackagesPath = potential;
+                        break;
                     }
-
-                    // Copy requests directory
-                    CopyDirectory(sourceRequestsPath, destinationRequestsPath);
-                    Console.WriteLine($"✅ Copied 'requests' module to: {destinationRequestsPath}");
                 }
-                else
+
+                if (sitePackagesPath == null)
                 {
-                    Console.WriteLine($"⚠️ Warning: 'requests' directory not found at {sourceRequestsPath}");
+                    Console.WriteLine("❌ Could not locate Fusion 360 site-packages directory.");
+                    return;
                 }
 
-                Console.WriteLine("✅ Successfully installed 'requests' module in Fusion 360's site-packages.");
+                Console.WriteLine($"✅ Target Fusion site-packages path: {sitePackagesPath}");
+
+                // Final target
+                string targetPath = Path.Combine(sitePackagesPath, "requests");
+                if (Directory.Exists(targetPath))
+                {
+                    Console.WriteLine("ℹ️ Existing 'requests' folder found in Fusion. Deleting...");
+                    Directory.Delete(targetPath, true);
+                }
+
+                Console.WriteLine($"📦 Copying 'requests' to Fusion site-packages...");
+                CopyDirectory(sourcePath, targetPath);
+
+                Console.WriteLine("✅ 'requests' successfully installed into Fusion site-packages.");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ Error installing 'requests' module: {ex.Message}");
+                Console.WriteLine($"❌ Error in InstallPythonRequests: {ex.Message}\n{ex.StackTrace}");
             }
         }
 
