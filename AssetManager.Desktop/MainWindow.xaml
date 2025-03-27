@@ -933,11 +933,14 @@
 
                             <StackPanel Orientation="Horizontal">
                                 <md:PackIcon Kind="Magnify" Width="14" Height="14" VerticalAlignment="Center" Foreground="#d1d5db" Margin="0,0,0,0"/>
-                                <TextBox x:Name="SearchText_Box" VerticalAlignment="Center" VerticalContentAlignment="Center" BorderBrush="Transparent" Width="92" FontSize="10" Height="19"  KeyDown="SearchText_Box_OnKeyDown">
+                                <TextBox x:Name="SearchText_Box" VerticalAlignment="Center" VerticalContentAlignment="Center" BorderBrush="Transparent" Width="92" FontSize="10" Height="19"  KeyDown="SearchText_Box_OnKeyDown" TextChanged="SearchText_Box_TextChanged">
                                     <TextBox.Style>
                                         <Style TargetType="TextBox">
                                             <Setter Property="Foreground" Value="Gray"/>
                                             <Setter Property="Text" Value="Search By Name..."/>
+                                            <Setter Property="Background" Value="Transparent"/>
+                                            <Setter Property="BorderBrush" Value="Transparent"/>
+                                            <Setter Property="BorderThickness" Value="1"/>
                                             <Style.Triggers>
                                                 <Trigger Property="IsKeyboardFocused" Value="True">
                                                     <Setter Property="Text" Value=""/>
@@ -1929,7 +1932,9 @@
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,10" Width="Auto">
 
                         <!-- User Profile Image -->
-                        <Ellipse Width="30" Height="30" Fill="Gray" Margin="0,0,10,0"/>
+                        <!--<Ellipse Width="30" Height="30" Fill="Gray" Margin="0,0,10,0"/>-->
+                        <Image x:Name="UserComment_Image" Width="30" Height="30" Margin="0,0,10,0" ClipToBounds="True" Stretch="UniformToFill"/>
+
 
                         <!-- Comment Input Field with Send Icon -->
                         <Grid Width="Auto">
@@ -2036,7 +2041,13 @@
                                     <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
 
                                         <!-- User Avatar -->
-                                        <Ellipse Width="40" Height="40" Fill="Gray" Margin="0,0,10,0"/>
+                                        <!--<Ellipse Width="40" Height="40" Fill="Gray" Margin="0,0,10,0"/>-->
+
+                                        <Image Width="40" Height="40" Margin="0,0,10,0" ClipToBounds="True" Stretch="UniformToFill">
+                                            <Image.Source>
+                                                <BitmapImage UriSource="{Binding UserPic}"/>
+                                            </Image.Source>
+                                        </Image>
 
                                         <!-- Comment Content -->
                                         <StackPanel Orientation="Vertical">
