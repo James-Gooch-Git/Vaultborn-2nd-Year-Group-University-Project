@@ -9,14 +9,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="29dceaf0-6b38-45af-9473-223a6fd443eb" name="Changes" comment="csproj img">
-      <change afterPath="$PROJECT_DIR$/AssetManager.Desktop/Assets/CityMarket.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/AssetManager.Desktop/Assets/Marketplace.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/AssetManager.Desktop/Assets/buttongold.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/.idea.AssetManager/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.AssetManager/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/AssetManager.Desktop/AssetManager.Desktop.csproj" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Desktop/AssetManager.Desktop.csproj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/AssetManager.Desktop/ListDeckPrompt.xaml" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Desktop/ListDeckPrompt.xaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/AssetManager.Desktop/NewDeckPrompt.xaml" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Desktop/NewDeckPrompt.xaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/AssetManager.Desktop/SelectModelWindow.xaml" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Desktop/SelectModelWindow.xaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml.cs" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/AssetManager.Infrastructure/bin/Debug/net8.0/win-x64/AssetManager.Core.dll" beforeDir="false" afterPath="$PROJECT_DIR$/AssetManager.Infrastructure/bin/Debug/net8.0/win-x64/AssetManager.Core.dll" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -43,15 +39,13 @@
   <component name="GithubPullRequestsUISettings"><![CDATA[{
   "selectedUrlAndAccountId": {
     "url": "https://github.com/TomGrout/AssetManager.git",
-    "accountId": "90714e12-1a5a-4016-8181-9850399436aa"
+    "accountId": "9b745b85-cad7-4aff-85f6-e0156b528487"
   }
 }]]></component>
   <component name="HighlightingSettingsPerFile">
-    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/bd1d5c50194fea68ff3559c160230b0ab50f5acf4ce3061bffd6d62958e2182/ExceptionDispatchInfo.cs" root0="FORCE_HIGHLIGHTING" />
-    <setting file="mock://C:/Users/tomgr/source/repos/AssetManager2/AssetManager.Desktop/DeckWindow.xaml" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/AssetManager.Desktop/LoginWindow.xaml.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml" root0="FORCE_HIGHLIGHTING" />
-    <setting file="file://$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/AssetManager.Desktop/MainWindow.xaml.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/AssetManager.Desktop/OpenFusion.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/AssetManager.Desktop/obj/Debug/net8.0-windows/win-x64/App.g.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/AssetManager.Desktop/obj/Debug/net8.0-windows/win-x64/MainWindow.g.cs" root0="SKIP_HIGHLIGHTING" />
@@ -82,7 +76,7 @@
     ".NET Project.AssetManager.Desktop.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "master-tom-2",
+    "git-widget-placeholder": "master",
     "ignore.virus.scanning.warn.message": "true",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
@@ -138,6 +132,7 @@
       <workItem from="1742654880113" duration="6022000" />
       <workItem from="1742893788671" duration="530000" />
       <workItem from="1743014227833" duration="18635000" />
+      <workItem from="1743106695562" duration="2073000" />
     </task>
     <task id="LOCAL-00001" summary="save main">
       <option name="closed" value="true" />

@@ -326,6 +326,62 @@ namespace AssetManager.Infrastructure.Services
             }
         }
 
+        public static async Task<string> GetParentFolderIdOffolder(string hubID, string projectId, string folderId)
+        {
+            string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/folders/{folderId}";
+            string _accessToken = TokenManager.GetToken(); // Ensure you have a valid token
+
+            if (string.IsNullOrEmpty(_accessToken))
+            {
+                Console.WriteLine("❌ Error: Access token is missing or invalid.");
+                return null; // Return null if the access token is invalid
+            }
+
+            try
+            {
+                using (HttpClient client = new HttpClient())
+                {
+                    // Set Authorization Header
+                    client.DefaultRequestHeaders.Clear();
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
+
+                    // Make GET Request
+                    HttpResponseMessage response = await client.GetAsync(url);
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        Console.WriteLine($"❌ Error: {response.StatusCode} - {response.ReasonPhrase}");
+                        return null; // Return null if the request fails
+                    }
+
+                    // Parse JSON Response
+                    string jsonResponse = await response.Content.ReadAsStringAsync();
+                    using JsonDocument doc = JsonDocument.Parse(jsonResponse);
+                    JsonElement root = doc.RootElement;
+
+                    // Check if "relationships" -> "parent" exists in the response
+                    if (root.TryGetProperty("relationships", out JsonElement relationships) &&
+                        relationships.TryGetProperty("parent", out JsonElement parent))
+                    {
+                        // Get the parent folder's ID
+                        string parentFolderId = parent.GetProperty("data").GetProperty("id").GetString();
+                        return parentFolderId; // Return the parent folder ID
+                    }
+                    else
+                    {
+                        Console.WriteLine("❌ No parent folder found.");
+                        return null; // Return null if no parent folder exists
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Exception: {ex.Message}");
+                return null; // Return null in case of an exception
+            }
+        }
+
+
         public static async Task<List<(string ItemId, string ItemName, bool IsFolder)>> GetProjectItems(string projectId, string folderId)
         {
             string accessToken = TokenManager.GetToken();
@@ -545,9 +601,9 @@ namespace AssetManager.Infrastructure.Services
             }
         }
 
-      
+
         //Creates new folder in a specified 
-        public static async Task<bool> CreateNewFolder(string projectId, string parentFolderId, string folderName)
+        public static async Task<string> CreateNewFolder(string projectId, string parentFolderId, string folderName)
         {
             try
             {
@@ -555,18 +611,15 @@ namespace AssetManager.Infrastructure.Services
                 httpClient.DefaultRequestHeaders.Authorization =
                     new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", TokenManager.GetToken());
 
-                // Step 1: Retrieve the necessary data for folder creation
                 var result = await GetPersonalHubDetails();
                 (string hubID, string HubName, string HubType) = result.Value;
-
 
                 if (string.IsNullOrEmpty(parentFolderId))
                 {
                     Console.WriteLine("❌ Error: No valid parent folder found for folder creation.");
-                    return false;
+                    return null; // Return null instead of false
                 }
 
-                // Step 3: Prepare the request body for folder creation
                 var requestBody = new
                 {
                     jsonapi = new { version = "1.0" },
@@ -589,7 +642,7 @@ namespace AssetManager.Infrastructure.Services
                                 data = new
                                 {
                                     type = "folders",
-                                    id = parentFolderId // ✅ Ensure a valid parent ID
+                                    id = parentFolderId
                                 }
                             }
                         }
@@ -599,27 +652,28 @@ namespace AssetManager.Infrastructure.Services
                 string json = System.Text.Json.JsonSerializer.Serialize(requestBody);
                 string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/folders";
 
-                // Step 4: Send the request
                 var response = await httpClient.PostAsync(url, new StringContent(json, Encoding.UTF8, "application/json"));
                 string responseContent = await response.Content.ReadAsStringAsync();
 
                 if (!response.IsSuccessStatusCode)
                 {
                     Console.WriteLine($"❌ Error: Failed to create folder. Status: {response.StatusCode}");
-                    return false;
+                    return null; // Return null on failure
                 }
 
-                // Step 5: Parse the response to get the folder ID
+                // Parse the response to get the folder ID
                 using JsonDocument doc = JsonDocument.Parse(responseContent);
                 string folderId = doc.RootElement.GetProperty("data").GetProperty("id").GetString();
-                return true;
+
+                return folderId; // ✅ Return the actual folder ID
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"❌ Exception while creating folder: {ex.Message}");
-                return false;
+                return null; // Return null on exception
             }
         }
+
 
 
         /*

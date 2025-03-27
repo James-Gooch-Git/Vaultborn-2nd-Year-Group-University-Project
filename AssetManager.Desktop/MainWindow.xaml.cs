@@ -71,6 +71,8 @@ namespace AssetManager.Desktop
         private const int REFRESH_INTERVAL_MINUTES = 15;
         private bool _isRefreshing = false;
         private bool showLatestVersions = true;
+        private Dictionary<string, TreeViewItem> itemLookup = new Dictionary<string, TreeViewItem>();
+
 
 
         private List<Dictionary<string, string>> originalResults;
@@ -86,7 +88,7 @@ namespace AssetManager.Desktop
         private enum ViewType { Grid, List }
         private ViewType _lastViewType = ViewType.List; // Default to List View
 
-  
+
 
         // Constructor
         public MainWindow()
@@ -95,11 +97,11 @@ namespace AssetManager.Desktop
 
 
 
-       
+
             //InitializeWebView2();
             //  ModelDataGrid.SelectionChanged += ModelDataGrid_SelectionChanged;
             Initialize();
-          
+
         }
         private async void InitialiseFolders()
         {
@@ -126,8 +128,13 @@ namespace AssetManager.Desktop
 
         private async void Initialize()
         {
+
             try
             {
+                LoadingProgressBar.Visibility = Visibility.Visible;
+                LoadingStatusText.Text = "Loading projects...";
+                LoadingStatusText.Visibility = Visibility.Visible;
+                LoadingProgressBar.Progress = 0.1; // Start with initial progress
                 _accessToken = TokenManager.GetToken();
 
                 if (string.IsNullOrEmpty(_accessToken))
@@ -144,40 +151,41 @@ namespace AssetManager.Desktop
                 FusionAddinInstaller.InstallFusionAddin(_accessToken);
                 // 🔹 Initialize data
                 LoadHubsAsync();
-               /* await LoadAllModels();
-                if (!ModelsDataGrid.Columns.Any(col => col.Header?.ToString() == "Actions"))
-                {
-                    var actionsColumn = new DataGridTemplateColumn
-                    {
-                        Header = "Actions",
-                        Width = new DataGridLength(50)
-                    };
+                LoadingProgressBar.Progress = 0.3;
+                /* await LoadAllModels();
+                 if (!ModelsDataGrid.Columns.Any(col => col.Header?.ToString() == "Actions"))
+                 {
+                     var actionsColumn = new DataGridTemplateColumn
+                     {
+                         Header = "Actions",
+                         Width = new DataGridLength(50)
+                     };
 
-                    var cellTemplate = new DataTemplate();
-                    var buttonFactory = new FrameworkElementFactory(typeof(Button));
+                     var cellTemplate = new DataTemplate();
+                     var buttonFactory = new FrameworkElementFactory(typeof(Button));
 
-                    buttonFactory.SetValue(Button.ContentProperty, "⋮"); // Three-dot menu
-                    buttonFactory.SetValue(Button.CursorProperty, Cursors.Hand);
-                    buttonFactory.SetValue(Button.ToolTipProperty, "Click for options");
+                     buttonFactory.SetValue(Button.ContentProperty, "⋮"); // Three-dot menu
+                     buttonFactory.SetValue(Button.CursorProperty, Cursors.Hand);
+                     buttonFactory.SetValue(Button.ToolTipProperty, "Click for options");
 
-                    // ✅ Open ContextMenu when button is clicked
-                    buttonFactory.AddHandler(Button.ClickEvent, new RoutedEventHandler((s, ev) =>
-                    {
-                        if (s is Button btn && btn.DataContext is Dictionary<string, string> selectedModel)
-                        {
-                            ContextMenu dynamicContextMenu = CreateModelContextMenu(selectedModel["Id"], selectedModel["Name"]);
-                            dynamicContextMenu.PlacementTarget = btn;
-                            dynamicContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
-                            dynamicContextMenu.IsOpen = true;
-                        }
-                    }));
+                     // ✅ Open ContextMenu when button is clicked
+                     buttonFactory.AddHandler(Button.ClickEvent, new RoutedEventHandler((s, ev) =>
+                     {
+                         if (s is Button btn && btn.DataContext is Dictionary<string, string> selectedModel)
+                         {
+                             ContextMenu dynamicContextMenu = CreateModelContextMenu(selectedModel["Id"], selectedModel["Name"]);
+                             dynamicContextMenu.PlacementTarget = btn;
+                             dynamicContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+                             dynamicContextMenu.IsOpen = true;
+                         }
+                     }));
 
-                    cellTemplate.VisualTree = buttonFactory;
-                    actionsColumn.CellTemplate = cellTemplate;
+                     cellTemplate.VisualTree = buttonFactory;
+                     actionsColumn.CellTemplate = cellTemplate;
 
-                    ModelsDataGrid.Columns.Add(actionsColumn);
-                }
-*/
+                     ModelsDataGrid.Columns.Add(actionsColumn);
+                 }
+ */
                 var hubDetails = await DataManagement.GetPersonalHubDetails();
 
                 if (hubDetails == null)
@@ -192,13 +200,14 @@ namespace AssetManager.Desktop
                         return;
                     }
                 }
-
+                LoadingProgressBar.Progress = 0.6;
                 var (hubID, hubName, hubType) = hubDetails.Value;
                 Console.WriteLine($"Hub ID: {hubID}, Name: {hubName}, Type: {hubType}");
 
-              
+
                 //await RefreshHubs();
                 await LoadProjectsForHub(hubID);
+                LoadingProgressBar.Progress = 0.7;
                 await DisplayNotifications();
                 await AddNotifsToCentre();
                 //FusionManager.InitializePythonEngine();
@@ -206,6 +215,7 @@ namespace AssetManager.Desktop
                 Username_TextBlock.Text = await _userService.GetUserName(_userId);
                 UserPic_Image.Source = new BitmapImage(new Uri(await _userService.GetUserPic(_userId)));
                 //DisplayGridModels();
+                LoadingProgressBar.Progress = 1.0;
             }
             catch (Exception ex)
             {
@@ -352,7 +362,8 @@ namespace AssetManager.Desktop
                     var folderId = topFolder.Item1;
                     TreeViewItem projectItem = new TreeViewItem
                     {
-                        Header = $"📁 {projectName}",
+                        Header =
+                        CreateHeader("Icons2/folder_icon5.svg", projectName, 25, 25),
                         Tag = (projectId, folderId, true)
                     };
                     projectItem.Items.Add(null); // Placeholder for lazy loading
@@ -873,7 +884,7 @@ namespace AssetManager.Desktop
                 {
                     return true;
                 }
-                  
+
                 source = VisualTreeHelper.GetParent(source);
             }
             return false;
@@ -1000,7 +1011,7 @@ namespace AssetManager.Desktop
                                     }
                                 }
 
-                                    allModels.Add(new Dictionary<string, string>
+                                allModels.Add(new Dictionary<string, string>
                                     {
                                         { "Id", modelId },
                                         { "Name", modelName },
@@ -1009,14 +1020,14 @@ namespace AssetManager.Desktop
                                         { "LastModified", formattedDate }
                                     });
 
-                                    await GetModelData(modelId, projectId, projectName, hubID);
-                                    await InsertModelVersionDB(modelId, projectId);
-                                }
+                                await GetModelData(modelId, projectId, projectName, hubID);
+                                await InsertModelVersionDB(modelId, projectId);
                             }
                         }
                     }
                 }
-            
+            }
+
             catch (Exception ex)
             {
                 Console.WriteLine($"❌ Exception occurred in GetAllModels: {ex.Message}");
@@ -1398,7 +1409,7 @@ namespace AssetManager.Desktop
                    Console.WriteLine($"✅ {models.Count} models loaded successfully.");
                }*/
 
-        private async void LoadModelsForSelectedProject()
+        /*      private async void LoadModelsForSelectedProject()
         {
             if (string.IsNullOrEmpty(_selectedProjectId) || string.IsNullOrEmpty(_folderId))
             {
@@ -1487,7 +1498,7 @@ namespace AssetManager.Desktop
 
             Console.WriteLine($"✅ {models.Count} models loaded successfully.");
         }
-
+*/
 
 
 
@@ -1536,90 +1547,6 @@ namespace AssetManager.Desktop
             }
             return "Icons2/default_icon.svg"; // fallback
         }
-
-
-
-        //NEEDS MIGRATING TO UI SERVICES || UI FUNCTIONALITY//
-        #region UI Functionality
-        private async void TreeViewItem_Expanded(object sender, RoutedEventArgs e)
-        {
-            if (sender is TreeViewItem item && item.Tag is (string projectId, string folderId, bool isFolder))
-            {
-                if (item.Items.Count == 1 && item.Items[0] == null)
-                {
-                    item.Items.Clear();
-
-                    var items = await DataManagement.GetProjectItems(projectId, folderId);
-
-                    if (items == null || !items.Any())
-                    {
-                        item.Items.Add(new TreeViewItem { Header = "❌ No items found" });
-                        return;
-                    }
-
-                    foreach (var (itemId, itemName, isFolderItem) in items)
-                    {
-                        bool is3DModel = false;
-
-                        if (!isFolderItem)
-                        {
-                            string extension = Path.GetExtension(itemName)?.ToLowerInvariant();
-                            is3DModel = Accepted3DModelExtensions.Contains(extension);
-                            // You can now use `is3DModel` for logic or tag
-                        }
-
-                        TreeViewItem fileItem = new TreeViewItem
-                        {
-                            //Header = isFolderItem ? CreateHeader("Icons2/folder_icon.svg", itemName, 28, 28) : CreateHeader(GetIconForExtension(Path.GetExtension(itemName)), itemName, 28, 28),
-                            Header = CreateHeader(GetIconForExtension(Path.GetExtension(itemName)), itemName, 30, 30),
-                            Tag = (projectId, itemId, isFolderItem, is3DModel),
-                            ContextMenu = CreateContextMenu(projectId, itemId, isFolderItem)
-                        };
-
-
-                        if (isFolderItem)
-                        {
-                            await LoadSubfoldersAsync(fileItem, projectId, itemId);
-                        }
-
-                        item.Items.Add(fileItem);
-                    }
-                }
-            }
-        }
-
-        private static StackPanel CreateHeader(string iconPath, string displayName, double width, double height)
-        {
-            var stack = new StackPanel
-            {
-                Orientation = Orientation.Horizontal,
-                Margin = new Thickness(2)
-            };
-
-            var svgIcon = new SvgViewbox
-            {
-                Width = width,
-                Height = height,
-                Margin = new Thickness(0, 0, 8, 0),
-                Stretch = Stretch.Uniform,
-                Source = new Uri($"pack://application:,,,/{iconPath}", UriKind.Absolute)
-            };
-
-            var label = new TextBlock
-            {
-                Text = displayName,
-                FontSize = 14,
-                VerticalAlignment = VerticalAlignment.Center,
-                Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d1d5db"))
-            };
-
-            stack.Children.Add(svgIcon);
-            stack.Children.Add(label);
-            return stack;
-        }
-
-
-
 
 
         /*  private async void TreeViewItem_Expanded(object sender, RoutedEventArgs e)
@@ -1792,185 +1719,435 @@ namespace AssetManager.Desktop
         //}
 
 
-        private async Task LoadSubfoldersAsync(TreeViewItem parentFolder, string projectId, string folderId)
-        {
-            try
-            {
-                if (parentFolder == null || string.IsNullOrEmpty(projectId) || string.IsNullOrEmpty(folderId))
-                {
-                    Debug.WriteLine("⚠️ LoadSubfoldersAsync was called with null or empty values.");
-                    return;
-                }
-
-                // ✅ This already filters out deleted models
-                var subItems = await DataManagement.GetProjectItems(projectId, folderId);
-
-                // Clear previous items
-                parentFolder.Items.Clear();
-
-                if (subItems == null || subItems.Count == 0)
-                {
-                    parentFolder.Items.Add(new TreeViewItem { Header = " (empty)", IsEnabled = false });
-                    return;
-                }
-
-                foreach (var (subItemId, subItemName, isSubFolder) in subItems)
-                {
-                    if (string.IsNullOrEmpty(subItemId) || string.IsNullOrEmpty(subItemName))
-                        continue;
-
-                    bool is3DModel = false;
-
-                    if (!isSubFolder)
-                    {
-                        string extension = Path.GetExtension(subItemName)?.ToLowerInvariant();
-                        is3DModel = Accepted3DModelExtensions.Contains(extension);
-                    }
-
-                    TreeViewItem subItem = new TreeViewItem
-                    {
-                        Header = isSubFolder
-                        ? CreateHeader("Icons2/folder_icon.svg", subItemName, 30, 30)
-                        : CreateHeader(GetIconForExtension(Path.GetExtension(subItemName)), subItemName, 30, 30),
-
-                        Tag = (projectId, subItemId, isSubFolder, is3DModel),
-                        ContextMenu = CreateContextMenu(projectId, subItemId, isSubFolder)
-                    };
-
-                    if (isSubFolder)
-                    {
-                        // Lazy load children when expanded
-                        subItem.Items.Add(new TreeViewItem { Header = "Loading...", IsEnabled = false });
-
-                        subItem.Expanded += async (s, e) =>
-                        {
-                            if (subItem.Items.Count == 1 && subItem.Items[0] is TreeViewItem dummy && dummy.Header.ToString() == "Loading...")
-                            {
-                                subItem.Items.Clear();
-                                await LoadSubfoldersAsync(subItem, projectId, subItemId);
-
-                                if (subItem.Items.Count == 0)
-                                {
-                                    subItem.Items.Add(new TreeViewItem { Header = " (empty)", IsEnabled = false });
-                                }
-                            }
-                        };
-                    }
-
-                    parentFolder.Items.Add(subItem);
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"❌ Error in LoadSubfoldersAsync: {ex.Message}\n{ex.StackTrace}");
-            }
-        }
 
 
+        //NEEDS MIGRATING TO UI SERVICES || UI FUNCTIONALITY//
+
+         private static StackPanel CreateHeader(string iconPath, string displayName, double width, double height)
+ {
+     var stack = new StackPanel
+     {
+         Orientation = Orientation.Horizontal,
+         Margin = new Thickness(2)
+     };
+
+     var svgIcon = new SvgViewbox
+     {
+         Width = width,
+         Height = height,
+         Margin = new Thickness(0, 0, 8, 0),
+         Stretch = Stretch.Uniform,
+         Source = new Uri($"pack://application:,,,/{iconPath}", UriKind.Absolute)
+     };
+
+     var label = new TextBlock
+     {
+         Text = displayName,
+         FontSize = 14,
+         VerticalAlignment = VerticalAlignment.Center,
+         Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d1d5db"))
+     };
+
+     stack.Children.Add(svgIcon);
+     stack.Children.Add(label);
+     return stack;
+ }
+ #region UI Functionality
 
 
+ private async void TreeViewItem_Expanded(object sender, RoutedEventArgs e)
+ {
+     if (sender is TreeViewItem item && item.Tag is (string projectId, string folderId, bool isFolder))
+     {
+         // Add the current folder/item to the dictionary
+         if (!itemLookup.ContainsKey(folderId)) // Prevent overwriting if it already exists
+         {
+             itemLookup[folderId] = item;
+         }
 
+         // Check if it's the first time the item is expanded (and has no subitems yet)
+         if (item.Items.Count == 1 && item.Items[0] == null)
+         {
+             item.Items.Clear();
 
-        private ContextMenu CreateContextMenu(string projectId, string itemId, bool isFolder)
-        {
-            ContextMenu menu = new ContextMenu();
-            {
-                if (isFolder)
-                {
-                    MenuItem createFolderItem = new MenuItem { Header = "📁 Create New Folder" };
-                    createFolderItem.Click += async (s, e) => await CreateNewFolder(projectId, itemId); // Use selected folder
-                    menu.Items.Add(createFolderItem);
-                }
-            }
-            return menu;
-        }
+             var items = await DataManagement.GetProjectItems(projectId, folderId);
 
+             if (items == null || !items.Any())
+             {
+                 item.Items.Add(new TreeViewItem { Header = "Empty" });
+                 return;
+             }
 
-        private async Task CreateNewFolder(string projectId, string parentFolderId)
-        {
-            string folderName = PromptForFolderName();
-            if (string.IsNullOrWhiteSpace(folderName)) return;
+             foreach (var (itemId, itemName, isFolderItem) in items)
+             {
+                 bool is3DModel = false;
 
-            // Disable the context menu while creating the folder to prevent multiple clicks
-            ContextMenu currentMenu = ContextMenuService.GetContextMenu(ProjectTreeView);
-            if (currentMenu != null) currentMenu.IsEnabled = false;
+                 if (!isFolderItem)
+                 {
+                     string extension = Path.GetExtension(itemName)?.ToLowerInvariant();
+                     is3DModel = Accepted3DModelExtensions.Contains(extension);
+                 }
 
-            bool success = await DataManagement.CreateNewFolder(projectId, parentFolderId, folderName);
+                 TreeViewItem fileItem = new TreeViewItem
+                 {
+                     // Set the header based on whether it's a folder or file
+                     Header = isFolderItem
+                         ? CreateHeader("Icons2/folder_icon5.svg", itemName, 25, 25)
+                         : CreateHeader(GetIconForExtension(Path.GetExtension(itemName)), itemName, 30, 30),
+                     Tag = (projectId, itemId, isFolderItem, is3DModel),
+                     ContextMenu = CreateContextMenu(projectId, itemId, isFolderItem)
+                 };
 
-            if (currentMenu != null) currentMenu.IsEnabled = true;
+                 // Add the item to the dictionary (either folder or file)
+                 if (!itemLookup.ContainsKey(itemId)) // Prevent overwriting if it already exists
+                 {
+                     itemLookup[itemId] = fileItem;
+                 }
 
-            if (success)
-            {
-                // Find the parent item in the TreeView
-                TreeViewItem parentItem = FindTreeViewItem(ProjectTreeView.Items, parentFolderId);
-                if (parentItem != null)
-                {
-                    // Remove the "empty folder" message if it exists
-                    var emptyFolderItem = parentItem.Items.OfType<TreeViewItem>()
-                        .FirstOrDefault(item => item.Header.ToString() == "📂 This folder is empty");
+                 // If it's a folder, load subfolders
+                 if (isFolderItem)
+                 {
+                     await LoadSubfoldersAsync(fileItem, projectId, itemId);
+                 }
 
-                    if (emptyFolderItem != null)
-                    {
-                        parentItem.Items.Remove(emptyFolderItem);
-                    }
-
-                    // Add the new folder to the TreeView
-                    await AddNewFolderToTreeView(parentItem, projectId, parentFolderId, folderName);
-                }
-            }
-        }
-
-        //await LoadProjectsForHub(selectedHubID);
+                 // Add the newly created item to the current folder
+                 item.Items.Add(fileItem);
+             }
+         }
+     }
+ }
 
 
 
-        private async Task AddNewFolderToTreeView(TreeViewItem parentItem, string projectId, string parentFolderId, string folderName)
-        {
-            TreeViewItem newFolderItem = new TreeViewItem
-            {
-                Header = $"📁 {folderName}",
-                Tag = (projectId, parentFolderId, true, false), // Correct tuple structure
-                ContextMenu = CreateContextMenu(projectId, parentFolderId, true)
-            };
+
+ private async Task LoadSubfoldersAsync(TreeViewItem parentFolder, string projectId, string folderId)
+ {
+     try
+     {
+         if (parentFolder == null || string.IsNullOrEmpty(projectId) || string.IsNullOrEmpty(folderId))
+         {
+             Debug.WriteLine("⚠️ LoadSubfoldersAsync was called with null or empty values.");
+             return;
+         }
+
+         // ✅ Fetch subitems (folders/files)
+         var subItems = await DataManagement.GetProjectItems(projectId, folderId);
+
+         // Clear previous items
+         parentFolder.Items.Clear();
+
+         if (subItems == null || subItems.Count == 0)
+         {
+             parentFolder.Items.Add(new TreeViewItem { Header = "Empty", IsEnabled = false });
+             return;
+         }
+
+         foreach (var (subItemId, subItemName, isSubFolder) in subItems)
+         {
+             if (string.IsNullOrEmpty(subItemId) || string.IsNullOrEmpty(subItemName))
+             {
+                 // Log invalid subitems but continue processing others
+                 Debug.WriteLine($"⚠️ Skipping invalid subitem: {subItemId} / {subItemName}");
+                 continue;
+             }
+
+             bool is3DModel = false;
+
+             if (!isSubFolder)
+             {
+                 string extension = Path.GetExtension(subItemName)?.ToLowerInvariant();
+                 is3DModel = Accepted3DModelExtensions.Contains(extension);
+             }
+
+             TreeViewItem subItem = new TreeViewItem
+             {
+                 Header = isSubFolder
+                     ? CreateHeader("Icons2/folder_icon5.svg", subItemName, 25, 25)
+                     : CreateHeader(GetIconForExtension(Path.GetExtension(subItemName)), subItemName, 30, 30),
+                 Tag = (projectId, subItemId, isSubFolder, is3DModel),
+                 ContextMenu = CreateContextMenu(projectId, subItemId, isSubFolder)
+             };
+
+             // Add the subfolder to the dictionary for future reference
+             itemLookup[subItemId] = subItem;
+
+             // Log the item added to the dictionary for debugging
+             Debug.WriteLine($"Added {subItemName} (ID: {subItemId}) to dictionary.");
+
+             if (isSubFolder)
+             {
+                 // Lazy load children when expanded
+                 subItem.Items.Add(new TreeViewItem { Header = "Loading...", IsEnabled = false });
+
+                 // Handle expanding the folder to load its children
+                 subItem.Expanded += async (s, e) =>
+                 {
+                     if (subItem.Items.Count == 1 && subItem.Items[0] is TreeViewItem dummy && dummy.Header.ToString() == "Loading...")
+                     {
+                         subItem.Items.Clear();
+                         await LoadSubfoldersAsync(subItem, projectId, subItemId);
+
+                         // If no subfolders are found, display empty message
+                         if (subItem.Items.Count == 0)
+                         {
+                             subItem.Items.Add(new TreeViewItem { Header = "Empty", IsEnabled = false });
+                         }
+                     }
+                 };
+             }
+
+             parentFolder.Items.Add(subItem);
+         }
+     }
+     catch (Exception ex)
+     {
+         // Log error details to the debug output
+         Debug.WriteLine($"❌ Error in LoadSubfoldersAsync: {ex.Message}\n{ex.StackTrace}");
+
+         // Optional: Show an error message to the user if necessary
+         MessageBox.Show($"Error loading subfolders: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+     }
+ }
 
 
-            // Add the new folder to the parent folder’s items
-            parentItem.Items.Add(newFolderItem);
-        }
 
-        private string PromptForFolderName()
-        {
-            // Create a simple input dialog
-            string folderName = Microsoft.VisualBasic.Interaction.InputBox(
-                "Enter the name for the new folder:",
-                "Create New Folder",
-                "New Folder"
-            );
 
-            return string.IsNullOrWhiteSpace(folderName) ? null : folderName;
-        }
 
-        private TreeViewItem FindTreeViewItem(ItemCollection items, string folderId)
-        {
-            if (items == null) return null; // ✅ Prevent null reference
 
-            foreach (TreeViewItem item in items)
-            {
-                if (item?.Tag is (string _, string id, _) && id == folderId) // ✅ Null check
-                {
-                    return item;
-                }
 
-                TreeViewItem found = FindTreeViewItem(item?.Items, folderId);
-                if (found != null) return found;
-            }
-            return null;
-        }
-        #endregion
+ private string PromptForFolderName()
+ {
+     // Create a simple input dialog
+     string folderName = Microsoft.VisualBasic.Interaction.InputBox(
+         "Enter the name for the new folder:",
+         "Create New Folder",
+         "New Folder"
+     );
+
+     return folderName;
+ }
+
+
+ private ContextMenu CreateContextMenu(string projectId, string itemId, bool isFolder)
+ {
+     ContextMenu menu = new ContextMenu();
+
+     if (isFolder)
+     {
+         if (string.IsNullOrEmpty(itemId))
+         {
+             // It's better to provide a more friendly message if itemId is null or empty
+             return menu; // Exit early if no valid itemId
+         }
+
+         MenuItem createFolderItem = new MenuItem { Header = "📁 Create New Folder" };
+
+         createFolderItem.Click += async (s, e) =>
+         {
+             // Handle folder creation asynchronously
+             string newFolderId = await CreateNewFolder(projectId, itemId);
+             if (string.IsNullOrEmpty(newFolderId))
+             {
+                 MessageBox.Show("Failed to create the new folder. Please try again.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+             }
+             else
+             {
+                 Console.WriteLine($"New folder created successfully with ID: {newFolderId}");
+             }
+         };
+
+         menu.Items.Add(createFolderItem);
+     }
+     return menu;
+ }
+
+ private async Task<string> CreateNewFolder(string projectId, string parentFolderId, bool isNewProjectFolder = false)
+ {
+     string folderName = PromptForFolderName();
+     if (string.IsNullOrWhiteSpace(folderName)) return null;
+
+     // Disable the context menu while creating the folder to prevent multiple clicks
+     ContextMenu currentMenu = ContextMenuService.GetContextMenu(ProjectTreeView);
+     if (currentMenu != null) currentMenu.IsEnabled = false;
+
+
+     string folderId = await DataManagement.CreateNewFolder(projectId, parentFolderId, folderName);
+
+
+     if (currentMenu != null) currentMenu.IsEnabled = true;
+
+     if (string.IsNullOrEmpty(folderId))
+     {
+         MessageBox.Show("Could not create new folder, folder id is null or empty.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+         return null;
+     }
+
+     // Fetch the parent item directly from the dictionary
+     if (itemLookup.TryGetValue(parentFolderId, out TreeViewItem parentItem))
+     {
+         // Remove the "empty folder" message if it exists
+         var emptyFolderItem = parentItem.Items.OfType<TreeViewItem>()
+             .FirstOrDefault(item => item.Header.ToString() == "Empty");
+
+         if (emptyFolderItem != null)
+         {
+             parentItem.Items.Remove(emptyFolderItem);
+         }
+
+         // Add the new folder to the TreeView
+         await AddNewFolderToTreeView(parentItem, projectId, folderId, folderName);
+
+         return folderId;
+     }
+     else
+     {
+         MessageBox.Show("Parent item was not found in the TreeView.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+         return null;
+     }
+ }
+
+
+
+
+ private async Task AddNewFolderToTreeView(TreeViewItem parentItem, string projectId, string folderId, string folderName)
+ {
+     // Create the new folder TreeViewItem
+     TreeViewItem newFolderItem = new TreeViewItem
+     {
+         Header = CreateHeader("Icons2/folder_icon5.svg", folderName, 25, 25),
+         Tag = (projectId, folderId, true, false), // Correct tuple structure
+         ContextMenu = CreateContextMenu(projectId, folderId, true)
+     };
+
+     // Add the new folder to the parent folder’s items
+     parentItem.Items.Add(newFolderItem);
+
+     // Add "empty" item to indicate the folder is empty
+     newFolderItem.Items.Add(new TreeViewItem { Header = "Empty", IsEnabled = false });
+
+     // Add the new folder item to the dictionary for future access
+     itemLookup[folderId] = newFolderItem;
+ }
+
+
+ //private TreeViewItem FindTreeViewItem(ItemCollection items, string folderId)
+ //{
+ //    if (items == null || string.IsNullOrEmpty(folderId)) return null;
+
+ //    foreach (TreeViewItem item in items)
+ //    {
+ //        var tagTuple = item?.Tag as Tuple<string, string, bool, bool>;
+
+ //        // Debug output to see what tag data is being compared
+ //        Debug.WriteLine($"Checking item with FolderId: {tagTuple?.Item2}, Target FolderId: {folderId}");
+
+ //        // Check if the folderId matches
+ //        if (tagTuple != null && tagTuple.Item2 == folderId)
+ //        {
+ //            return item;
+ //        }
+
+ //        // Recursively search in the child items if necessary
+ //        if (item?.Items != null)
+ //        {
+ //            TreeViewItem found = FindTreeViewItem(item.Items, folderId);
+ //            if (found != null) return found;
+ //        }
+ //    }
+ //    return null;
+ //}
+
+
+ #endregion
+
+
+ #region UI Buttons
+ private async void CreateNewFolder_Click(object sender, RoutedEventArgs e)
+ {
+     if (_selectedProjectId == null)
+     {
+         MessageBox.Show("Please select a project to create a new folder.");
+         return;
+     }
+
+     var itemId = await DataManagement.GetTopLevelFolder(selectedHubID, _selectedProjectId);
+
+
+     string newFolderId = await CreateNewFolder(_selectedProjectId, itemId.FolderId);
+     if (string.IsNullOrEmpty(newFolderId))
+     {
+         MessageBox.Show("Failed to create the new folder. Please try again.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+     }
+     else
+     {
+         Console.WriteLine($"New folder created successfully with ID: {newFolderId}", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+     }
+ }
+
+
+        //private async Task ExpandFolderByProjectId(string projectId)
+        //{
+        //    foreach (var item in ProjectTreeView.Items)
+        //    {
+        //        if (item is TreeViewItem treeViewItem && treeViewItem.Tag is (string folderProjectId, string folderId, bool isFolder))
+        //        {
+        //            // Check if the project ID matches
+        //            if (folderProjectId == projectId)
+        //            {
+        //                // Ensure the item is collapsed (i.e., it has not been expanded yet)
+        //                if (!treeViewItem.IsExpanded)
+        //                {
+        //                    treeViewItem.IsExpanded = true;
+
+        //                    // Load items for the folder
+        //                    var items = await DataManagement.GetProjectItems(projectId, folderId);
+
+        //                    if (items == null || !items.Any())
+        //                    {
+        //                        treeViewItem.Items.Add(new TreeViewItem { Header = "❌ No items found" });
+        //                    }
+        //                    else
+        //                    {
+        //                        foreach (var (itemId, itemName, isFolderItem) in items)
+        //                        {
+        //                            bool is3DModel = false;
+
+        //                            if (!isFolderItem)
+        //                            {
+        //                                string extension = Path.GetExtension(itemName)?.ToLowerInvariant();
+        //                                is3DModel = Accepted3DModelExtensions.Contains(extension);
+        //                            }
+
+        //                            TreeViewItem fileItem = new TreeViewItem
+        //                            {
+        //                                Header = isFolderItem
+        //                                    ? CreateHeader("Icons2/folder_icon5.svg", itemName, 25, 25)
+        //                                    : CreateHeader(GetIconForExtension(Path.GetExtension(itemName)), itemName, 30, 30),
+        //                                Tag = (projectId, itemId, isFolderItem, is3DModel),
+        //                                ContextMenu = CreateContextMenu(projectId, itemId, isFolderItem)
+        //                            };
+
+        //                            if (isFolderItem)
+        //                            {
+        //                                await LoadSubfoldersAsync(fileItem, projectId, itemId);
+        //                            }
+
+        //                            treeViewItem.Items.Add(fileItem);
+        //                        }
+        //                    }
+        //                }
+
+        //                // Stop after the first match
+        //                return;
+        //            }
+        //        }
+        //    }
+        //}
+
+
 
         //UI BUTTONS//
-        #region UI Buttons
-        private void ProjectTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+        private async void ProjectTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
             if (e.NewValue is TreeViewItem selectedItem)
             {
@@ -1980,7 +2157,7 @@ namespace AssetManager.Desktop
                     string projectId = fileData.Item1;
                     string itemId = fileData.Item2;
                     bool isFolder = fileData.Item3;
-                    bool isPdf = fileData.Item4;
+                    bool isModel = fileData.Item4;
 
                     _selectedProjectId = projectId;
                     _selectedItemId = itemId;
@@ -2025,16 +2202,29 @@ namespace AssetManager.Desktop
                         }
                         else
                         {
-                            LoadModelsForSelectedProject();
+                            //LoadModelsForSelectedProject();
                         }
                     }
-                    else if (isPdf)
+
+                    //Model View
+                    else if (!isFolder && isModel)
+                    {
+                        _selectedItemName = displayName;
+                        Console.WriteLine($"📑 Selected PDF: {_selectedItemName}, Item ID: {_selectedItemId}, Project ID: {_selectedProjectId}");
+
+                        BtnViewInApp_Click(itemId);
+                    }
+
+                    //PDF view
+                    else if (!isModel && !isFolder)
                     {
                         _selectedItemName = displayName;
                         Console.WriteLine($"📑 Selected PDF: {_selectedItemName}, Item ID: {_selectedItemId}, Project ID: {_selectedProjectId}");
 
                         // Open the PDF in the Forge Viewer
                         OpenPdfInForgeViewer(_selectedProjectId, _selectedItemId, _selectedItemName);
+
+
                     }
                     else
                     {
@@ -2087,7 +2277,7 @@ namespace AssetManager.Desktop
                     }
                     else
                     {
-                        LoadModelsForSelectedProject();
+                        //LoadModelsForSelectedProject();
                     }
                 }
             }
@@ -2363,7 +2553,7 @@ namespace AssetManager.Desktop
                 ModelsDataGrid.SelectionChanged -= ModelsDataGrid_SelectionChanged;
                 ModelsDataGrid.SelectionChanged += ModelsDataGrid_SelectionChanged;
 
-            
+
                 if (!ModelsDataGrid.Columns.Any(col => col.Header?.ToString() == "Actions"))
                 {
                     var actionsColumn = new DataGridTemplateColumn
@@ -3296,7 +3486,7 @@ namespace AssetManager.Desktop
             try
             {
                 // 1. Install the Fusion 360 add-in if not already installed
-               // AssetManagement.Infrastructure.Fusion.FusionAddinInstaller.InstallFusionAddin();
+                // AssetManagement.Infrastructure.Fusion.FusionAddinInstaller.InstallFusionAddin();
 
                 // 2. Get the path to the Fusion 360 executable
                 string fusionPath = GetFusion360ExecutablePath();
@@ -3351,7 +3541,7 @@ namespace AssetManager.Desktop
         {
             string fusionBasePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Autodesk", "webdeploy", "production");
             Console.WriteLine("fusion location: " + fusionBasePath);
-            
+
             if (Directory.Exists(fusionBasePath))
             {
                 var fusionExecutables = Directory.GetFiles(fusionBasePath, "Fusion360.exe", SearchOption.AllDirectories);
@@ -3813,8 +4003,9 @@ namespace AssetManager.Desktop
                  versionSlider.Visibility = Visibility.Visible;
              }*/
 
-        private async void BtnViewInApp_Click(string selectedItemId)
+        public async void BtnViewInApp_Click(string selectedItemId)
         {
+            MessageBox.Show(selectedItemId);
             try
             {
                 // ✅ Track the last active view
@@ -3889,6 +4080,7 @@ namespace AssetManager.Desktop
                 Console.WriteLine($"❌ Exception: {ex.Message}\n{ex.StackTrace}");
             }
         }
+        
         public async Task BtnViewInApp_Click(string selectedItemId, string selectedVersionId)
         {
             try
@@ -3969,11 +4161,89 @@ namespace AssetManager.Desktop
             VersionSlider.Visibility = Visibility.Visible;
             VersionsSelectButton.Visibility = Visibility.Visible;
         }
-
-
         //In app viewer for different versions
-     
 
+
+        public async void BtnViewInApp_Click(string itemId, string projectId, int num)
+        {
+            try
+            {
+                // ✅ Track the last active view
+                if (ModelsDataGrid.Visibility == Visibility.Visible)
+                {
+                    _lastViewType = ViewType.List;
+                }
+                else if (Grid_View.Visibility == Visibility.Visible)
+                {
+                    _lastViewType = ViewType.Grid;
+                }
+
+                ModelsDataGrid.Visibility = Visibility.Collapsed;
+                Grid_View.Visibility = Visibility.Collapsed;
+                ForgeViewerContainer.Visibility = Visibility.Visible;
+                ForgeWebView.Visibility = Visibility.Visible;
+
+                _selectedItemId = itemId;
+                _selectedProjectId = projectId;
+
+                Console.WriteLine($"View in App button clicked. Returning to: {_lastViewType} view after closing.");
+                Console.WriteLine($"- Selected Item ID: {_selectedItemId}");
+                Console.WriteLine($"- Selected Project ID: {_selectedProjectId}");
+                Console.WriteLine($"- Storage ID: {_objectId}");
+
+                if (string.IsNullOrEmpty(_selectedItemId) || string.IsNullOrEmpty(_selectedProjectId))
+                {
+                    MessageBox.Show("❌ Please select a model before viewing.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                string objectId = _objectId;
+
+                if (string.IsNullOrEmpty(objectId))
+                {
+                    Console.WriteLine("🔍 Storage ID not set globally, fetching now...");
+                    var fileService = new FileDownloadService();
+                    objectId = await fileService.GetStorageIdFromItem(_selectedProjectId, _selectedItemId);
+                    if (string.IsNullOrEmpty(objectId))
+                    {
+                        MessageBox.Show("Could not retrieve model information.", "Model Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        return;
+                    }
+
+                    _objectId = objectId;
+                }
+
+                string encodedUrn = EncodeObjectIdToUrn(objectId);
+                if (string.IsNullOrEmpty(encodedUrn))
+                {
+                    MessageBox.Show("Failed to process model identifier.", "Processing Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                Console.WriteLine($"✅ Encoded URN: {encodedUrn}");
+
+                var viewerService = new ForgeViewerService(_accessToken);
+                string? html = await viewerService.GetModelViewerHtmlAsync(encodedUrn);
+
+                if (string.IsNullOrEmpty(html))
+                {
+                    MessageBox.Show("❌ Failed to generate Forge Viewer HTML.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                await LoadHtmlIntoForgeWebViewAsync(html);
+
+                int numberOfVersions = await GetNumberOfVersions();
+                GenerateMarkers();
+                VersionSlider.Visibility = Visibility.Visible;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"❌ Error loading model: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                Console.WriteLine($"❌ Exception: {ex.Message}\n{ex.StackTrace}");
+            }
+        }
+        
         private void Btn_CloseViewer_Click(object sender, RoutedEventArgs e)
         {
             // Hide the Forge Viewer
@@ -4159,7 +4429,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             }
         }*/
 
-      
+
 
         // Helper method to determine if a file is a PDF
         private bool IsPdfFile(string filename)
@@ -4310,6 +4580,10 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 MessageBox.Show($"❌ Error opening PDF: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 Console.WriteLine($"❌ Exception: {ex.Message}\n{ex.StackTrace}");
             }
+            Grid versionSlider = VersionSlider;
+            versionSlider.Visibility = Visibility.Collapsed;
+            Button versionButton = VersionsSelectButton;
+            versionButton.Visibility = Visibility.Collapsed;
         }
 
 
@@ -4362,7 +4636,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 {
                     Width = 16,
                     Height = 16,
-                    Background = new SolidColorBrush(Colors.Blue),  // Set marker color to blue
+                    Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#540754")),  // Set marker color to blue
                     CornerRadius = new CornerRadius(3),
                     Child = new TextBlock
                     {
@@ -4376,12 +4650,12 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 // Add hover effect to change color to purple
                 marker.MouseEnter += (sender, e) =>
                 {
-                    marker.Background = new SolidColorBrush(Colors.Purple); // Change color on hover
+                    marker.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#731076")); // Change color on hover
                     marker.Cursor = Cursors.Hand; // Change cursor to hand when hovering over the marker
                 };
                 marker.MouseLeave += (sender, e) =>
                 {
-                    marker.Background = new SolidColorBrush(Colors.Blue); // Revert back to blue when mouse leaves
+                    marker.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#540754"));
                     marker.Cursor = Cursors.Arrow; // Revert cursor back to normal when mouse leaves
                 };
 
@@ -4418,7 +4692,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     {
                         Width = 16,
                         Height = 16,
-                        Background = new SolidColorBrush(Colors.Blue),  // Set marker color to blue
+                        Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#540754")),  // Set marker color to blue
                         CornerRadius = new CornerRadius(3),
                         Child = new TextBlock
                         {
@@ -4432,12 +4706,12 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     // Add hover effect to change color to purple
                     marker.MouseEnter += (sender, e) =>
                     {
-                        marker.Background = new SolidColorBrush(Colors.Purple); // Change color on hover
+                        marker.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#731076")); // Change color on hover
                         marker.Cursor = Cursors.Hand; // Change cursor to hand when hovering over the marker
                     };
                     marker.MouseLeave += (sender, e) =>
                     {
-                        marker.Background = new SolidColorBrush(Colors.Blue); // Revert back to blue when mouse leaves
+                        marker.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#540754")); // Revert back to blue when mouse leaves
                         marker.Cursor = Cursors.Arrow; // Revert cursor back to normal when mouse leaves
                     };
 
@@ -4482,14 +4756,6 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
             Console.WriteLine("Markers generated.");
         }
-
-
-
-
-
-
-
-
 
         private async void VersionSliderButton_Click(object sender, RoutedEventArgs e)
         {
@@ -4554,7 +4820,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             // Display version number above the slider
             sliderValue.Text = $"Version: {markerData.VersionNumber}";
             _selectedVersionNum = markerData.VersionNumber.ToString();
-            
+
             // Here you can do something with the VersionID (e.g., load the version or perform any action)
             Console.WriteLine($"You reached version {markerData.VersionNumber} with ID: {markerData.VersionID}");
 
@@ -4600,7 +4866,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             try
             {
                 Console.WriteLine($"🔄 Starting background refresh at {DateTime.Now}");
-                
+
                 await Dispatcher.InvokeAsync(async () =>
                 {
                     try
@@ -4829,10 +5095,10 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 Console.WriteLine($"Refresh already in progress");
                 return;
             }
-            
+
             OnRefreshTimerElapsed(null, null);
         }
-        
+
         private async Task CheckModelVersions()
         {
             await GetAllModels();
@@ -5004,7 +5270,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             }
         }
 
-   
+
         public async Task<string> GetItemUrn(string projectId, string itemId)
         {
             try
@@ -5176,7 +5442,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             }
         }
         #endregion
-        
+
         //project text
         private void TextBlockBorder_Enter(object sender, MouseEventArgs e)
         {
@@ -5186,7 +5452,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 textBlock.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#188f87"));
             }
         }
-        
+
         private void TextBlockBorder_Leave(object sender, MouseEventArgs e)
         {
             var border = sender as Border;
@@ -5195,7 +5461,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 textBlock.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d1d5db"));
             }
         }
-        
+
         private async void ProjectsText_Click(object sender, MouseButtonEventArgs e)
         {
             ModelsDataGrid.Columns[1].Header = "Project";
@@ -5204,7 +5470,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             await LoadAllModels();
             DisplayGridModels();
         }
-        
+
         //models put in db
         private static async Task GetModelData(string modelId, string projectId, string folderName, string hubId)
         {
@@ -5219,7 +5485,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     var response = await client.GetAsync(url);
                     string responseString = await response.Content.ReadAsStringAsync();
                     var JsonResponse = JsonConvert.DeserializeObject<dynamic>(responseString);
-                    
+
                     //MessageBox.Show("Item: " + responseString);
                     ModelData data = new ModelData
                     {
@@ -5236,7 +5502,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                         FolderId = projectId,
                         UpvoteCount = 0
                     };
-                    
+
                     InsertModelDB(data);
                 }
             }
@@ -5245,8 +5511,8 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 MessageBox.Show($"Error getting model data: {e.Message}");
                 throw;
             }
-        } 
-        
+        }
+
         private async static void InsertModelDB(ModelData modelData)
         {
             MongoConnection database = new MongoConnection();
@@ -5268,9 +5534,9 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             var versions = await GetModelVersions(modelId);
             int verNum = int.Parse(versions[0]["VersionNumber"]);
             Versions model = new Versions { Id = modelId, VersionNumber = verNum };
-            
+
             var findModelVersion = await database.Versions.Find(x => x.Id == modelId).FirstOrDefaultAsync();
-            
+
             if (findModelVersion == null)
             {
                 await database.Versions.InsertOneAsync(model);
@@ -5288,7 +5554,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 await InsertNotifDB(modelId, message, _userId);
             }
         }
-        
+
         //Fuzzy search
         private async void SearchText_Box_OnKeyDown(object sender, KeyEventArgs e)
         {
@@ -5299,10 +5565,10 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 {
                     MongoConnection database = new MongoConnection();
                     List<ModelData> result = await database.ModelData.Find(x => x.PublicPrivate == "Public" || x.HubId == hubID).ToListAsync();
-            
+
                     var modelNames = result.Select(x => x.Name).ToList();
                     var topResults = FuzzySharp.Process.ExtractTop(SearchText_Box.Text, modelNames, limit: 3);
-                
+
                     foreach (var match in topResults)
                     {
                         var model = result[match.Index];
@@ -5320,7 +5586,6 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                                 { "Id", model.Id },
                                 { "ProjectId" , model.FolderId}
                             });
-                            break;
                         }
                     }
                 }
@@ -5742,7 +6007,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             ModelImage.Height = 120;
             ModelImage.HorizontalAlignment = HorizontalAlignment.Center;
 
-            if(versionId == null)
+            if (versionId == null)
             {
                 _ = ShowThumbnail(_selectedModel["ProjectId"], _selectedModel["Id"], ModelImage);
 
@@ -6079,7 +6344,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             {
                 return;
             }
-            
+
             foreach (var tag in result.Tags)
             {
                 tags.Add(tag);
@@ -6122,14 +6387,14 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 TagsWrapPanel.Children.Add(border);
             }
         }
-        
+
         /*private async Task<ModelData> GetModelTags()
         {
             MongoConnection database = new MongoConnection();
             var result = await database.ModelData.Find(x => x.Id == _selectedItemId).FirstOrDefaultAsync();
             return result;
         }*/
-        
+
         //Comments feature
         private async void BtnAddComment_Click(object sender, RoutedEventArgs e)
         {
@@ -6149,7 +6414,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     {
                         verNum = int.Parse(_selectedVersionNum);
                     }
-                    
+
                     MongoConnection database = new MongoConnection();
                     Comment commentContent = new Comment
                     {
@@ -6331,7 +6596,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             public string Version { get; set; }
             public string UserPic { get; set; }
         }
-        
+
         //marketplace
         private async Task InitializeMarketplace()
         {
@@ -6419,7 +6684,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             
             return allListedDecks;
         }*/
-        
+
         private async void BtnMarketplace_Click(object sender, RoutedEventArgs e)
         {
             ModelDataSidebar.Width = new GridLength(0);
@@ -6432,7 +6697,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
             await InitializeMarketplace();
         }
-        
+
         private void BtnLibrary_Click(object sender, RoutedEventArgs e)
         {
             MarketplaceBorder.Visibility = Visibility.Collapsed;
@@ -6454,19 +6719,19 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             ModelsButton.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#540754"));
             await InitializeMarketplaceDecks();
         }
-        
+
         //list models
         private void BtnListModel_Click(object sender, RoutedEventArgs e)
         {
             ListModelPopup.IsOpen = true;
         }
-        
+
         private async void BtnList_Click(object sender, RoutedEventArgs e)
         {
             try
             {
                 MongoConnection database = new MongoConnection();
-                
+
                 if ((PriceTextBox.Text == "Enter Price" || string.IsNullOrEmpty(PriceTextBox.Text)) ||
                     (DescriptionTextBox.Text == "Enter Description") || string.IsNullOrEmpty(DescriptionTextBox.Text))
                 {
@@ -6476,8 +6741,9 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
                 if (double.TryParse(PriceTextBox.Text, out double price))
                 {
+                    
                     string[] part = PriceTextBox.Text.Split('.');
-                    if (part.Length != 2 )
+                    if (part.Length != 2)
                     {
                         MessageBox.Show("Please enter a valid price");
                         return;
@@ -6503,7 +6769,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 }
                 DataManagement dataService = new DataManagement();
                 string modelName = await dataService.GetModelName(_selectedItemId);
-                
+
                 ListedModels models = new ListedModels()
                 {
                     ModelId = _selectedItemId,
@@ -6514,14 +6780,14 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     Description = DescriptionTextBox.Text
                 };
                 await database.ListedModels.InsertOneAsync(models);
-                
+
                 MessageBox.Show($"Model listing successful!");
             }
             catch (Exception exception)
             {
                 MessageBox.Show($"Error: {exception.Message}");
             }
-            
+
         }
 
         private void MarketplaceGrid_Click(object sender, MouseButtonEventArgs e)
@@ -6531,7 +6797,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             MarketplaceGridIcon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#98730c"));
             MarketplaceListIcon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d1d5db"));
         }
-        
+
         private void MarketplaceList_Click(object sender, MouseButtonEventArgs e)
         {
             MarketplaceGridView.Visibility = Visibility.Collapsed;
@@ -6566,16 +6832,16 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 };
 
                 Grid grid = new Grid();
-                grid.RowDefinitions.Add(new RowDefinition{ Height = new GridLength(170)});
-                grid.RowDefinitions.Add(new RowDefinition{ Height = GridLength.Auto });
-                
+                grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(170) });
+                grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
                 Border headerBackground = new Border
                 {
-                    Background = new SolidColorBrush(Color.FromRgb(230,230,230)),
+                    Background = new SolidColorBrush(Color.FromRgb(230, 230, 230)),
                     HorizontalAlignment = HorizontalAlignment.Stretch,
                     Margin = new Thickness(5)
                 };
-                
+
                 Grid.SetRow(headerBackground, 0);
                 grid.Children.Add(headerBackground);
 
@@ -6587,7 +6853,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     HorizontalAlignment = HorizontalAlignment.Center,
                     VerticalAlignment = VerticalAlignment.Center,
                 };
-                
+
                 _ = ShowThumbnail(model["ProjectId"], model["Id"], thumbnailImage);
                 Grid.SetRow(thumbnailImage, 0);
                 grid.Children.Add(thumbnailImage);
@@ -6595,7 +6861,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 Grid infoGrid = new Grid();
                 Grid.SetRow(infoGrid, 1);
                 grid.Children.Add(infoGrid);
-                
+
                 infoGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(125) });
                 infoGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(125) });
 
@@ -6604,9 +6870,9 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     Orientation = Orientation.Vertical,
                     VerticalAlignment = VerticalAlignment.Center,
                     HorizontalAlignment = HorizontalAlignment.Left,
-                    Margin = new Thickness(8,5,5,2)
+                    Margin = new Thickness(8, 5, 5, 2)
                 };
-                
+
                 Grid.SetColumn(textContent, 0);
                 infoGrid.Children.Add(textContent);
 
@@ -6631,21 +6897,21 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     HorizontalAlignment = HorizontalAlignment.Left,
                     TextWrapping = TextWrapping.Wrap
                 };
-                
+
                 textContent.Children.Add(name);
                 textContent.Children.Add(description);
-                
+
                 StackPanel priceContent = new StackPanel
                 {
                     Orientation = Orientation.Vertical,
                     VerticalAlignment = VerticalAlignment.Center,
                     HorizontalAlignment = HorizontalAlignment.Left,
-                    Margin = new Thickness(8,5,5,2)
+                    Margin = new Thickness(8, 5, 5, 2)
                 };
-                
+
                 Grid.SetColumn(priceContent, 1);
                 infoGrid.Children.Add(priceContent);
-                
+
                 TextBlock price = new TextBlock
                 {
                     Text = $"{model["Price"]}",
@@ -6705,17 +6971,17 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                         HorizontalAlignment = HorizontalAlignment.Left,
                         TextWrapping = TextWrapping.Wrap
                     };
-                    
+
                     priceContent.Children.Add(bought);
                 }
-                
+
                 priceContent.Children.Add(price);
-                
+
                 modelSquare.Child = grid;
                 MarketplaceModelsContainer.Children.Add(modelSquare);
             }
         }
-        
+
         //sort 
         private void MarketplaceSort_Click(object sender, MouseButtonEventArgs e)
         {
@@ -6759,7 +7025,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                         item.Add("Upvotes", upvoteAmount.ToString());
                         upvotes.Add(item);
                     }
-                    
+
                     upvotes = upvotes.OrderByDescending(x => x["Upvotes"]).ToList();
                     MarketplaceDataGrid.ItemsSource = upvotes;
                     DisplayMarketplaceGrid(upvotes);
@@ -6781,7 +7047,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     break;
             }
         }
-        
+
         //buy
         public async void BtnBuy_Click(object sender, RoutedEventArgs e)
         {
@@ -6798,7 +7064,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 MessageBox.Show($"Error: {exception.Message}");
             }
         }
-        
+
         private async void Redirected(object sender, CoreWebView2NavigationStartingEventArgs args)
         {
             if (args.Uri.StartsWith("https://localhost:8080/return"))
@@ -6814,20 +7080,20 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 {
                     webView.CoreWebView2.Navigate("about:blank");
                     BuyPopup.IsOpen = false;
-                    MongoConnection database  = new MongoConnection();
+                    MongoConnection database = new MongoConnection();
                     Purchased purchased = new Purchased { ModelId = _buyItemId, UserId = _userId };
                     await database.Purchased.InsertOneAsync(purchased);
-                    
+
                     if (_selectedMarketplace == "Models")
                     {
                         MessageBox.Show($"\u2705 Payment Successful \n Model download");
                         FileDownloadService fileDownloadService = new FileDownloadService();
                         await fileDownloadService.DownloadModelAsync(_buyProjectId, _buyItemId);
-                        
+
                         await InitializeMarketplace();
                         DataManagement dataService = new DataManagement();
                         string modelName = await dataService.GetModelName(_buyItemId);
-                      //  string modelName = await GetModelName(_buyItemId);
+                        //  string modelName = await GetModelName(_buyItemId);
                         string sellerId = await _userService.GetModelSeller(_buyItemId);
                         string message = $"New purchase on {modelName}";
                         await InsertNotifDB(_buyItemId, message, sellerId);
@@ -6884,7 +7150,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 webView.CoreWebView2.Navigate(approvalUrl);
             }
         }
-        
+
         private void SortPopup_Closed(object? sender, EventArgs e)
         {
             SortChevron.Kind = PackIconKind.ChevronDown;
@@ -6895,7 +7161,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
         }
 
-        
+
         //search
         private async void MarketplaceSearch_OnKeyDown(object sender, KeyEventArgs e)
         {
@@ -7004,7 +7270,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
             return true;
         }*/
-        
+
         //notifs
         private void Bell_Click(object sender, MouseButtonEventArgs e)
         {
@@ -7018,7 +7284,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 NotificationsPopup.IsOpen = true;
                 BellIcon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#98730c"));
             }
-            
+
         }
 
         private static async Task InsertNotifDB(string modelId, string message, string userId)
@@ -7032,7 +7298,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 Message = message,
                 Pending = 1
             };
-            
+
             await database.Notifications.InsertOneAsync(notif);
         }
 
@@ -7054,7 +7320,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             List<Notifications> notifs = await _userService.GetPendingNotifications(_userId);
             foreach (var notif in notifs)
             {
-                NotificationItem item = new NotificationItem{Id = notif.Id.ToString(), Message = notif.Message};
+                NotificationItem item = new NotificationItem { Id = notif.Id.ToString(), Message = notif.Message };
                 NotificationsListBox.Items.Add(item);
                 var filter = Builders<Notifications>.Filter.Eq(x => x.Id, notif.Id);
                 var update = Builders<Notifications>.Update.Set("Pending", 0);
@@ -7066,17 +7332,17 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         {
             MongoConnection database = new MongoConnection();
             var result = await database.Notifications.Find(x => x.UserId == _userId && x.Pending == 0).ToListAsync();
-            
+
             if (result != null)
             {
                 foreach (var item in result)
                 {
-                    NotificationItem notif = new NotificationItem { Id = item.Id.ToString(), Message = item.Message};
+                    NotificationItem notif = new NotificationItem { Id = item.Id.ToString(), Message = item.Message };
                     NotificationsListBox.Items.Add(notif);
                 }
             }
         }
-        
+
         private async void ClearNotifications_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -7104,7 +7370,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             public string Id { get; set; }
             public string Message { get; set; }
         }
-        
+
         //COMMENTED OUT FUNCTIONS//
 
         /* private void BtnGenerate3D_Click(object sender, RoutedEventArgs e)
@@ -7310,6 +7576,71 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             dv.Show();
         }
 
+        private async void ModelsDataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (ModelsDataGrid.SelectedItem != null)
+            {
+                if (ModelsDataGrid.SelectedItem is Dictionary<string, string> model)
+                {
+                    _selectedModel = model;
+
+                    Console.WriteLine("Selection changed - Selected item data:");
+                    foreach (var kvp in model)
+                    {
+                        Console.WriteLine($"Key: {kvp.Key}, Value: {kvp.Value}");
+                    }
+
+                    if (model.TryGetValue("Id", out string modelId) || model.TryGetValue("id", out modelId))
+                    {
+                        _selectedItemId = modelId;
+                        Console.WriteLine($"✅ Set selected item ID: {_selectedItemId}");
+                    }
+                    else
+                    {
+                        _selectedItemId = null;
+                        Console.WriteLine("❌ Model ID missing in selection.");
+                    }
+
+                    _selectedItemName = model.ContainsKey("Name") ? model["Name"] :
+                                       (model.ContainsKey("name") ? model["name"] : "Unknown");
+
+                    if (model.TryGetValue("ProjectId", out string projectId) || model.TryGetValue("projectId", out projectId))
+                    {
+                        _selectedProjectId = projectId;
+                        Console.WriteLine($"✅ Set selected project ID: {_selectedProjectId}");
+                    }
+
+                    _selectedProjectName = model.ContainsKey("Project") ? model["Project"] :
+                                          (model.ContainsKey("project") ? model["project"] : _selectedProjectName);
+
+                    Console.WriteLine($"✅ Selected Model: {_selectedItemName} (ID: {_selectedItemId}, Project ID: {_selectedProjectId})");
+
+                    await FetchAndSetStorageId();
+
+                    if (ModelsDataGrid.CurrentColumn.Header.ToString() != "Actions" && ModelsDataGrid.CurrentColumn.Header.ToString() != "Versions")
+                    {
+                        await LoadModelData();
+                    }
+
+                }
+                else if (ModelsDataGrid.SelectedItem != null)
+                {
+                    Console.WriteLine($"❌ Selected item is not a Dictionary<string, string> but a {ModelsDataGrid.SelectedItem.GetType().Name}");
+                }
+                else
+                {
+                    Console.WriteLine("❌ No item selected in DataGrid");
+                }
+
+                var args = new MouseButtonEventArgs(Mouse.PrimaryDevice, 0, MouseButton.Left)
+                {
+                    RoutedEvent = UIElement.MouseLeftButtonDownEvent
+                };
+                
+                CloseSidebar_Click(null, args);
+                BtnViewInApp_Click(_selectedItemId);
+            }
+        }
     }
 }
 

@@ -16,9 +16,9 @@
 
         <!-- Gradient for the progress indicator to match Autodesk orange/purple theme -->
         <LinearGradientBrush x:Key="ProgressBrush" StartPoint="0,0" EndPoint="1,0">
-            <GradientStop Color="#F25505" Offset="0.0"/>
-            <GradientStop Color="#6A0DAD" Offset="0.7"/>
-            <GradientStop Color="#F25505" Offset="1.0"/>
+            <GradientStop Color="#540754" Offset="0.0"/>
+            <GradientStop Color="#7A3DAF" Offset="0.7"/>
+            <GradientStop Color="#62C3FF" Offset="1.0"/>
         </LinearGradientBrush>
 
         <!-- Storyboard for the sparkle animation -->
