@@ -1890,10 +1890,10 @@
                                 </Grid.RowDefinitions>
 
                                 <TextBlock Text="Price:" Foreground="White" HorizontalAlignment="Left"/>
-                                <TextBox x:Name="PriceTextBox" Text="Enter Price" Background="Transparent" Foreground="White" BorderBrush="#98730c" HorizontalAlignment="Right" MinWidth="50"/>
+                                <TextBox x:Name="PriceTextBox" Background="Transparent" Foreground="White" BorderBrush="#98730c" HorizontalAlignment="Right" MinWidth="50"/>
 
                                 <TextBlock Grid.Row="2" Text="Description:" Foreground="White" HorizontalAlignment="Left"/>
-                                <TextBox Grid.Row="2" x:Name="DescriptionTextBox" Text="Enter Description" Background="Transparent" Foreground="White" BorderBrush="#98730c" HorizontalAlignment="Right" MinWidth="100"/>
+                                <TextBox Grid.Row="2" x:Name="DescriptionTextBox" Background="Transparent" Foreground="White" BorderBrush="#98730c" HorizontalAlignment="Right" MinWidth="100"/>
 
                                 <Border Grid.Row="3" BorderBrush="#98730C" BorderThickness="2" CornerRadius="3" Width="60" Height="20" HorizontalAlignment="Center">
                                     <Button Content="List" Click="BtnList_Click" Background="#540754" Foreground="White" Width="60" Height="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>

@@ -6323,18 +6323,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
                 if (double.TryParse(PriceTextBox.Text, out double price))
                 {
-                    string[] part = PriceTextBox.Text.Split('.');
-                    if (part.Length != 2 )
-                    {
-                        MessageBox.Show("Please enter a valid price");
-                        return;
-                    }
-
-                    if (part[1].Length != 2)
-                    {
-                        MessageBox.Show("Please enter a valid price");
-                        return;
-                    }
+                    
                 }
                 else
                 {
