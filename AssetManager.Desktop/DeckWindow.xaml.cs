@@ -197,7 +197,14 @@ namespace AssetManager.Desktop
                 }
 
                 // Extract the "cards" array
-                var cardIds = deck["cards"].AsBsonArray.Select(c => c.ToString()).ToList();
+                var cardIds = new List<ObjectId>();
+                foreach (var item in deck["cards"].AsBsonArray)
+                {
+                    if (item.IsObjectId)
+                    {
+                        cardIds.Add(item.AsObjectId);
+                    }
+                }
 
                 if (!cardIds.Any())
                 {
@@ -206,67 +213,89 @@ namespace AssetManager.Desktop
                 }
 
                 // Query cards collection to fetch details of all cards in the deck
-                var cardFilter = Builders<BsonDocument>.Filter.In("_id", cardIds.Select(id => ObjectId.Parse(id)));
+                var cardFilter = Builders<BsonDocument>.Filter.In("_id", cardIds);
                 var cardList = await _cardsCollection.Find(cardFilter).ToListAsync();
 
                 foreach (var card in cardList)
                 {
-                    var mongo = new MongoConnection();
-                    _decksCollection = mongo.GetCollection("Decks");
-                    _cardsCollection = mongo.GetCollection("Cards");
-                    
-                    string cardName = card["name"].ToString();
-                    string cardId = card["_id"].ToString();
-                    string cardImageUrl = card["snapshot_url"].ToString();
-                    string cardDescription = card["description"].ToString();
-                    
-                    ImageSource imageUrlSource = await LoadImageFromUrl(cardImageUrl);
-
-                    Image cardImage = new Image
+                    try
                     {
-                        Source = imageUrlSource,
-                        Stretch = System.Windows.Media.Stretch.UniformToFill
-                    };
+                        var mongo = new MongoConnection();
+                        _decksCollection = mongo.GetCollection("Decks");
+                        _cardsCollection = mongo.GetCollection("Cards");
 
-                    // Apply high-quality bitmap scaling mode
-                    RenderOptions.SetBitmapScalingMode(cardImage, BitmapScalingMode.HighQuality);
+                        // Safely get field values with fallbacks
+                        string cardName = "";
+                        if (card.Contains("name"))
+                            cardName = card["name"].ToString();
+                        else if (card.Contains("card_name"))
+                            cardName = card["card_name"].ToString();
+                        else
+                            cardName = "Unnamed Card";
 
-                    // Create the ContentControl to apply the FantasyCardStyle
-                    ContentControl cardControl = new ContentControl
+                        string cardId = card["_id"].ToString();
+
+                        string cardImageUrl = "";
+                        if (card.Contains("snapshot_url"))
+                            cardImageUrl = card["snapshot_url"].ToString();
+                        else if (card.Contains("image_url"))
+                            cardImageUrl = card["image_url"].ToString();
+                        else
+                            cardImageUrl = "";  // Default or placeholder image URL
+
+                        string cardDescription = "";
+                        if (card.Contains("description"))
+                            cardDescription = card["description"].ToString();
+
+                        // Print the card document for debugging
+                        Console.WriteLine($"Card document: {card.ToJson()}");
+
+                        ImageSource imageUrlSource = await LoadImageFromUrl(cardImageUrl);
+
+                        Image cardImage = new Image
+                        {
+                            Source = imageUrlSource,
+                            Stretch = System.Windows.Media.Stretch.UniformToFill
+                        };
+
+                        // Apply high-quality bitmap scaling mode
+                        RenderOptions.SetBitmapScalingMode(cardImage, BitmapScalingMode.HighQuality);
+
+                        // Create the ContentControl to apply the FantasyCardStyle
+                        ContentControl cardControl = new ContentControl
+                        {
+                            Style = (Style)FindResource("FantasyCardStyle"),
+                            Tag = cardName,  // Used for binding the card name in the template
+                            Cursor = System.Windows.Input.Cursors.Hand,
+                            Content = cardImage // Set the image as content
+                        };
+
+                        // Handle card click event
+                        cardControl.MouseDown += (s, e) =>
+                        {
+                            var statsValue = card.Contains("stats") ? card.GetValue("stats", new BsonDocument()) : new BsonDocument();
+                            BsonDocument stats = statsValue.IsBsonDocument ? statsValue.AsBsonDocument : new BsonDocument();
+                            _selectedCardId = cardId;
+                            Console.WriteLine("Card id ==" + cardId);
+                            DisplaySelectedCard(cardName, imageUrlSource, cardDescription, stats);
+                        };
+
+                        // Add the styled card to panel
+                        CardListPanel.Children.Add(cardControl);
+                    }
+                    catch (Exception cardEx)
                     {
-                        Style = (Style)FindResource("FantasyCardStyle"),
-                        Tag = cardName,  // Used for binding the card name in the template
-                        Cursor = System.Windows.Input.Cursors.Hand,
-                        Content = cardImage // Set the image as content
-                    };
-
-                    // Handle card click event
-                    cardControl.MouseDown += (s, e) =>
-                    {
-                        // var mongo = new MongoConnection();
-                        // _decksCollection = mongo.GetCollection("Decks");
-                        // _cardsCollection = mongo.GetCollection("Cards");
-                        
-                        var statsValue = card.GetValue("stats", new BsonDocument());
-                        BsonDocument stats = statsValue.IsBsonDocument ? statsValue.AsBsonDocument : new BsonDocument();
-                        //_selectedCard = stats;
-                        _selectedCardId = cardId;
-                        Console.WriteLine("Card id ==" +  cardId);
-                        DisplaySelectedCard(cardName, imageUrlSource, cardDescription, stats);
-                    };
-
-                    // Add the styled card to panel
-                    CardListPanel.Children.Add(cardControl);
-
+                        Console.WriteLine($"Error processing card: {cardEx.Message}");
+                        // Continue to next card instead of breaking the entire loop
+                    }
                 }
             }
             catch (Exception ex)
             {
-               // Console.WriteLine($"{cardImageUrl}");
                 Console.WriteLine($"Error loading deck cards: {ex.Message}");
             }
         }
-        
+
         public static async Task<ImageSource> LoadImageFromUrl(string imageUrl)
         {
             if (imageUrl.StartsWith("https://developer.api.autodesk.com"))
@@ -440,7 +469,9 @@ namespace AssetManager.Desktop
                 AddCardWindow addCardWindow = new AddCardWindow(_deckId);
                 addCardWindow.Owner = this; // Set the owner to the deck (this) window
                 addCardWindow.ShowDialog();
+                LoadDeckCards(_deckId);
             }
+           
         }
 
         private void ExpandCard_Click(object sender, RoutedEventArgs e)

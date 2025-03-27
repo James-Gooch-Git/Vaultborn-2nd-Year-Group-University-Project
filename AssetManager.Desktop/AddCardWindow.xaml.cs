@@ -56,19 +56,18 @@ namespace AssetManager.Desktop
                 }
 
                 string modelName = model.GetValue("_name", "").AsString;
-                string thumbnailData = model.Contains("thumbnail_url") ? model["thumbnail_url"].AsString : null;
+                string thumbnailUrl = model.Contains("thumbnail_url") ? model["thumbnail_url"].AsString : null;
 
-                ImageSource thumbnail = await DeckView.LoadImageFromUrl(thumbnailData);
+                ImageSource thumbnail = await DeckView.LoadImageFromUrl(thumbnailUrl);
 
-                if (thumbnailData == null || thumbnailData.Length == 0)
+                if (thumbnailUrl == null || thumbnailUrl.Length == 0)
                 {
                     MessageBox.Show("No thumbnail available for this model.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
                 else
                 {
-                    ImageUrlTextBox.Text = "Model default thumbnail";
+                    ImageUrlTextBox.Text = thumbnailUrl; // Show the actual URL instead of "Model default thumbnail"
                     AddThumbnail(thumbnail);
-                   // imageData = thumbnailData;
                 }
 
                 ModelTextBox.Text = modelName;
@@ -80,7 +79,6 @@ namespace AssetManager.Desktop
                 MessageBox.Show("Failed to load model data.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-
         private void AddThumbnail(ImageSource imageUrl)
         {
             try
@@ -112,6 +110,7 @@ namespace AssetManager.Desktop
                 ImageUrlTextBox.Text = " loading . . . ";
                 GetData();
             }
+            
         }
 
         private void SubmitCard_Click(object sender, RoutedEventArgs e)
@@ -126,43 +125,34 @@ namespace AssetManager.Desktop
                 return;
             }
 
-            // Handle local image if one was selected
-            if (!string.IsNullOrEmpty(localImagePath))
-            {
-                try
-                {
-                    // Read the image into a byte array directly
-                    imageData = File.ReadAllBytes(localImagePath);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Failed to process the image: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-            }
-
-            if (imageData == null || imageData.Length == 0)
-            {
-                MessageBox.Show("An image is required. Please select a local image or use the model's thumbnail.",
-                                 "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            // Assuming the image URL is passed from the model or user input
+            // Get the image URL from the model
             string imageUrl = string.Empty;
-
-            // If the model has a thumbnail URL or if you want to set it as a default URL
-            if (!string.IsNullOrEmpty(localImagePath))
-            {
-                imageUrl = "http://example.com/path/to/your/image.jpg";  // Replace with actual image URL
-            }
-
-            var createCard = new CreateCard();
 
             try
             {
-                // Pass the binary image data and the image URL directly
-                createCard.AddNewCard(MainWindow._userId, cardName, description, imageData, modelName, _modelId, _deckId, imageUrl);
+                // Get the thumbnail URL from the model in the database
+                var mongo = new MongoConnection();
+                var _models = mongo.GetCollection("ModelData");
+                var filter = Builders<BsonDocument>.Filter.Eq("_id", _modelId);
+                var model = _models.Find(filter).FirstOrDefault();
+
+                if (model != null && model.Contains("thumbnail_url"))
+                {
+                    imageUrl = model["thumbnail_url"].AsString;
+                    Console.WriteLine($"Using thumbnail URL from database: {imageUrl}");
+                }
+
+                if (string.IsNullOrEmpty(imageUrl))
+                {
+                    MessageBox.Show("No image URL available for this model. Please select a different model.",
+                                     "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                var createCard = new CreateCard();
+
+                // Call the method without the imageData parameter
+                createCard.AddNewCard(MainWindow._userId, cardName, description, modelName, _modelId, _deckId, imageUrl);
 
                 MessageBox.Show("Card added successfully!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
                 this.Close();
