@@ -6678,6 +6678,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                         string deckName = await _userService.GetDeckName(_buyItemId);
                         string deckOwnerId = await _userService.GetDeckOwner(_buyItemId);
                         string message = $"New purchase on {deckName}";
+                        await _userService.AddDeckToUser(_buyItemId, _userId);
                         await InsertNotifDB(_buyItemId, message, deckOwnerId);
                     }
                 }

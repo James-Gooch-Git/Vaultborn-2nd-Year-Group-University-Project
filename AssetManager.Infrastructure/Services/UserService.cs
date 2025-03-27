@@ -224,5 +224,13 @@ namespace AssetManager.Infrastructure.Services
 
             return result;
         }
+
+        public async Task AddDeckToUser(string deckId, string userId)
+        {
+            MongoConnection database = new MongoConnection();
+            var filter = Builders<User>.Filter.Eq("_id", userId);
+            var update = Builders<User>.Update.AddToSet(x => x.Decks, deckId);
+            await database.Users.UpdateOneAsync(filter, update);
+        }
     }
 }
