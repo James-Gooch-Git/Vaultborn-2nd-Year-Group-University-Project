@@ -7,7 +7,7 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="8*" /> <!-- Projects and Models -->
-            <RowDefinition Height="2.5*" /> <!-- Confirm -->
+            <RowDefinition Height="3*" /> <!-- Confirm -->
         </Grid.RowDefinitions>
         
         <Grid.Background>
@@ -25,17 +25,21 @@
                  DisplayMemberPath="Name"
                  Margin="50, 80,10, 60"
                  BorderBrush="#FFD700" BorderThickness="1"
-                 Background="#1A000000"
+                 Background="#FF000000"
+                 Opacity="0.3"
                  Foreground="White"/>
         
-        <TextBlock Text="Select Project" FontWeight="Bold" Foreground="Azure" Margin="50,0, 0, 220" Height="40"/>
+        <TextBlock Text="Select Project" FontWeight="Bold" 
+                   Foreground="Azure" Margin="50,0, 0, 220" Height="40"
+                   FontSize="16"/>
         
         <!-- Models List -->
         <ListBox x:Name="ModelListBox" Grid.Column="1"
                  SelectionMode="Single"
                  Margin="10, 80, 50, 60"
                  BorderBrush="#FFD700" BorderThickness="1"
-                 Background="#1A000000"
+                 Background="#FF000000"
+                 Opacity="0.3"
                  Foreground="White">
             <ListBox.ItemTemplate>
                 <DataTemplate>
@@ -46,16 +50,19 @@
             </ListBox.ItemTemplate>
         </ListBox>
         
-        <TextBlock Grid.Column="1" Text="Select Model" FontWeight="Bold" Foreground="Azure" Margin="10,0, 0, 220" Height="40"/>
+        <TextBlock Grid.Column="1" Text="Select Model" FontWeight="Bold" 
+                   Foreground="Azure" Margin="10,0, 0, 220" Height="40"
+                   FontSize="16"/>
 
         <!-- Confirm Selection Button -->
         <Button Grid.Column="1" Grid.Row="1"
-                Width="150" Height="70"
-                HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0, 0, 60, 80"
+                Width="100" Height="80"
+                HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0, 0, 80, 70"
                 Background="Transparent"
+                BorderThickness="0"
                 Click="SelectModelButton_Click">
                 <Grid>
-                      <TextBlock Text="Select Model" />
+                      <TextBlock Text="Confirm" Foreground="Azure" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="16"/>
                       <Image Source = "pack://application:,,,/Assets/buttongold.png" Stretch="Fill"/> 
                 </Grid>
         </Button>   
