@@ -7,7 +7,9 @@
         xmlns:md="clr-namespace:MaterialDesignThemes.Wpf;assembly=MaterialDesignThemes.Wpf"
         xmlns:svg="http://sharpvectors.codeplex.com/svgc"
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
-
+         WindowState="Maximized"
+        WindowStyle="SingleBorderWindow"
+        ResizeMode="CanResize"
 
         xmlns:local="clr-namespace:AssetManager.Desktop"
         mc:Ignorable="d"

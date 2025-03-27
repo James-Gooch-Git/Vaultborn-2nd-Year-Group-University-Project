@@ -126,8 +126,13 @@ namespace AssetManager.Desktop
 
         private async void Initialize()
         {
+
             try
             {
+                LoadingProgressBar.Visibility = Visibility.Visible;
+                LoadingStatusText.Text = "Loading projects...";
+                LoadingStatusText.Visibility = Visibility.Visible;
+                LoadingProgressBar.Progress = 0.1; // Start with initial progress
                 _accessToken = TokenManager.GetToken();
 
                 if (string.IsNullOrEmpty(_accessToken))
@@ -144,40 +149,41 @@ namespace AssetManager.Desktop
                 FusionAddinInstaller.InstallFusionAddin(_accessToken);
                 // 🔹 Initialize data
                 LoadHubsAsync();
-               /* await LoadAllModels();
-                if (!ModelsDataGrid.Columns.Any(col => col.Header?.ToString() == "Actions"))
-                {
-                    var actionsColumn = new DataGridTemplateColumn
-                    {
-                        Header = "Actions",
-                        Width = new DataGridLength(50)
-                    };
+                LoadingProgressBar.Progress = 0.3;
+                /* await LoadAllModels();
+                 if (!ModelsDataGrid.Columns.Any(col => col.Header?.ToString() == "Actions"))
+                 {
+                     var actionsColumn = new DataGridTemplateColumn
+                     {
+                         Header = "Actions",
+                         Width = new DataGridLength(50)
+                     };
 
-                    var cellTemplate = new DataTemplate();
-                    var buttonFactory = new FrameworkElementFactory(typeof(Button));
+                     var cellTemplate = new DataTemplate();
+                     var buttonFactory = new FrameworkElementFactory(typeof(Button));
 
-                    buttonFactory.SetValue(Button.ContentProperty, "⋮"); // Three-dot menu
-                    buttonFactory.SetValue(Button.CursorProperty, Cursors.Hand);
-                    buttonFactory.SetValue(Button.ToolTipProperty, "Click for options");
+                     buttonFactory.SetValue(Button.ContentProperty, "⋮"); // Three-dot menu
+                     buttonFactory.SetValue(Button.CursorProperty, Cursors.Hand);
+                     buttonFactory.SetValue(Button.ToolTipProperty, "Click for options");
 
-                    // ✅ Open ContextMenu when button is clicked
-                    buttonFactory.AddHandler(Button.ClickEvent, new RoutedEventHandler((s, ev) =>
-                    {
-                        if (s is Button btn && btn.DataContext is Dictionary<string, string> selectedModel)
-                        {
-                            ContextMenu dynamicContextMenu = CreateModelContextMenu(selectedModel["Id"], selectedModel["Name"]);
-                            dynamicContextMenu.PlacementTarget = btn;
-                            dynamicContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
-                            dynamicContextMenu.IsOpen = true;
-                        }
-                    }));
+                     // ✅ Open ContextMenu when button is clicked
+                     buttonFactory.AddHandler(Button.ClickEvent, new RoutedEventHandler((s, ev) =>
+                     {
+                         if (s is Button btn && btn.DataContext is Dictionary<string, string> selectedModel)
+                         {
+                             ContextMenu dynamicContextMenu = CreateModelContextMenu(selectedModel["Id"], selectedModel["Name"]);
+                             dynamicContextMenu.PlacementTarget = btn;
+                             dynamicContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+                             dynamicContextMenu.IsOpen = true;
+                         }
+                     }));
 
-                    cellTemplate.VisualTree = buttonFactory;
-                    actionsColumn.CellTemplate = cellTemplate;
+                     cellTemplate.VisualTree = buttonFactory;
+                     actionsColumn.CellTemplate = cellTemplate;
 
-                    ModelsDataGrid.Columns.Add(actionsColumn);
-                }
-*/
+                     ModelsDataGrid.Columns.Add(actionsColumn);
+                 }
+ */
                 var hubDetails = await DataManagement.GetPersonalHubDetails();
 
                 if (hubDetails == null)
@@ -192,13 +198,14 @@ namespace AssetManager.Desktop
                         return;
                     }
                 }
-
+                LoadingProgressBar.Progress = 0.6;
                 var (hubID, hubName, hubType) = hubDetails.Value;
                 Console.WriteLine($"Hub ID: {hubID}, Name: {hubName}, Type: {hubType}");
 
               
                 //await RefreshHubs();
                 await LoadProjectsForHub(hubID);
+                LoadingProgressBar.Progress = 0.7;
                 await DisplayNotifications();
                 await AddNotifsToCentre();
                 //FusionManager.InitializePythonEngine();
@@ -206,6 +213,7 @@ namespace AssetManager.Desktop
                 Username_TextBlock.Text = await _userService.GetUserName(_userId);
                 UserPic_Image.Source = new BitmapImage(new Uri(await _userService.GetUserPic(_userId)));
                 //DisplayGridModels();
+                LoadingProgressBar.Progress = 1.0;
             }
             catch (Exception ex)
             {
@@ -1354,7 +1362,7 @@ namespace AssetManager.Desktop
                    Console.WriteLine($"✅ {models.Count} models loaded successfully.");
                }*/
 
-        private async void LoadModelsForSelectedProject()
+  /*      private async void LoadModelsForSelectedProject()
         {
             if (string.IsNullOrEmpty(_selectedProjectId) || string.IsNullOrEmpty(_folderId))
             {
@@ -1443,7 +1451,7 @@ namespace AssetManager.Desktop
 
             Console.WriteLine($"✅ {models.Count} models loaded successfully.");
         }
-
+*/
 
 
 
@@ -1981,7 +1989,7 @@ namespace AssetManager.Desktop
                         }
                         else
                         {
-                            LoadModelsForSelectedProject();
+                            //LoadModelsForSelectedProject();
                         }
                     }
                     else if (isPdf)
@@ -2043,7 +2051,7 @@ namespace AssetManager.Desktop
                     }
                     else
                     {
-                        LoadModelsForSelectedProject();
+                        //LoadModelsForSelectedProject();
                     }
                 }
             }
