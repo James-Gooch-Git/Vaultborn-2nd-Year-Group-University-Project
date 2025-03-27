@@ -1362,7 +1362,7 @@ namespace AssetManager.Desktop
                    Console.WriteLine($"✅ {models.Count} models loaded successfully.");
                }*/
 
-  /*      private async void LoadModelsForSelectedProject()
+        /*      private async void LoadModelsForSelectedProject()
         {
             if (string.IsNullOrEmpty(_selectedProjectId) || string.IsNullOrEmpty(_folderId))
             {
