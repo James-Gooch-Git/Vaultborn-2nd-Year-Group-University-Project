@@ -5,14 +5,8 @@ namespace AssetManager.Infrastructure.Services;
 
 public class PayPalService
 {
-    public PayPalService(string clientId, string clientSecret)
-    {
-        _clientId = clientId;
-        _clientSecret = clientSecret;
-    }
-
-    private readonly string _clientId;
-    private readonly string _clientSecret;
+    private string clientId = "AczMZeknBHiVxYKbTXXJcnBBQGzbyxezvXljdSo762l99bhMOfQIvZYsUOljr3CcZwZ4BjtLZMnUUZ1O";
+    private string clientSecret = "EBFRT8ssTMtNlfw2753rw689IE6PF9MY4TQnotc3SUCm9rY-7vTxpkhwHK7GecKfrgPn1GLfk3FEvalC";
 
     public async Task<string> GetPayPalAccessToken()
     {
@@ -26,7 +20,7 @@ public class PayPalService
                     { "grant_type", "client_credentials" }
                 };
                 
-                var authArray = Encoding.ASCII.GetBytes($"{_clientId}:{_clientSecret}");
+                var authArray = Encoding.ASCII.GetBytes($"{clientId}:{clientSecret}");
                 var encodedData = Convert.ToBase64String(authArray);
                 
                 httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", encodedData);
