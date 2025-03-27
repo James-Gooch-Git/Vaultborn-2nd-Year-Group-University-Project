@@ -6602,6 +6602,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         {
             try
             {
+                _selectedMarketplace = "Models";
                 ResizeSidebarThumb.Width = new GridLength(0);
                 List<Dictionary<string, string>> allListedModels = await _userService.GetAllListedModels(_userId);
                 List<Dictionary<string, string>> namesAZ = allListedModels.OrderBy(x => x["Name"]).ToList();
@@ -6609,7 +6610,6 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 DisplayMarketplaceGrid(namesAZ);
                 ModelsButton.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#a32fa3"));
                 DecksButton.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#540754"));
-                _selectedMarketplace = "Models";
             }
             catch (Exception e)
             {
@@ -6620,12 +6620,12 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
         private async Task InitializeMarketplaceDecks()
         {
+            _selectedMarketplace = "Decks";
             MarketplaceDataGrid.ItemsSource = null;
             List<Dictionary<string, string>> allListedDecks = await _userService.GetAllListedDecks(_userId);
             List<Dictionary<string, string>> namesAZ = allListedDecks.OrderBy(x => x["Name"]).ToList();
             MarketplaceDataGrid.ItemsSource = namesAZ;
             DisplayMarketplaceGrid(namesAZ);
-            _selectedMarketplace = "Decks";
             MarketplaceListIcon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#98730c"));
         }
 
@@ -6742,18 +6742,6 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 if (double.TryParse(PriceTextBox.Text, out double price))
                 {
                     
-                    string[] part = PriceTextBox.Text.Split('.');
-                    if (part.Length != 2)
-                    {
-                        MessageBox.Show("Please enter a valid price");
-                        return;
-                    }
-
-                    if (part[1].Length != 2)
-                    {
-                        MessageBox.Show("Please enter a valid price");
-                        return;
-                    }
                 }
                 else
                 {
@@ -6835,28 +6823,56 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(170) });
                 grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
-                Border headerBackground = new Border
+                if (_selectedMarketplace == "Models")
                 {
-                    Background = new SolidColorBrush(Color.FromRgb(230, 230, 230)),
-                    HorizontalAlignment = HorizontalAlignment.Stretch,
-                    Margin = new Thickness(5)
-                };
+                    Border headerBackground = new Border
+                    {
+                        Background = new SolidColorBrush(Color.FromRgb(230, 230, 230)),
+                        HorizontalAlignment = HorizontalAlignment.Stretch,
+                        Margin = new Thickness(5)
+                    };
 
-                Grid.SetRow(headerBackground, 0);
-                grid.Children.Add(headerBackground);
+                    Grid.SetRow(headerBackground, 0);
+                    grid.Children.Add(headerBackground);
+                    
+                    Image thumbnailImage = new Image
+                    {
+                        Width = 150,
+                        Height = 150,
+                        Stretch = Stretch.Uniform,
+                        HorizontalAlignment = HorizontalAlignment.Center,
+                        VerticalAlignment = VerticalAlignment.Center,
+                    };
 
-                Image thumbnailImage = new Image
+                    _ = ShowThumbnail(model["ProjectId"], model["Id"], thumbnailImage);
+                    Grid.SetRow(thumbnailImage, 0);
+                    grid.Children.Add(thumbnailImage);
+                }
+                else if (_selectedMarketplace == "Decks")
                 {
-                    Width = 150,
-                    Height = 150,
-                    Stretch = Stretch.Uniform,
-                    HorizontalAlignment = HorizontalAlignment.Center,
-                    VerticalAlignment = VerticalAlignment.Center,
-                };
+                    Border headerBackgroundDeck = new Border
+                    {
+                        Background = Brushes.Black,//new SolidColorBrush(Color.FromRgb(230, 230, 230)),
+                        HorizontalAlignment = HorizontalAlignment.Stretch,
+                        Margin = new Thickness(5)
+                    };
 
-                _ = ShowThumbnail(model["ProjectId"], model["Id"], thumbnailImage);
-                Grid.SetRow(thumbnailImage, 0);
-                grid.Children.Add(thumbnailImage);
+                    Grid.SetRow(headerBackgroundDeck, 0);
+                    grid.Children.Add(headerBackgroundDeck);
+                    
+                    Image thumbnailImageDeck = new Image
+                    {
+                        Width = 150,
+                        Height = 150,
+                        Stretch = Stretch.Uniform,
+                        HorizontalAlignment = HorizontalAlignment.Center,
+                        VerticalAlignment = VerticalAlignment.Center,
+                        Source = new BitmapImage(new Uri("pack://application:,,,/Assets/decks.png"))
+                    };
+                    
+                    Grid.SetRow(thumbnailImageDeck, 0);
+                    grid.Children.Add(thumbnailImageDeck);
+                }
 
                 Grid infoGrid = new Grid();
                 Grid.SetRow(infoGrid, 1);
