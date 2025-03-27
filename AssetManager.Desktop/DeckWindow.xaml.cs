@@ -19,12 +19,12 @@ namespace AssetManager.Desktop
 {
     public partial class DeckView : Window
     {
-        private readonly IMongoCollection<BsonDocument> _cardsCollection;
-        private readonly IMongoCollection<BsonDocument> _decksCollection;
+        private IMongoCollection<BsonDocument> _cardsCollection;
+        private IMongoCollection<BsonDocument> _decksCollection;
         private readonly string _userId = MainWindow._userId;
         private BsonDocument _selectedCard;
         private string _selectedCardId;
-        private string _deckId; 
+        private string _deckId;
 
         public DeckView()
         {
@@ -46,6 +46,10 @@ namespace AssetManager.Desktop
 
         private async Task LoadUserDecks()
         {
+            var mongo = new MongoConnection();
+            _decksCollection = mongo.GetCollection("Decks");
+            var usersCollection = mongo.GetCollection("Users");
+
             try
             {
                 if (string.IsNullOrEmpty(_userId))
@@ -54,9 +58,34 @@ namespace AssetManager.Desktop
                     return;
                 }
 
-                // Query decks that belong to the logged-in user
-                var filter = Builders<BsonDocument>.Filter.Eq("owner_id", _userId);
-                var userDecks = await _decksCollection.Find(filter).ToListAsync();
+                // Fetch user's purchased/downloaded decks from Users collection
+                var userFilter = Builders<BsonDocument>.Filter.Eq("_id", _userId);
+                var userDoc = await usersCollection.Find(userFilter).FirstOrDefaultAsync();
+
+                List<ObjectId> accessibleDeckIds = new();
+
+                if (userDoc != null && userDoc.Contains("decks"))
+                {
+                    foreach (var deckIdStr in userDoc["decks"].AsBsonArray.Select(d => d.ToString()))
+                    {
+                        if (ObjectId.TryParse(deckIdStr, out ObjectId deckId))
+                        {
+                            accessibleDeckIds.Add(deckId);
+                        }
+                        else
+                        {
+                            Console.WriteLine($"Invalid ObjectId: {deckIdStr}");
+                        }
+                    }
+                }
+
+                // Query decks: owned by the user OR in the user's "decks" array
+                var deckFilter = Builders<BsonDocument>.Filter.Or(
+                    Builders<BsonDocument>.Filter.Eq("owner_id", _userId),
+                    Builders<BsonDocument>.Filter.In("_id", accessibleDeckIds)
+                );
+
+                var userDecks = await _decksCollection.Find(deckFilter).ToListAsync();
 
                 // Ensure UI updates on the main thread
                 Dispatcher.Invoke(() =>
@@ -182,6 +211,10 @@ namespace AssetManager.Desktop
 
                 foreach (var card in cardList)
                 {
+                    var mongo = new MongoConnection();
+                    _decksCollection = mongo.GetCollection("Decks");
+                    _cardsCollection = mongo.GetCollection("Cards");
+                    
                     string cardName = card["name"].ToString();
                     string cardId = card["_id"].ToString();
                     string cardImageUrl = card["snapshot_url"].ToString();
@@ -210,11 +243,15 @@ namespace AssetManager.Desktop
                     // Handle card click event
                     cardControl.MouseDown += (s, e) =>
                     {
+                        // var mongo = new MongoConnection();
+                        // _decksCollection = mongo.GetCollection("Decks");
+                        // _cardsCollection = mongo.GetCollection("Cards");
+                        
                         var statsValue = card.GetValue("stats", new BsonDocument());
                         BsonDocument stats = statsValue.IsBsonDocument ? statsValue.AsBsonDocument : new BsonDocument();
                         //_selectedCard = stats;
                         _selectedCardId = cardId;
-                        Console.WriteLine("\n\nCard id ==" +  cardId);
+                        Console.WriteLine("Card id ==" +  cardId);
                         DisplaySelectedCard(cardName, imageUrlSource, cardDescription, stats);
                     };
 
@@ -291,6 +328,7 @@ namespace AssetManager.Desktop
 
         private void DisplaySelectedCard(string name, ImageSource imageSource, string description, BsonDocument stats)
         {
+            
             _selectedCard = stats; // Store the selected card for later use
 
             // Set the card name in the nameplate
@@ -477,16 +515,14 @@ namespace AssetManager.Desktop
             {
                 if (_decksCollection != null && _deckId != null && _selectedCard != null)
                 {
-                    TextBlock newStat = new TextBlock
+                    TextBlock statText = new TextBlock
                     {
                         Text = $"{statName}: {statValue}",
-                        Foreground = Brushes.White,
                         FontSize = 14,
-                        Margin = new Thickness(5, 2, 5, 2)
+                        Margin = new Thickness(0, 2, 0, 2)
                     };
-
-                    // Add the stat to the panel
-                    SelectedCardStatsPanel.Children.Add(newStat);
+                    statText.Style = (Style)FindResource("StatsTextStyle");
+                    SelectedCardStatsPanel.Children.Add(statText);
 
                     // Upload stat to MongoDB
                     await UploadStatToMongo(statName, statValue);
@@ -505,14 +541,23 @@ namespace AssetManager.Desktop
         
         private async Task UploadStatToMongo(string statName, string statValue)
         {
-            var statDocument = new BsonDocument
+            try
             {
-                { "CardId", _selectedCardId },  // Ensure you have a way to track the selected card
-                { "StatName", statName },
-                { "StatValue", statValue }
-            };
+                var filter = Builders<BsonDocument>.Filter.Eq("_id", ObjectId.Parse(_selectedCardId));
+                var update = Builders<BsonDocument>.Update.Set($"stats.{statName}", statValue);
 
-            await _decksCollection.InsertOneAsync(statDocument);
+                var result = await _cardsCollection.UpdateOneAsync(filter, update);
+
+                if (result.ModifiedCount > 0)
+                    Console.WriteLine($"Updated {statName} to {statValue} successfully.");
+                else
+                    Console.WriteLine("No matching card found or no changes made.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error updating card: {ex.Message}");
+            }
+            LoadDeckCards(_deckId);
         }
     }
 }
