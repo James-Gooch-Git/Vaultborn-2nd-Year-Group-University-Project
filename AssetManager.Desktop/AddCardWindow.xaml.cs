@@ -56,17 +56,17 @@ namespace AssetManager.Desktop
 
                 string modelName = model.GetValue("_name", "").AsString;
                 string thumbnailUrl = model.Contains("thumbnail_url") ? model["thumbnail_url"].AsString : null;
-                string thumbnail_base64 = model.Contains("thumbnail_base64") ? model["thumbnail_base64"].AsString : null;
+               // string thumbnail_base64 = model.Contains("thumbnail_base64") ? model["thumbnail_base64"].AsString : null;
                 
-                if (string.IsNullOrEmpty(thumbnail_base64))
+              /*  if (string.IsNullOrEmpty(thumbnail_base64))
                 {
                     MessageBox.Show("No thumbnail available for this model.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
                     //ImageUrlTextBox.Text = "";
-                }
+                }*/
                 else
                 {
                     ImageUrlTextBox.Text = "Model default thumbnail";
-                    AddThumbnail(thumbnail_base64);
+                    AddThumbnail(thumbnailUrl);
                     imageUrl = thumbnailUrl;
                 }
 
@@ -86,7 +86,7 @@ namespace AssetManager.Desktop
             // ✅ Convert Base64 thumbnail to image
             if (!string.IsNullOrEmpty(thumbnailUrl))
             {
-                byte[] imageBytes = Convert.FromBase64String(thumbnailUrl);
+                byte[] imageBytes = thumbnailUrl;
                 BitmapImage bitmap = new BitmapImage();
 
                 using (MemoryStream ms = new MemoryStream(imageBytes))
@@ -116,44 +116,73 @@ namespace AssetManager.Desktop
             }
         }
 
+        // Modify the SubmitCard_Click method to store the image binary directly
+
         private void SubmitCard_Click(object sender, RoutedEventArgs e)
         {
             cardName = CardNameTextBox.Text;
             description = DescriptionTextBox.Text;
             modelName = ModelTextBox.Text;
+            byte[] imageData = null;
 
-            if (string.IsNullOrWhiteSpace(cardName) || string.IsNullOrWhiteSpace(imageUrl) || string.IsNullOrWhiteSpace(modelName))
+            if (string.IsNullOrWhiteSpace(cardName) || string.IsNullOrWhiteSpace(modelName))
             {
-                MessageBox.Show("Card Name, 3D Model and Image URL are required.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show("Card Name and 3D Model are required.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
+
+            // Handle local image if one was selected
             if (!string.IsNullOrEmpty(localImagePath))
             {
-                // Convert the local image to base64 for storage
-                string base64Image = ConvertImageToBase64(localImagePath);
-                if (string.IsNullOrEmpty(base64Image))
+                try
                 {
-                    MessageBox.Show("Failed to process the image. Please try again.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    // Read the image into a byte array directly
+                    imageData = File.ReadAllBytes(localImagePath);
+
+                    // We'll pass this binary data to MongoDB instead of a base64 string
+                    // No need to encode it to base64
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Failed to process the image: {ex.Message}", "Error",
+                                    MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
-
-                // Store the image in a proper location or use base64 directly
-                imageUrl = base64Image;
+            }
+            // If we're using the model's thumbnail
+            else if (!string.IsNullOrEmpty(imageUrl))
+            {
+                // The imageUrl might already be binary data from the model's thumbnail
+                // We can pass this through directly if it's already in binary format
+                imageData = imageUrl as byte[];
+            }
+            else
+            {
+                MessageBox.Show("An image is required. Please select a local image or use the model's thumbnail.",
+                               "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
             }
 
+            if (imageData == null)
+            {
+                MessageBox.Show("Failed to process the image. Please try again.", "Error",
+                               MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
 
             var createCard = new CreateCard();
 
             try
             {
-                createCard.AddNewCard(MainWindow._userId, cardName, description, imageUrl, modelName, _modelId, _deckId);
-                
+                // Pass the binary image data directly instead of base64 encoded string
+                createCard.AddNewCard(MainWindow._userId, cardName, description, imageData, modelName, _modelId, _deckId);
+
                 MessageBox.Show("Card added successfully!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
                 this.Close();
             }
-            catch
+            catch (Exception ex)
             {
-                MessageBox.Show("Failed to add card. Please try again.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Failed to add card: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -234,7 +263,7 @@ namespace AssetManager.Desktop
                 MessageBox.Show($"Error loading image preview: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-
+/*
         private string ConvertImageToBase64(string imagePath)
         {
             try
@@ -247,7 +276,7 @@ namespace AssetManager.Desktop
                 MessageBox.Show($"Error converting image: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return null;
             }
-        }
+        }*/
     }
 }
 

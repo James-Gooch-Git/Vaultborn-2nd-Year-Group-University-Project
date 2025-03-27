@@ -15,47 +15,34 @@ public class CreateCard
         _cardsCollection = mongo.GetCollection("Cards");
         _decksCollection = mongo.GetCollection("Decks");
     }
-    
-    public async void AddNewCard(string userId, string name, string description, string imageUrl, string modelName, string modelId, string deckId)
-    {
-        var newCard = new BsonDocument
-        {
-            { "name", name },
-            { "owner_id", userId },  // You can modify this to get the actual user ID dynamically
-            { "description", description },
-            { "model_name", modelName },
-            { "model_id", modelId },
-            { "snapshot_url", imageUrl },
-            { "created_at", DateTime.UtcNow }
-        };
 
+    public void AddNewCard(string userId, string cardName, string description,
+                               byte[] imageData, string modelName, string modelId, string deckId)
+    {
         try
         {
-            _cardsCollection.InsertOneAsync(newCard);
-            
-            var cardId = newCard["_id"].ToString();
+            var cardDocument = new BsonDocument
+                {
+                    { "card_name", cardName },
+                    { "description", description },
+                    { "model_name", modelName },
+                    { "model_id", modelId },
+                    { "user_id", userId },
+                    { "creation_date", DateTime.Now },
+                    { "deck_id", deckId ?? BsonNull.Value }
+                };
 
-            // Update the corresponding deck to add this card ID to its "cards" array
-            var filter = Builders<BsonDocument>.Filter.Eq("_id", ObjectId.Parse(deckId));
-            var update = Builders<BsonDocument>.Update.Push("cards", cardId);
+            // Store the image as binary data, not as a base64 string
+            // MongoDB can store binary data directly using BsonBinaryData
+            cardDocument.Add("image_data", new BsonBinaryData(imageData));
 
-            var result = await _decksCollection.UpdateOneAsync(filter, update);
-
-            if (result.ModifiedCount > 0)
-            {
-                Console.WriteLine("Card added successfully!");
-            }
-            else
-            {
-                Console.WriteLine("Failed to add card to deck. Deck may not exist.");
-            }
+            _cardsCollection.InsertOne(cardDocument);
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"❌ Failed to add card: {ex.Message}");
+            Console.WriteLine($"❌ Error adding card: {ex.Message}");
             throw;
         }
-        
-        
     }
+
 }
