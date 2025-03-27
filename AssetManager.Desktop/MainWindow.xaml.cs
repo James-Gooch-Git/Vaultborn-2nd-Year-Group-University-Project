@@ -1872,17 +1872,6 @@ namespace AssetManager.Desktop
          "New Folder"
      );
 
-     // If the user provides an empty folder name, ask again
-     while (string.IsNullOrWhiteSpace(folderName))
-     {
-         MessageBox.Show("Folder name cannot be empty. Please enter a valid folder name.", "Invalid Input", MessageBoxButton.OK, MessageBoxImage.Warning);
-         folderName = Microsoft.VisualBasic.Interaction.InputBox(
-             "Enter the name for the new folder:",
-             "Create New Folder",
-             "New Folder"
-         );
-     }
-
      return folderName;
  }
 
