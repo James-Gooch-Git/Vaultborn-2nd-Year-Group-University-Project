@@ -5280,7 +5280,6 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                                 { "Id", model.Id },
                                 { "ProjectId" , model.FolderId}
                             });
-                            break;
                         }
                     }
                 }
