@@ -352,7 +352,8 @@ namespace AssetManager.Desktop
                     var folderId = topFolder.Item1;
                     TreeViewItem projectItem = new TreeViewItem
                     {
-                        Header = $"📁 {projectName}",
+                        Header =
+                        CreateHeader("Icons2/folder_icon5.svg", projectName, 25, 25),
                         Tag = (projectId, folderId, true)
                     };
                     projectItem.Items.Add(null); // Placeholder for lazy loading
@@ -1533,7 +1534,10 @@ namespace AssetManager.Desktop
                         TreeViewItem fileItem = new TreeViewItem
                         {
                             //Header = isFolderItem ? CreateHeader("Icons2/folder_icon.svg", itemName, 28, 28) : CreateHeader(GetIconForExtension(Path.GetExtension(itemName)), itemName, 28, 28),
-                            Header = CreateHeader(GetIconForExtension(Path.GetExtension(itemName)), itemName, 30, 30),
+                            Header =
+                            isFolderItem
+                            ? CreateHeader("Icons2/folder_icon5.svg", itemName, 25, 25)
+                            : CreateHeader(GetIconForExtension(Path.GetExtension(itemName)), itemName, 30, 30),
                             Tag = (projectId, itemId, isFolderItem, is3DModel),
                             ContextMenu = CreateContextMenu(projectId, itemId, isFolderItem)
                         };
@@ -1792,7 +1796,7 @@ namespace AssetManager.Desktop
                     TreeViewItem subItem = new TreeViewItem
                     {
                         Header = isSubFolder
-                        ? CreateHeader("Icons2/folder_icon.svg", subItemName, 30, 30)
+                        ? CreateHeader("Icons2/folder_icon5.svg", subItemName, 25, 25)
                         : CreateHeader(GetIconForExtension(Path.GetExtension(subItemName)), subItemName, 30, 30),
 
                         Tag = (projectId, subItemId, isSubFolder, is3DModel),
@@ -1930,9 +1934,20 @@ namespace AssetManager.Desktop
         }
         #endregion
 
+
+
+
         //UI BUTTONS//
         #region UI Buttons
-        private void ProjectTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+        private void CreateNewFolder_Click(object sender, RoutedEventArgs e)
+        {
+            Console.WriteLine("hello");
+            MessageBox.Show("bruh");
+
+            return;
+        }
+
+        private async void ProjectTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
             if (e.NewValue is TreeViewItem selectedItem)
             {
@@ -1942,7 +1957,7 @@ namespace AssetManager.Desktop
                     string projectId = fileData.Item1;
                     string itemId = fileData.Item2;
                     bool isFolder = fileData.Item3;
-                    bool isPdf = fileData.Item4;
+                    bool isModel = fileData.Item4;
 
                     _selectedProjectId = projectId;
                     _selectedItemId = itemId;
@@ -1990,13 +2005,26 @@ namespace AssetManager.Desktop
                             LoadModelsForSelectedProject();
                         }
                     }
-                    else if (isPdf)
+
+                    //Model View
+                    else if (!isFolder && isModel)
+                    {
+                        _selectedItemName = displayName;
+                        Console.WriteLine($"📑 Selected PDF: {_selectedItemName}, Item ID: {_selectedItemId}, Project ID: {_selectedProjectId}");
+
+                        BtnViewInApp_Click(itemId);
+                    }
+
+                    //PDF view
+                    else if (!isModel && !isFolder)
                     {
                         _selectedItemName = displayName;
                         Console.WriteLine($"📑 Selected PDF: {_selectedItemName}, Item ID: {_selectedItemId}, Project ID: {_selectedProjectId}");
 
                         // Open the PDF in the Forge Viewer
                         OpenPdfInForgeViewer(_selectedProjectId, _selectedItemId, _selectedItemName);
+
+                        
                     }
                     else
                     {
@@ -4270,6 +4298,10 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 MessageBox.Show($"❌ Error opening PDF: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 Console.WriteLine($"❌ Exception: {ex.Message}\n{ex.StackTrace}");
             }
+            Grid versionSlider = VersionSlider;
+            versionSlider.Visibility = Visibility.Collapsed;
+            Button versionButton = VersionsSelectButton;
+            versionButton.Visibility = Visibility.Collapsed;
         }
 
 
@@ -4322,7 +4354,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 {
                     Width = 16,
                     Height = 16,
-                    Background = new SolidColorBrush(Colors.Blue),  // Set marker color to blue
+                    Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#540754")),  // Set marker color to blue
                     CornerRadius = new CornerRadius(3),
                     Child = new TextBlock
                     {
@@ -4336,12 +4368,12 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 // Add hover effect to change color to purple
                 marker.MouseEnter += (sender, e) =>
                 {
-                    marker.Background = new SolidColorBrush(Colors.Purple); // Change color on hover
+                    marker.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#731076")); // Change color on hover
                     marker.Cursor = Cursors.Hand; // Change cursor to hand when hovering over the marker
                 };
                 marker.MouseLeave += (sender, e) =>
                 {
-                    marker.Background = new SolidColorBrush(Colors.Blue); // Revert back to blue when mouse leaves
+                    marker.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#540754"));
                     marker.Cursor = Cursors.Arrow; // Revert cursor back to normal when mouse leaves
                 };
 
@@ -4378,7 +4410,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     {
                         Width = 16,
                         Height = 16,
-                        Background = new SolidColorBrush(Colors.Blue),  // Set marker color to blue
+                        Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#540754")),  // Set marker color to blue
                         CornerRadius = new CornerRadius(3),
                         Child = new TextBlock
                         {
@@ -4392,12 +4424,12 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     // Add hover effect to change color to purple
                     marker.MouseEnter += (sender, e) =>
                     {
-                        marker.Background = new SolidColorBrush(Colors.Purple); // Change color on hover
+                        marker.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#731076")); // Change color on hover
                         marker.Cursor = Cursors.Hand; // Change cursor to hand when hovering over the marker
                     };
                     marker.MouseLeave += (sender, e) =>
                     {
-                        marker.Background = new SolidColorBrush(Colors.Blue); // Revert back to blue when mouse leaves
+                        marker.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#540754")); // Revert back to blue when mouse leaves
                         marker.Cursor = Cursors.Arrow; // Revert cursor back to normal when mouse leaves
                     };
 
@@ -4442,14 +4474,6 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
             Console.WriteLine("Markers generated.");
         }
-
-
-
-
-
-
-
-
 
         private async void VersionSliderButton_Click(object sender, RoutedEventArgs e)
         {

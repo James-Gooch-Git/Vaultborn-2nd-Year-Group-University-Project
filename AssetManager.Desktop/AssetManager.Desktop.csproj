@@ -56,6 +56,7 @@
       <None Remove="Icons2\dwfx_icon.svg" />
       <None Remove="Icons2\fbx_icon.svg" />
       <None Remove="Icons2\folder_icon.svg" />
+      <None Remove="Icons2\folder_icon5.svg" />
       <None Remove="Icons2\glb_icon.svg" />
       <None Remove="Icons2\gltf_icon.svg" />
       <None Remove="Icons2\iam_icon.svg" />
@@ -195,6 +196,9 @@
         <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       </Resource>
       <Resource Include="Icons2\folder_icon.svg">
+        <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      </Resource>
+      <Resource Include="Icons2\folder_icon5.svg">
         <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       </Resource>
       <Resource Include="Icons2\glb_icon.svg">
