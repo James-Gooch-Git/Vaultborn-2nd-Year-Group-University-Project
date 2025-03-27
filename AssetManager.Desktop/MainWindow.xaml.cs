@@ -4005,7 +4005,6 @@ namespace AssetManager.Desktop
 
         public async void BtnViewInApp_Click(string selectedItemId)
         {
-            MessageBox.Show(selectedItemId);
             try
             {
                 // ✅ Track the last active view
