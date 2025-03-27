@@ -396,16 +396,16 @@ namespace AssetManager.Desktop
             IMongoCollection<BsonDocument> _modelDataCollection = mongo.GetCollection("ModelData");
             
             // Now search the ModelData collection for the _folderId using selectedItemModelId
-            var modelFilter = Builders<BsonDocument>.Filter.Eq("_id", ObjectId.Parse(selectedItemModelId));
+            var modelFilter = Builders<BsonDocument>.Filter.Eq("_id", (selectedItemModelId));
             var selectedModelData = _modelDataCollection.Find(modelFilter).FirstOrDefault();
 
-            if (selectedModelData == null || !selectedModelData.Contains("_folderId") || selectedModelData["_folderId"].IsBsonNull)
+            if (selectedModelData == null || !selectedModelData.Contains("_folderid") || selectedModelData["_folderid"].IsBsonNull)
             {
                 MessageBox.Show("Project ID (_folderId) not found for this model.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
-            string projectFolderId = selectedModelData["_folderId"].ToString();
+            string projectFolderId = selectedModelData["_folderid"].ToString();
 
             // Find the MainWindow instance
             MainWindow? mainWindow = Application.Current.Windows.OfType<MainWindow>().FirstOrDefault();
@@ -424,7 +424,7 @@ namespace AssetManager.Desktop
             
             // Ensure the function is being called
             MessageBox.Show($"Calling BtnViewInApp_Click with model ID: {selectedItemModelId}");
-            mainWindow.BtnViewInApp_Click(selectedItemModelId, selectedItemModelId, 0);
+            mainWindow.BtnViewInApp_Click(selectedItemModelId, projectFolderId, 0);
 
             
         }

@@ -3850,83 +3850,62 @@ namespace AssetManager.Desktop
             }
         }
         
-        // view in app FROM DECK OF CARDS 
-        public async Task BtnViewInApp_Click(string selectedItemId, string selectedProjectId, int num)
+        public async Task BtnViewInApp_Click(string selectedItemId, string selectedVersionId)
         {
             try
             {
-                // ✅ Track the last active view
+                // Track last visible view type
                 if (ModelsDataGrid.Visibility == Visibility.Visible)
-                {
                     _lastViewType = ViewType.List;
-                }
                 else if (Grid_View.Visibility == Visibility.Visible)
-                {
                     _lastViewType = ViewType.Grid;
-                }
 
+                // Show the Forge Viewer, hide other UI elements
                 ModelsDataGrid.Visibility = Visibility.Collapsed;
                 Grid_View.Visibility = Visibility.Collapsed;
                 ForgeViewerContainer.Visibility = Visibility.Visible;
                 ForgeWebView.Visibility = Visibility.Visible;
 
-                Console.WriteLine($"View in App button clicked. Returning to: {_lastViewType} view after closing.");
-                Console.WriteLine($"- Selected Item ID: {_selectedItemId}");
-                Console.WriteLine($"- Selected Project ID: {_selectedProjectId}");
-                Console.WriteLine($"- Storage ID: {_objectId}");
-
-                _selectedItemId = selectedItemId;
-                _selectedProjectId = selectedProjectId;
-                
-                if (string.IsNullOrEmpty(_selectedItemId) || string.IsNullOrEmpty(_selectedProjectId))
-                {
-                    MessageBox.Show("❌ Please select a model before viewing.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-
-                string objectId = _objectId;
+                // Get objectId from version
+                var fileService = new FileDownloadService();
+                string objectId = await fileService.GetStorageIdFromVersion(_selectedProjectId, selectedVersionId);
 
                 if (string.IsNullOrEmpty(objectId))
                 {
-                    Console.WriteLine("🔍 Storage ID not set globally, fetching now...");
-                    var fileService = new FileDownloadService();
-                    objectId = await fileService.GetStorageIdFromItem(_selectedProjectId, _selectedItemId);
-                    if (string.IsNullOrEmpty(objectId))
-                    {
-                        MessageBox.Show("Could not retrieve model information.", "Model Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                        return;
-                    }
-
-                    _objectId = objectId;
+                    MessageBox.Show("Could not retrieve model information from version.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
                 }
 
+                _objectId = objectId; // store globally if needed later
                 string encodedUrn = EncodeObjectIdToUrn(objectId);
+
                 if (string.IsNullOrEmpty(encodedUrn))
                 {
                     MessageBox.Show("Failed to process model identifier.", "Processing Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
-                Console.WriteLine($"✅ Encoded URN: {encodedUrn}");
-
+                // Initialize ForgeViewerService
                 var viewerService = new ForgeViewerService(_accessToken);
-                string? html = await viewerService.GetModelViewerHtmlAsync(encodedUrn);
 
+                // Generate viewer HTML
+                string? html = await viewerService.GetModelViewerHtmlAsync(encodedUrn);
                 if (string.IsNullOrEmpty(html))
                 {
-                    MessageBox.Show("❌ Failed to generate Forge Viewer HTML.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    VersionError.IsOpen = true; // If you use a custom popup instead of MessageBox
                     return;
                 }
 
+                // Load into WebView
                 await LoadHtmlIntoForgeWebViewAsync(html);
 
-                int numberOfVersions = await GetNumberOfVersions();
-                GenerateMarkers();
+                // Show versioning controls (if needed)
                 VersionSlider.Visibility = Visibility.Visible;
+                VersionsSelectButton.Visibility = Visibility.Visible;
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"❌ Error loading model: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Error loading model: {ex.Message}", "Viewer Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 Console.WriteLine($"❌ Exception: {ex.Message}\n{ex.StackTrace}");
             }
         }
@@ -3954,7 +3933,7 @@ namespace AssetManager.Desktop
         //In app viewer for different versions
      
 
-        public async void BtnViewInApp_Click(string selectedItemId)
+        public async void BtnViewInApp_Click(string itemId, string projectId, int num)
         {
             try
             {
@@ -3973,7 +3952,7 @@ namespace AssetManager.Desktop
                 ForgeViewerContainer.Visibility = Visibility.Visible;
                 ForgeWebView.Visibility = Visibility.Visible;
 
-                _selectedItemId = selectedItemId;
+                _selectedItemId = itemId;
                 _selectedProjectId = projectId;
 
                 Console.WriteLine($"View in App button clicked. Returning to: {_lastViewType} view after closing.");
