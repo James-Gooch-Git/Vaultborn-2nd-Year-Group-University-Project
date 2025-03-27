@@ -4018,6 +4018,7 @@ namespace AssetManager.Desktop
                     _lastViewType = ViewType.Grid;
                 }
 
+                ModelDataSidebar.Width = new GridLength(0);
                 ModelsDataGrid.Visibility = Visibility.Collapsed;
                 Grid_View.Visibility = Visibility.Collapsed;
                 ForgeViewerContainer.Visibility = Visibility.Visible;

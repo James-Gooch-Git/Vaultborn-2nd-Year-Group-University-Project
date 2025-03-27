@@ -1124,6 +1124,7 @@
                         </Style>
                     </Button.Resources>
                 </Button>
+                
                 <Popup Name="VersionError" IsOpen="False" Placement="Center" StaysOpen="True">
                     <Border Background="LightBlue" BorderBrush="Black" BorderThickness="1" Padding="10" HorizontalAlignment="Center" VerticalAlignment="Center">
                         <StackPanel>
