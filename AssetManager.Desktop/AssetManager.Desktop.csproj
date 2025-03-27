@@ -19,6 +19,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <None Remove="Assets\addCardBG.png" />
       <None Remove="Assets\AppIcon.ico" />
       <None Remove="Assets\AppIcon2.ico" />
       <None Remove="Assets\AppIcon2.png" />
@@ -124,6 +125,10 @@
       </Content>
       <None Remove="Assets\deckBG3.png" />
       <Content Include="Assets\deckBG3.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <None Remove="Assets\addCardBG.png" />
+      <Content Include="Assets\addCardBG.png">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </Content>
     </ItemGroup>
