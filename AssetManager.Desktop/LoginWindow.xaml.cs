@@ -93,6 +93,7 @@ namespace AssetManager.Desktop
             Environment.SetEnvironmentVariable("userId", "", EnvironmentVariableTarget.User);
             Environment.SetEnvironmentVariable("accessToken", "", EnvironmentVariableTarget.User);
             Environment.SetEnvironmentVariable("twoLeggedToken", "", EnvironmentVariableTarget.User);
+            Environment.SetEnvironmentVariable("refreshToken", "", EnvironmentVariableTarget.User);
 
             MessageBox.Show("⚠️ Your session has expired. Please log in again.", "Session Expired", MessageBoxButton.OK, MessageBoxImage.Warning);
 
@@ -375,6 +376,7 @@ namespace AssetManager.Desktop
                 TokenManager.SetToken(tokenData.access_token);
                 TokenManager.SetRefreshToken(tokenData.refresh_token);
                 Environment.SetEnvironmentVariable("accessToken", tokenData.access_token, EnvironmentVariableTarget.User);
+                Environment.SetEnvironmentVariable("refresh_token", tokenData.refresh_token, EnvironmentVariableTarget.User);
             }
         }
 
