@@ -1067,7 +1067,7 @@ namespace AssetManager.Desktop
 
                             // Wait for translation to complete
                             int maxRetries = 5;
-                            int delayMs = 5000;
+                            int delayMs = 4999;
                             for (int attempt = 1; attempt <= maxRetries; attempt++)
                             {
                                 Console.WriteLine($"⏳ Waiting for translation... (Attempt {attempt}/{maxRetries})");
@@ -5457,8 +5457,10 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 DisplayModelThumb(versionId);
             }
 
-                // Load metadata with the provided versionId (if any)
-                await LoadMetadata(versionId);
+            ClearComments();
+
+            // Load metadata with the provided versionId (if any)
+            await LoadMetadata(versionId);
 
             await DisplayTags();
         }
@@ -5636,6 +5638,8 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             UpvoteTextBlock.Text = upvotes.ToString();
 
             ListAllComments(_selectedModel["Id"]);
+
+            LoadUserProfileImage();
         }
 
         private async void DisplayModelThumb(string versionId = null)
@@ -6044,7 +6048,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 Console.WriteLine($"Error: {ex.Message}");
             }
         }
-        
+
         private async void ListAllComments(string modelId)
         {
             try
@@ -6055,25 +6059,54 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 foreach (Comment comment in comments)
                 {
                     string name = await _userService.GetUserName(comment.UserId);
+                    string userPic = await _userService.GetUserPic(comment.UserId);
                     string version = $"V{comment.VersionNumber}";
-                    commentItems.Add(new CommentItem {User = name, Content = comment.Content, CreatedDateTime = comment.CreatedDateTime, Version = version});
-                }
-                
-                CommentsAmount.Text = $"All Comments ({commentItems.Count})";
 
-                if (commentItems.Count != 0)
-                {
-                    foreach (CommentItem commentItem in commentItems)
+                    commentItems.Add(new CommentItem
                     {
-                        ListComments.Items.Add(commentItem);
-                    }
+                        User = name,
+                        Content = comment.Content,
+                        CreatedDateTime = comment.CreatedDateTime,
+                        Version = version,
+                        UserPic = userPic
+                    });
+                }
+
+                CommentsAmount.Text = $"All Comments ({commentItems.Count})";
+                ListComments.ItemsSource = commentItems;
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show($"Error: {e.Message}");
+            }
+        }
+
+        private async void ListNewComment(Comment commentItem)
+        {
+            try
+            {
+                string name = await _userService.GetUserName(commentItem.UserId);
+                string userPic = await _userService.GetUserPic(commentItem.UserId);
+                string version = $"V{commentItem.VersionNumber}";
+
+                CommentItem newComment = new CommentItem
+                {
+                    User = name,
+                    Content = commentItem.Content,
+                    CreatedDateTime = commentItem.CreatedDateTime,
+                    Version = version,
+                    UserPic = userPic
+                };
+
+                if (ListComments.ItemsSource is List<CommentItem> currentItems)
+                {
+                    List<CommentItem> updatedComments = new List<CommentItem>(currentItems) { newComment };
+                    ListComments.ItemsSource = null;
+                    ListComments.ItemsSource = updatedComments;
                 }
                 else
                 {
-                    ListComments.Items.Add(new CommentItem
-                    {
-                        User = String.Empty, Content = "There are no Comments", CreatedDateTime = DateTime.MinValue
-                    });
+                    ListComments.ItemsSource = new List<CommentItem> { newComment };
                 }
             }
             catch (Exception e)
@@ -6081,40 +6114,25 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 MessageBox.Show($"Error: {e.Message}");
             }
         }
-        
-        private async void ListNewComment(Comment commentItem)
-        {
-            List<Comment> comments = await _userService.GetAllComments(_selectedItemId);
 
-            foreach (Comment comment in comments)
-            {
-                if (commentItem.CommentId == comment.CommentId)
-                {
-                    string name = await _userService.GetUserName(commentItem.UserId);
-                    string version = $"V{comment.VersionNumber}";
-                    ListComments.Items.Add(new CommentItem { User = name, Content = comment.Content, CreatedDateTime = comment.CreatedDateTime, Version = version });
-                }
-            }
-        }
-        
-        private void ClearComments()
-        {
-            ListComments.Items.Clear();
-        }
-        /*private async Task<List<Comment>> GetAllComments(string assetId)
+        private async void LoadUserProfileImage()
         {
             try
             {
-                MongoConnection database = new MongoConnection();
-                var allComments = await database.Comments.Find(x => x.AssetId == assetId ).ToListAsync();
-                return allComments;
+                string imageUrl = await _userService.GetUserPic(_userId);
+                UserComment_Image.Source = new BitmapImage(new Uri(imageUrl));
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                Console.WriteLine($"Error: {e.Message}");
-                throw;
+                Console.WriteLine($"Error loading user profile image: {ex.Message}");
+                UserComment_Image.Source = new BitmapImage(new Uri("pack://application:,,,/Assets/default_profile.png"));
             }
-        }*/
+        }
+
+        private void ClearComments()
+        {
+            ListComments.ItemsSource = null;
+        }
 
         private void SortByButton_Click(object sender, RoutedEventArgs e)
         {
@@ -6144,30 +6162,42 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
         private async Task SortComments(string sortOption, string assetId)
         {
-            // Ensure the comments list is cleared before updating
-            ClearComments();
-
-            MongoConnection database = new MongoConnection();
-            var newest = Builders<Comment>.Sort.Descending(x => x.CreatedDateTime);
-            var oldest = Builders<Comment>.Sort.Ascending(x => x.CreatedDateTime);
-
-            List<Comment> sortedComments;
-
-            if (sortOption == "Newest")
+            try
             {
-                sortedComments = await database.Comments.Find(x => x.AssetId == assetId).Sort(newest).ToListAsync();
+                ListComments.ItemsSource = null;
+                List<CommentItem> commentItems = new List<CommentItem>();
+
+                MongoConnection database = new MongoConnection();
+                var sortOrder = sortOption == "Newest"
+                    ? Builders<Comment>.Sort.Descending(x => x.CreatedDateTime)
+                    : Builders<Comment>.Sort.Ascending(x => x.CreatedDateTime);
+
+                List<Comment> sortedComments = await database.Comments
+                    .Find(x => x.AssetId == assetId)
+                    .Sort(sortOrder)
+                    .ToListAsync();
+
+                foreach (Comment comment in sortedComments)
+                {
+                    string name = await _userService.GetUserName(comment.UserId);
+                    string version = $"V{comment.VersionNumber}";
+                    string userPic = await _userService.GetUserPic(comment.UserId);
+
+                    commentItems.Add(new CommentItem
+                    {
+                        User = name,
+                        Content = comment.Content,
+                        CreatedDateTime = comment.CreatedDateTime,
+                        Version = version,
+                        UserPic = userPic
+                    });
+                }
+
+                ListComments.ItemsSource = commentItems;
             }
-            else // "Oldest"
+            catch (Exception e)
             {
-                sortedComments = await database.Comments.Find(x => x.AssetId == assetId).Sort(oldest).ToListAsync();
-            }
-
-            // Populate the comments list
-            foreach (Comment comment in sortedComments)
-            {
-                string name = await _userService.GetUserName(comment.UserId);
-                string version = $"V{comment.VersionNumber}";
-                ListComments.Items.Add(new CommentItem { User = name, Content = comment.Content, CreatedDateTime = comment.CreatedDateTime, Version = version });
+                MessageBox.Show($"Error: {e.Message}");
             }
         }
 
@@ -6177,6 +6207,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             public string Content { get; set; }
             public DateTime CreatedDateTime { get; set; }
             public string Version { get; set; }
+            public string UserPic { get; set; }
         }
         
         //marketplace
@@ -7142,6 +7173,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             DeckView dv = new DeckView(); //67e2f7a49020b20098f0e97a
             dv.Show();
         }
+
     }
 }
 
