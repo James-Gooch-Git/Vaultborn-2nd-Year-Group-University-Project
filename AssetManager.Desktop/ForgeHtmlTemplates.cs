@@ -32,44 +32,54 @@ public static class ForgeHtmlTemplates
                               <button id='nextPage' class='pageButton'>→</button>
                           </span>
                           <span id='pageLabel'>Page 1 of 1</span>
-                          <button id='toggleLog' style='margin-left: 20px;'>Hide Logs</button>
+                          <button id='toggleLog' style='margin-left: 20px;'>Show Logs</button>
                       </div>
                       <div id='forgeViewer'></div>
                       <div id='log'></div>
 
                       <script>
                           // Debug logging function
-                          function log(message) {{
-                              console.log(message);
-                              var logDiv = document.getElementById('log');
-                              var date = new Date();
-                              var timestamp = date.getHours() + ':' + date.getMinutes() + ':' + date.getSeconds() + '.' + date.getMilliseconds();
-                              var formattedMsg = '[' + timestamp + '] ' + (typeof message === 'object' ? JSON.stringify(message) : message);
-      
-                              var line = document.createElement('div');
-                              line.textContent = formattedMsg;
-                              logDiv.appendChild(line);
-                              logDiv.scrollTop = logDiv.scrollHeight;
-                          }}
-                     
+                        function log(message) {{
+                        console.log(message);
+                        var logDiv = document.getElementById('log');
+                        if (!logDiv) return; // Ensure logDiv exists before appending
 
-                          document.getElementById('toggleLog').addEventListener('click', function() {{
-                              var logDiv = document.getElementById('log');
-                              if (logDiv.style.display === 'none') {{
-                                  logDiv.style.display = 'block';
-                                  this.textContent = 'Hide Logs';
-                              }} else {{
-                                  logDiv.style.display = 'none';
-                                  this.textContent = 'Show Logs';
-                              }}
-                          }});
+                        var date = new Date();
+                        var timestamp = date.getHours() + ':' + 
+                                        String(date.getMinutes()).padStart(2, '0') + ':' + 
+                                        String(date.getSeconds()).padStart(2, '0') + '.' + 
+                                        String(date.getMilliseconds()).padStart(3, '0');
 
-                          log('Script started');
-  
-                          // Handle any errors
-                          window.addEventListener('error', function(event) {{
-                              log('ERROR: ' + event.message + ' at ' + event.filename + ':' + event.lineno);
-                          }});
+                        var formattedMsg = '[' + timestamp + '] ' + 
+                                           (typeof message === 'object' ? JSON.stringify(message) : message);
+    
+                        var line = document.createElement('div');
+                        line.textContent = formattedMsg;
+                        logDiv.appendChild(line);
+                        logDiv.scrollTop = logDiv.scrollHeight;
+                    }}
+
+                    document.addEventListener('DOMContentLoaded', function() {{
+                        var logDiv = document.getElementById('log');
+                        if (logDiv) logDiv.style.display = 'none'; // Ensure log starts hidden
+
+                        document.getElementById('toggleLog').addEventListener('click', function() {{
+                            if (logDiv.style.display === 'none' || logDiv.style.display === '') {{
+                                logDiv.style.display = 'block';
+                                this.textContent = 'Hide Logs';
+                            }} else {{
+                                logDiv.style.display = 'none';
+                                this.textContent = 'Show Logs';
+                            }}
+                        }});
+
+                        log('Script started');
+                    }});
+
+                    // Handle any errors
+                    window.addEventListener('error', function(event) {{
+                        log('ERROR: ' + event.message + ' at ' + event.filename + ':' + event.lineno);
+                    }});
 
                           var viewer;
                           var doc;
