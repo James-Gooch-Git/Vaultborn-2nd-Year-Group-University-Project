@@ -1,76 +1,64 @@
-using System;
-using System.Net;
-using System.Threading.Tasks;
-using Newtonsoft.Json;
-using AssetManagement.Infrastructure.Services; 
-using RestSharp;
-using AssetManager.Infrastructure.Services;
+using AssetManager.Infrastructure.Data;
 using System.Net.Http.Headers;
-namespace AssetManagement.Infrastructure.Services
+using System.Text;
+using System.Text.Json;
+
+namespace AssetManager.Infrastructure.Services
 {
-    public class DeleteModel
+    public class DeleteService
     {
-        private readonly string _accessToken;
-        private const string ApiBaseUrl = "https://developer.api.autodesk.com";
+        private readonly FileDownloadService _fileService = new FileDownloadService();
+       MongoConnection _mongo = new MongoConnection();
+       // ModelService _modelService = new ModelService(_mongo);
 
-        public DeleteModel(string accessToken)
+        public async Task<bool> DeleteModelAsync(string projectId, string itemId, string folderId)
         {
-            TokenService tokenService = new TokenService();
-            _accessToken = TokenManager.GetToken();
-        }
-
-        public async Task<bool> DeleteLatestModelVersionAsync(string projectId, string itemId)
-        {
-            if (string.IsNullOrEmpty(projectId) || string.IsNullOrEmpty(itemId))
-            {
-                Console.WriteLine("❌ Error: Project ID or Item ID is missing.");
-                return false;
-            }
-
-            // ✅ Step 1: Get the correct version ID
-            DataManagement dataService = new DataManagement();
-            List<(string versionId, string versionName, string storageId)> versions = await dataService.GetVersionsForItemAsync(projectId, itemId);
-
-            if (versions == null || versions.Count == 0)
-            {
-                Console.WriteLine("❌ No versions found for this item.");
-                return false;
-            }
-
-            var latestVersion = versions[0]; // First entry is the latest
-            string latestVersionId = latestVersion.versionId;
-
-            // ✅ Step 2: Strip query parameters (Fixes "version=1" issue)
-            latestVersionId = latestVersionId.Split('?')[0];
-
-            Console.WriteLine($"🗑️ Attempting to delete latest version: {latestVersionId}");
-
-            string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/versions/{latestVersionId}";
-            string accessToken = TokenManager.GetToken();
-
-            using HttpClient httpClient = new HttpClient();
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+            Console.WriteLine($"🗑️ Deleting Model from Project: {projectId}, Item: {itemId}, Folder: {folderId}");
 
             try
             {
-                HttpResponseMessage response = await httpClient.DeleteAsync(url);
-                if (response.IsSuccessStatusCode)
+                // Step 1: Attempt to delete the actual object from OSS (optional)
+                string storageId = await _fileService.GetStorageIdFromItem(projectId, itemId);
+                if (!string.IsNullOrEmpty(storageId))
                 {
-                    Console.WriteLine($"✅ Successfully deleted version: {latestVersionId}");
-                    return true;
+                    var (bucketKey, objectKey) = _fileService.ExtractBucketAndObjectKeys(storageId);
+                    if (!string.IsNullOrEmpty(bucketKey) && !string.IsNullOrEmpty(objectKey))
+                    {
+                        string url = $"https://developer.api.autodesk.com/oss/v2/buckets/{bucketKey}/objects/{objectKey}";
+                        using var client = new HttpClient();
+                        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TokenManager.GetToken());
+
+                        var deleteResponse = await client.DeleteAsync(url);
+                        Console.WriteLine(deleteResponse.IsSuccessStatusCode
+                            ? $"✅ Deleted OSS object: {objectKey}"
+                            : $"❌ Failed OSS delete: {deleteResponse.StatusCode} - {deleteResponse.ReasonPhrase}");
+                    }
                 }
                 else
                 {
-                    Console.WriteLine($"❌ Failed to delete model. Status Code: {response.StatusCode} - {await response.Content.ReadAsStringAsync()}");
+                    Console.WriteLine("⚠️ No storage ID found — skipping OSS delete.");
+                }
+                var modelService = new ModelService(_mongo);
+                var result = await modelService.SoftDeleteModel(itemId);
+
+                // ✅ Step 2: Soft delete in MongoDB
+           
+                if (!result)
+                {
+                    Console.WriteLine("❌ Failed to update MongoDB isDeleted flag.");
                     return false;
                 }
+
+                Console.WriteLine("✅ Model soft-deleted via MongoDB.");
+                return true;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ Exception while deleting model: {ex.Message}");
+                Console.WriteLine($"❌ DeleteService Exception: {ex.Message}");
                 return false;
             }
         }
+
 
     }
 }

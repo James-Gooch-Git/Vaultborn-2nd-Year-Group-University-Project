@@ -18,5 +18,8 @@ namespace AssetManager.Infrastructure.Models
         
         [BsonElement("_datecreated")]
         public DateTime DateCreated { get; set; } = DateTime.Now;
+        
+        [BsonElement("decks")]
+        public List<string> Decks { get; set; } = new List<string>();
     }
 }

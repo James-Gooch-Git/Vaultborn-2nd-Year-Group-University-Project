@@ -43,6 +43,7 @@
       <None Remove="Assets\Fantasy-login3.png" />
       <None Remove="Assets\fantasy-login4.png" />
       <None Remove="Assets\ImportAssets.png" />
+      <None Remove="Assets\jaygooch_00588_httpss.mj.runm-ZWW3ly4Vw_fantasy_app_backgroun_5f00f8cd-ba81-461f-b766-07f3606f9eae_0.png" />
       <None Remove="Assets\jaygooch_00588_Rectangular_metallic_button_Weathered_teal-blu_bb98eef2-55af-4214-84d9-1985d08977bf_3.png" />
       <None Remove="Assets\MarketPlaceButton.png" />
       <None Remove="Assets\MiddleButton2.png" />
@@ -76,6 +77,9 @@
 
     <ItemGroup>
       <Content Include="AppIcon4.ico" />
+      <Content Include="Assets\addCardBG.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
       <Content Include="Assets\AppIcon.ico">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </Content>
@@ -127,21 +131,14 @@
       <Content Include="Assets\deckBG3.png">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </Content>
-      <None Remove="Assets\addCardBG.png" />
-      <Content Include="Assets\addCardBG.png">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </Content>
-      <None Remove="Assets\CityMarket.png" />
-      <Content Include="Assets\CityMarket.png">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </Content>
-      <None Remove="Assets\Marketplace.png" />
-      <Content Include="Assets\Marketplace.png">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </Content>
+      <None Remove="Assets\mainBackground.png" />
+      <Resource Include="Assets\mainBackground.png" />
+      <None Remove="Assets\newbackground.png" />
+      <Resource Include="Assets\newbackground.png" />
     </ItemGroup>
 
     <ItemGroup>
+      <PackageReference Include="AWSSDK.SecretsManager" Version="3.7.400.121" />
       <PackageReference Include="FuzzySharp" Version="2.0.2" />
       <PackageReference Include="IdentityModel.OidcClient" Version="6.0.0" />
       <PackageReference Include="MaterialDesignThemes" Version="5.2.1" />
@@ -174,6 +171,9 @@
       <Resource Include="Assets\Button3DarkerBlueLastRowHoverAlternate.png" />
       <Resource Include="Assets\Button3Purple.png">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Resource>
+      <Resource Include="Assets\jaygooch_00588_httpss.mj.runm-ZWW3ly4Vw_fantasy_app_backgroun_5f00f8cd-ba81-461f-b766-07f3606f9eae_0.png">
+        <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       </Resource>
       <Resource Include="Assets\MiddleButton2.png" />
       <Resource Include="Assets\MiddleButton2Hover.png" />

@@ -22,10 +22,11 @@ public partial class ListDeckPrompt : Window
     private async void SubmitListing_Click(object sender, RoutedEventArgs e)
     {
         var price = PriceField.Text;
+        var desc = DescriptionField.Text;
         
-        if (string.IsNullOrEmpty(_deckId) || string.IsNullOrEmpty(price))
+        if (string.IsNullOrEmpty(_deckId) || string.IsNullOrWhiteSpace(price) || string.IsNullOrWhiteSpace(desc))
         {
-            MessageBox.Show("Error: No deck selected.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show("Error: Please select a deck and fill in all fields.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             return;
         }
 

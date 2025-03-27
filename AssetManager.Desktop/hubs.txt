@@ -1,0 +1,78 @@
+private async Task<List<Dictionary<string, string>>> GetAllModels()
+{
+    List<Dictionary<string, string>> allModels = new List<Dictionary<string, string>>();
+    MongoConnection mongoConnection = new MongoConnection();
+    ModelService modelService = new ModelService(mongoConnection);
+    FileDownloadService fileService = new FileDownloadService();
+
+    string accessToken = TokenManager.GetToken();
+    if (string.IsNullOrEmpty(accessToken))
+    {
+        Console.WriteLine("❌ No valid access token.");
+        return null;
+    }
+
+    string hubsUrl = "https://developer.api.autodesk.com/project/v1/hubs";
+
+    try
+    {
+        using (HttpClient client = new HttpClient())
+        {
+            // Existing code to get hubs and projects...
+
+            foreach (JsonElement hub in hubsRoot.GetProperty("data").EnumerateArray())
+            {
+                // Existing code to process hubs...
+
+                foreach (JsonElement project in projectsRoot.GetProperty("data").EnumerateArray())
+                {
+                    // Existing code to get folders...
+
+                    foreach (JsonElement item in modelsRoot.GetProperty("data").EnumerateArray())
+                    {
+                        if (item.GetProperty("type").GetString() == "items")
+                        {
+                            var attributes = item.GetProperty("attributes");
+
+                            string modelId = item.GetProperty("id").GetString();
+                            
+                            // Check if the model is deleted in MongoDB
+                            bool isDeleted = await modelService.IsModelDeleted(modelId);
+                            if (isDeleted)
+                            {
+                                Console.WriteLine($"🧹 Skipping model with ID '{modelId}' — marked as deleted in database.");
+                                continue;
+                            }
+                            
+                            string modelName = attributes.GetProperty("displayName").GetString();
+                            // Rest of your existing code...
+                            
+                            allModels.Add(new Dictionary<string, string>
+                            {
+                                { "Id", modelId },
+                                { "Name", modelName },
+                                { "ProjectId", projectId },
+                                { "Project", projectName },
+                                { "LastModified", lastModified }
+                            });
+
+                            // Continue with your existing operations
+                            await GetModelData(modelId, projectId, projectName);
+                            await InsertModelVersionDB(modelId, projectId);
+                        }
+                    }
+
+                    // Process subfolders recursively
+                    await ProcessSubfolders(client, hubID, projectId, projectName, folderId, modelService, fileService, allModels);
+                }
+            }
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"❌ Exception occurred: {ex.Message}");
+        return null;
+    }
+
+    return allModels;
+}

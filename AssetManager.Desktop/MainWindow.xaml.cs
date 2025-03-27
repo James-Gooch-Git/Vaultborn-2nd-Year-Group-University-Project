@@ -78,6 +78,9 @@ namespace AssetManager.Desktop
         private string _buyItemId;
         private string _buyProjectId;
         private string _selectedVersionNum;
+        private string _selectedMarketplace;
+        private readonly UpvoteService _upvoteService;
+        private readonly UserService _userService;
         //private List<Dictionary<string, string>> listedModels;
 
         private enum ViewType { Grid, List }
@@ -115,6 +118,8 @@ namespace AssetManager.Desktop
             InitializeBackgroundRefresh();
             //InitialiseFolders();
             _payPalService = new PayPalService();
+            _upvoteService = new UpvoteService();
+            _userService = new UserService();
             Initialize();
         }
 
@@ -134,8 +139,8 @@ namespace AssetManager.Desktop
 
                 Console.WriteLine($"✅ Debug: Retrieved Access Token: {_accessToken}");
 
-                Username_TextBlock.Text = await GetUserName(_userId);
-                UserPic_Image.Source = new BitmapImage(new Uri(await GetUserPic(_userId)));
+                Username_TextBlock.Text = await _userService.GetUserName(_userId);
+                UserPic_Image.Source = new BitmapImage(new Uri(await _userService.GetUserPic(_userId)));
                 FusionAddinInstaller.InstallFusionAddin(_accessToken);
                 // 🔹 Initialize data
                 LoadHubsAsync();
@@ -191,14 +196,15 @@ namespace AssetManager.Desktop
                 var (hubID, hubName, hubType) = hubDetails.Value;
                 Console.WriteLine($"Hub ID: {hubID}, Name: {hubName}, Type: {hubType}");
 
-                LoadProjectsForHub(hubID);
-                await RefreshHubs();
+              
+                //await RefreshHubs();
+                await LoadProjectsForHub(hubID);
                 await DisplayNotifications();
                 await AddNotifsToCentre();
                 //FusionManager.InitializePythonEngine();
                 //InitialiseFolders();
-                Username_TextBlock.Text = await GetUserName(_userId);
-                UserPic_Image.Source = new BitmapImage(new Uri(await GetUserPic(_userId)));
+                Username_TextBlock.Text = await _userService.GetUserName(_userId);
+                UserPic_Image.Source = new BitmapImage(new Uri(await _userService.GetUserPic(_userId)));
                 //DisplayGridModels();
             }
             catch (Exception ex)
@@ -206,7 +212,32 @@ namespace AssetManager.Desktop
                 Console.WriteLine($"❌ Initialization error: {ex.Message}");
             }
         }
-        
+
+        private void ResizeSidebarThumb_DragDelta(object sender, DragDeltaEventArgs e)
+        {
+            // Get current width of sidebar
+            double currentWidth = ResizeSidebar.ActualWidth;
+            double newWidth = currentWidth + e.HorizontalChange;
+
+            // Clamp width if needed
+            if (newWidth >= 0 && newWidth <= 400)
+            {
+                ResizeSidebar.Width = new GridLength(newWidth);
+            }
+        }
+
+        private void ResizeModelSidebar_DragDelta(object sender, DragDeltaEventArgs e)
+        {
+            double currentWidth = ModelDataSidebar.ActualWidth;
+            double newWidth = currentWidth - e.HorizontalChange; // Drag left to shrink
+
+            // Clamp to prevent weird behavior
+            if (newWidth >= 0 && newWidth <= 400)
+            {
+                ModelDataSidebar.Width = new GridLength(newWidth);
+            }
+        }
+
 
 
         private async Task TestDataManagement()
@@ -283,7 +314,7 @@ namespace AssetManager.Desktop
             }
         }
 
-        private async void LoadProjectsForHub(string hubID)
+        private async Task LoadProjectsForHub(string hubID)
         {
             // Show fantasy loading bar
             LoadingProgressBar.Visibility = Visibility.Visible;
@@ -349,7 +380,7 @@ namespace AssetManager.Desktop
         }
 
         //NEEDS MIGRATING TO USERSERVICES || USER INFORMATION//
-        #region User Services
+        /*#region User Services
         private async Task<string> GetUserName(string userId)
         {
             MongoConnection database = new MongoConnection();
@@ -407,16 +438,7 @@ namespace AssetManager.Desktop
 
 
 
-        private async Task<string> GetModelName(string modelId)
-        {
-            MongoConnection database = new MongoConnection();
-            var userData = await database.ModelData.Find(x => x.Id == modelId).FirstOrDefaultAsync();
-            if (userData == null)
-            {
-                return "Unknown Name";
-            }
-            return userData.Name;
-        }
+ 
         
         private async Task<string> GetModelProjectId(string modelId)
         {
@@ -439,7 +461,37 @@ namespace AssetManager.Desktop
             }
             return userData.SellerId;
         }
-        #endregion
+
+        private async Task<string> GetDeckName(string deckId)
+        {
+            MongoConnection database = new MongoConnection();
+
+            var collection = database.GetCollection("Decks");
+            var filter = Builders<BsonDocument>.Filter.Eq("_id", ObjectId.Parse(deckId));
+            var decks = await collection.Find(filter).FirstOrDefaultAsync();
+            if (decks == null)
+            {
+                return "Unknown Deck";
+            }
+
+            return decks["name"].ToString();
+        }
+        
+        private async Task<string> GetDeckOwner(string deckId)
+        {
+            MongoConnection database = new MongoConnection();
+
+            var collection = database.GetCollection("Decks");
+            var filter = Builders<BsonDocument>.Filter.Eq("_id", ObjectId.Parse(deckId));
+            var decks = await collection.Find(filter).FirstOrDefaultAsync();
+            if (decks == null)
+            {
+                return "Unknown User";
+            }
+
+            return decks["owner_id"].ToString();
+        }
+        #endregion*/
 
         //NEEDS MIGRATING TO HUBS SERVICE || HUBS//
         #region HUBS
@@ -551,6 +603,8 @@ namespace AssetManager.Desktop
             isModelLoaded = true;
 
             ModelsContainer.Children.Clear();
+
+            // Get models from the project, ensuring we filter out deleted models
             List<Dictionary<string, string>> models = await GetModelsFromProject(_selectedProjectId, _folderId);
 
             if (models == null || models.Count == 0)
@@ -559,10 +613,24 @@ namespace AssetManager.Desktop
                 return;
             }
 
+            // Create a MongoConnection and ModelService for checking deletion status
+            MongoConnection mongoConnection = new MongoConnection();
+            ModelService modelService = new ModelService(mongoConnection);
+
             foreach (var model in models)
             {
-                string projectId = _selectedProjectId;
+                // Double-check the model isn't deleted before adding it to the UI
                 string itemId = model["Id"];
+
+                // Skip if model is marked as deleted in the database
+                bool isDeleted = await modelService.IsModelDeleted(itemId);
+                if (isDeleted)
+                {
+                    Console.WriteLine($"🧹 Skipping deleted model in grid view: {model["Name"]}");
+                    continue;
+                }
+
+                string projectId = _selectedProjectId;
 
                 Border modelCard = new Border
                 {
@@ -641,7 +709,6 @@ namespace AssetManager.Desktop
                         e.Handled = true;
                     }
                 };
-
 
                 _ = ShowThumbnail(projectId, itemId, thumbnailImage);
 
@@ -771,12 +838,12 @@ namespace AssetManager.Desktop
             return false;
         }
 
-
-
-
         private async Task<List<Dictionary<string, string>>> GetAllModels()
         {
             List<Dictionary<string, string>> allModels = new List<Dictionary<string, string>>();
+            MongoConnection mongoConnection = new MongoConnection();
+            ModelService modelService = new ModelService(mongoConnection);
+            FileDownloadService fileService = new FileDownloadService();
 
             string accessToken = TokenManager.GetToken();
             if (string.IsNullOrEmpty(accessToken))
@@ -796,73 +863,101 @@ namespace AssetManager.Desktop
 
                     if (!hubsResponse.IsSuccessStatusCode)
                     {
-                        Console.WriteLine($"❌ Error fetching hubs: {hubsResponse.StatusCode} - {hubsResponse.ReasonPhrase}");
+                        Console.WriteLine(
+                            $"❌ Error fetching hubs: {hubsResponse.StatusCode} - {hubsResponse.ReasonPhrase}");
                         return null;
                     }
 
                     string hubsJson = await hubsResponse.Content.ReadAsStringAsync();
                     using JsonDocument hubsDoc = JsonDocument.Parse(hubsJson);
-                    JsonElement hubsRoot = hubsDoc.RootElement;
 
-                    foreach (JsonElement hub in hubsRoot.GetProperty("data").EnumerateArray())
+                    foreach (JsonElement hub in hubsDoc.RootElement.GetProperty("data").EnumerateArray())
                     {
                         string hubID = hub.GetProperty("id").GetString();
-                        //hubID = selectedHubID;
+                        var projects = await DataManagement.GetAllProjectsFromHub(hubID);
 
-                        string projectsUrl = $"https://developer.api.autodesk.com/project/v1/hubs/{hubID}/projects";
-                        await Task.Delay(500);
-                        HttpResponseMessage projectsResponse = await client.GetAsync(projectsUrl);
-
-                        if (!projectsResponse.IsSuccessStatusCode)
+                        foreach (var (projectId, projectName) in projects)
                         {
-                            Console.WriteLine($"❌ Error fetching projects for hub {hubID}: {projectsResponse.StatusCode}");
-                            continue;
-                        }
-
-                        string projectsJson = await projectsResponse.Content.ReadAsStringAsync();
-                        using JsonDocument projectsDoc = JsonDocument.Parse(projectsJson);
-                        JsonElement projectsRoot = projectsDoc.RootElement;
-
-                        foreach (JsonElement project in projectsRoot.GetProperty("data").EnumerateArray())
-                        {
-                            string projectId = project.GetProperty("id").GetString();
-                            string projectName = project.GetProperty("attributes").GetProperty("name").GetString();
-
-
                             var topFolder = await DataManagement.GetTopLevelFolder(hubID, projectId);
                             string folderId = topFolder.Item1;
 
                             if (string.IsNullOrEmpty(folderId))
                             {
-                                Console.WriteLine($"❌ No valid top-level folder found for project {projectId}");
+                                Console.WriteLine($"❌ No top-level folder found for project {projectId}");
                                 continue;
                             }
 
-                            string modelsUrl = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/folders/{folderId}/contents";
+                            HashSet<string> deletedModelIds = await modelService.GetDeletedModelIds(projectId, folderId);
+                            Console.WriteLine($"ℹ️ Found {deletedModelIds.Count} deleted models in project {projectName}");
+
+                            string modelsUrl =
+                                $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/folders/{folderId}/contents";
                             HttpResponseMessage modelsResponse = await client.GetAsync(modelsUrl);
 
                             if (!modelsResponse.IsSuccessStatusCode)
                             {
-                                Console.WriteLine($"❌ Error fetching models for folder {folderId}: {modelsResponse.StatusCode}");
+                                Console.WriteLine(
+                                    $"❌ Error fetching models for folder {folderId}: {modelsResponse.StatusCode}");
                                 continue;
                             }
 
                             string modelsJson = await modelsResponse.Content.ReadAsStringAsync();
                             using JsonDocument modelsDoc = JsonDocument.Parse(modelsJson);
-                            JsonElement modelsRoot = modelsDoc.RootElement;
 
-                            foreach (JsonElement item in modelsRoot.GetProperty("data").EnumerateArray())
+                            foreach (JsonElement item in modelsDoc.RootElement.GetProperty("data").EnumerateArray())
                             {
-                                if (item.GetProperty("type").GetString() == "items")
-                                {
-                                    var attributes = item.GetProperty("attributes");
+                                if (item.GetProperty("type").GetString() != "items") continue;
 
-                                    string modelId = item.GetProperty("id").GetString();
-                                    string modelName = attributes.GetProperty("displayName").GetString();
-                                    string lastModified = attributes.TryGetProperty("lastModifiedTime", out JsonElement modifiedTime) ? modifiedTime.GetString() : "Unknown";
-                                    string lastModifiedDate = lastModified.Split('T')[0];
-                                    string lastModifiedTime = (lastModified.Split('T')[1]).Remove(8);
-                                    lastModified = lastModifiedDate + " " + lastModifiedTime;
+                                var attributes = item.GetProperty("attributes");
+                                string modelId = item.GetProperty("id").GetString();
+
+                                if (deletedModelIds.Contains(modelId) || await modelService.IsModelDeleted(modelId))
+                                {
+                                    Console.WriteLine($"🧹 Skipping deleted model: {attributes.GetProperty("displayName").GetString()}");
+                                    continue;
+                                }
+
+                                string modelName = attributes.GetProperty("displayName").GetString();
+                                string lastModified = attributes.TryGetProperty("lastModifiedTime", out JsonElement modifiedTime)
+                                    ? modifiedTime.GetString()
+                                    : "Unknown";
+
+                                string formattedDate = "Unknown";
+                                if (lastModified != "Unknown")
+                                {
+                                    string[] parts = lastModified.Split('T');
+                                    if (parts.Length >= 2)
+                                        formattedDate = $"{parts[0]} {parts[1].Substring(0, 8)}";
+                                }
+
+                                bool modelExists = await modelService.ModelExistsById(modelId);
+                                if (!modelExists)
+                                {
+                                    string storageId = await fileService.GetStorageIdFromItem(projectId, modelId);
+                                    if (!string.IsNullOrEmpty(storageId))
+                                    {
+                                        string urn = Convert.ToBase64String(Encoding.UTF8.GetBytes(storageId))
+                                            .TrimEnd('=').Replace('+', '-').Replace('/', '_');
+
+                                        await modelService.UploadModelDB(
+                                            ownerId: _userId ?? "system",
+                                            modelName: modelName,
+                                            autodeskUrn: urn,
+                                            hubID: hubID,
+                                            projectId: projectId,
+                                            folderId: folderId,
+                                            itemId: modelId,
+                                            versionId: "",
+                                            isDeleted: false
+                                        );
+
+                                        Console.WriteLine($"✅ Added new model to database: {modelName}");
+                                    }
+                                    else
+                                    {
+                                        Console.WriteLine($"⚠️ Could not get storage ID for model: {modelName}");
+                                    }
+                                }
 
                                     allModels.Add(new Dictionary<string, string>
                                     {
@@ -870,24 +965,27 @@ namespace AssetManager.Desktop
                                         { "Name", modelName },
                                         { "ProjectId", projectId },
                                         { "Project", projectName },
-                                        { "LastModified", lastModified }
+                                        { "LastModified", formattedDate }
                                     });
-                                    await GetModelData(modelId, projectId, projectName);
+
+                                    await GetModelData(modelId, projectId, projectName, hubID);
                                     await InsertModelVersionDB(modelId, projectId);
                                 }
                             }
                         }
                     }
                 }
-            }
+            
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ Exception occurred: {ex.Message}");
-                return null;
+                Console.WriteLine($"❌ Exception occurred in GetAllModels: {ex.Message}");
             }
 
             return allModels;
         }
+
+
+        // New helper method to process subfolders recursively
 
         private async Task FetchAndSetStorageId()
         {
@@ -1104,9 +1202,13 @@ namespace AssetManager.Desktop
             }
         }
 
-
         private async Task<List<Dictionary<string, string>>> GetModelsFromProject(string projectId, string folderId)
         {
+            var models = new List<Dictionary<string, string>>();
+            FileDownloadService fileService = new FileDownloadService();
+            MongoConnection mongoConnection = new MongoConnection();
+            ModelService modelService = new ModelService(mongoConnection);
+
             string accessToken = TokenManager.GetToken();
             if (string.IsNullOrEmpty(accessToken))
             {
@@ -1118,96 +1220,87 @@ namespace AssetManager.Desktop
 
             try
             {
-                using (HttpClient client = new HttpClient())
-                {
-                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-                    HttpResponseMessage response = await client.GetAsync(url);
+                using var client = new HttpClient();
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+                var response = await client.GetAsync(url);
 
-                    if (!response.IsSuccessStatusCode)
+                if (!response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine($"❌ API error: {response.StatusCode} - {response.ReasonPhrase}");
+                    return models;
+                }
+
+                string jsonResponse = await response.Content.ReadAsStringAsync();
+                if (string.IsNullOrWhiteSpace(jsonResponse))
+                {
+                    Console.WriteLine("⚠️ API returned empty response.");
+                    return models;
+                }
+
+                using var doc = JsonDocument.Parse(jsonResponse);
+
+                foreach (var item in doc.RootElement.GetProperty("data").EnumerateArray())
+                {
+                    if (item.GetProperty("type").GetString() != "items")
+                        continue;
+
+                    string itemId = item.GetProperty("id").GetString();
+
+                    // Check if the model is deleted in MongoDB
+                    bool isDeleted = await modelService.IsModelDeleted(itemId);
+                    if (isDeleted)
                     {
-                        Console.WriteLine($"❌ Error: {response.StatusCode} - {response.ReasonPhrase}");
-                        return null;
+                        Console.WriteLine($"🧹 Skipping model with ID '{itemId}' — marked as deleted in database.");
+                        continue;
                     }
 
-                    string jsonResponse = await response.Content.ReadAsStringAsync();
-                    using JsonDocument doc = JsonDocument.Parse(jsonResponse);
-                    JsonElement root = doc.RootElement;
+                    var attributes = item.GetProperty("attributes");
+                    string modelName = attributes.GetProperty("displayName").GetString();
 
-                    List<Dictionary<string, string>> models = new List<Dictionary<string, string>>();
+                    string lastModified = attributes.TryGetProperty("lastModifiedTime", out var modifiedTime)
+                        ? modifiedTime.GetString()
+                        : "Unknown";
 
-                    foreach (JsonElement item in root.GetProperty("data").EnumerateArray())
+                    string formattedDate = "Unknown";
+                    if (lastModified != "Unknown")
                     {
-                        if (item.GetProperty("type").GetString() == "items")
+                        string[] parts = lastModified.Split('T');
+                        if (parts.Length >= 2)
                         {
-                            var attributes = item.GetProperty("attributes");
-                            string itemId = item.GetProperty("id").GetString();
-                            string modelName = attributes.GetProperty("displayName").GetString();
-
-                            string lastModified = attributes.TryGetProperty("lastModifiedTime", out JsonElement modifiedTime)
-                                ? modifiedTime.GetString()
-                                : "Unknown";
-
-                            string formattedDate = "Unknown";
-                            if (lastModified != "Unknown")
-                            {
-                                string[] dateParts = lastModified.Split('T');
-                                if (dateParts.Length >= 2)
-                                {
-                                    string date = dateParts[0];
-                                    string time = dateParts[1].Substring(0, Math.Min(8, dateParts[1].Length));
-                                    formattedDate = $"{date} {time}";
-                                }
-                            }
-
-                            // Create model dictionary with all necessary IDs
-                            var modelDict = new Dictionary<string, string>
-                            {
-                                { "Id", itemId },
-                                { "Name", modelName },
-                                { "ProjectId", projectId },
-                                { "FolderId", folderId },
-                                { "Project", _selectedProjectName ?? "Unknown Project" },
-                                { "LastModified", formattedDate }
-                            };
-
-                            Console.WriteLine("Project Name: " + _selectedProjectName);
-
-                            // Add to models list
-                            models.Add(modelDict);
-
-                            // Pre-fetch storage IDs for each model - but don't block the UI thread
-                            _ = Task.Run(async () => {
-                                try
-                                {
-                                    FileDownloadService fileService = new FileDownloadService();
-                                    string storageId = await fileService.GetStorageIdFromItem(projectId, itemId);
-                                    if (!string.IsNullOrEmpty(storageId))
-                                    {
-                                        // We need to use Dispatcher to safely update the dictionary from a background thread
-                                        Application.Current.Dispatcher.Invoke(() => {
-                                            modelDict["StorageId"] = storageId;
-                                        });
-                                        Console.WriteLine($"✅ Added StorageId for {modelName}: {storageId}");
-                                    }
-                                }
-                                catch (Exception ex)
-                                {
-                                    Console.WriteLine($"❌ Failed to fetch storage ID for {modelName}: {ex.Message}");
-                                }
-                            });
+                            formattedDate = $"{parts[0]} {parts[1].Substring(0, 8)}";
                         }
                     }
 
-                    return models;
+                    string storageId = await fileService.GetStorageIdFromItem(projectId, itemId);
+                    if (string.IsNullOrEmpty(storageId))
+                    {
+                        Console.WriteLine($"🧹 Skipping '{modelName}' — no storage ID (probably deleted).");
+                        continue;
+                    }
+
+                    models.Add(new Dictionary<string, string>
+            {
+                { "Id", itemId },
+                { "Name", modelName },
+                { "ProjectId", projectId },
+                { "FolderId", folderId },
+              { "Project", (_selectedProjectName ?? "Unknown Project").ToString() },
+
+                { "LastModified", formattedDate },
+                { "StorageId", storageId }
+            });
                 }
+
+                return models;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ Exception occurred: {ex.Message}");
-                Console.WriteLine(ex.StackTrace);
-                return null;
+                Console.WriteLine($"❌ Exception loading models: {ex.Message}");
+                MessageBox.Show("Error loading models. See console for details.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return models;
             }
         }
+
 
         /*       private async void LoadModelsForSelectedProject()
                {
@@ -1478,7 +1571,8 @@ namespace AssetManager.Desktop
             {
                 Text = displayName,
                 FontSize = 14,
-                VerticalAlignment = VerticalAlignment.Center
+                VerticalAlignment = VerticalAlignment.Center,
+                Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d1d5db"))
             };
 
             stack.Children.Add(svgIcon);
@@ -1488,27 +1582,6 @@ namespace AssetManager.Desktop
 
 
 
-
-
-        /*private void InitializeTreeView()
-        {
-            ProjectTreeView.Items.Clear();
-
-            // ✅ Add Local "Grand Table Top Game" folder
-            string localRoot = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Grand Table Top Game");
-
-            TreeViewItem localRootItem = new TreeViewItem
-            {
-                Header = "💾 Local: Grand Table Top Game",
-                Tag = localRoot,
-                Items = { null } // Placeholder to allow expansion
-            };
-
-            ProjectTreeView.Items.Add(localRootItem);
-
-            // ✅ Load Autodesk Forge Projects (if applicable)
-            LoadProjectsForHub(hubID);
-        }*/
 
 
         /*  private async void TreeViewItem_Expanded(object sender, RoutedEventArgs e)
@@ -1583,6 +1656,104 @@ namespace AssetManager.Desktop
           }*/
 
 
+        //private async Task LoadSubfoldersAsync(TreeViewItem parentFolder, string projectId, string folderId)
+        //{
+        //    try
+        //    {
+        //        if (parentFolder == null || string.IsNullOrEmpty(projectId) || string.IsNullOrEmpty(folderId))
+        //        {
+        //            Debug.WriteLine("⚠️ LoadSubfoldersAsync was called with null or empty values.");
+        //            return;
+        //        }
+
+        //        var subItems = await DataManagement.GetProjectItems(projectId, folderId);
+
+        //        // Clear previous items
+        //        parentFolder.Items.Clear();
+
+        //        if (subItems == null || subItems.Count == 0)
+        //        {
+        //            Debug.WriteLine($"⚠️ No subitems found for folderId: {folderId}");
+
+        //            // **Ensure empty folders keep a placeholder**
+        //            parentFolder.Items.Add(new TreeViewItem { Header = "📂 This folder is empty", IsEnabled = false });
+        //            return;
+        //        }
+
+        //        // Group items into folders and files
+        //        var groupedItems = subItems
+        //            .GroupBy(item => item.Item3) // Group by folder vs file
+        //            .ToDictionary(g => g.Key, g => g.ToList());
+
+        //        // **First, process folders**
+        //        if (groupedItems.ContainsKey(true)) // Key is 'true' for folders
+        //        {
+        //            if (string.IsNullOrEmpty(subItemId) || string.IsNullOrEmpty(subItemName))
+        //                continue;
+
+        //            bool is3DModel = false;
+
+        //            if (!isSubFolder)
+        //            {
+        //                string extension = Path.GetExtension(subItemName)?.ToLowerInvariant();
+        //                is3DModel = Accepted3DModelExtensions.Contains(extension);
+        //            }
+        //        }
+
+        //        // **Next, process files**
+        //        if (groupedItems.ContainsKey(false)) // Key is 'false' for files
+        //        {
+        //            foreach (var (subItemId, subItemName, isSubFolder) in groupedItems[false])
+        //            {
+        //                bool isPdf = !isSubFolder && Path.GetExtension(subItemName)?.ToLowerInvariant() == ".pdf";
+
+        //            TreeViewItem subItem = new TreeViewItem
+        //            {
+        //                Header = isSubFolder
+        //                ? CreateHeader("Icons2/folder_icon.svg", subItemName, 30, 30)
+        //                : CreateHeader(GetIconForExtension(Path.GetExtension(subItemName)), subItemName, 30, 30),
+
+        //                Tag = (projectId, subItemId, isSubFolder, is3DModel),
+        //                ContextMenu = CreateContextMenu(projectId, subItemId, isSubFolder)
+        //            };
+
+        //                parentFolder.Items.Add(subItem);
+        //            }
+        //        }
+
+        //        // After loading subfolders and files, handle lazy loading for folders when expanded
+        //        foreach (TreeViewItem subItem in parentFolder.Items)
+        //        {
+        //            if (subItem.Tag is (string subProjectId, string subFolderId, bool isSubFolder) && isSubFolder)
+        //            {
+        //                // Lazy load children when expanded
+        //                subItem.Items.Add(new TreeViewItem { Header = "Loading...", IsEnabled = false });
+
+        //                subItem.Expanded += async (s, e) =>
+        //                {
+        //                    if (subItem.Items.Count == 1 && subItem.Items[0] is TreeViewItem dummy && dummy.Header.ToString() == "Loading...")
+        //                    {
+        //                        subItem.Items.Clear();
+
+        //                        // Load the subfolder items again (one-time load)
+        //                        await LoadSubfoldersAsync(subItem, subProjectId, subFolderId);
+
+        //                        if (subItem.Items.Count == 0)
+        //                        {
+        //                            subItem.Items.Add(new TreeViewItem { Header = "📂 This folder is empty", IsEnabled = false });
+        //                        }
+        //                    }
+        //                };
+        //            }
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Debug.WriteLine($"❌ Error in LoadSubfoldersAsync: {ex.Message}\n{ex.StackTrace}");
+        //    }
+        //}
+
+
         private async Task LoadSubfoldersAsync(TreeViewItem parentFolder, string projectId, string folderId)
         {
             try
@@ -1593,24 +1764,14 @@ namespace AssetManager.Desktop
                     return;
                 }
 
+                // ✅ This already filters out deleted models
                 var subItems = await DataManagement.GetProjectItems(projectId, folderId);
 
-                // Clear existing items, if any
-                if (parentFolder?.Items != null)
-                {
-                    parentFolder.Items.Clear();
-                }
-                else
-                {
-                    Debug.WriteLine("⚠️ Parent folder is null or has no Items collection.");
-                    return;
-                }
+                // Clear previous items
+                parentFolder.Items.Clear();
 
-                if (subItems == null || subItems.Count == 0) // ✅ FIXED: Use Count instead of .Any()
+                if (subItems == null || subItems.Count == 0)
                 {
-                    Debug.WriteLine($"⚠️ No subitems found for folderId: {folderId}");
-
-                    // **Ensure empty folders keep a placeholder**
                     parentFolder.Items.Add(new TreeViewItem { Header = " (empty)", IsEnabled = false });
                     return;
                 }
@@ -1618,34 +1779,39 @@ namespace AssetManager.Desktop
                 foreach (var (subItemId, subItemName, isSubFolder) in subItems)
                 {
                     if (string.IsNullOrEmpty(subItemId) || string.IsNullOrEmpty(subItemName))
-                    {
-                        Debug.WriteLine("⚠️ Skipping invalid subItem with missing ID or name.");
                         continue;
-                    }
 
-                    bool isPdf = !isSubFolder && Path.GetExtension(subItemName)?.ToLowerInvariant() == ".pdf";
+                    bool is3DModel = false;
+
+                    if (!isSubFolder)
+                    {
+                        string extension = Path.GetExtension(subItemName)?.ToLowerInvariant();
+                        is3DModel = Accepted3DModelExtensions.Contains(extension);
+                    }
 
                     TreeViewItem subItem = new TreeViewItem
                     {
-                        Header = isSubFolder ? $"📁 {subItemName}" : $"📄 {subItemName}",
-                        Tag = (projectId, subItemId, isSubFolder, isPdf),
+                        Header = isSubFolder
+                        ? CreateHeader("Icons2/folder_icon.svg", subItemName, 30, 30)
+                        : CreateHeader(GetIconForExtension(Path.GetExtension(subItemName)), subItemName, 30, 30),
+
+                        Tag = (projectId, subItemId, isSubFolder, is3DModel),
                         ContextMenu = CreateContextMenu(projectId, subItemId, isSubFolder)
                     };
 
                     if (isSubFolder)
                     {
-                        // **Add a dummy item to ensure the chevron remains**
+                        // Lazy load children when expanded
                         subItem.Items.Add(new TreeViewItem { Header = "Loading...", IsEnabled = false });
 
                         subItem.Expanded += async (s, e) =>
                         {
-                            if (subItem.Items.Count == 1 && subItem.Items[0] is TreeViewItem item && item.Header.ToString() == "Loading...")
+                            if (subItem.Items.Count == 1 && subItem.Items[0] is TreeViewItem dummy && dummy.Header.ToString() == "Loading...")
                             {
                                 subItem.Items.Clear();
                                 await LoadSubfoldersAsync(subItem, projectId, subItemId);
 
-                                // **Ensure an empty folder still has a placeholder**
-                                if (subItem.Items.Count == 0) // ✅ FIXED: Use Count instead of .Any()
+                                if (subItem.Items.Count == 0)
                                 {
                                     subItem.Items.Add(new TreeViewItem { Header = " (empty)", IsEnabled = false });
                                 }
@@ -1661,8 +1827,6 @@ namespace AssetManager.Desktop
                 Debug.WriteLine($"❌ Error in LoadSubfoldersAsync: {ex.Message}\n{ex.StackTrace}");
             }
         }
-
-
 
 
 
@@ -1689,6 +1853,7 @@ namespace AssetManager.Desktop
             string folderName = PromptForFolderName();
             if (string.IsNullOrWhiteSpace(folderName)) return;
 
+            // Disable the context menu while creating the folder to prevent multiple clicks
             ContextMenu currentMenu = ContextMenuService.GetContextMenu(ProjectTreeView);
             if (currentMenu != null) currentMenu.IsEnabled = false;
 
@@ -1698,14 +1863,27 @@ namespace AssetManager.Desktop
 
             if (success)
             {
-                MessageBox.Show($"✅ Folder '{folderName}' created successfully!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                // Find the parent item in the TreeView
                 TreeViewItem parentItem = FindTreeViewItem(ProjectTreeView.Items, parentFolderId);
                 if (parentItem != null)
                 {
+                    // Remove the "empty folder" message if it exists
+                    var emptyFolderItem = parentItem.Items.OfType<TreeViewItem>()
+                        .FirstOrDefault(item => item.Header.ToString() == "📂 This folder is empty");
+
+                    if (emptyFolderItem != null)
+                    {
+                        parentItem.Items.Remove(emptyFolderItem);
+                    }
+
+                    // Add the new folder to the TreeView
                     await AddNewFolderToTreeView(parentItem, projectId, parentFolderId, folderName);
                 }
             }
         }
+
+        //await LoadProjectsForHub(selectedHubID);
+
 
 
         private async Task AddNewFolderToTreeView(TreeViewItem parentItem, string projectId, string parentFolderId, string folderName)
@@ -1758,7 +1936,7 @@ namespace AssetManager.Desktop
         {
             if (e.NewValue is TreeViewItem selectedItem)
             {
-                // Handle the expanded tuple with PDF flag
+                // Handle the expanded 4-tuple format: (projectId, itemId, isFolder, isPdf)
                 if (selectedItem.Tag is ValueTuple<string, string, bool, bool> fileData)
                 {
                     string projectId = fileData.Item1;
@@ -1769,9 +1947,23 @@ namespace AssetManager.Desktop
                     _selectedProjectId = projectId;
                     _selectedItemId = itemId;
 
-                    // Extract the item name from the header (remove the icon prefix)
-                    string header = selectedItem.Header.ToString();
-                    string displayName = header.Length > 2 ? header.Substring(2).Trim() : header;
+                    // ✅ Extract display name from StackPanel header or fallback to string
+                    string displayName = "Unknown";
+                    if (selectedItem.Header is StackPanel panel)
+                    {
+                        foreach (var child in panel.Children)
+                        {
+                            if (child is TextBlock tb)
+                            {
+                                displayName = tb.Text;
+                                break;
+                            }
+                        }
+                    }
+                    else if (selectedItem.Header is string strHeader)
+                    {
+                        displayName = strHeader.StartsWith("📁 ") ? strHeader.Substring(3) : strHeader;
+                    }
 
                     if (isFolder)
                     {
@@ -1800,7 +1992,6 @@ namespace AssetManager.Desktop
                     }
                     else if (isPdf)
                     {
-                        // It's a PDF file
                         _selectedItemName = displayName;
                         Console.WriteLine($"📑 Selected PDF: {_selectedItemName}, Item ID: {_selectedItemId}, Project ID: {_selectedProjectId}");
 
@@ -1809,22 +2000,37 @@ namespace AssetManager.Desktop
                     }
                     else
                     {
-                        // It's a regular file - handle accordingly
                         _selectedItemName = displayName;
                         Console.WriteLine($"📄 Selected File: {_selectedItemName}, Item ID: {_selectedItemId}, Project ID: {_selectedProjectId}");
 
-                        // You could add specific handling for other file types here
+                        // Handle other file types if needed
                     }
                 }
-                // Handle the original tuple format for backward compatibility
+                // Handle 3-tuple project nodes: (projectId, folderId, isFolder)
                 else if (selectedItem.Tag is ValueTuple<string, string, bool> projectData)
                 {
                     _selectedProjectId = projectData.Item1;
                     _folderId = projectData.Item2;
 
-                    // Extract the project name from the header
-                    string header = selectedItem.Header.ToString();
-                    _selectedProjectName = header.StartsWith("📁 ") ? header.Substring(3) : header;
+                    // ✅ Extract project name from StackPanel or plain string
+                    string displayName = "Unknown";
+                    if (selectedItem.Header is StackPanel panel)
+                    {
+                        foreach (var child in panel.Children)
+                        {
+                            if (child is TextBlock tb)
+                            {
+                                displayName = tb.Text;
+                                break;
+                            }
+                        }
+                    }
+                    else if (selectedItem.Header is string strHeader)
+                    {
+                        displayName = strHeader.StartsWith("📁 ") ? strHeader.Substring(3) : strHeader;
+                    }
+
+                    _selectedProjectName = displayName;
 
                     Console.WriteLine($"📌 Selected Project: {_selectedProjectName}, Project ID: {_selectedProjectId}, Folder ID: {_folderId}");
 
@@ -1928,7 +2134,7 @@ namespace AssetManager.Desktop
             }
             else if (icon != null && icon.Kind != PackIconKind.ArrowTopBold && icon.Kind != PackIconKind.ArrowDownBold)
             {
-                icon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F25505"));
+                icon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#188f87"));
             }
         }
 
@@ -1939,7 +2145,7 @@ namespace AssetManager.Desktop
 
             if (icon != null && icon.Kind != PackIconKind.ArrowTopBold && icon.Kind != PackIconKind.ArrowDownBold)
             {
-                icon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+                icon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d1d5db"));
             }
         }
 
@@ -2116,52 +2322,11 @@ namespace AssetManager.Desktop
                 ModelsDataGrid.ItemsSource = models;
                 Console.WriteLine($"✅ Loaded {models.Count} models.");
 
-                // Ensure SelectionChanged event is attached
-                // Note: Since you already have a comprehensive ModelsDataGrid_SelectionChanged method,
-                // this ensures it's properly attached when switching to list view
+
                 ModelsDataGrid.SelectionChanged -= ModelsDataGrid_SelectionChanged;
                 ModelsDataGrid.SelectionChanged += ModelsDataGrid_SelectionChanged;
 
-                // ✅ Add Versions column if it doesn't exist yet
-                //if (!ModelsDataGrid.Columns.Any(col => col.Header?.ToString() == "Versions"))
-                //{
-                //    var versionsColumn = new DataGridTemplateColumn
-                //    {
-                //        Header = "Versions",
-                //        Width = new DataGridLength(80)
-                //    };
-                //    var versionTemplate = new DataTemplate();
-                //    var versionButtonFactory = new FrameworkElementFactory(typeof(Button));
-                //    versionButtonFactory.SetValue(Button.ContentProperty, "Versions ▼");
-                //    versionButtonFactory.SetValue(Button.WidthProperty, 70.0);
-                //    versionButtonFactory.SetValue(Button.CursorProperty, Cursors.Hand);
-                //    versionButtonFactory.SetValue(Button.ToolTipProperty, "Show model versions");
-                //    versionButtonFactory.SetValue(Button.BackgroundProperty, Brushes.Transparent);
-                //    versionButtonFactory.SetValue(Button.BorderBrushProperty, Brushes.Transparent);
-
-                //    // Open versions menu when button is clicked
-                //    versionButtonFactory.AddHandler(Button.ClickEvent, new RoutedEventHandler((s, ev) =>
-                //    {
-                //        if (s is Button btn && btn.DataContext is Dictionary<string, string> selectedModel)
-                //        {
-                //            // Note: We don't need to manually update _selectedItemId here since
-                //            // clicking the button will also select the row, triggering the SelectionChanged event
-
-                //            ContextMenu versionsMenu = CreateModelVersionsMenu(selectedModel["Id"], selectedModel["Name"]);
-                //            versionsMenu.PlacementTarget = btn;
-                //            versionsMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
-                //            versionsMenu.IsOpen = true;
-                //        }
-                //    }));
-
-                //    versionTemplate.VisualTree = versionButtonFactory;
-                //    versionsColumn.CellTemplate = versionTemplate;
-
-                //    // Add at the beginning (index 0) so it appears on the left
-                //    ModelsDataGrid.Columns.Insert(0, versionsColumn);
-                //}
-
-                // ✅ Ensure "Actions" column exists only once
+            
                 if (!ModelsDataGrid.Columns.Any(col => col.Header?.ToString() == "Actions"))
                 {
                     var actionsColumn = new DataGridTemplateColumn
@@ -2226,8 +2391,8 @@ namespace AssetManager.Desktop
             {
                 MessageBox.Show($"❌ Error loading models: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
-            Grid_Border.Background = Brushes.Transparent;
-            List_Border.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
+            Grid_Icon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d1d5db"));
+            List_Icon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#98730c"));
         }
 
         private void PackIcon_Click(object sender, RoutedEventArgs e)
@@ -2531,8 +2696,8 @@ namespace AssetManager.Desktop
             }
 
             // Update UI styles to reflect active view mode
-            List_Border.Background = Brushes.Transparent;
-            Grid_Border.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
+            List_Icon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d1d5db"));
+            Grid_Icon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#98730c"));
         }
 
 
@@ -3335,68 +3500,97 @@ namespace AssetManager.Desktop
             MessageBox.Show("✅ Upload Successful!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
-        private async void BtnDeleteModel_Click(object sender, RoutedEventArgs e)
+        private async void BtnDeleteModel_Click(string itemId, string projectId)
         {
+            if (string.IsNullOrEmpty(itemId) || string.IsNullOrEmpty(projectId))
+            {
+                MessageBox.Show("No model selected.", "Delete Failed", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var confirm = MessageBox.Show($"Are you sure you want to archive and delete model '{_selectedItemName}'?",
+                                         "Confirm Deletion", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            if (confirm != MessageBoxResult.Yes)
+                return;
+
             try
             {
-                string itemId = _selectedItemId; // Replace with dynamic item ID
-                string projectId = _selectedProjectId;
-                string accessToken = _accessToken; // Retrieve this dynamically from your authentication system
+                // Initialize connection to MongoDB and create ModelService
+                MongoConnection mongoConnection = new MongoConnection();
+                ModelService modelService = new ModelService(mongoConnection);
 
-                Console.WriteLine($"Attempting to delete item: {itemId} from project: {projectId}");
+                // First update the database to mark the model as deleted
+                Console.WriteLine($"Marking model {itemId} as deleted in database...");
+                bool dbUpdated = await modelService.SoftDeleteModel(itemId);
 
-                DeleteModel deleteModel = new(accessToken);
-                bool isDeleted = await deleteModel.DeleteLatestModelVersionAsync(projectId, itemId);
-
-                if (isDeleted)
+                if (!dbUpdated)
                 {
-                    MessageBox.Show("Model deleted successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-                else
-                {
-                    MessageBox.Show("Failed to delete the model. Please check the logs.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"An error occurred: {ex.Message}", "Exception", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        private async Task BtnDeleteModel_Click(string selectedItemId, string projectId)
-        {
-            try
-            {
-                if (string.IsNullOrEmpty(selectedItemId))
-                {
-                    MessageBox.Show("No item selected for deletion.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    Console.WriteLine($"❌ Failed to mark model as deleted in database.");
+                    MessageBox.Show("❌ Failed to mark model as deleted in database.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
-                string itemId = _selectedItemId;
-                projectId = _selectedProjectId;
-                string accessToken = _accessToken; // Retrieve this dynamically from your authentication system
+                // Then proceed with the API deletion if needed
+                DeleteService deleteService = new DeleteService();
+                bool apiDeleted = await deleteService.DeleteModelAsync(projectId, itemId, _folderId);
 
-                Console.WriteLine($"Attempting to delete item: {itemId} from project: {projectId}");
-
-                DeleteModel deleteModel = new(accessToken);
-                bool isDeleted = await deleteModel.DeleteLatestModelVersionAsync(projectId, itemId);
-
-                if (isDeleted)
+                if (apiDeleted)
                 {
-                    MessageBox.Show("Model deleted successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                    Console.WriteLine($"✅ Model {itemId} successfully deleted via API.");
+                    MessageBox.Show("✅ Model archived and deleted successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
                 else
                 {
-                    MessageBox.Show("Failed to delete the model. Please check the logs.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    Console.WriteLine($"⚠️ API deletion failed, but model is still marked as deleted in database.");
+                    MessageBox.Show("⚠️ API deletion failed, but model is still marked as deleted in database.",
+                                   "Partial Success", MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
+
+                // Reload the models list to reflect changes
+                await LoadAllModels();
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"An error occurred: {ex.Message}", "Exception", MessageBoxButton.OK, MessageBoxImage.Error);
+                Console.WriteLine($"❌ Exception during model deletion: {ex.Message}");
+                MessageBox.Show($"❌ Error deleting model: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
+        /*
+                private async Task BtnDeleteModel_Click(string selectedItemId, string projectId)
+                {
+                    try
+                    {
+                        if (string.IsNullOrEmpty(selectedItemId))
+                        {
+                            MessageBox.Show("No item selected for deletion.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                            return;
+                        }
+
+                        string itemId = _selectedItemId;
+                        projectId = _selectedProjectId;
+                        string accessToken = _accessToken; // Retrieve this dynamically from your authentication system
+
+                        Console.WriteLine($"Attempting to delete item: {itemId} from project: {projectId}");
+
+                        DeleteModel deleteModel = new(accessToken);
+                        bool isDeleted = await deleteModel.DeleteLatestModelVersionAsync(projectId, itemId);
+
+                        if (isDeleted)
+                        {
+                            MessageBox.Show("Model deleted successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                        }
+                        else
+                        {
+                            MessageBox.Show("Failed to delete the model. Please check the logs.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"An error occurred: {ex.Message}", "Exception", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+        */
 
         private void BtnLogout_Click(object sender, RoutedEventArgs e)
         {
@@ -4450,40 +4644,81 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         // Refresh current project data
         private async Task RefreshCurrentProject()
         {
+            if (string.IsNullOrEmpty(_selectedProjectId) || string.IsNullOrEmpty(_folderId))
+            {
+                Console.WriteLine("❌ Cannot refresh — no project or folder selected.");
+                return;
+            }
+
             try
             {
-                var models = await GetModelsFromProject(_selectedProjectId, _folderId);
+                Console.WriteLine($"🔄 Refreshing models for Project: {_selectedProjectId}, Folder: {_folderId}");
 
-                if (models != null)
+                MongoConnection mongoConnection = new MongoConnection();
+                ModelService modelService = new ModelService(mongoConnection);
+                FileDownloadService fileService = new FileDownloadService();
+
+                var models = await DataManagement.GetProjectItems(_selectedProjectId, _folderId);
+                if (models == null || models.Count == 0)
                 {
-                    await Dispatcher.InvokeAsync(() =>
+                    Console.WriteLine("ℹ️ No models found in this folder.");
+                    Dispatcher.Invoke(() =>
                     {
-                        // Update the DataGrid if it's visible
-                        if (ModelsDataGrid.Visibility == Visibility.Visible)
-                        {
-                            ModelsDataGrid.ItemsSource = null;
-                            ModelsDataGrid.ItemsSource = models;
-                            originalResults = models;
-                            Models = models;
-                        }
-
-                        // Update the Grid view if it's visible
-                        if (Grid_View.Visibility == Visibility.Visible)
-                        {
-                            ModelsContainer.Children.Clear();
-                            isModelLoaded = false;
-                            DisplayGridModels();
-                        }
+                        ModelsDataGrid.ItemsSource = null;
+                        ModelsDataGrid.Items.Clear();
                     });
-
-                    Console.WriteLine($"✅ Refreshed {models.Count} models for project {_selectedProjectId}");
+                    return;
                 }
+
+                var filteredModels = new List<Dictionary<string, string>>();
+
+                foreach (var (itemId, itemName, isFolder) in models)
+                {
+                    if (isFolder) continue; // Skip folders
+
+                    bool isDeleted = await modelService.IsModelDeleted(itemId);
+                    if (isDeleted)
+                    {
+                        Console.WriteLine($"🧹 Skipping deleted model: {itemName}");
+                        continue;
+                    }
+
+                    string storageId = await fileService.GetStorageIdFromItem(_selectedProjectId, itemId);
+                    if (string.IsNullOrEmpty(storageId))
+                    {
+                        Console.WriteLine($"⚠️ Skipping {itemName} — no storage ID found.");
+                        continue;
+                    }
+
+                    string lastModified = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"); // You could fetch actual metadata if needed
+
+                    filteredModels.Add(new Dictionary<string, string>
+            {
+                { "Id", itemId },
+                { "Name", itemName },
+                { "ProjectId", _selectedProjectId },
+                { "FolderId", _folderId },
+                { "Project", _selectedProjectName ?? "Unknown Project" },
+                { "LastModified", lastModified },
+                { "StorageId", storageId }
+            });
+                }
+
+                Dispatcher.Invoke(() =>
+                {
+                    ModelsDataGrid.ItemsSource = null;
+                    ModelsDataGrid.Items.Clear();
+                    ModelsDataGrid.ItemsSource = filteredModels;
+                });
+
+                Console.WriteLine($"✅ Refreshed and displayed {filteredModels.Count} models.");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ Error refreshing project data: {ex.Message}");
+                Console.WriteLine($"❌ Error refreshing current project: {ex.Message}");
             }
         }
+
 
         // Refresh current model data
         private async Task RefreshCurrentModel(string versionId = null)
@@ -4908,7 +5143,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             var border = sender as Border;
             if (border != null && border.Child is TextBlock textBlock)
             {
-                textBlock.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F25505"));
+                textBlock.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#188f87"));
             }
         }
         
@@ -4917,7 +5152,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             var border = sender as Border;
             if (border != null && border.Child is TextBlock textBlock)
             {
-                textBlock.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+                textBlock.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d1d5db"));
             }
         }
         
@@ -4931,7 +5166,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         }
         
         //models put in db
-        private static async Task GetModelData(string modelId, string projectId, string folderName)
+        private static async Task GetModelData(string modelId, string projectId, string folderName, string hubId)
         {
             try
             {
@@ -4950,7 +5185,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     {
                         Id = modelId,
                         Name = JsonResponse.data.attributes.displayName,
-                        HubId = hubID,
+                        HubId = hubId,
                         CreatedBy = JsonResponse.data.attributes.createUserId,
                         CreatedDate = JsonResponse.data.attributes.createTime,
                         ModifiedDate = JsonResponse.data.attributes.lastModifiedTime,
@@ -4979,7 +5214,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
             if (findModel == null)
             {
-                MessageBox.Show($"New model");
+                MessageBox.Show($"New model {modelData.Name}");
                 await database.ModelData.InsertOneAsync(modelData);
                 string message = $"New Model - {modelData.Name}";
                 await InsertNotifDB(modelData.Id, message, _userId);
@@ -5007,7 +5242,8 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 var filter = Builders<Versions>.Filter.Eq(x => x.Id, modelId);
                 var update = Builders<Versions>.Update.Set("VersionNumber", verNum);
                 await database.Versions.UpdateOneAsync(filter, update);
-                string modelName = await GetModelName(modelId);
+                DataManagement dataService = new DataManagement();
+                string modelName = await dataService.GetModelName(modelId);
                 string message = $"New version {verNum} on model - {modelName}";
                 await InsertNotifDB(modelId, message, _userId);
             }
@@ -5034,7 +5270,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                         if (model != null)
                         {
                             Console.WriteLine($"Found Match: {match.Value}");
-                            string name = await GetUserName(model.CreatedBy);
+                            string name = await _userService.GetUserName(model.CreatedBy);
                             //MessageBox.Show($"Result: {match.Value}, Score: {match.Score}");
                             searchResults.Add(new Dictionary<string, string>
                             {
@@ -5166,55 +5402,10 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             }
         }
 
-        //initalise models sidebar
-        //private async Task InitializeModelsInfoSidebar()
-        //{
-        //    //display upvotes
-        //        int upvotes = await GetModelUpvoteCount(_selectedItemId);
-
-        //        await SetUserModelVote(_selectedItemId, _userId);
-        //        int vote = await GetUserModelVote(_selectedItemId, _userId);
-        //        if (vote == 1)
-        //        {
-        //            UpArrow.Kind = PackIconKind.ArrowTopBold;
-        //            UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#11d137"));
-        //            DownArrow.Kind = PackIconKind.ArrowDownBoldOutline;
-        //            DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
-        //        }
-        //        else if (vote == -1)
-        //        {
-        //            DownArrow.Kind = PackIconKind.ArrowDownBold;
-        //            DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d11111"));
-        //            UpArrow.Kind = PackIconKind.ArrowTopBoldOutline;
-        //            UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
-        //        }
-        //        else
-        //        {
-        //            UpArrow.Kind = PackIconKind.ArrowTopBoldOutline;
-        //            UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
-        //            DownArrow.Kind = PackIconKind.ArrowDownBoldOutline;
-        //            DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
-        //        }
-
-        //        string visibility = await GetModelVisibility();
-        //        if (visibility == "Public")
-        //        {
-        //            Public.IsSelected = true;
-        //        }
-        //        else if (visibility == "Private")
-        //        {
-        //            Private.IsSelected = true;
-        //        }
-
-        //        UpvoteTextBlock.Text = upvotes.ToString();
-        //        ClearComments();
-        //        //ListAllComments();
-        //        await DisplayTags();
-        //}
-
         private void CloseSidebar_Click(object sender, RoutedEventArgs e)
         {
             ModelDataSidebar.Width = new GridLength(0);
+            ModelDataSidebarThumb.Width = new GridLength(0);
 
 
             //ModelThumbnail.Visibility = Visibility.Collapsed;
@@ -5228,6 +5419,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             if (ModelDataSidebar.Width.Value != 250)
             {
                 ModelDataSidebar.Width = new GridLength(250);
+                ModelDataSidebarThumb.Width = new GridLength(5);
             }
 
             // ModelThumbnail.Visibility = Visibility.Visible;
@@ -5251,6 +5443,10 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             {
                 ListModelButtonBorder.Visibility = Visibility.Collapsed;
             }
+            else
+            {
+                ListModelButtonBorder.Visibility = Visibility.Visible;
+            }
 
             if (versionId == null)
             {
@@ -5267,64 +5463,29 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             await DisplayTags();
         }
 
-
         private async Task LoadMetadata(string versionId = null)
         {
-            if (versionId == null)
-            {
-                Console.WriteLine("VERSION ID IS NULL");
-            }
-            else
-            {
-                Console.WriteLine($"        model versionId {versionId}");
-            }
-
             if (_selectedModel == null)
             {
                 MessageBox.Show("❌ No model selected.");
                 return;
             }
 
-            ModelData modelMetadata = null;
-
-            // If no versionId is provided, fetch the latest version using GetItemVersions
-            if (versionId == null)
+            try
             {
-                try
+                string actualVersionId = versionId;
+
+                // If no versionId is provided, determine the latest version ID first
+                if (actualVersionId == null)
                 {
-                    // Fetch all versions for the selected model using DataManagement.GetItemVersions (static method)
                     var versionsList = await DataManagement.GetItemVersions(_selectedModel["ProjectId"], _selectedModel["Id"]);
 
                     if (versionsList != null && versionsList.Any())
                     {
-                        // Get the latest version (highest version number)
                         var latestVersion = versionsList.OrderByDescending(v => v.VersionNumber).FirstOrDefault();
+                        actualVersionId = latestVersion.VersionID;
 
-                        if (latestVersion != default)
-                        {
-                            // Fetch and map the version-specific metadata into ModelData
-                            modelMetadata = new ModelData
-                            {
-                                Version = latestVersion.VersionNumber.ToString(),
-                                Name = _selectedModel["Name"],  // You can update this if the name is fetched elsewhere
-                                CreatedBy = latestVersion.CreatedBy,
-                                CreatedDate = latestVersion.CreateTime,
-                                ModifiedDate = "Not available",  // This may not be available in GetItemVersions
-                                ModifiedBy = "Not available",   // This may not be available in GetItemVersions
-                                FileSize = 0, // You might need to adjust this field if you have the size info
-                                Foldername = "Not available",   // Update this if folder info is available
-                                Format = "Not available",       // Format may be unavailable here, but you can map it
-                                PolyCount = 0,  // Update this if poly count data is available
-                                Dimensions = "Not available"   // Update if dimension data is available
-                            };
-
-                            Console.WriteLine("                 Metadata fetched for latest version.");
-                        }
-                        else
-                        {
-                            MessageBox.Show("❌ Latest version not found.");
-                            return;
-                        }
+                        Console.WriteLine($"ℹ️ Using latest version ID: {actualVersionId}");
                     }
                     else
                     {
@@ -5332,66 +5493,20 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                         return;
                     }
                 }
-                catch (Exception ex)
+
+                // Fetch metadata for the given (or latest) version
+                var modelMetadata = await DataManagement.GetModelVersionMetadata(
+                    _selectedModel["ProjectId"],
+                    _selectedModel["Id"],
+                    actualVersionId
+                );
+
+                if (modelMetadata == null)
                 {
-                    MessageBox.Show($"❌ Error fetching latest version metadata: {ex.Message}");
+                    MessageBox.Show("❌ Failed to load model metadata.");
                     return;
                 }
-            }
-            else // If versionId is provided, fetch metadata for that specific version
-            {
-                try
-                {
-                    // Fetch all versions for the selected model using DataManagement.GetItemVersions (static method)
-                    var versionsList = await DataManagement.GetItemVersions(_selectedModel["ProjectId"], _selectedModel["Id"]);
 
-                    if (versionsList != null && versionsList.Any())
-                    {
-                        // Find the version with the specified versionId
-                        var selectedVersion = versionsList.FirstOrDefault(v => v.VersionID == versionId);
-
-                        if (selectedVersion != default)
-                        {
-                            // Fetch and map the version-specific metadata into ModelData
-                            modelMetadata = new ModelData
-                            {
-                                Version = selectedVersion.VersionNumber.ToString(),
-                                Name = _selectedModel["Name"],  // Or fetch actual name if available
-                                CreatedBy = selectedVersion.CreatedBy,
-                                CreatedDate = selectedVersion.CreateTime,
-                                ModifiedDate = "Not available", // This may not be available in GetItemVersions
-                                ModifiedBy = "Not available",  // This may not be available in GetItemVersions
-                                FileSize = 0, // You might need to adjust this field if you have the size info
-                                Foldername = "Not available",  // Update if folder info is available
-                                Format = "Not available",      // Format may be unavailable here, but you can map it
-                                PolyCount = 0,                 // Update this if poly count data is available
-                                Dimensions = "Not available"  // Update if dimension data is available
-                            };
-
-                            Console.WriteLine("                 Metadata fetched for specified version.");
-                        }
-                        else
-                        {
-                            MessageBox.Show("❌ Specified version not found.");
-                            return;
-                        }
-                    }
-                    else
-                    {
-                        MessageBox.Show("❌ No versions found for the selected model.");
-                        return;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"❌ Error fetching version metadata: {ex.Message}");
-                    return;
-                }
-            }
-
-            if (modelMetadata != null)
-            {
-                // Log to verify the metadata
                 Console.WriteLine($"✅ Successfully fetched metadata for Version: {modelMetadata.Version ?? "latest"}");
 
                 // Update UI fields with the metadata
@@ -5401,28 +5516,21 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 ModifiedDateText.Text = modelMetadata.ModifiedDate;
                 ModifiedByText.Text = modelMetadata.ModifiedBy;
 
-                // Convert bytes to MB with 2 decimal precision
                 FileSizeText.Text = $"{(modelMetadata.FileSize / 1_000_000.0):0.00} MB";
-
                 FolderNameText.Text = modelMetadata.Foldername;
                 FormatText.Text = modelMetadata.Format;
                 PolyCountText.Text = modelMetadata.PolyCount.ToString();
                 DimensionsText.Text = modelMetadata.Dimensions;
 
-                Console.WriteLine($"Version number: {modelMetadata.Version}");
-
-                // Update version info using the version number from the metadata
-                string versionInfo = modelMetadata.Version ?? "Latest Version";  // Using modelMetadata.Version here
+                string versionInfo = modelMetadata.Version ?? "Latest Version";
                 ModelVersionText.Text = $"Version {versionInfo}";
-                ModelVersionText.Tag = modelMetadata.Version;  // Store the version number in the tag
+                ModelVersionText.Tag = modelMetadata.Version;
             }
-            else
+            catch (Exception ex)
             {
-                MessageBox.Show("❌ Failed to load model metadata.");
+                MessageBox.Show($"❌ Error loading model metadata: {ex.Message}");
             }
         }
-
-
 
         // Example method to fetch file size for a version
         private async Task<long> GetFileSizeForVersion(string projectId, string itemId, string versionId)
@@ -5487,37 +5595,38 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             if (ModelDataSidebar.Width.Value != 250)
             {
                 ModelDataSidebar.Width = new GridLength(250);
+                ModelDataSidebarThumb.Width = new GridLength(5);
             }
 
             //ModelThumbnail.Visibility = Visibility.Visible;
             ModelComments.Visibility = Visibility.Visible;
             ModelInfo.Visibility = Visibility.Collapsed;
 
-            int upvotes = await GetModelUpvoteCount(_selectedItemId);
+            int upvotes = await _upvoteService.GetModelUpvoteCount(_selectedItemId);
 
-            await SetUserModelVote(_selectedItemId, _userId);
-            int vote = await GetUserModelVote(_selectedItemId, _userId);
+            await _upvoteService.SetUserModelVote(_selectedItemId, _userId);
+            int vote = await _upvoteService.GetUserModelVote(_selectedItemId, _userId);
 
             if (vote == 1)
             {
                 UpArrow.Kind = PackIconKind.ArrowTopBold;
                 UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#11d137"));
                 DownArrow.Kind = PackIconKind.ArrowDownBoldOutline;
-                DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+                DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d1d5db"));
             }
             else if (vote == -1)
             {
                 DownArrow.Kind = PackIconKind.ArrowDownBold;
                 DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d11111"));
                 UpArrow.Kind = PackIconKind.ArrowTopBoldOutline;
-                UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+                UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d1d5db"));
             }
             else
             {
                 UpArrow.Kind = PackIconKind.ArrowTopBoldOutline;
-                UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+                UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d1d5db"));
                 DownArrow.Kind = PackIconKind.ArrowDownBoldOutline;
-                DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+                DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d1d5db"));
             }
 
             ClearComments();
@@ -5606,7 +5715,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 if (DownArrow.Kind == PackIconKind.ArrowDownBold)
                 {
                     DownArrow.Kind = PackIconKind.ArrowDownBoldOutline;
-                    DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+                    DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d1d5db"));
                     await UpdateModelUpvoteCount(2, _selectedItemId); //remove downvote and add upvote
                 }
                 else
@@ -5615,14 +5724,14 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 }
                 UpArrow.Kind = PackIconKind.ArrowTopBold;
                 UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#11d137"));
-                await UpdateUserModelVote(_selectedItemId, _userId, 1);
+                await _upvoteService.UpdateUserModelVote(_selectedItemId, _userId, 1);
             }
             else
             {
                 UpArrow.Kind = PackIconKind.ArrowTopBoldOutline;
                 UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#11d137"));
                 await UpdateModelUpvoteCount(-1, _selectedItemId); //remove upvote
-                await UpdateUserModelVote(_selectedItemId, _userId, 0);
+                await _upvoteService.UpdateUserModelVote(_selectedItemId, _userId, 0);
             }
         }
 
@@ -5633,7 +5742,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 if (UpArrow.Kind == PackIconKind.ArrowTopBold)
                 {
                     UpArrow.Kind = PackIconKind.ArrowTopBoldOutline;
-                    UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4B4B4B"));
+                    UpArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d1d5db"));
                     await UpdateModelUpvoteCount(-2, _selectedItemId); //remove upvote and add downvote
                 }
                 else
@@ -5642,26 +5751,15 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 }
                 DownArrow.Kind = PackIconKind.ArrowDownBold;
                 DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d11111"));
-                await UpdateUserModelVote(_selectedItemId, _userId, -1);
+                await _upvoteService.UpdateUserModelVote(_selectedItemId, _userId, -1);
             }
             else
             {
                 DownArrow.Kind = PackIconKind.ArrowDownBoldOutline;
                 DownArrow.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d11111"));
                 await UpdateModelUpvoteCount(1, _selectedItemId); //remove downvote
-                await UpdateUserModelVote(_selectedItemId, _userId, 0);
+                await _upvoteService.UpdateUserModelVote(_selectedItemId, _userId, 0);
             }
-        }
-        
-        private async Task<int> GetModelUpvoteCount(string id)
-        {
-            MongoConnection database = new MongoConnection();
-            var userData = await database.ModelData.Find(x => x.Id == id).FirstOrDefaultAsync();
-            if (userData == null)
-            {
-                return 0;
-            }
-            return userData.UpvoteCount;
         }
 
         private async Task UpdateModelUpvoteCount(int num, string id)
@@ -5670,48 +5768,8 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             var filter = Builders<ModelData>.Filter.Eq("Id", id);
             var update = Builders<ModelData>.Update.Inc("UpvoteCount", num);
             await database.ModelData.UpdateOneAsync(filter, update);
-            int upvoteCount = await GetModelUpvoteCount(id);
+            int upvoteCount = await _upvoteService.GetModelUpvoteCount(id);
             UpvoteTextBlock.Text = upvoteCount.ToString();
-        }
-
-        private async Task SetUserModelVote(string modelId, string userId)
-        {
-            MongoConnection database = new MongoConnection();
-            var findVote = await database.Upvotes.Find(x => x.ModelId == modelId && x.UserId == userId).FirstOrDefaultAsync();
-
-            if (findVote == null)
-            {
-                Upvotes upvote = new Upvotes()
-                {
-                    Id = new ObjectId(), ModelId = modelId, UserId = userId, Vote = 0
-                };
-                await database.Upvotes.InsertOneAsync(upvote);
-            }
-            
-        }
-
-        private async Task UpdateUserModelVote(string modelId, string userId, int vote)
-        {
-            MongoConnection database = new MongoConnection();
-            var filter = Builders<Upvotes>.Filter.And(
-                Builders<Upvotes>.Filter.Eq("ModelId", modelId),
-                            Builders<Upvotes>.Filter.Eq("UserId", userId));
-            var update = Builders<Upvotes>.Update.Set("Vote", vote);
-            await database.Upvotes.UpdateOneAsync(filter, update);
-        }
-        
-        private async Task<int> GetUserModelVote(string modelId, string userId)
-        {
-            MongoConnection database = new MongoConnection();
-            var result = await database.Upvotes.Find(x => x.ModelId == modelId && x.UserId == userId).FirstOrDefaultAsync();
-            if (result == null)
-            {
-                return 0;
-            }
-            else
-            {
-                return result.Vote;
-            }
         }
 
         //Model Visibility
@@ -5825,7 +5883,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             try
             {
                 List<string> tags = new List<string>();
-                ModelData result = await GetModelTags();
+                ModelData result = await _userService.GetModelTags(_selectedItemId);
                 foreach (var tag in result.Tags)
                 {
                     tags.Add(tag);
@@ -5885,104 +5943,66 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             await DisplayTags();
         }
 
-        /*private async Task InitialiseTagsListBox()
-        {
-            try
-            {
-                ModelData result = await GetModelTags();
-                foreach (string tag in result.Tags)
-                {
-                    foreach (CheckBox checkBox in TagsListBox.Items)
-                    {
-                        if (checkBox.Content.ToString() == tag)
-                        {
-                            checkBox.IsChecked = true;
-                        }
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                MessageBox.Show($"Error checking boxes: {e.Message}");
-                throw;
-            }
-        }*/
-        
         private async Task DisplayTags()
         {
-            int i = 0;
+            TagsWrapPanel.Children.Clear(); // Clear all existing children (tags)
+
             List<string> tags = new List<string>();
-            ModelData result = await GetModelTags();
+            ModelData result = await _userService.GetModelTags(_selectedItemId);
+            if (result == null)
+            {
+                return;
+            }
+            
             foreach (var tag in result.Tags)
             {
                 tags.Add(tag);
             }
 
-            if (tags.Count > 0)
+            // Toggle the visibility of NoTagsText based on the tags
+            NoTagsText.Visibility = tags.Count > 0 ? Visibility.Collapsed : Visibility.Visible;
+
+            if (tags.Count == 0)
             {
-                //TagsWrapPanel.Children.Remove(NoTagsText);
-                NoTagsText.Visibility = Visibility.Collapsed;
+                TagsWrapPanel.Children.Add(NoTagsText);
             }
-            else
+
+            foreach (string tagText in tags)
             {
-                NoTagsText.Visibility = Visibility.Visible;
-            }
-            
-            //remove existing displayed tags
-            for (int j = TagsWrapPanel.Children.Count-1; j > -1; j--)
-            {
-                if (TagsWrapPanel.Children[j] is Border border)
+                var tagButton = new Button
                 {
-                    if (border.Child is Button)
-                    {
-                        TagsWrapPanel.Children.RemoveAt(j);
-                    }
-                }
-            }
-            
-            foreach (string Tag in tags)
-            {
-                Button tag = new Button
-                {
-                    Content = Tag,
+                    Content = tagText,
+                    Padding = new Thickness(10, 2, 10, 2),
+                    Margin = new Thickness(3),
                     Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#540754")),
-                    Height = 25,
-                    Width = 50,
-                    Foreground = new SolidColorBrush(Colors.White),
+                    Foreground = Brushes.White,
                     BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#98730C")),
-                    BorderThickness = new Thickness(2)
+                    BorderThickness = new Thickness(2),
+                    FontSize = 12,
+                    FontWeight = FontWeights.SemiBold,
+                    MinWidth = 40,
+                    HorizontalAlignment = HorizontalAlignment.Left
                 };
 
                 var border = new Border
                 {
-                    Background = tag.Background,
-                    BorderBrush = tag.BorderBrush,
-                    BorderThickness = tag.BorderThickness,
-                    CornerRadius = new CornerRadius(2),
-                    Margin = new Thickness(8, 0, 0, 0),
-                    Child = tag,
+                    Background = tagButton.Background,
+                    BorderBrush = tagButton.BorderBrush,
+                    BorderThickness = tagButton.BorderThickness,
+                    CornerRadius = new CornerRadius(3),
+                    Child = tagButton
                 };
-                
-                TagsWrapPanel.Children.Insert(i, border);
-                i++;
+
+                TagsWrapPanel.Children.Add(border);
             }
         }
         
-        private async Task<ModelData> GetModelTags()
+        /*private async Task<ModelData> GetModelTags()
         {
             MongoConnection database = new MongoConnection();
             var result = await database.ModelData.Find(x => x.Id == _selectedItemId).FirstOrDefaultAsync();
             return result;
-        }
-
-        /*private void UncheckTags()
-        {
-            foreach (CheckBox checkBox in TagsListBox.Items)
-            {
-                checkBox.IsChecked = false;
-            }
         }*/
-
         
         //Comments feature
         private async void BtnAddComment_Click(object sender, RoutedEventArgs e)
@@ -6029,12 +6049,12 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         {
             try
             {
-                List<Comment> comments = await GetAllComments(modelId);
+                List<Comment> comments = await _userService.GetAllComments(modelId);
                 List<CommentItem> commentItems = new List<CommentItem>();
 
                 foreach (Comment comment in comments)
                 {
-                    string name = await GetUserName(comment.UserId);
+                    string name = await _userService.GetUserName(comment.UserId);
                     string version = $"V{comment.VersionNumber}";
                     commentItems.Add(new CommentItem {User = name, Content = comment.Content, CreatedDateTime = comment.CreatedDateTime, Version = version});
                 }
@@ -6064,13 +6084,13 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         
         private async void ListNewComment(Comment commentItem)
         {
-            List<Comment> comments = await GetAllComments(_selectedItemId);
+            List<Comment> comments = await _userService.GetAllComments(_selectedItemId);
 
             foreach (Comment comment in comments)
             {
                 if (commentItem.CommentId == comment.CommentId)
                 {
-                    string name = await GetUserName(commentItem.UserId);
+                    string name = await _userService.GetUserName(commentItem.UserId);
                     string version = $"V{comment.VersionNumber}";
                     ListComments.Items.Add(new CommentItem { User = name, Content = comment.Content, CreatedDateTime = comment.CreatedDateTime, Version = version });
                 }
@@ -6081,7 +6101,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         {
             ListComments.Items.Clear();
         }
-        private async Task<List<Comment>> GetAllComments(string assetId)
+        /*private async Task<List<Comment>> GetAllComments(string assetId)
         {
             try
             {
@@ -6094,7 +6114,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 Console.WriteLine($"Error: {e.Message}");
                 throw;
             }
-        }
+        }*/
 
         private void SortByButton_Click(object sender, RoutedEventArgs e)
         {
@@ -6145,48 +6165,11 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             // Populate the comments list
             foreach (Comment comment in sortedComments)
             {
-                string name = await GetUserName(comment.UserId);
+                string name = await _userService.GetUserName(comment.UserId);
                 string version = $"V{comment.VersionNumber}";
                 ListComments.Items.Add(new CommentItem { User = name, Content = comment.Content, CreatedDateTime = comment.CreatedDateTime, Version = version });
             }
         }
-
-
-        //private void SortByComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        //{
-        //    ComboBox comboBox = sender as ComboBox;
-        //    var selectedItem = comboBox.SelectedItem as ComboBoxItem;
-        //    string sortOption = selectedItem.Content.ToString();
-        //    ClearComments();
-        //    SortComments(sortOption, _selectedItemId);
-        //}
-
-        //private async void SortComments(string i, string assetId)
-        //{
-        //    MongoConnection database = new MongoConnection();
-        //    var newest = Builders<Comment>.Sort.Descending(x => x.CreatedDateTime);
-        //    var oldest = Builders<Comment>.Sort.Ascending(x => x.CreatedDateTime);
-
-        //    switch (i)
-        //    {
-        //        case "Newest":
-        //            List<Comment> newestComments = await database.Comments.Find(x => x.AssetId == assetId).Sort(newest).ToListAsync();
-        //            foreach (Comment comment in newestComments)
-        //            {
-        //                string name = await GetUserName(comment.UserId);
-        //                ListComments.Items.Add(new CommentItem { User = name, Content = comment.Content, CreatedDateTime = comment.CreatedDateTime });
-        //            }
-        //            break;
-        //        case "Oldest":
-        //            List<Comment> oldestComments = await database.Comments.Find(x => x.AssetId == assetId).Sort(oldest).ToListAsync();
-        //            foreach (Comment comment in oldestComments)
-        //            {
-        //                string name = await GetUserName(comment.UserId);
-        //                ListComments.Items.Add(new CommentItem { User = name, Content = comment.Content, CreatedDateTime = comment.CreatedDateTime });
-        //            }
-        //            break;
-        //    }
-        //}
 
         private class CommentItem
         {
@@ -6201,11 +6184,14 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         {
             try
             {
-                List<Dictionary<string, string>> allListedModels = await GetAllListedModels();
+                ResizeSidebarThumb.Width = new GridLength(0);
+                List<Dictionary<string, string>> allListedModels = await _userService.GetAllListedModels(_userId);
                 List<Dictionary<string, string>> namesAZ = allListedModels.OrderBy(x => x["Name"]).ToList();
                 MarketplaceDataGrid.ItemsSource = namesAZ;
                 DisplayMarketplaceGrid(namesAZ);
-                ModelsButton.Background = Brushes.Aqua;
+                ModelsButton.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#a32fa3"));
+                DecksButton.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#540754"));
+                _selectedMarketplace = "Models";
             }
             catch (Exception e)
             {
@@ -6217,13 +6203,14 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         private async Task InitializeMarketplaceDecks()
         {
             MarketplaceDataGrid.ItemsSource = null;
-            List<Dictionary<string, string>> allListedDecks = await GetAllListedDecks();
+            List<Dictionary<string, string>> allListedDecks = await _userService.GetAllListedDecks(_userId);
             List<Dictionary<string, string>> namesAZ = allListedDecks.OrderBy(x => x["Name"]).ToList();
             MarketplaceDataGrid.ItemsSource = namesAZ;
             DisplayMarketplaceGrid(namesAZ);
+            _selectedMarketplace = "Decks";
         }
 
-        private async Task<List<Dictionary<string, string>>> GetAllListedModels()
+        /*private async Task<List<Dictionary<string, string>>> GetAllListedModels()
         {
             MongoConnection database = new MongoConnection();
             List<Dictionary<string, string>> allListedModels = new List<Dictionary<string, string>>();
@@ -6231,24 +6218,24 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             foreach (var model in listedModels)
             {
                 bool purchased = await CheckModelPurchased(model.ModelId, _userId);
-                string projectId = await GetModelProjectId(model.ModelId);
-                string sellerName = await GetUserName(model.SellerId);
+                string projectId = await _userService.GetModelProjectId(model.ModelId);
+                string sellerName = await _userService.GetUserName(model.SellerId);
                 allListedModels.Add(new Dictionary<string, string>
                 {
                     { "Name", model.Name },
                     { "Description", model.Description },
                     { "Seller", sellerName },
                     { "Id", model.ModelId },
-                    { "Price", model.Price.ToString("0.00")},
+                    { "Price", $"£{model.Price.ToString("0.00")}"},
                     { "ProjectId", projectId},
                     { "BuyVisibility", purchased ? "Collapsed" : "Visible" },
                     { "PurchasedVisibility", purchased ? "Visible" : "Collapsed" }
                 });
             }
             return allListedModels;
-        }
+        }*/
 
-        private async Task<List<Dictionary<string, string>>> GetAllListedDecks()
+        /*private async Task<List<Dictionary<string, string>>> GetAllListedDecks()
         {
             MongoConnection database = new MongoConnection();
             List<Dictionary<string, string>> allListedDecks = new List<Dictionary<string, string>>();
@@ -6260,14 +6247,16 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             foreach (var deck in decks)
             {
                 bool purchased = await CheckModelPurchased(deck["_id"].ToString(), _userId);
-                string sellerName = await GetUserName(deck["owner_id"].ToString());
+                string sellerName = await _userService.GetUserName(deck["owner_id"].ToString());
+                double amount = double.Parse(deck["price"].ToString());
+                string price = amount.ToString("0.00");
                 allListedDecks.Add(new Dictionary<string, string>
                 {
                     { "Name", deck["name"].ToString() },
                     { "Description",deck["description"].ToString() },
                     { "Seller", sellerName },
                     { "Id", deck["_id"].ToString() },
-                    { "Price", deck["price"].ToString()},
+                    { "Price", $"£{price}"},
                     { "BuyVisibility", purchased ? "Collapsed" : "Visible" },
                     { "PurchasedVisibility", purchased ? "Visible" : "Collapsed" },
                     { "ProjectId", "N/A"}
@@ -6275,13 +6264,18 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             }
             
             return allListedDecks;
-        }
+        }*/
         
         private async void BtnMarketplace_Click(object sender, RoutedEventArgs e)
         {
+            ModelDataSidebar.Width = new GridLength(0);
+            ModelDataSidebarThumb.Width = new GridLength(0);
             MarketplaceBorder.Visibility = Visibility.Visible;
             ProjectsBorder.Visibility = Visibility.Collapsed;
             LibraryBorder.Visibility = Visibility.Collapsed;
+            ModelInfo.Visibility = Visibility.Collapsed;
+            ModelComments.Visibility = Visibility.Collapsed;
+
             await InitializeMarketplace();
         }
         
@@ -6290,18 +6284,19 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             MarketplaceBorder.Visibility = Visibility.Collapsed;
             ProjectsBorder.Visibility = Visibility.Visible;
             LibraryBorder.Visibility = Visibility.Visible;
+            ResizeSidebarThumb.Width = new GridLength(5);
         }
 
         private async void MarketplaceModels_Click(object sender, RoutedEventArgs e)
         {
-            ModelsButton.Background = Brushes.Aqua;
+            ModelsButton.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#a32fa3"));
             DecksButton.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#540754"));
             await InitializeMarketplace();
         }
 
         private async void MarketplaceDecks_Click(object sender, RoutedEventArgs e)
         {
-            DecksButton.Background = Brushes.Aqua;
+            DecksButton.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#a32fa3"));
             ModelsButton.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#540754"));
             await InitializeMarketplaceDecks();
         }
@@ -6346,14 +6341,14 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     return;
                 }
 
-                var modelTags = await GetModelTags();
+                var modelTags = await _userService.GetModelTags(_selectedItemId);
                 List<string> tags = new List<string>();
                 foreach (var tag in modelTags.Tags)
                 {
                     tags.Add(tag);
                 }
-
-                string modelName = await GetModelName(_selectedItemId);
+                DataManagement dataService = new DataManagement();
+                string modelName = await dataService.GetModelName(_selectedItemId);
                 
                 ListedModels models = new ListedModels()
                 {
@@ -6590,7 +6585,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         {
             switch (option)
             {
-                case "Names A-Z":
+                case "Name A-Z":
                     List<Dictionary<string, string>> namesAZ = models.OrderBy(x => x["Name"]).ToList();
                     MarketplaceDataGrid.ItemsSource = namesAZ;
                     DisplayMarketplaceGrid(namesAZ);
@@ -6599,7 +6594,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     List<Dictionary<string, string>> upvotes = new List<Dictionary<string, string>>();
                     foreach (var item in models)
                     {
-                        int upvoteAmount = await GetModelUpvoteCount(item["Id"]);
+                        int upvoteAmount = await _upvoteService.GetModelUpvoteCount(item["Id"]);
                         item.Add("Upvotes", upvoteAmount.ToString());
                         upvotes.Add(item);
                     }
@@ -6656,20 +6651,36 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 bool approved = await _payPalService.CapturePayment(token, payPalAccessToken);
                 if (approved)
                 {
-                    MessageBox.Show($"\u2705 Payment Successful \n Model download");
                     webView.CoreWebView2.Navigate("about:blank");
                     BuyPopup.IsOpen = false;
-                    FileDownloadService fileDownloadService = new FileDownloadService();
-                    await fileDownloadService.DownloadModelAsync(_buyProjectId, _buyItemId);
                     MongoConnection database  = new MongoConnection();
-                    Purchased purchased = new Purchased {ModelId = _buyItemId, UserId = _userId} ;
+                    Purchased purchased = new Purchased { ModelId = _buyItemId, UserId = _userId };
                     await database.Purchased.InsertOneAsync(purchased);
-                    await InitializeMarketplace();
-                    string modelName = await GetModelName(_buyItemId);
-                    string sellerId = await GetModelSeller(_buyItemId);
-                    string message = $"New purchase on {modelName}";
-                    await InsertNotifDB(_buyItemId, message, sellerId);
                     
+                    if (_selectedMarketplace == "Models")
+                    {
+                        MessageBox.Show($"\u2705 Payment Successful \n Model download");
+                        FileDownloadService fileDownloadService = new FileDownloadService();
+                        await fileDownloadService.DownloadModelAsync(_buyProjectId, _buyItemId);
+                        
+                        await InitializeMarketplace();
+                        DataManagement dataService = new DataManagement();
+                        string modelName = await dataService.GetModelName(_buyItemId);
+                      //  string modelName = await GetModelName(_buyItemId);
+                        string sellerId = await _userService.GetModelSeller(_buyItemId);
+                        string message = $"New purchase on {modelName}";
+                        await InsertNotifDB(_buyItemId, message, sellerId);
+                    }
+                    else if (_selectedMarketplace == "Decks")
+                    {
+                        MessageBox.Show($"\u2705 Payment Successful \n Deck Purchased");
+                        await InitializeMarketplaceDecks();
+                        string deckName = await _userService.GetDeckName(_buyItemId);
+                        string deckOwnerId = await _userService.GetDeckOwner(_buyItemId);
+                        string message = $"New purchase on {deckName}";
+                        await _userService.AddDeckToUser(_buyItemId, _userId);
+                        await InsertNotifDB(_buyItemId, message, deckOwnerId);
+                    }
                 }
                 else
                 {
@@ -6690,7 +6701,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         private async Task PayPal(Dictionary<string, string> models)
         {
             _buyItemId = models["Id"];
-            _buyProjectId = await GetModelProjectId(_buyItemId);
+            _buyProjectId = await _userService.GetModelProjectId(_buyItemId);
 
             string amount = models["Price"].Replace("£", "");
             Console.WriteLine($"Price: {amount}");
@@ -6731,29 +6742,70 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             if (e.Key == Key.Enter)
             {
                 MongoConnection database = new MongoConnection();
-                List<ListedModels> result = await database.ListedModels.Find(FilterDefinition<ListedModels>.Empty).ToListAsync();
-        
-                var modelNames = result.Select(x => x.Name).ToList();
-                var topResults = FuzzySharp.Process.ExtractTop(MarketplaceSearchTextBox.Text, modelNames, limit: 3);
-            
-                foreach (var match in topResults)
+
+                if (_selectedMarketplace == "Models")
                 {
-                    var model = result[match.Index];
-                    Console.WriteLine($"{match.Value}: {model.Name}");
-                    if (model != null)
+                    List<ListedModels> result = await database.ListedModels.Find(FilterDefinition<ListedModels>.Empty).ToListAsync();
+
+                    var modelNames = result.Select(x => x.Name).ToList();
+                    var topResults = FuzzySharp.Process.ExtractTop(MarketplaceSearchTextBox.Text, modelNames, limit: 3);
+
+                    foreach (var match in topResults)
                     {
-                        Console.WriteLine($"Found Match: {match.Value}");
-                        string sellerName = await GetUserName(model.SellerId);
-                        string projectId = await GetModelProjectId(model.ModelId);
-                        searchResults.Add(new Dictionary<string, string>
+                        var model = result[match.Index];
+                        Console.WriteLine($"{match.Value}: {model.Name}");
+                        if (model != null)
                         {
-                            { "Name", model.Name },
-                            { "Description", model.Description },
-                            { "Seller", sellerName },
-                            { "Id", model.ModelId },
-                            { "Price" , $"£{model.Price.ToString("0.00")}"} ,
-                            { "ProjectId", projectId}
-                        });
+                            Console.WriteLine($"Found Match: {match.Value}");
+                            string sellerName = await _userService.GetUserName(model.SellerId);
+                            string projectId = await _userService.GetModelProjectId(model.ModelId);
+                            bool purchased = await _userService.CheckModelPurchased(model.ModelId, _userId);
+                            searchResults.Add(new Dictionary<string, string>
+                            {
+                                { "Name", model.Name },
+                                { "Description", model.Description },
+                                { "Seller", sellerName },
+                                { "Id", model.ModelId },
+                                { "Price", $"£{model.Price.ToString("0.00")}" },
+                                { "BuyVisibility", purchased ? "Collapsed" : "Visible" },
+                                { "PurchasedVisibility", purchased ? "Visible" : "Collapsed" },
+                                { "ProjectId", projectId }
+                            });
+                        }
+                    }
+                }
+                else if (_selectedMarketplace == "Decks")
+                {
+                    var collection = database.GetCollection("Decks");
+                    var filter = Builders<BsonDocument>.Filter.Eq("is_listed", true);
+                    var decks = await collection.Find(filter).ToListAsync();
+
+                    var deckNames = decks.Select(x => x["name"].ToString()).ToList();
+                    var topResults = FuzzySharp.Process.ExtractTop(MarketplaceSearchTextBox.Text, deckNames, limit: 3);
+
+                    foreach (var match in topResults)
+                    {
+                        var deck = decks[match.Index];
+                        Console.WriteLine($"{match.Value}: {deck["name"].ToString()}");
+                        if (deck != null)
+                        {
+                            Console.WriteLine($"Found Match: {match.Value}");
+                            bool purchased = await _userService.CheckModelPurchased(deck["_id"].ToString(), _userId);
+                            string sellerName = await _userService.GetUserName(deck["owner_id"].ToString());
+                            double amount = double.Parse(deck["price"].ToString());
+                            string price = amount.ToString("0.00");
+                            searchResults.Add(new Dictionary<string, string>
+                            {
+                                { "Name", deck["name"].ToString() },
+                                { "Description", deck["description"].ToString() },
+                                { "Seller", sellerName },
+                                { "Id", deck["_id"].ToString() },
+                                { "Price", $"£{price}" },
+                                { "BuyVisibility", purchased ? "Collapsed" : "Visible" },
+                                { "PurchasedVisibility", purchased ? "Visible" : "Collapsed" },
+                                { "ProjectId", "N/A" }
+                            });
+                        }
                     }
                 }
             }
@@ -6764,10 +6816,17 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         private async void MarketplaceClearSearch_Click(object sender, MouseButtonEventArgs e)
         {
             MarketplaceSearchTextBox.Text = "";
-            await InitializeMarketplace();
+            if (_selectedMarketplace == "Models")
+            {
+                await InitializeMarketplace();
+            }
+            else if (_selectedMarketplace == "Decks")
+            {
+                await InitializeMarketplaceDecks();
+            }
         }
 
-        private async Task<bool> CheckModelPurchased(string modelId, string userId)
+        /*public async Task<bool> CheckModelPurchased(string modelId, string userId)
         {
             MongoConnection database = new MongoConnection();
             var result = await database.Purchased.Find(x => x.ModelId == modelId && x.UserId == userId).FirstOrDefaultAsync();
@@ -6777,12 +6836,22 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             }
 
             return true;
-        }
+        }*/
         
         //notifs
         private void Bell_Click(object sender, MouseButtonEventArgs e)
         {
-            NotificationsPopup.IsOpen = true;
+            if (NotificationsPopup.IsOpen == true)
+            {
+                NotificationsPopup.IsOpen = false;
+                BellIcon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d1d5db"));
+            }
+            else if (NotificationsPopup.IsOpen == false)
+            {
+                NotificationsPopup.IsOpen = true;
+                BellIcon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#98730c"));
+            }
+            
         }
 
         private static async Task InsertNotifDB(string modelId, string message, string userId)
@@ -6800,7 +6869,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             await database.Notifications.InsertOneAsync(notif);
         }
 
-        private async Task<List<Notifications>> GetPendingNotifications()
+        /*private async Task<List<Notifications>> GetPendingNotifications()
         {
             MongoConnection database = new MongoConnection();
             var result = await database.Notifications.Find(x => x.UserId == _userId && x.Pending == 1).ToListAsync();
@@ -6810,12 +6879,12 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             }
 
             return result;
-        }
+        }*/
 
         private async Task AddNotifsToCentre()
         {
             MongoConnection database = new MongoConnection();
-            List<Notifications> notifs = await GetPendingNotifications();
+            List<Notifications> notifs = await _userService.GetPendingNotifications(_userId);
             foreach (var notif in notifs)
             {
                 NotificationItem item = new NotificationItem{Id = notif.Id.ToString(), Message = notif.Message};
