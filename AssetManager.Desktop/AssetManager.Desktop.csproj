@@ -17,7 +17,9 @@
       <None Remove="Icons\**" />
       <Page Remove="Icons\**" />
     </ItemGroup>
-
+	<ItemGroup>
+		<ProjectReference Include="..\AssetManagement.Infrastructure\AssetManagement.Infrastructure.csproj" />
+	</ItemGroup>
     <ItemGroup>
       <None Remove="Assets\addCardBG.png" />
       <None Remove="Assets\AppIcon.ico" />

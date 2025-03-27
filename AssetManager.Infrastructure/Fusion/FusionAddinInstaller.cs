@@ -209,63 +209,47 @@ namespace AssetManagement.Infrastructure.Fusion
                 string[] pythonDirs = Directory.GetDirectories(fusionPythonBasePath, "Python", SearchOption.AllDirectories);
                 if (pythonDirs.Length == 0)
                 {
-                    Console.WriteLine("⚠️ Warning: Could not find Fusion 360’s Python environment.");
+                    Console.WriteLine("⚠️ Warning: Could not find Fusion 360's Python environment.");
                     return;
                 }
 
-                // Get the Python executable path
-                string pythonExePath = Path.Combine(pythonDirs[0], "python.exe");
+                // Get the site-packages path
+                string sitePackagesPath = Path.Combine(pythonDirs[0], "Lib", "site-packages");
 
-                // 🔹 Step 1: Check if `requests` is already installed
-                ProcessStartInfo checkInfo = new ProcessStartInfo
+                if (!Directory.Exists(sitePackagesPath))
                 {
-                    FileName = pythonExePath,
-                    Arguments = "-c \"import requests\"",
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                };
-
-                using (Process checkProcess = new Process { StartInfo = checkInfo })
-                {
-                    checkProcess.Start();
-                    checkProcess.WaitForExit();
-
-                    if (checkProcess.ExitCode == 0)
-                    {
-                        Console.WriteLine("✅ 'requests' is already installed in Fusion 360’s Python environment.");
-                        return;
-                    }
-                    Console.WriteLine("⚠️ 'requests' is missing. Installing in an isolated environment...");
+                    Directory.CreateDirectory(sitePackagesPath);
                 }
 
-                // 🔹 Step 2: Install `requests` in Fusion 360’s local site-packages (not global)
-                ProcessStartInfo installInfo = new ProcessStartInfo
-                {
-                    FileName = pythonExePath,
-                    Arguments = "-m pip install requests --target \"Lib\\site-packages\"",
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                };
+                // Copy the requests module directly to site-packages
+                string sourceRequestsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "requests");
+                string destinationRequestsPath = Path.Combine(sitePackagesPath, "requests");
 
-                using (Process installProcess = new Process { StartInfo = installInfo })
+                if (Directory.Exists(sourceRequestsPath))
                 {
-                    installProcess.Start();
-                    string output = installProcess.StandardOutput.ReadToEnd();
-                    string error = installProcess.StandardError.ReadToEnd();
-                    installProcess.WaitForExit();
-
-                    Console.WriteLine($"✅ Pip Output: {output}");
-                    if (!string.IsNullOrEmpty(error))
+                    // Delete existing requests folder if it exists
+                    if (Directory.Exists(destinationRequestsPath))
                     {
-                        Console.WriteLine($"⚠️ Pip Error: {error}");
+                        try
+                        {
+                            Directory.Delete(destinationRequestsPath, true);
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"⚠️ Warning: Could not remove existing requests module: {ex.Message}");
+                        }
                     }
+
+                    // Copy requests directory
+                    CopyDirectory(sourceRequestsPath, destinationRequestsPath);
+                    Console.WriteLine($"✅ Copied 'requests' module to: {destinationRequestsPath}");
+                }
+                else
+                {
+                    Console.WriteLine($"⚠️ Warning: 'requests' directory not found at {sourceRequestsPath}");
                 }
 
-                Console.WriteLine("✅ Successfully installed 'requests' in Fusion 360’s local site-packages.");
+                Console.WriteLine("✅ Successfully installed 'requests' module in Fusion 360's site-packages.");
             }
             catch (Exception ex)
             {
