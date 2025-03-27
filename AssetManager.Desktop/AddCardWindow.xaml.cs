@@ -134,8 +134,7 @@ namespace AssetManager.Desktop
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Failed to process the image: {ex.Message}", "Error",
-                                    MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show($"Failed to process the image: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
             }
@@ -143,16 +142,25 @@ namespace AssetManager.Desktop
             if (imageData == null || imageData.Length == 0)
             {
                 MessageBox.Show("An image is required. Please select a local image or use the model's thumbnail.",
-                               "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                                 "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
+            }
+
+            // Assuming the image URL is passed from the model or user input
+            string imageUrl = string.Empty;
+
+            // If the model has a thumbnail URL or if you want to set it as a default URL
+            if (!string.IsNullOrEmpty(localImagePath))
+            {
+                imageUrl = "http://example.com/path/to/your/image.jpg";  // Replace with actual image URL
             }
 
             var createCard = new CreateCard();
 
             try
             {
-                // Pass the binary image data directly
-                createCard.AddNewCard(MainWindow._userId, cardName, description, imageData, modelName, _modelId, _deckId);
+                // Pass the binary image data and the image URL directly
+                createCard.AddNewCard(MainWindow._userId, cardName, description, imageData, modelName, _modelId, _deckId, imageUrl);
 
                 MessageBox.Show("Card added successfully!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
                 this.Close();

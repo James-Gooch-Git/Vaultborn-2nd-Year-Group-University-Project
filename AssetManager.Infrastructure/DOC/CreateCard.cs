@@ -17,7 +17,7 @@ public class CreateCard
     }
 
     public void AddNewCard(string userId, string cardName, string description,
-                               byte[] imageData, string modelName, string modelId, string deckId)
+                            byte[] imageData, string modelName, string modelId, string deckId, string imageUrl)
     {
         try
         {
@@ -29,7 +29,9 @@ public class CreateCard
                     { "model_id", modelId },
                     { "user_id", userId },
                     { "creation_date", DateTime.Now },
-                   { "deck_id", deckId }
+                   { "deck_id", deckId },
+                { "image_url", imageUrl }
+
                 };
 
             // Store the image as binary data, not as a base64 string
