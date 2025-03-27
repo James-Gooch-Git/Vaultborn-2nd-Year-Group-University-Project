@@ -18,7 +18,7 @@ namespace AssetManager.Desktop
         private string _deckId;
         private string cardName;
         private string description;
-        private string imageUrl;
+        private byte[] imageData; // Changed from string to byte[]
         private string modelName;
         private string localImagePath;
 
@@ -29,7 +29,7 @@ namespace AssetManager.Desktop
             InitializeComponent();
             //GetData();
         }
-        
+
 
         private async void GetData()
         {
@@ -55,23 +55,21 @@ namespace AssetManager.Desktop
                 }
 
                 string modelName = model.GetValue("_name", "").AsString;
-                string thumbnailUrl = model.Contains("thumbnail_url") ? model["thumbnail_url"].AsString : null;
-               // string thumbnail_base64 = model.Contains("thumbnail_base64") ? model["thumbnail_base64"].AsString : null;
-                
-              /*  if (string.IsNullOrEmpty(thumbnail_base64))
+                byte[] thumbnailData = model.Contains("thumbnail_data") ? model["thumbnail_data"].AsByteArray : null;
+
+                if (thumbnailData == null || thumbnailData.Length == 0)
                 {
                     MessageBox.Show("No thumbnail available for this model.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    //ImageUrlTextBox.Text = "";
-                }*/
+                }
                 else
                 {
                     ImageUrlTextBox.Text = "Model default thumbnail";
-                    AddThumbnail(thumbnailUrl);
-                    imageUrl = thumbnailUrl;
+                    AddThumbnail(thumbnailData);
+                    imageData = thumbnailData;
                 }
 
                 ModelTextBox.Text = modelName;
-                CardNameTextBox.Text = modelName.Remove(modelName.IndexOf('.'));
+                CardNameTextBox.Text = modelName.Contains(".") ? modelName.Remove(modelName.IndexOf('.')) : modelName;
             }
             catch (Exception ex)
             {
@@ -80,13 +78,11 @@ namespace AssetManager.Desktop
             }
         }
 
-        private void AddThumbnail(string? thumbnailUrl)
+        private void AddThumbnail(byte[] imageBytes)
         {
-
-            // ✅ Convert Base64 thumbnail to image
-            if (!string.IsNullOrEmpty(thumbnailUrl))
+            // ✅ Convert binary thumbnail to image
+            if (imageBytes != null && imageBytes.Length > 0)
             {
-                byte[] imageBytes = thumbnailUrl;
                 BitmapImage bitmap = new BitmapImage();
 
                 using (MemoryStream ms = new MemoryStream(imageBytes))
@@ -101,29 +97,26 @@ namespace AssetManager.Desktop
                 SelectedCardImage.Source = bitmap;
             }
         }
-        
+
         private void BrowseModelsButton_Click(object sender, RoutedEventArgs e)
         {
             SelectModelWindow modelBrowser = new SelectModelWindow();
-    
+
             if (modelBrowser.ShowDialog() == true)
             {
                 // ✅ User selected a model, update AddCardWindow with its details
                 ModelTextBox.Text = modelBrowser.SelectedModelName;
                 _modelId = modelBrowser.SelectedModel;
                 ImageUrlTextBox.Text = " loading . . . ";
-                GetData();            
+                GetData();
             }
         }
-
-        // Modify the SubmitCard_Click method to store the image binary directly
 
         private void SubmitCard_Click(object sender, RoutedEventArgs e)
         {
             cardName = CardNameTextBox.Text;
             description = DescriptionTextBox.Text;
             modelName = ModelTextBox.Text;
-            byte[] imageData = null;
 
             if (string.IsNullOrWhiteSpace(cardName) || string.IsNullOrWhiteSpace(modelName))
             {
@@ -138,9 +131,6 @@ namespace AssetManager.Desktop
                 {
                     // Read the image into a byte array directly
                     imageData = File.ReadAllBytes(localImagePath);
-
-                    // We'll pass this binary data to MongoDB instead of a base64 string
-                    // No need to encode it to base64
                 }
                 catch (Exception ex)
                 {
@@ -149,24 +139,11 @@ namespace AssetManager.Desktop
                     return;
                 }
             }
-            // If we're using the model's thumbnail
-            else if (!string.IsNullOrEmpty(imageUrl))
-            {
-                // The imageUrl might already be binary data from the model's thumbnail
-                // We can pass this through directly if it's already in binary format
-                imageData = imageUrl as byte[];
-            }
-            else
+
+            if (imageData == null || imageData.Length == 0)
             {
                 MessageBox.Show("An image is required. Please select a local image or use the model's thumbnail.",
                                "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            if (imageData == null)
-            {
-                MessageBox.Show("Failed to process the image. Please try again.", "Error",
-                               MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
@@ -174,7 +151,7 @@ namespace AssetManager.Desktop
 
             try
             {
-                // Pass the binary image data directly instead of base64 encoded string
+                // Pass the binary image data directly
                 createCard.AddNewCard(MainWindow._userId, cardName, description, imageData, modelName, _modelId, _deckId);
 
                 MessageBox.Show("Card added successfully!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -191,7 +168,7 @@ namespace AssetManager.Desktop
             string imagePath = LoadImageFromLocalFolder();
             if (!string.IsNullOrEmpty(imagePath))
             {
-                imageUrl = imagePath;
+                localImagePath = imagePath;
                 ImageUrlTextBox.Text = "Local image: " + Path.GetFileName(imagePath);
                 LoadLocalImageToPreview(imagePath);
             }
@@ -231,9 +208,7 @@ namespace AssetManager.Desktop
             {
                 try
                 {
-                    string selectedFilePath = openFileDialog.FileName;
-                    localImagePath = selectedFilePath;
-                    return selectedFilePath;
+                    return openFileDialog.FileName;
                 }
                 catch (Exception ex)
                 {
@@ -263,21 +238,5 @@ namespace AssetManager.Desktop
                 MessageBox.Show($"Error loading image preview: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-/*
-        private string ConvertImageToBase64(string imagePath)
-        {
-            try
-            {
-                byte[] imageBytes = File.ReadAllBytes(imagePath);
-                return Convert.ToBase64String(imageBytes);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error converting image: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return null;
-            }
-        }*/
     }
 }
-
-

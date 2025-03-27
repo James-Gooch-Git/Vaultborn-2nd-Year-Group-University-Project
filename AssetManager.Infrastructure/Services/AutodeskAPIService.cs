@@ -11,12 +11,30 @@ using Autodesk.Forge;
 
 namespace ForgeViewerApp
 {
+ 
     public class AutodeskApiService
     {
-        string ClientId = "eK6vNFNyFAin4PouWXfN00RfePKGZwSqeh6RTcjKAvHAqyOW";
-        string ClientSecret = "EqBJJlqKczzkLfZSJO2cg3BajCxkZGGTGwHWFhn5jrpGSEledCG1deeBVALq734W";
+       
+
+
+        //  string ClientId = "eK6vNFNyFAin4PouWXfN00RfePKGZwSqeh6RTcjKAvHAqyOW";
+        //  string ClientSecret = "EqBJJlqKczzkLfZSJO2cg3BajCxkZGGTGwHWFhn5jrpGSEledCG1deeBVALq734W";
         private readonly HttpClient _client = new HttpClient();
         private readonly TokenService _tokenService;
+        private readonly string ClientId;
+        private readonly string ClientSecret;
+        public AutodeskApiService(TokenService tokenService, string clientId, string clientSecret)
+        {
+            _client = new HttpClient();
+            _tokenService = tokenService;
+            ClientId = clientId;
+            ClientSecret = clientSecret;
+
+            Console.WriteLine("ID: " + ClientId);
+            Console.WriteLine("Secret: " + ClientSecret);
+        }
+
+
 
         public AutodeskApiService(TokenService tokenService)
         {

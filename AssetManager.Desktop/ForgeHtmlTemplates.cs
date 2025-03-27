@@ -417,6 +417,7 @@ public static class ForgeHtmlTemplates
      <button id='skybox4' class='skyboxButton'>Floating Island Skybox</button>
      <button id='skybox5' class='skyboxButton'>War Torn Skybox</button>
      <button id='skybox6' class='skyboxButton'>Pirate Skybox</button>
+<button id='skybox7' class='skyboxButton'>High Quality Skybox</button>
      <button id='noSkybox' class='skyboxButton'>No Skybox</button>
      <button id='snapshotButton' class='skyboxButton'>Take Snapshot</button>
      <button id='toggleLogs' class='skyboxButton'>Show Logs</button>
@@ -501,6 +502,14 @@ class SkyboxExtension extends Autodesk.Viewing.Extension {{
     'https://my-skybox-images.s3.eu-north-1.amazonaws.com/pirate+ny+(1).png',
     'https://my-skybox-images.s3.eu-north-1.amazonaws.com/pirate+pz+(1).png',
     'https://my-skybox-images.s3.eu-north-1.amazonaws.com/pirate+nz+(1).png'
+  ],
+  highquality: [
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/StandardCubeMap_px.png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/StandardCubeMap_nx.png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/StandardCubeMap_py.png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/StandardCubeMap_ny.png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/StandardCubeMap_pz.png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/StandardCubeMap_nz.png'
   ]
 
         }};
@@ -887,6 +896,14 @@ document.getElementById('toggleLogs').addEventListener('click', function() {{
     }} else {{
         logDiv.style.display = 'none';
         this.textContent = 'Show Logs';
+    }}
+}});
+document.getElementById('skybox7').addEventListener('click', function() {{
+    log('High Quality skybox button clicked');
+    if (skyboxExt) {{
+        skyboxExt.setSkybox('highquality');
+    }} else {{
+        log('Skybox extension not available yet');
     }}
 }});
 
