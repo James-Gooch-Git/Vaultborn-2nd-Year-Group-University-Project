@@ -361,39 +361,71 @@ namespace AssetManager.Desktop
         
         private async void View3DButton_Click(object sender, RoutedEventArgs e)
         {
-            if (_selectedCard  == null)
+            if (_selectedCard == null)
             {
                 MessageBox.Show("3D model unavailable for this card.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
-            var filter = Builders<BsonDocument>.Filter.Eq("_id", ObjectId.Parse(_selectedCardId));
-            var selectedCardData = _cardsCollection.Find(filter).FirstOrDefault();
+
+            if (string.IsNullOrEmpty(_selectedCardId))
+            {
+                MessageBox.Show("No card is selected.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            // Find the selected card in the cards collection
+            var cardFilter = Builders<BsonDocument>.Filter.Eq("_id", ObjectId.Parse(_selectedCardId));
+            var selectedCardData = _cardsCollection.Find(cardFilter).FirstOrDefault();
 
             if (selectedCardData == null)
             {
                 MessageBox.Show("Card data not found in database.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
-            
+
+            // Ensure the card has a model_id
             if (!selectedCardData.Contains("model_id") || selectedCardData["model_id"].IsBsonNull)
             {
                 MessageBox.Show("This card does not have an associated 3D model.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
-            
-            string selectedItemId = _selectedCard["item_id"].ToString();
 
-            // Get reference to MainWindow
-            if (Application.Current.MainWindow is MainWindow mainWindow)
-            {
-                await mainWindow.ViewModelInEmbeddedViewerAsync(selectedItemId);
-            }
-            else
-            {
-                MessageBox.Show("Main window not accessible.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+            string selectedItemModelId = selectedCardData["model_id"].ToString();
+
+            var mongo = new MongoConnection();
+            IMongoCollection<BsonDocument> _modelDataCollection = mongo.GetCollection("ModelData");
             
-            string modelUrn = selectedCardData["model_id"].ToString();
+            // Now search the ModelData collection for the _folderId using selectedItemModelId
+            var modelFilter = Builders<BsonDocument>.Filter.Eq("_id", ObjectId.Parse(selectedItemModelId));
+            var selectedModelData = _modelDataCollection.Find(modelFilter).FirstOrDefault();
+
+            if (selectedModelData == null || !selectedModelData.Contains("_folderId") || selectedModelData["_folderId"].IsBsonNull)
+            {
+                MessageBox.Show("Project ID (_folderId) not found for this model.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            string projectFolderId = selectedModelData["_folderId"].ToString();
+
+            // Find the MainWindow instance
+            MainWindow? mainWindow = Application.Current.Windows.OfType<MainWindow>().FirstOrDefault();
+
+            if (mainWindow == null)
+            {
+                MessageBox.Show("MainWindow is not open, opening a new instance.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
+                mainWindow = new MainWindow();
+                mainWindow.Show();
+            }
+
+            // Ensure we're passing the correct ID
+            MessageBox.Show($"Opening model with project ID: {projectFolderId}");
+
+            // Call BtnViewInApp_Click with _folderId instead of model_id
+            
+            // Ensure the function is being called
+            MessageBox.Show($"Calling BtnViewInApp_Click with model ID: {selectedItemModelId}");
+            mainWindow.BtnViewInApp_Click(selectedItemModelId, selectedItemModelId, 0);
+
             
         }
 

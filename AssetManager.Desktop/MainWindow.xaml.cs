@@ -3773,7 +3773,7 @@ namespace AssetManager.Desktop
                  versionSlider.Visibility = Visibility.Visible;
              }*/
 
-        private async void BtnViewInApp_Click(string selectedItemId)
+        public async void BtnViewInApp_Click(string selectedItemId)
         {
             try
             {
@@ -3849,62 +3849,84 @@ namespace AssetManager.Desktop
                 Console.WriteLine($"❌ Exception: {ex.Message}\n{ex.StackTrace}");
             }
         }
-        public async Task BtnViewInApp_Click(string selectedItemId, string selectedVersionId)
+        
+        // view in app FROM DECK OF CARDS 
+        public async Task BtnViewInApp_Click(string selectedItemId, string selectedProjectId, int num)
         {
             try
             {
-                // Track last visible view type
+                // ✅ Track the last active view
                 if (ModelsDataGrid.Visibility == Visibility.Visible)
+                {
                     _lastViewType = ViewType.List;
+                }
                 else if (Grid_View.Visibility == Visibility.Visible)
+                {
                     _lastViewType = ViewType.Grid;
+                }
 
-                // Show the Forge Viewer, hide other UI elements
                 ModelsDataGrid.Visibility = Visibility.Collapsed;
                 Grid_View.Visibility = Visibility.Collapsed;
                 ForgeViewerContainer.Visibility = Visibility.Visible;
                 ForgeWebView.Visibility = Visibility.Visible;
 
-                // Get objectId from version
-                var fileService = new FileDownloadService();
-                string objectId = await fileService.GetStorageIdFromVersion(_selectedProjectId, selectedVersionId);
+                Console.WriteLine($"View in App button clicked. Returning to: {_lastViewType} view after closing.");
+                Console.WriteLine($"- Selected Item ID: {_selectedItemId}");
+                Console.WriteLine($"- Selected Project ID: {_selectedProjectId}");
+                Console.WriteLine($"- Storage ID: {_objectId}");
 
-                if (string.IsNullOrEmpty(objectId))
+                _selectedItemId = selectedItemId;
+                _selectedProjectId = selectedProjectId;
+                
+                if (string.IsNullOrEmpty(_selectedItemId) || string.IsNullOrEmpty(_selectedProjectId))
                 {
-                    MessageBox.Show("Could not retrieve model information from version.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show("❌ Please select a model before viewing.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
-                _objectId = objectId; // store globally if needed later
-                string encodedUrn = EncodeObjectIdToUrn(objectId);
+                string objectId = _objectId;
 
+                if (string.IsNullOrEmpty(objectId))
+                {
+                    Console.WriteLine("🔍 Storage ID not set globally, fetching now...");
+                    var fileService = new FileDownloadService();
+                    objectId = await fileService.GetStorageIdFromItem(_selectedProjectId, _selectedItemId);
+                    if (string.IsNullOrEmpty(objectId))
+                    {
+                        MessageBox.Show("Could not retrieve model information.", "Model Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        return;
+                    }
+
+                    _objectId = objectId;
+                }
+
+                string encodedUrn = EncodeObjectIdToUrn(objectId);
                 if (string.IsNullOrEmpty(encodedUrn))
                 {
                     MessageBox.Show("Failed to process model identifier.", "Processing Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
-                // Initialize ForgeViewerService
-                var viewerService = new ForgeViewerService(_accessToken);
+                Console.WriteLine($"✅ Encoded URN: {encodedUrn}");
 
-                // Generate viewer HTML
+                var viewerService = new ForgeViewerService(_accessToken);
                 string? html = await viewerService.GetModelViewerHtmlAsync(encodedUrn);
+
                 if (string.IsNullOrEmpty(html))
                 {
-                    VersionError.IsOpen = true; // If you use a custom popup instead of MessageBox
+                    MessageBox.Show("❌ Failed to generate Forge Viewer HTML.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
-                // Load into WebView
                 await LoadHtmlIntoForgeWebViewAsync(html);
 
-                // Show versioning controls (if needed)
+                int numberOfVersions = await GetNumberOfVersions();
+                GenerateMarkers();
                 VersionSlider.Visibility = Visibility.Visible;
-                VersionsSelectButton.Visibility = Visibility.Visible;
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error loading model: {ex.Message}", "Viewer Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"❌ Error loading model: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 Console.WriteLine($"❌ Exception: {ex.Message}\n{ex.StackTrace}");
             }
         }
@@ -3929,11 +3951,89 @@ namespace AssetManager.Desktop
             VersionSlider.Visibility = Visibility.Visible;
             VersionsSelectButton.Visibility = Visibility.Visible;
         }
-
-
         //In app viewer for different versions
      
 
+        public async void BtnViewInApp_Click(string selectedItemId)
+        {
+            try
+            {
+                // ✅ Track the last active view
+                if (ModelsDataGrid.Visibility == Visibility.Visible)
+                {
+                    _lastViewType = ViewType.List;
+                }
+                else if (Grid_View.Visibility == Visibility.Visible)
+                {
+                    _lastViewType = ViewType.Grid;
+                }
+
+                ModelsDataGrid.Visibility = Visibility.Collapsed;
+                Grid_View.Visibility = Visibility.Collapsed;
+                ForgeViewerContainer.Visibility = Visibility.Visible;
+                ForgeWebView.Visibility = Visibility.Visible;
+
+                _selectedItemId = selectedItemId;
+                _selectedProjectId = projectId;
+
+                Console.WriteLine($"View in App button clicked. Returning to: {_lastViewType} view after closing.");
+                Console.WriteLine($"- Selected Item ID: {_selectedItemId}");
+                Console.WriteLine($"- Selected Project ID: {_selectedProjectId}");
+                Console.WriteLine($"- Storage ID: {_objectId}");
+
+                if (string.IsNullOrEmpty(_selectedItemId) || string.IsNullOrEmpty(_selectedProjectId))
+                {
+                    MessageBox.Show("❌ Please select a model before viewing.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                string objectId = _objectId;
+
+                if (string.IsNullOrEmpty(objectId))
+                {
+                    Console.WriteLine("🔍 Storage ID not set globally, fetching now...");
+                    var fileService = new FileDownloadService();
+                    objectId = await fileService.GetStorageIdFromItem(_selectedProjectId, _selectedItemId);
+                    if (string.IsNullOrEmpty(objectId))
+                    {
+                        MessageBox.Show("Could not retrieve model information.", "Model Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        return;
+                    }
+
+                    _objectId = objectId;
+                }
+
+                string encodedUrn = EncodeObjectIdToUrn(objectId);
+                if (string.IsNullOrEmpty(encodedUrn))
+                {
+                    MessageBox.Show("Failed to process model identifier.", "Processing Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                Console.WriteLine($"✅ Encoded URN: {encodedUrn}");
+
+                var viewerService = new ForgeViewerService(_accessToken);
+                string? html = await viewerService.GetModelViewerHtmlAsync(encodedUrn);
+
+                if (string.IsNullOrEmpty(html))
+                {
+                    MessageBox.Show("❌ Failed to generate Forge Viewer HTML.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                await LoadHtmlIntoForgeWebViewAsync(html);
+
+                int numberOfVersions = await GetNumberOfVersions();
+                GenerateMarkers();
+                VersionSlider.Visibility = Visibility.Visible;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"❌ Error loading model: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                Console.WriteLine($"❌ Exception: {ex.Message}\n{ex.StackTrace}");
+            }
+        }
+        
         private void Btn_CloseViewer_Click(object sender, RoutedEventArgs e)
         {
             // Hide the Forge Viewer
@@ -7182,6 +7282,71 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             dv.Show();
         }
 
+        private async void ModelsDataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (ModelsDataGrid.SelectedItem != null)
+            {
+                if (ModelsDataGrid.SelectedItem is Dictionary<string, string> model)
+                {
+                    _selectedModel = model;
+
+                    Console.WriteLine("Selection changed - Selected item data:");
+                    foreach (var kvp in model)
+                    {
+                        Console.WriteLine($"Key: {kvp.Key}, Value: {kvp.Value}");
+                    }
+
+                    if (model.TryGetValue("Id", out string modelId) || model.TryGetValue("id", out modelId))
+                    {
+                        _selectedItemId = modelId;
+                        Console.WriteLine($"✅ Set selected item ID: {_selectedItemId}");
+                    }
+                    else
+                    {
+                        _selectedItemId = null;
+                        Console.WriteLine("❌ Model ID missing in selection.");
+                    }
+
+                    _selectedItemName = model.ContainsKey("Name") ? model["Name"] :
+                                       (model.ContainsKey("name") ? model["name"] : "Unknown");
+
+                    if (model.TryGetValue("ProjectId", out string projectId) || model.TryGetValue("projectId", out projectId))
+                    {
+                        _selectedProjectId = projectId;
+                        Console.WriteLine($"✅ Set selected project ID: {_selectedProjectId}");
+                    }
+
+                    _selectedProjectName = model.ContainsKey("Project") ? model["Project"] :
+                                          (model.ContainsKey("project") ? model["project"] : _selectedProjectName);
+
+                    Console.WriteLine($"✅ Selected Model: {_selectedItemName} (ID: {_selectedItemId}, Project ID: {_selectedProjectId})");
+
+                    await FetchAndSetStorageId();
+
+                    if (ModelsDataGrid.CurrentColumn.Header.ToString() != "Actions" && ModelsDataGrid.CurrentColumn.Header.ToString() != "Versions")
+                    {
+                        await LoadModelData();
+                    }
+
+                }
+                else if (ModelsDataGrid.SelectedItem != null)
+                {
+                    Console.WriteLine($"❌ Selected item is not a Dictionary<string, string> but a {ModelsDataGrid.SelectedItem.GetType().Name}");
+                }
+                else
+                {
+                    Console.WriteLine("❌ No item selected in DataGrid");
+                }
+
+                var args = new MouseButtonEventArgs(Mouse.PrimaryDevice, 0, MouseButton.Left)
+                {
+                    RoutedEvent = UIElement.MouseLeftButtonDownEvent
+                };
+                
+                CloseSidebar_Click(null, args);
+                BtnViewInApp_Click(_selectedItemId);
+            }
+        }
     }
 }
 
