@@ -115,8 +115,8 @@
             HorizontalAlignment="Center"
             VerticalAlignment="Center"
             Margin="60,0,40,0"
-            Height="260"
-            Width="180">
+            Height="280"
+            Width="200">
 
         <Grid Margin="15">
             <Grid.RowDefinitions>
