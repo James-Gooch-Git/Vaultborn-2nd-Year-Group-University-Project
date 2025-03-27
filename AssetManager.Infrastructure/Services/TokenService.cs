@@ -14,8 +14,8 @@ public class TokenService
     private readonly HttpClient _httpClient;
     private const string _tokenUrl = "https://developer.api.autodesk.com/authentication/v2/token";
     private readonly string _redirectUri = "http://localhost:8080/callback";
-    private readonly string _clientId;
-    private readonly string _clientSecret;
+    private static string ClientId = "eK6vNFNyFAin4PouWXfN00RfePKGZwSqeh6RTcjKAvHAqyOW";
+    private static string ClientSecret = "EqBJJlqKczzkLfZSJO2cg3BajCxkZGGTGwHWFhn5jrpGSEledCG1deeBVALq734W";
 
 
     public TokenService()
@@ -29,8 +29,8 @@ public class TokenService
     public TokenService(string clientId, string clientSecret)
     {
         _httpClient = new HttpClient();
-        _clientId = clientId;
-        _clientSecret = clientSecret;
+        ClientId = clientId;
+        ClientSecret = clientSecret;
 
         Console.WriteLine($"🔐 TokenService using injected client ID and secret");
     }
