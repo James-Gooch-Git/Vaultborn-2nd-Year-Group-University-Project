@@ -19,12 +19,12 @@ namespace AssetManager.Desktop
 {
     public partial class DeckView : Window
     {
-        private readonly IMongoCollection<BsonDocument> _cardsCollection;
-        private readonly IMongoCollection<BsonDocument> _decksCollection;
+        private IMongoCollection<BsonDocument> _cardsCollection;
+        private IMongoCollection<BsonDocument> _decksCollection;
         private readonly string _userId = MainWindow._userId;
         private BsonDocument _selectedCard;
         private string _selectedCardId;
-        private string _deckId; 
+        private string _deckId;
 
         public DeckView()
         {
@@ -46,6 +46,10 @@ namespace AssetManager.Desktop
 
         private async Task LoadUserDecks()
         {
+            var mongo = new MongoConnection();
+            _decksCollection = mongo.GetCollection("Decks");
+            var usersCollection = mongo.GetCollection("Users");
+
             try
             {
                 if (string.IsNullOrEmpty(_userId))
@@ -54,9 +58,34 @@ namespace AssetManager.Desktop
                     return;
                 }
 
-                // Query decks that belong to the logged-in user
-                var filter = Builders<BsonDocument>.Filter.Eq("owner_id", _userId);
-                var userDecks = await _decksCollection.Find(filter).ToListAsync();
+                // Fetch user's purchased/downloaded decks from Users collection
+                var userFilter = Builders<BsonDocument>.Filter.Eq("_id", _userId);
+                var userDoc = await usersCollection.Find(userFilter).FirstOrDefaultAsync();
+
+                List<ObjectId> accessibleDeckIds = new();
+
+                if (userDoc != null && userDoc.Contains("decks"))
+                {
+                    foreach (var deckIdStr in userDoc["decks"].AsBsonArray.Select(d => d.ToString()))
+                    {
+                        if (ObjectId.TryParse(deckIdStr, out ObjectId deckId))
+                        {
+                            accessibleDeckIds.Add(deckId);
+                        }
+                        else
+                        {
+                            Console.WriteLine($"Invalid ObjectId: {deckIdStr}");
+                        }
+                    }
+                }
+
+                // Query decks: owned by the user OR in the user's "decks" array
+                var deckFilter = Builders<BsonDocument>.Filter.Or(
+                    Builders<BsonDocument>.Filter.Eq("owner_id", _userId),
+                    Builders<BsonDocument>.Filter.In("_id", accessibleDeckIds)
+                );
+
+                var userDecks = await _decksCollection.Find(deckFilter).ToListAsync();
 
                 // Ensure UI updates on the main thread
                 Dispatcher.Invoke(() =>
@@ -182,6 +211,10 @@ namespace AssetManager.Desktop
 
                 foreach (var card in cardList)
                 {
+                    var mongo = new MongoConnection();
+                    _decksCollection = mongo.GetCollection("Decks");
+                    _cardsCollection = mongo.GetCollection("Cards");
+                    
                     string cardName = card["name"].ToString();
                     string cardId = card["_id"].ToString();
                     string cardImageUrl = card["snapshot_url"].ToString();
@@ -210,11 +243,15 @@ namespace AssetManager.Desktop
                     // Handle card click event
                     cardControl.MouseDown += (s, e) =>
                     {
+                        // var mongo = new MongoConnection();
+                        // _decksCollection = mongo.GetCollection("Decks");
+                        // _cardsCollection = mongo.GetCollection("Cards");
+                        
                         var statsValue = card.GetValue("stats", new BsonDocument());
                         BsonDocument stats = statsValue.IsBsonDocument ? statsValue.AsBsonDocument : new BsonDocument();
                         //_selectedCard = stats;
                         _selectedCardId = cardId;
-                        Console.WriteLine("\n\nCard id ==" +  cardId);
+                        Console.WriteLine("Card id ==" +  cardId);
                         DisplaySelectedCard(cardName, imageUrlSource, cardDescription, stats);
                     };
 
@@ -291,6 +328,7 @@ namespace AssetManager.Desktop
 
         private void DisplaySelectedCard(string name, ImageSource imageSource, string description, BsonDocument stats)
         {
+            
             _selectedCard = stats; // Store the selected card for later use
 
             // Set the card name in the nameplate
@@ -319,17 +357,6 @@ namespace AssetManager.Desktop
                 
                 SelectedCardStatsPanel.Children.Add(statText);
             }
-            
-            // + Add stats
-            SelectedCardStatsPanel.Children.Add(new TextBlock
-            {
-                Style = (Style)FindResource("StatsTextStyle"),
-                Text = $"+ Add Stats for {name}",
-                FontSize = 10,
-                Margin = new Thickness(0, 2, 0, 2)
-            });
-
-            
         }
         
         private async void View3DButton_Click(object sender, RoutedEventArgs e)
@@ -458,32 +485,10 @@ namespace AssetManager.Desktop
 
         private async void ListOnMarketplace_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(_deckId))
-            {
-                MessageBox.Show("Error: No deck selected.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            try
-            {
-                var filter = Builders<BsonDocument>.Filter.Eq("_id", ObjectId.Parse(_deckId));
-                var update = Builders<BsonDocument>.Update.Set("is_listed", true);
-
-                var result = await _decksCollection.UpdateOneAsync(filter, update);
-
-                if (result.ModifiedCount > 0)
-                {
-                    MessageBox.Show("Deck successfully listed on the marketplace!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-                else
-                {
-                    MessageBox.Show("Error: Deck listing failed. It may already be listed.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error updating deck: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+            Console.WriteLine("Clicked on marketplace button");
+            ListDeckPrompt listPrompt = new ListDeckPrompt(_deckId, _decksCollection);
+            listPrompt.Owner = this;
+            listPrompt.Show();
         }
         
         private async void NewDeck_Click(object sender, RoutedEventArgs e)
@@ -499,6 +504,60 @@ namespace AssetManager.Desktop
             }
         }
 
+
+        private async void AddStats_Click(object sender, RoutedEventArgs e)
+        {
+            var statName = Microsoft.VisualBasic.Interaction.InputBox("Enter stat name:", "Add Stat", "");
+            var statValue = Microsoft.VisualBasic.Interaction.InputBox($"Enter value for {statName}:", "Add Stat", "");
+
+            // Ensure both name and value are provided
+            if (!string.IsNullOrWhiteSpace(statName) && !string.IsNullOrWhiteSpace(statValue))
+            {
+                if (_decksCollection != null && _deckId != null && _selectedCard != null)
+                {
+                    TextBlock statText = new TextBlock
+                    {
+                        Text = $"{statName}: {statValue}",
+                        FontSize = 14,
+                        Margin = new Thickness(0, 2, 0, 2)
+                    };
+                    statText.Style = (Style)FindResource("StatsTextStyle");
+                    SelectedCardStatsPanel.Children.Add(statText);
+
+                    // Upload stat to MongoDB
+                    await UploadStatToMongo(statName, statValue);
+                }
+                else
+                {
+                    MessageBox.Show("Please select a deck and card", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            else
+            {
+                MessageBox.Show("PLease fill all fields", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            
+        }
         
+        private async Task UploadStatToMongo(string statName, string statValue)
+        {
+            try
+            {
+                var filter = Builders<BsonDocument>.Filter.Eq("_id", ObjectId.Parse(_selectedCardId));
+                var update = Builders<BsonDocument>.Update.Set($"stats.{statName}", statValue);
+
+                var result = await _cardsCollection.UpdateOneAsync(filter, update);
+
+                if (result.ModifiedCount > 0)
+                    Console.WriteLine($"Updated {statName} to {statValue} successfully.");
+                else
+                    Console.WriteLine("No matching card found or no changes made.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error updating card: {ex.Message}");
+            }
+            LoadDeckCards(_deckId);
+        }
     }
 }

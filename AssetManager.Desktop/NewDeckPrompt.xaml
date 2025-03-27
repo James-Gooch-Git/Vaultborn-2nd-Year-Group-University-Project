@@ -3,7 +3,20 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="New Deck" Height="250" Width="400" ResizeMode="NoResize" WindowStartupLocation="CenterOwner">
 
+    <Window.Resources>
+        
+        <!-- Fantasy-themed styles -->
+        <LinearGradientBrush x:Key="BackgroundBrush" StartPoint="0,0" EndPoint="0,1">
+            <GradientStop Color="#1E0A30" Offset="0"/>
+            <GradientStop Color="#261447" Offset="1"/>
+        </LinearGradientBrush>
+    </Window.Resources>
+        
     <Grid Margin="20">
+        <Grid.Background>  
+            <ImageBrush ImageSource="pack://application:,,,/Assets/addCardBG.png"></ImageBrush>  
+        </Grid.Background> 
+        
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
