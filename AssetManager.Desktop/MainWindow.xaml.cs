@@ -1714,9 +1714,12 @@ namespace AssetManager.Desktop
             if (sender is TreeViewItem item && item.Tag is (string projectId, string folderId, bool isFolder))
             {
                 // Add the current folder/item to the dictionary
-                itemLookup[folderId] = item;
+                if (!itemLookup.ContainsKey(folderId)) // Prevent overwriting if it already exists
+                {
+                    itemLookup[folderId] = item;
+                }
 
-                // Check if it's the first time the item is expanded
+                // Check if it's the first time the item is expanded (and has no subitems yet)
                 if (item.Items.Count == 1 && item.Items[0] == null)
                 {
                     item.Items.Clear();
@@ -1725,7 +1728,7 @@ namespace AssetManager.Desktop
 
                     if (items == null || !items.Any())
                     {
-                        item.Items.Add(new TreeViewItem { Header = "❌ No items found" });
+                        item.Items.Add(new TreeViewItem { Header = "Empty" });
                         return;
                     }
 
@@ -1749,17 +1752,25 @@ namespace AssetManager.Desktop
                             ContextMenu = CreateContextMenu(projectId, itemId, isFolderItem)
                         };
 
+                        // Add the item to the dictionary (either folder or file)
+                        if (!itemLookup.ContainsKey(itemId)) // Prevent overwriting if it already exists
+                        {
+                            itemLookup[itemId] = fileItem;
+                        }
+
                         // If it's a folder, load subfolders
                         if (isFolderItem)
                         {
                             await LoadSubfoldersAsync(fileItem, projectId, itemId);
                         }
 
+                        // Add the newly created item to the current folder
                         item.Items.Add(fileItem);
                     }
                 }
             }
         }
+
 
 
 
@@ -1781,14 +1792,18 @@ namespace AssetManager.Desktop
 
                 if (subItems == null || subItems.Count == 0)
                 {
-                    parentFolder.Items.Add(new TreeViewItem { Header = "No subfolders found", IsEnabled = false });
+                    parentFolder.Items.Add(new TreeViewItem { Header = "Empty", IsEnabled = false });
                     return;
                 }
 
                 foreach (var (subItemId, subItemName, isSubFolder) in subItems)
                 {
                     if (string.IsNullOrEmpty(subItemId) || string.IsNullOrEmpty(subItemName))
+                    {
+                        // Log invalid subitems but continue processing others
+                        Debug.WriteLine($"⚠️ Skipping invalid subitem: {subItemId} / {subItemName}");
                         continue;
+                    }
 
                     bool is3DModel = false;
 
@@ -1809,6 +1824,9 @@ namespace AssetManager.Desktop
 
                     // Add the subfolder to the dictionary for future reference
                     itemLookup[subItemId] = subItem;
+
+                    // Log the item added to the dictionary for debugging
+                    Debug.WriteLine($"Added {subItemName} (ID: {subItemId}) to dictionary.");
 
                     if (isSubFolder)
                     {
@@ -1844,6 +1862,7 @@ namespace AssetManager.Desktop
                 MessageBox.Show($"Error loading subfolders: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
 
 
 
@@ -1917,7 +1936,11 @@ namespace AssetManager.Desktop
             ContextMenu currentMenu = ContextMenuService.GetContextMenu(ProjectTreeView);
             if (currentMenu != null) currentMenu.IsEnabled = false;
 
+            MessageBox.Show($"BRUH \n projectid: {projectId} \n parent folder id: {parentFolderId} \n foldername: {folderName}");
+
             string folderId = await DataManagement.CreateNewFolder(projectId, parentFolderId, folderName);
+
+            MessageBox.Show(folderId);
 
             if (currentMenu != null) currentMenu.IsEnabled = true;
 
@@ -1927,14 +1950,12 @@ namespace AssetManager.Desktop
                 return null;
             }
 
-            MessageBox.Show($"Successfully added new folder to Hub\n Project id: {projectId} \n Parent folder ID: {parentFolderId}");
-
             // Fetch the parent item directly from the dictionary
             if (itemLookup.TryGetValue(parentFolderId, out TreeViewItem parentItem))
             {
                 // Remove the "empty folder" message if it exists
                 var emptyFolderItem = parentItem.Items.OfType<TreeViewItem>()
-                    .FirstOrDefault(item => item.Header.ToString() == "📂 This folder is empty");
+                    .FirstOrDefault(item => item.Header.ToString() == "Empty");
 
                 if (emptyFolderItem != null)
                 {
@@ -1954,6 +1975,8 @@ namespace AssetManager.Desktop
         }
 
 
+
+
         private async Task AddNewFolderToTreeView(TreeViewItem parentItem, string projectId, string folderId, string folderName)
         {
             // Create the new folder TreeViewItem
@@ -1968,7 +1991,7 @@ namespace AssetManager.Desktop
             parentItem.Items.Add(newFolderItem);
 
             // Add "empty" item to indicate the folder is empty
-            newFolderItem.Items.Add(new TreeViewItem { Header = "📂 This folder is empty", IsEnabled = false });
+            newFolderItem.Items.Add(new TreeViewItem { Header = "Empty", IsEnabled = false });
 
             // Add the new folder item to the dictionary for future access
             itemLookup[folderId] = newFolderItem;
@@ -2003,11 +2026,6 @@ namespace AssetManager.Desktop
         //}
 
 
-
-
-
-
-
         #endregion
 
 
@@ -2020,21 +2038,37 @@ namespace AssetManager.Desktop
                 return;
             }
 
-            var parentFolder = await DataManagement.GetTopLevelFolder(selectedHubID, _selectedProjectId);
+            var itemId = await DataManagement.GetTopLevelFolder(selectedHubID, _selectedProjectId);
 
-            if (parentFolder.Equals(default) || string.IsNullOrWhiteSpace(parentFolder.FolderId) || string.IsNullOrWhiteSpace(parentFolder.FolderName))
+            await ExpandManuallyAsync(itemId.FolderId);
+
+            MessageBox.Show(itemId.FolderId);
+
+            string newFolderId = await CreateNewFolder(_selectedProjectId, itemId.FolderId);
+            if (string.IsNullOrEmpty(newFolderId))
             {
-                MessageBox.Show("Failed to retrieve the top-level folder. Please try again later.");
-                return;
+                MessageBox.Show("Failed to create the new folder. Please try again.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
-
-
-
-            var parentFolderId = parentFolder.FolderId;
-
-            // Proceed with creating a new folder
-            await CreateNewFolder(_selectedProjectId, parentFolderId, true);
+            else
+            {
+                MessageBox.Show($"New folder created successfully with ID: {newFolderId}", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
         }
+
+        private async Task ExpandManuallyAsync(string folderId)
+        {
+            if (itemLookup.TryGetValue(folderId, out TreeViewItem item))
+            {
+                // Manually trigger the expanded event
+                TreeViewItem_Expanded(item, new RoutedEventArgs());
+                MessageBox.Show("YESSS");
+            }
+            else
+            {
+                Debug.WriteLine($"❌ Folder {folderId} not found in dictionary.");
+            }
+        }
+
 
         //private async Task ExpandFolderByProjectId(string projectId)
         //{
