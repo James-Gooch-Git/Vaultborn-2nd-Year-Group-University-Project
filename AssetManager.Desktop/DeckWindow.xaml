@@ -253,7 +253,7 @@
                 <StackPanel Orientation="Horizontal"
                             HorizontalAlignment="Center"
                             VerticalAlignment="Bottom"
-                            Margin="16,0,0,60"
+                            Margin="16,0,0,70"
                             Panel.ZIndex="5">
 
                     <!-- View in 3D Button -->
