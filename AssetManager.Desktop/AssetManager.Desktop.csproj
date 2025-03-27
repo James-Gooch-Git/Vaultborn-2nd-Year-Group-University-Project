@@ -38,6 +38,8 @@
       <None Remove="Assets\Button3DarkerBlueLastRowHover.png" />
       <None Remove="Assets\Button3DarkerBlueLastRowHoverAlternate.png" />
       <None Remove="Assets\Button3Purple.png" />
+      <None Remove="Assets\buttongold.png" />
+      <None Remove="Assets\CityMarket.png" />
       <None Remove="Assets\Fantasy-background-login.png" />
       <None Remove="Assets\Fantasy-login2.png" />
       <None Remove="Assets\Fantasy-login3.png" />
@@ -45,6 +47,7 @@
       <None Remove="Assets\ImportAssets.png" />
       <None Remove="Assets\jaygooch_00588_httpss.mj.runm-ZWW3ly4Vw_fantasy_app_backgroun_5f00f8cd-ba81-461f-b766-07f3606f9eae_0.png" />
       <None Remove="Assets\jaygooch_00588_Rectangular_metallic_button_Weathered_teal-blu_bb98eef2-55af-4214-84d9-1985d08977bf_3.png" />
+      <None Remove="Assets\Marketplace.png" />
       <None Remove="Assets\MarketPlaceButton.png" />
       <None Remove="Assets\MiddleButton2.png" />
       <None Remove="Assets\MiddleButton2Hover.png" />
@@ -56,6 +59,7 @@
       <None Remove="Icons2\dwfx_icon.svg" />
       <None Remove="Icons2\fbx_icon.svg" />
       <None Remove="Icons2\folder_icon.svg" />
+      <None Remove="Icons2\folder_icon5.svg" />
       <None Remove="Icons2\glb_icon.svg" />
       <None Remove="Icons2\gltf_icon.svg" />
       <None Remove="Icons2\iam_icon.svg" />
@@ -98,6 +102,12 @@
       <Content Include="Assets\AppIcon4.png">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </Content>
+      <Content Include="Assets\buttongold.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <Content Include="Assets\Marketplace.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
       <Resource Include="Assets\BlendedButton.png" />
       <Resource Include="Assets\BlendedButtonHover.png" />
       <Resource Include="Assets\Button3.png">
@@ -132,12 +142,16 @@
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </Content>
       <None Remove="Assets\mainBackground.png" />
+      <Content Include="Assets\CityMarket.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
       <Resource Include="Assets\mainBackground.png" />
       <None Remove="Assets\newbackground.png" />
       <Resource Include="Assets\newbackground.png" />
     </ItemGroup>
 
     <ItemGroup>
+      <PackageReference Include="AWSSDK.SecretsManager" Version="3.7.400.121" />
       <PackageReference Include="FuzzySharp" Version="2.0.2" />
       <PackageReference Include="IdentityModel.OidcClient" Version="6.0.0" />
       <PackageReference Include="MaterialDesignThemes" Version="5.2.1" />
@@ -195,6 +209,9 @@
         <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       </Resource>
       <Resource Include="Icons2\folder_icon.svg">
+        <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      </Resource>
+      <Resource Include="Icons2\folder_icon5.svg">
         <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       </Resource>
       <Resource Include="Icons2\glb_icon.svg">

@@ -17,6 +17,7 @@ public class TokenService
     private static string ClientId = "eK6vNFNyFAin4PouWXfN00RfePKGZwSqeh6RTcjKAvHAqyOW";
     private static string ClientSecret = "EqBJJlqKczzkLfZSJO2cg3BajCxkZGGTGwHWFhn5jrpGSEledCG1deeBVALq734W";
 
+
     public TokenService()
     {
         _httpClient = new HttpClient();
@@ -25,7 +26,14 @@ public class TokenService
         // Debug info
         Console.WriteLine($"?? Using APS Authentication V2 endpoint: {_tokenUrl}");
     }
+    public TokenService(string clientId, string clientSecret)
+    {
+        _httpClient = new HttpClient();
+        ClientId = clientId;
+        ClientSecret = clientSecret;
 
+        Console.WriteLine($"🔐 TokenService using injected client ID and secret");
+    }
     /*    // Updated to v2 endpoint
         private readonly string _tokenUrl = "https://developer.api.autodesk.com/authentication/v2/token";*/
 

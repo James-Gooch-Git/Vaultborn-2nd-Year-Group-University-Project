@@ -32,44 +32,54 @@ public static class ForgeHtmlTemplates
                               <button id='nextPage' class='pageButton'>→</button>
                           </span>
                           <span id='pageLabel'>Page 1 of 1</span>
-                          <button id='toggleLog' style='margin-left: 20px;'>Hide Logs</button>
+                          <button id='toggleLog' style='margin-left: 20px;'>Show Logs</button>
                       </div>
                       <div id='forgeViewer'></div>
                       <div id='log'></div>
 
                       <script>
                           // Debug logging function
-                          function log(message) {{
-                              console.log(message);
-                              var logDiv = document.getElementById('log');
-                              var date = new Date();
-                              var timestamp = date.getHours() + ':' + date.getMinutes() + ':' + date.getSeconds() + '.' + date.getMilliseconds();
-                              var formattedMsg = '[' + timestamp + '] ' + (typeof message === 'object' ? JSON.stringify(message) : message);
-      
-                              var line = document.createElement('div');
-                              line.textContent = formattedMsg;
-                              logDiv.appendChild(line);
-                              logDiv.scrollTop = logDiv.scrollHeight;
-                          }}
-                     
+                        function log(message) {{
+                        console.log(message);
+                        var logDiv = document.getElementById('log');
+                        if (!logDiv) return; // Ensure logDiv exists before appending
 
-                          document.getElementById('toggleLog').addEventListener('click', function() {{
-                              var logDiv = document.getElementById('log');
-                              if (logDiv.style.display === 'none') {{
-                                  logDiv.style.display = 'block';
-                                  this.textContent = 'Hide Logs';
-                              }} else {{
-                                  logDiv.style.display = 'none';
-                                  this.textContent = 'Show Logs';
-                              }}
-                          }});
+                        var date = new Date();
+                        var timestamp = date.getHours() + ':' + 
+                                        String(date.getMinutes()).padStart(2, '0') + ':' + 
+                                        String(date.getSeconds()).padStart(2, '0') + '.' + 
+                                        String(date.getMilliseconds()).padStart(3, '0');
 
-                          log('Script started');
-  
-                          // Handle any errors
-                          window.addEventListener('error', function(event) {{
-                              log('ERROR: ' + event.message + ' at ' + event.filename + ':' + event.lineno);
-                          }});
+                        var formattedMsg = '[' + timestamp + '] ' + 
+                                           (typeof message === 'object' ? JSON.stringify(message) : message);
+    
+                        var line = document.createElement('div');
+                        line.textContent = formattedMsg;
+                        logDiv.appendChild(line);
+                        logDiv.scrollTop = logDiv.scrollHeight;
+                    }}
+
+                    document.addEventListener('DOMContentLoaded', function() {{
+                        var logDiv = document.getElementById('log');
+                        if (logDiv) logDiv.style.display = 'none'; // Ensure log starts hidden
+
+                        document.getElementById('toggleLog').addEventListener('click', function() {{
+                            if (logDiv.style.display === 'none' || logDiv.style.display === '') {{
+                                logDiv.style.display = 'block';
+                                this.textContent = 'Hide Logs';
+                            }} else {{
+                                logDiv.style.display = 'none';
+                                this.textContent = 'Show Logs';
+                            }}
+                        }});
+
+                        log('Script started');
+                    }});
+
+                    // Handle any errors
+                    window.addEventListener('error', function(event) {{
+                        log('ERROR: ' + event.message + ' at ' + event.filename + ':' + event.lineno);
+                    }});
 
                           var viewer;
                           var doc;
@@ -417,6 +427,7 @@ public static class ForgeHtmlTemplates
      <button id='skybox4' class='skyboxButton'>Floating Island Skybox</button>
      <button id='skybox5' class='skyboxButton'>War Torn Skybox</button>
      <button id='skybox6' class='skyboxButton'>Pirate Skybox</button>
+<button id='skybox7' class='skyboxButton'>High Quality Skybox</button>
      <button id='noSkybox' class='skyboxButton'>No Skybox</button>
      <button id='snapshotButton' class='skyboxButton'>Take Snapshot</button>
      <button id='toggleLogs' class='skyboxButton'>Show Logs</button>
@@ -501,6 +512,14 @@ class SkyboxExtension extends Autodesk.Viewing.Extension {{
     'https://my-skybox-images.s3.eu-north-1.amazonaws.com/pirate+ny+(1).png',
     'https://my-skybox-images.s3.eu-north-1.amazonaws.com/pirate+pz+(1).png',
     'https://my-skybox-images.s3.eu-north-1.amazonaws.com/pirate+nz+(1).png'
+  ],
+  highquality: [
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/StandardCubeMap_px.png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/StandardCubeMap_nx.png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/StandardCubeMap_py.png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/StandardCubeMap_ny.png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/StandardCubeMap_pz.png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/StandardCubeMap_nz.png'
   ]
 
         }};
@@ -889,6 +908,14 @@ document.getElementById('toggleLogs').addEventListener('click', function() {{
         this.textContent = 'Show Logs';
     }}
 }});
+document.getElementById('skybox7').addEventListener('click', function() {{
+    log('High Quality skybox button clicked');
+    if (skyboxExt) {{
+        skyboxExt.setSkybox('highquality');
+    }} else {{
+        log('Skybox extension not available yet');
+    }}
+}});
 
 // Add snapshot button handler
 document.getElementById('snapshotButton').addEventListener('click', function() {{
@@ -896,12 +923,15 @@ document.getElementById('snapshotButton').addEventListener('click', function() {
     if (viewer) {{
         try {{
             // Use Forge Viewer's built-in screenshot capability
-            viewer.getScreenShot(viewer.container.clientWidth, viewer.container.clientHeight, function(blobUrl) {{
-                log('Screenshot captured');
-                
-                // Create a temporary link element to trigger download
-                var link = document.createElement('a');
-                link.href = blobUrl;
+            viewer.getScreenShot(
+                Math.round((33 * 96) / 25.4),  // Width in pixels (33mm)
+                Math.round((45 * 96) / 25.4),  // Height in pixels (45mm)
+                function(blobUrl) {{
+                    log('Screenshot captured');
+                    
+                    // Create a temporary link element to trigger download
+                    var link = document.createElement('a');
+                    link.href = blobUrl;
                 
                 // Generate a filename with current date/time
                 var date = new Date();

@@ -3,7 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Fantasy Card Preview"
         WindowStartupLocation="CenterScreen"
-        Width="500" Height="350">
+        Width="500" Height="350"
+        ResizeMode="NoResize">
     
     <Window.Resources>
         
@@ -47,43 +48,49 @@
                     </Style>
                 </StackPanel.Resources>
                 
-                <TextBlock Text="Card Name:" FontWeight="Bold" Margin="0,15, 0, 0"/>
-                <TextBox x:Name="CardNameTextBox" Margin="0,0, 30, 10" Background="AntiqueWhite"/>
+                <StackPanel MinWidth="250" MaxWidth="250">
+                    <TextBlock Text="Card Name:" FontWeight="Bold" Margin="0,15, 0, 0"/>
+                    <TextBox x:Name="CardNameTextBox" Margin="0,0, 30, 10" Background="AntiqueWhite" 
+                             BorderThickness="0" Width="210" HorizontalAlignment="Left"/>
 
-                <TextBlock Text="3D Model:" FontWeight="Bold" />
-                <StackPanel Orientation="Horizontal" Margin="0, 0, 0, 10">
-                    <TextBlock x:Name="ModelTextBox" Margin="0,0, 0, 10" Background="AntiqueWhite" Foreground="DimGray" Width="190"/>
-                    <Border BorderThickness="0" BorderBrush="AntiqueWhite" Height="16" VerticalAlignment="Top">
-                        <Button Content="📁" 
-                                FontSize="10"
-                                Width="20" Height="23"
-                                Margin="0,0,0,0"
-                                Background="AntiqueWhite"
-                                HorizontalAlignment="Center"
-                                VerticalAlignment="Center"
-                                Click="BrowseModelsButton_Click"/>
-                    </Border>
-
+                    <TextBlock Text="3D Model:" FontWeight="Bold" />
+                    <StackPanel Orientation="Horizontal" Margin="0, 0, 0, 10">
+                        <TextBlock x:Name="ModelTextBox" Margin="0,0, 0, 10" Background="AntiqueWhite" Foreground="DimGray" Width="190"/>
+                        <Border BorderThickness="0" BorderBrush="AntiqueWhite" Height="16" VerticalAlignment="Top">
+                            <Button Content="📁" 
+                                    FontSize="10"
+                                    Width="20" Height="23"
+                                    Margin="0,0,0,0"
+                                    Background="AntiqueWhite"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    ToolTip="Select model from Fusion"
+                                    Click="BrowseModelsButton_Click"/>
+                        </Border>
+                    </StackPanel>
+                    
+                    <TextBlock Text="Image URL:" FontWeight="Bold"/>
+                    <StackPanel Orientation="Horizontal" Margin="0, 0, 0, 10">
+                        <TextBox x:Name="ImageUrlTextBox" Margin="0,0, 0, 10" Background="AntiqueWhite" Width="190" BorderThickness="0"/>
+                        <Border BorderThickness="0" BorderBrush="AntiqueWhite" Height="16" VerticalAlignment="Top">
+                            <Button Content="📷" 
+                                    FontSize="10"
+                                    Width="20" Height="23"
+                                    Margin="0,0,0,0"
+                                    Background="AntiqueWhite"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    ToolTip="Load image from local folder"
+                                    Click="LoadLocalImageButton_Click"/>
+                        </Border>
+                    </StackPanel>
+                    <TextBlock Text="Description:" FontWeight="Bold"/>
+                    <TextBox x:Name="DescriptionTextBox" Margin="0,0, 0, 0" Background="AntiqueWhite" Width="210"
+                             Height="40" BorderThickness="0" HorizontalAlignment="Left"/>
                 </StackPanel>
                 
-                <TextBlock Text="Image URL:" FontWeight="Bold"/>
-                <TextBox x:Name="ImageUrlTextBox" Margin="0,0, 30, 10" Background="AntiqueWhite"/>
-                <Border BorderThickness="0" BorderBrush="AntiqueWhite" Height="23" VerticalAlignment="Top">
-                    <Button Content="📷" 
-                                FontSize="10"
-                                Width="20" Height="23"
-                                Margin="5,0,0,0"
-                                Background="AntiqueWhite"
-                                HorizontalAlignment="Center"
-                                VerticalAlignment="Center"
-                                ToolTip="Load image from local folder"
-                                Click="LoadLocalImageButton_Click"/>
-                </Border>
-                <TextBlock Text="Description:" FontWeight="Bold"/>
-                <TextBox x:Name="DescriptionTextBox" Margin="0,0, 30, 0" Background="AntiqueWhite" Height="40"/>
-
                 <Button Content="Add Card" Click="SubmitCard_Click" 
-                        Margin="10,20,10,0" Background="CadetBlue" Foreground="White" Width="60"/>
+                        Margin="10,20,10,0" Background="#540754" Foreground="White" Width="60"/>
             </StackPanel>
         </Grid>
     </Grid>

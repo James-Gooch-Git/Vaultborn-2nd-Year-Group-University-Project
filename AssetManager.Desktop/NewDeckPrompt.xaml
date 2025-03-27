@@ -3,7 +3,20 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="New Deck" Height="250" Width="400" ResizeMode="NoResize" WindowStartupLocation="CenterOwner">
 
-    <Grid Margin="20">
+    <Window.Resources>
+        
+        <!-- Fantasy-themed styles -->
+        <LinearGradientBrush x:Key="BackgroundBrush" StartPoint="0,0" EndPoint="0,1">
+            <GradientStop Color="#1E0A30" Offset="0"/>
+            <GradientStop Color="#261447" Offset="1"/>
+        </LinearGradientBrush>
+    </Window.Resources>
+        
+    <Grid>
+        <Grid.Background>  
+            <ImageBrush ImageSource="pack://application:,,,/Assets/addCardBG.png"></ImageBrush>  
+        </Grid.Background> 
+        
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -23,9 +36,11 @@
                    Margin="0,0,0,10"/>
 
         <!-- Deck Name Input -->
+        <TextBlock>"Enter deck name..."
+        </TextBlock>
         <TextBox x:Name="DeckNameBox"
-                 Text="Enter deck name..."
                  FontSize="14"
+                 Width="200"
                  Margin="0,5,0,5"
                  Grid.Row="1"/>
 
@@ -33,7 +48,8 @@
         <TextBox x:Name="DeckDescriptionBox"
                  Text="Enter deck description..."
                  FontSize="14"
-                 Height="80"
+                 Width="200"
+                 Height="90"
                  TextWrapping="Wrap"
                  AcceptsReturn="True"
                  VerticalScrollBarVisibility="Auto"
@@ -42,7 +58,7 @@
 
         <!-- Buttons -->
         <StackPanel Orientation="Horizontal"
-                    HorizontalAlignment="Right"
+                    HorizontalAlignment="Center"
                     Grid.Row="3">
             <Button Content="Cancel"
                     Width="80"

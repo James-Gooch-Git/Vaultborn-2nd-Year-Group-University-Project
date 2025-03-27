@@ -233,9 +233,9 @@ namespace AssetManagement.Infrastructure.Services
 
             // 🚀 Step 3: Create the folder since it doesn't exist
             Console.WriteLine($"🆕 Creating folder '{folderName}' under {parentFolderId}...");
-            bool folderCreated = await DataManagement.CreateNewFolder(projectID, parentFolderId, folderName);
+            string folderId = await DataManagement.CreateNewFolder(projectID, parentFolderId, folderName);
 
-            if (!folderCreated)
+            if (folderId == null)
             {
                 Console.WriteLine($"❌ Failed to create folder '{folderName}' in Autodesk.");
                 return null;
