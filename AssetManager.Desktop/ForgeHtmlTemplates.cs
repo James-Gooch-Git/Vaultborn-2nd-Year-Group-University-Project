@@ -1,4 +1,6 @@
-﻿public static class ForgeHtmlTemplates
+﻿using System.Windows.Automation.Text;
+
+public static class ForgeHtmlTemplates
 {
     public static string GetPdfViewerHtml(string encodedUrn, string accessToken)
     {
@@ -385,7 +387,7 @@
                   </html>";
     }
 
-    public static string GetModelViewerHtml(string encodedUrn, string accessToken)
+    public static string GetModelViewerHtml2(string encodedUrn, string accessToken)
     {
         
         return $@"
@@ -406,14 +408,17 @@
     </style>
 </head>
 <body>
-    <div id='skyboxControls'>
-        <button id='skybox1' class='skyboxButton'>Space Skybox</button>
-        <button id='skybox2' class='skyboxButton'>Sunset Skybox</button>
-        <button id='skybox3' class='skyboxButton'>Volcano Skybox</button>
-        <button id='noSkybox' class='skyboxButton'>No Skybox</button>
-        <button id='setScene' class='skyboxButton'>Set Camera + BG</button>
-        <button id='toggleLogs' class='skyboxButton'>Show Logs</button>
-    </div>
+<div id='skyboxControls'>
+     <button id='skybox1' class='skyboxButton'>Castle Skybox</button>
+     <button id='skybox2' class='skyboxButton'>Dwarven Skybox</button>
+     <button id='skybox3' class='skyboxButton'>Elven Skybox</button>
+     <button id='skybox4' class='skyboxButton'>Floating Island Skybox</button>
+     <button id='skybox5' class='skyboxButton'>War Torn Skybox</button>
+     <button id='skybox6' class='skyboxButton'>Pirate Skybox</button>
+     <button id='noSkybox' class='skyboxButton'>No Skybox</button>
+    
+     <button id='toggleLogs' class='skyboxButton'>Show Logs</button>
+</div>
     <div id='forgeViewer'></div>
     <div id='debug'></div>
 
@@ -432,30 +437,55 @@
                 super(viewer, options);
                 this.viewer = viewer;
                 this.skyboxes = {{
-                    space: [
-                        'https://firebasestorage.googleapis.com/v0/b/skybox-test-a3ffd.appspot.com/o/space%2Fright.png?alt=media',
-                        'https://firebasestorage.googleapis.com/v0/b/skybox-test-a3ffd.appspot.com/o/space%2Fleft.png?alt=media',
-                        'https://firebasestorage.googleapis.com/v0/b/skybox-test-a3ffd.appspot.com/o/space%2Ftop.png?alt=media',
-                        'https://firebasestorage.googleapis.com/v0/b/skybox-test-a3ffd.appspot.com/o/space%2Fbottom.png?alt=media',
-                        'https://firebasestorage.googleapis.com/v0/b/skybox-test-a3ffd.appspot.com/o/space%2Ffront.png?alt=media',
-                        'https://firebasestorage.googleapis.com/v0/b/skybox-test-a3ffd.appspot.com/o/space%2Fback.png?alt=media'
-                    ],
-                    sunset: [
-                        'https://firebasestorage.googleapis.com/v0/b/skybox-test-a3ffd.appspot.com/o/sunset%2Fright.png?alt=media',
-                        'https://firebasestorage.googleapis.com/v0/b/skybox-test-a3ffd.appspot.com/o/sunset%2Fleft.png?alt=media',
-                        'https://firebasestorage.googleapis.com/v0/b/skybox-test-a3ffd.appspot.com/o/sunset%2Ftop.png?alt=media',
-                        'https://firebasestorage.googleapis.com/v0/b/skybox-test-a3ffd.appspot.com/o/sunset%2Fbottom.png?alt=media',
-                        'https://firebasestorage.googleapis.com/v0/b/skybox-test-a3ffd.appspot.com/o/sunset%2Ffront.png?alt=media',
-                        'https://firebasestorage.googleapis.com/v0/b/skybox-test-a3ffd.appspot.com/o/sunset%2Fback.png?alt=media'
-                    ],
-                    volcano: [
-                        'https://my-skybox-images.s3.eu-north-1.amazonaws.com/px.png',
-                        'https://my-skybox-images.s3.eu-north-1.amazonaws.com/nx.png',
-                        'https://my-skybox-images.s3.eu-north-1.amazonaws.com/py.png',
-                        'https://my-skybox-images.s3.eu-north-1.amazonaws.com/ny.png',
-                        'https://my-skybox-images.s3.eu-north-1.amazonaws.com/pz.png',
-                        'https://my-skybox-images.s3.eu-north-1.amazonaws.com/nz.png'
-                    ]
+                   castle: [
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/px.png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/nx.png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/py.png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/ny.png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/pz.png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/nz.png'
+  ],
+  dwarven: [
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/dwarven+px+(1).png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/dwarven+nx+(1).png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/dwarven+py+(1).png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/dwarven+ny+(1).png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/dwarven+pz+(1).png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/dwarven+nz+(1).png'
+  ],
+  elven: [
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/elven+px+(1).png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/elven+nx+(1).png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/elven+py+(1).png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/elven+ny+(1).png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/elven+pz+(1).png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/elven+nz+(1).png'
+  ],
+  floatingIsland: [
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/floating+island+px+(1).png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/floating+island+nx+(1).png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/floating+island+py+(1).png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/floating+island+ny+(1).png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/floating+island+pz+(1).png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/floating+island+nz+(1).png'
+  ],
+  warTorn: [
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/war+torn+px+(1).png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/war+torn+nx+(1).png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/war+torn+py+(1).png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/war+torn+ny+(1).png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/war+torn+pz+(1).png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/war+torn+nz+(1).png'
+  ],
+  pirate: [
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/pirate+px+(1).png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/pirate+nx+(1).png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/pirate+py+(1).png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/pirate+ny+(1).png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/pirate+pz+(1).png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/pirate+nz+(1).png'
+  ]
+
                 }};
             }}
 
@@ -519,9 +549,12 @@
         }};
         var documentId = 'urn:{encodedUrn}';
 
-        document.getElementById('skybox1').onclick = () => skyboxExt && skyboxExt.setSkybox('space');
-        document.getElementById('skybox2').onclick = () => skyboxExt && skyboxExt.setSkybox('sunset');
-        document.getElementById('skybox3').onclick = () => skyboxExt && skyboxExt.setSkybox('volcano');
+       document.getElementById('skybox1').onclick = () => skyboxExt && skyboxExt.setSkybox('castle');
+document.getElementById('skybox2').onclick = () => skyboxExt && skyboxExt.setSkybox('dwarven');
+document.getElementById('skybox3').onclick = () => skyboxExt && skyboxExt.setSkybox('elven');
+document.getElementById('skybox4').onclick = () => skyboxExt && skyboxExt.setSkybox('floatingIsland');
+document.getElementById('skybox5').onclick = () => skyboxExt && skyboxExt.setSkybox('warTorn');
+document.getElementById('skybox6').onclick = () => skyboxExt && skyboxExt.setSkybox('pirate');
         document.getElementById('noSkybox').onclick = () => {{
             skyboxExt?.unload();
             debug('Skybox cleared');
@@ -529,31 +562,43 @@
 document.getElementById('setScene').onclick = () => {{
     if (!viewer) return;
 
-    const THREE = Autodesk.Viewing.Private.THREE;
+    // Load DataViz extension safely
+    viewer.loadExtension('Autodesk.DataVisualization').then(datavizExt => {{
+        const THREE = Autodesk.Viewing.Private.THREE; // <-- get it *after* extension loaded
+        const SpriteStyle = Autodesk.DataVisualization.Core.SpriteStyle;
+        const SpriteViewable = Autodesk.DataVisualization.Core.SpriteViewable;
+        const ViewableData = Autodesk.DataVisualization.Core.ViewableData;
 
-    // Camera setup
-    const position = new THREE.Vector3(20, 15, 20); // camera position
-    const target = new THREE.Vector3(0, 0, 0);      // look-at target
-    viewer.navigation.setView(position, target);
-    debug('Camera set to custom view.');
+        // Set camera view
+        const position = new THREE.Vector3(20, 15, 20);
+        const target = new THREE.Vector3(0, 0, 0);
+        viewer.navigation.setView(position, target);
+        debug('Camera set to custom view.');
 
-    // Load texture
-    const loader = new THREE.TextureLoader();
-    loader.setCrossOrigin('anonymous');
-    loader.load('https://my-skybox-images.s3.eu-north-1.amazonaws.com/jaygooch_00588_magical_castle_dnd_artwork_--v_6.1_247bd40c-b633-4955-8744-359909b4d7c8_3.png', function(texture) {{
-        const geometry = new THREE.PlaneGeometry(30, 20); // width, height
-        const material = new THREE.MeshBasicMaterial({{ map: texture, side: THREE.DoubleSide }});
-        const plane = new THREE.Mesh(geometry, material);
+        // Remove existing sprites
+        datavizExt.removeAllViewables();
 
-        plane.position.set(0, 10, -30); // place behind the model
-        plane.name = 'CustomBackgroundPlane';
+        // Create sprite style
+        const spriteStyle = new SpriteStyle(""castle-sprite"")
+            .setImageUrl(""https://my-skybox-images.s3.eu-north-1.amazonaws.com/jaygooch_00588_magical_castle_dnd_artwork_--v_6.1_247bd40c-b633-4955-8744-359909b4d7c8_3.png"")
+            .setWidth(60)
+            .setHeight(40);
 
-        viewer.impl.scene.add(plane);
-        viewer.impl.invalidate(true, true, true);
+        // Create sprite
+        const sprite = new SpriteViewable(
+            new THREE.Vector3(0, 15, -80), // position behind model
+            spriteStyle,
+            {{ id: ""background-sprite"" }}
+        );
 
-        debug('Image plane added to viewer.');
-    }}, undefined, function(err) {{
-        debug('Failed to load image.');
+        const viewableData = new ViewableData();
+        viewableData.addViewable(sprite);
+        viewableData.finish().then(() => {{
+            datavizExt.addViewables(viewableData);
+            debug('Sprite background added.');
+        }});
+    }}).catch(err => {{
+        debug('Failed to load DataViz extension: ' + err);
     }});
 }};
 
@@ -588,4 +633,746 @@ document.getElementById('setScene').onclick = () => {{
 </body>
 </html>";
     }
+
+    public static string GetEnhancedModelViewer(string encodedUrn, string accessToken)
+    {
+        return $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='UTF-8'>
+    <meta http-equiv='X-UA-Compatible' content='IE=Edge' />
+    <title>Forge Viewer with Simple Background</title>
+    <script src='https://developer.api.autodesk.com/modelderivative/v2/viewers/7.*/viewer3D.js'></script>
+    <link rel='stylesheet' href='https://developer.api.autodesk.com/modelderivative/v2/viewers/7.*/style.css' type='text/css'>
+    <style>
+        html, body {{ margin: 0; padding: 0; height: 100%; overflow: hidden; }}
+        #forgeViewer {{ width: 100%; height: 100vh; position: relative; }}
+        #backgroundImage {{ 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            z-index: -1; 
+            object-fit: cover;
+            opacity: 0.8;
+            display: none;
+        }}
+        #backgroundControls {{ 
+            position: absolute; 
+            top: 10px; 
+            right: 10px; 
+            background: rgba(255,255,255,0.9); 
+            padding: 10px; 
+            border-radius: 5px; 
+            z-index: 1000; 
+            display: none;
+        }}
+        .bgButton {{ margin: 3px; padding: 5px 10px; cursor: pointer; width: 150px; }}
+        #toggleControls {{ 
+            position: absolute; 
+            top: 10px; 
+            right: 10px; 
+            background: rgba(255,255,255,0.9);
+            padding: 10px; 
+            border-radius: 5px; 
+            z-index: 1001;
+        }}
+        #debug {{ position: fixed; bottom: 0; left: 0; right: 0; height: 100px; background: rgba(0,0,0,0.7); color: #0f0; font-family: monospace; overflow-y: auto; display: none; z-index: 1000; }}
+    </style>
+</head>
+<body>
+    <div id='forgeViewer'>
+        <img id='backgroundImage' src='' alt='Background' />
+    </div>
+    
+    <div id='toggleControls'>
+        <button id='toggleBgControls'>Show Background Options</button>
+    </div>
+    
+    <div id='backgroundControls'>
+        <div style='margin-bottom: 10px;'>
+            <strong>Background Images:</strong>
+            <button class='bgButton' data-img='https://firebasestorage.googleapis.com/v0/b/skybox-test-a3ffd.appspot.com/o/space%2Ffront.png?alt=media'>Space</button>
+            <button class='bgButton' data-img='https://firebasestorage.googleapis.com/v0/b/skybox-test-a3ffd.appspot.com/o/sunset%2Ffront.png?alt=media'>Sunset</button>
+            <button class='bgButton' data-img='https://my-skybox-images.s3.eu-north-1.amazonaws.com/px.png'>Volcano</button>
+            <button class='bgButton' data-img='https://my-skybox-images.s3.eu-north-1.amazonaws.com/jaygooch_00588_magical_castle_dnd_artwork_--v_6.1_247bd40c-b633-4955-8744-359909b4d7c8_3.png'>Castle</button>
+            <button class='bgButton' data-img='none'>No Background</button>
+        </div>
+        <div style='margin-bottom: 10px;'>
+            <strong>Lighting Presets:</strong>
+            <button class='presetButton' data-preset='0'>Preset 0</button>
+            <button class='presetButton' data-preset='1'>Default</button>
+            <button class='presetButton' data-preset='5'>Preset 5</button>
+            <button class='presetButton' data-preset='8'>Night</button>
+        </div>
+        <button id='toggleLogs' class='bgButton'>Show Debug Logs</button>
+    </div>
+    
+    <div id='debug'></div>
+
+    <script>
+        function debug(msg) {{
+            console.log(msg);
+            var d = document.getElementById('debug');
+            var line = document.createElement('div');
+            line.textContent = new Date().toTimeString().substr(0, 8) + ' - ' + msg;
+            d.appendChild(line);
+            d.scrollTop = d.scrollHeight;
+        }}
+
+        var viewer;
+        var options = {{
+            env: 'AutodeskProduction',
+            api: 'derivativeV2',
+            getAccessToken: function(onTokenReady) {{
+                onTokenReady('{accessToken}', 3599);
+            }}
+        }};
+        var documentId = 'urn:{encodedUrn}';
+        
+        // Set background image using the HTML img element
+        function setBackgroundImage(imgUrl) {{
+            try {{
+                var bgImg = document.getElementById('backgroundImage');
+                
+                if (imgUrl === 'none') {{
+                    bgImg.style.display = 'none';
+                    debug('Background image hidden');
+                    return;
+                }}
+                
+                bgImg.src = imgUrl;
+                bgImg.style.display = 'block';
+                debug('Background image set: ' + imgUrl);
+            }} catch (e) {{
+                debug('Error setting background: ' + e.message);
+            }}
+        }}
+        
+        // Set the lighting preset
+        function setLightPreset(presetId) {{
+            try {{
+                if (!viewer) return;
+                
+                // Cast to number
+                presetId = parseInt(presetId);
+                
+                // Apply preset
+                viewer.setLightPreset(presetId);
+                debug('Applied light preset: ' + presetId);
+                
+                // Force redraw
+                viewer.impl.invalidate(true, true, true);
+            }} catch (e) {{
+                debug('Error setting light preset: ' + e.message);
+            }}
+        }}
+
+        // Initialize the viewer
+        Autodesk.Viewing.Initializer(options, function() {{
+            debug('Initializing viewer...');
+            
+            // Create viewer with transparent background
+            const config = {{
+                transparent: true
+            }};
+            viewer = new Autodesk.Viewing.GuiViewer3D(document.getElementById('forgeViewer'), config);
+            viewer.start();
+            
+            // Load the model
+            debug('Loading document: ' + documentId);
+            Autodesk.Viewing.Document.load(documentId, function(doc) {{
+                debug('Document loaded');
+                
+                const defaultModel = doc.getRoot().getDefaultGeometry();
+                debug('Loading model...');
+                
+                viewer.loadDocumentNode(doc, defaultModel).then(() => {{
+                    viewer.fitToView();
+                    debug('Model loaded successfully');
+                }});
+            }}, function(code, msg) {{
+                debug('Error loading model: ' + code + ' - ' + msg);
+            }});
+        }});
+
+        // Event handlers for buttons
+        document.getElementById('toggleBgControls').addEventListener('click', function() {{
+            const controls = document.getElementById('backgroundControls');
+            const toggle = document.getElementById('toggleControls');
+            
+            if (controls.style.display === 'none' || controls.style.display === '') {{
+                controls.style.display = 'block';
+                this.textContent = 'Hide Background Options';
+                toggle.style.right = controls.offsetWidth + 20 + 'px';
+            }} else {{
+                controls.style.display = 'none';
+                this.textContent = 'Show Background Options';
+                toggle.style.right = '10px';
+                // Clear background
+                setBackgroundImage('none');
+            }}
+        }});
+
+        // Set up background image buttons
+        const bgButtons = document.querySelectorAll('.bgButton[data-img]');
+        bgButtons.forEach(button => {{
+            button.addEventListener('click', function() {{
+                const imgUrl = this.getAttribute('data-img');
+                setBackgroundImage(imgUrl);
+            }});
+        }});
+        
+        // Set up preset buttons
+        const presetButtons = document.querySelectorAll('.presetButton[data-preset]');
+        presetButtons.forEach(button => {{
+            button.addEventListener('click', function() {{
+                const presetId = this.getAttribute('data-preset');
+                setLightPreset(presetId);
+            }});
+        }});
+        
+        document.getElementById('toggleLogs').addEventListener('click', function() {{
+            const debugEl = document.getElementById('debug');
+            if (debugEl.style.display === 'none' || debugEl.style.display === '') {{
+                debugEl.style.display = 'block';
+                this.textContent = 'Hide Debug Logs';
+            }} else {{
+                debugEl.style.display = 'none';
+                this.textContent = 'Show Debug Logs';
+            }}
+        }});
+    </script>
+</body>
+</html>";
+    }
+    public static string GetEnhancedModelViewerHtml(string encodedUrn, string accessToken)
+    {
+        return $@"<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='UTF-8'>
+    <meta http-equiv='X-UA-Compatible' content='IE=Edge' />
+    <title>Forge Viewer</title>
+    <script src='https://developer.api.autodesk.com/modelderivative/v2/viewers/7.*/viewer3D.js'></script>
+    <link rel='stylesheet' href='https://developer.api.autodesk.com/modelderivative/v2/viewers/7.*/style.css' type='text/css'>
+    <style>
+        body, html {{ height: 100%; margin: 0; padding: 0; overflow: hidden; }}
+        #forgeViewer {{ width: 100%; height: 100vh; position: relative; }}
+        #log {{ position: fixed; bottom: 10px; left: 10px; right: 10px; height: 150px; background: rgba(0,0,0,0.7); color: white; overflow: auto; padding: 10px; font-family: monospace; z-index: 1000; display: none; }}
+        #skyboxControls {{ position: absolute; top: 10px; left: 10px; z-index: 1000; background: rgba(255,255,255,0.9); padding: 10px; border-radius: 5px; }}
+        .skyboxButton {{ margin-right: 5px; cursor: pointer; padding: 5px 10px; }}
+    </style>
+</head>
+<body>
+    <div id='skyboxControls'>
+     <button id='skybox1' class='skyboxButton'>Castle Skybox</button>
+     <button id='skybox2' class='skyboxButton'>Dwarven Skybox</button>
+     <button id='skybox3' class='skyboxButton'>Elven Skybox</button>
+     <button id='skybox4' class='skyboxButton'>Floating Island Skybox</button>
+     <button id='skybox5' class='skyboxButton'>War Torn Skybox</button>
+     <button id='skybox6' class='skyboxButton'>Pirate Skybox</button>
+     <button id='noSkybox' class='skyboxButton'>No Skybox</button>
+     
+     <button id='toggleLogs' class='skyboxButton'>Show Logs</button>
+</div>
+    <div id='forgeViewer'></div>
+    <div id='log'></div>
+
+    <script>
+        // Debug logging function
+        function log(message) {{
+            console.log(message);
+            var logDiv = document.getElementById('log');
+            var date = new Date();
+            var timestamp = date.getHours() + ':' + date.getMinutes() + ':' + date.getSeconds();
+            var line = document.createElement('div');
+            line.textContent = '[' + timestamp + '] ' + (typeof message === 'object' ? JSON.stringify(message) : message);
+            logDiv.appendChild(line);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }}
+
+        // Handle any errors
+        window.addEventListener('error', function(event) {{
+            log('ERROR: ' + event.message + ' at ' + event.filename + ':' + event.lineno);
+        }});
+
+        log('Loading 3D model viewer with skybox support...');
+
+        // Define the Skybox Extension
+        // Streamlined SkyboxExtension to avoid interference with Forge Viewer internals
+class SkyboxExtension extends Autodesk.Viewing.Extension {{
+    constructor(viewer, options) {{
+        super(viewer, options);
+        this.viewer = viewer;
+        this.name = 'SkyboxExtension';
+
+        // Define skybox images (6 images for each skybox - positive/negative x, y, z)
+        this.skyboxes = {{
+                   castle: [
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/px.png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/nx.png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/py.png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/ny.png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/pz.png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/nz.png'
+  ],
+  dwarven: [
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/dwarven+px+(1).png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/dwarven+nx+(1).png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/dwarven+py+(1).png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/dwarven+ny+(1).png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/dwarven+pz+(1).png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/dwarven+nz+(1).png'
+  ],
+  elven: [
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/elven+px+(1).png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/elven+nx+(1).png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/elven+py+(1).png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/elven+ny+(1).png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/elven+pz+(1).png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/elven+nz+(1).png'
+  ],
+  floatingIsland: [
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/floating+island+px+(1).png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/floating+island+nx+(1).png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/floating+island+py+(1).png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/floating+island+ny+(1).png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/floating+island+pz+(1).png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/floating+island+nz+(1).png'
+  ],
+  warTorn: [
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/war+torn+px+(1).png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/war+torn+nx+(1).png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/war+torn+py+(1).png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/war+torn+ny+(1).png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/war+torn+pz+(1).png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/war+torn+nz+(1).png'
+  ],
+  pirate: [
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/pirate+px+(1).png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/pirate+nx+(1).png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/pirate+py+(1).png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/pirate+ny+(1).png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/pirate+pz+(1).png',
+    'https://my-skybox-images.s3.eu-north-1.amazonaws.com/pirate+nz+(1).png'
+  ]
+
+        }};
+
+        // Store resources for cleanup
+        this.skyboxMesh = null;
+        this.cubeTexture = null;
+        this.sphereMesh = null;
+    }}
+
+    load() {{
+        log('SkyboxExtension loaded');
+        return true;
+    }}
+
+    unload() {{
+        this.removeSkybox();
+        log('SkyboxExtension unloaded');
+        return true;
+    }}
+
+    setSkybox(skyboxName) {{
+        const viewer = this.viewer;
+        
+        log('Setting skybox: ' + skyboxName);
+        
+        if (!viewer || !viewer.impl) {{
+            log('Viewer not available for skybox');
+            return;
+        }}
+        
+        const urls = this.skyboxes[skyboxName];
+        if (!urls) {{
+            log('Skybox not found: ' + skyboxName);
+            return;
+        }}
+        
+        // Remove existing skybox if any
+        this.removeSkybox();
+        
+        try {{
+            // Step 1: Find THREE.js - using exact same approach that worked before
+            let THREE = null;
+            
+            // First try to get THREE from Autodesk namespace
+            try {{
+                THREE = window.Autodesk.Viewing.THREE || Autodesk.Viewing.Private.THREE;
+            }} catch (e) {{
+                log('Could not get THREE from Autodesk namespace: ' + e.message);
+            }}
+            
+            // If not found, try alternative locations
+            if (!THREE) {{
+                log('THREE.js not found in Autodesk namespace. Trying alternative approach...');
+                
+                // Try to find THREE in other possible locations
+                const possibleTHREE = viewer.impl.THREE || 
+                                    (viewer.impl.runtime && viewer.impl.runtime.THREE) ||
+                                    window.THREE;
+                
+                if (!possibleTHREE) {{
+                    log('THREE.js could not be found in any known location');
+                    return;
+                }}
+                
+                // Use the found THREE instance
+                log('Found THREE.js in alternative location');
+                THREE = possibleTHREE;
+            }}
+            
+            log('Using THREE.js version: ' + (THREE.REVISION || 'unknown'));
+            
+            // Method 1: Try to create a background scene for the skybox
+            // This is the most compatible approach that avoids ray casting issues
+            try {{
+                // Create a separate scene for the skybox to avoid interference with Forge's ray casting
+                if (!this.skyboxScene) {{
+                    this.skyboxScene = new THREE.Scene();
+                    log('Created separate skybox scene');
+                }}
+                
+                // Test with a sphere approach (often works better with older THREE.js)
+                const sphereGeometry = new THREE.SphereGeometry(10000, 24, 24);
+                
+                // Create materials - simpler approach with a single texture on a sphere
+                // Choose one representative image for the skybox (front image works well)
+                const frontImage = urls[4]; // Front image index
+                
+                log('Loading skybox texture from: ' + frontImage);
+                
+                // Create texture and material
+                let texture;
+                if (THREE.ImageUtils && THREE.ImageUtils.loadTexture) {{
+                    texture = THREE.ImageUtils.loadTexture(frontImage);
+                }} else if (THREE.TextureLoader) {{
+                    const loader = new THREE.TextureLoader();
+                    loader.setCrossOrigin('anonymous');
+                    texture = loader.load(frontImage);
+                }}
+                
+                if (!texture) {{
+                    log('Failed to load texture');
+                    return;
+                }}
+                
+                const sphereMaterial = new THREE.MeshBasicMaterial({{
+                    map: texture,
+                    side: THREE.BackSide
+                }});
+                
+                // Create sphere mesh
+                const sphereMesh = new THREE.Mesh(sphereGeometry, sphereMaterial);
+                
+                // Add to Forge's overlay scene to avoid ray casting issues
+                if (viewer.impl.overlayScenes && !viewer.impl.overlayScenes.skybox) {{
+                    // Create a new overlay scene for the skybox
+                    log('Creating skybox overlay scene');
+                    viewer.impl.createOverlayScene('skybox');
+                }}
+                
+                // Add to the overlay scene
+                if (viewer.impl.overlayScenes && viewer.impl.overlayScenes.skybox) {{
+                    log('Adding skybox to overlay scene');
+                    viewer.impl.addOverlay('skybox', sphereMesh);
+                    
+                    // Store for cleanup
+                    this.sphereMesh = sphereMesh;
+                    
+                    // Set appropriate lighting
+                    viewer.setLightPreset(0);
+                    
+                    // Force redraw
+                    viewer.impl.invalidate(true, true, true);
+                    
+                    log('Skybox added to overlay scene');
+                    return; // Exit if successful
+                }} else {{
+                    log('Overlay scene not available, trying fallback method');
+                }}
+            }} catch (e) {{
+                log('Error using overlay scene approach: ' + e.message);
+                log('Trying fallback method');
+            }}
+            
+            // Method 2: Try with a simpler approach using just a single texture
+            try {{
+                // Create a simple full-screen background plane
+                const planeGeometry = new THREE.PlaneGeometry(100000, 100000);
+                
+                // Choose the front image as the background
+                const backgroundImage = urls[4]; // Front image
+                
+                log('Loading background image: ' + backgroundImage);
+                
+                // Create texture and material
+                let texture;
+                if (THREE.ImageUtils && THREE.ImageUtils.loadTexture) {{
+                    texture = THREE.ImageUtils.loadTexture(backgroundImage);
+                }} else if (THREE.TextureLoader) {{
+                    const loader = new THREE.TextureLoader();
+                    loader.setCrossOrigin('anonymous');
+                    texture = loader.load(backgroundImage);
+                }}
+                
+                if (!texture) {{
+                    log('Failed to load background texture');
+                    return;
+                }}
+                
+                const planeMaterial = new THREE.MeshBasicMaterial({{
+                    map: texture,
+                    depthWrite: false,
+                    depthTest: false
+                }});
+                
+                // Create plane mesh and position it to face the camera
+                const planeMesh = new THREE.Mesh(planeGeometry, planeMaterial);
+                
+                // Position far behind the camera
+                const camera = viewer.impl.camera;
+                const cameraDirection = new THREE.Vector3(0, 0, -1);
+                cameraDirection.applyQuaternion(camera.quaternion);
+                
+                planeMesh.position.copy(camera.position);
+                planeMesh.position.sub(cameraDirection.multiplyScalar(50000));
+                planeMesh.lookAt(camera.position);
+                
+                // Add to scene
+                viewer.impl.scene.add(planeMesh);
+                
+                // Store for cleanup
+                this.planeMesh = planeMesh;
+                
+                // Set appropriate lighting
+                viewer.setLightPreset(0);
+                
+                // Force redraw
+                viewer.impl.invalidate(true, true, true);
+                
+                log('Simple background plane added');
+                
+                // Add camera change listener to update plane position
+                this.onCameraChange = () => {{
+                    const cameraDir = new THREE.Vector3(0, 0, -1);
+                    cameraDir.applyQuaternion(camera.quaternion);
+                    
+                    planeMesh.position.copy(camera.position);
+                    planeMesh.position.sub(cameraDir.multiplyScalar(50000));
+                    planeMesh.lookAt(camera.position);
+                    
+                    viewer.impl.invalidate(true, true, true);
+                }};
+                
+                // Add event listener for camera change
+                viewer.addEventListener(Autodesk.Viewing.CAMERA_CHANGE_EVENT, this.onCameraChange);
+                
+            }} catch (e) {{
+                log('Error creating simple background: ' + e.message);
+            }}
+            
+        }} catch (err) {{
+            log('Fatal error in setSkybox: ' + (err.message || err));
+        }}
+    }}
+
+    removeSkybox() {{
+        const viewer = this.viewer;
+
+        if (!viewer || !viewer.impl) {{
+            log('Viewer not available for cleanup');
+            return;
+        }}
+
+        try {{
+            // Remove overlay scene if used
+            if (viewer.impl.overlayScenes && viewer.impl.overlayScenes.skybox) {{
+                if (this.sphereMesh) {{
+                    viewer.impl.removeOverlay('skybox', this.sphereMesh);
+                }}
+                viewer.impl.removeOverlayScene('skybox');
+                log('Removed skybox overlay scene');
+            }}
+            
+            // Remove sphere mesh if it exists
+            if (this.sphereMesh) {{
+                if (this.sphereMesh.material && this.sphereMesh.material.map) {{
+                    this.sphereMesh.material.map.dispose();
+                }}
+                if (this.sphereMesh.material) {{
+                    this.sphereMesh.material.dispose();
+                }}
+                if (this.sphereMesh.geometry) {{
+                    this.sphereMesh.geometry.dispose();
+                }}
+                this.sphereMesh = null;
+                log('Disposed sphere mesh resources');
+            }}
+            
+            // Remove plane mesh if it exists
+            if (this.planeMesh) {{
+                viewer.impl.scene.remove(this.planeMesh);
+                
+                if (this.planeMesh.material && this.planeMesh.material.map) {{
+                    this.planeMesh.material.map.dispose();
+                }}
+                if (this.planeMesh.material) {{
+                    this.planeMesh.material.dispose();
+                }}
+                if (this.planeMesh.geometry) {{
+                    this.planeMesh.geometry.dispose();
+                }}
+                this.planeMesh = null;
+                log('Removed and disposed plane mesh');
+                
+                // Remove camera change listener
+                if (this.onCameraChange) {{
+                    viewer.removeEventListener(Autodesk.Viewing.CAMERA_CHANGE_EVENT, this.onCameraChange);
+                    this.onCameraChange = null;
+                }}
+            }}
+
+            // Restore default lighting
+            viewer.setLightPreset(1);
+
+            // Force redraw
+            viewer.impl.invalidate(true, true, true);
+
+            log('Skybox completely removed');
+        }} catch (e) {{
+            log('Error removing skybox: ' + e);
+        }}
+    }}
+}}
+
+// Register the extension
+Autodesk.Viewing.theExtensionManager.registerExtension('SkyboxExtension', SkyboxExtension);
+
+        // Register the extension with Forge Viewer
+        
+        var viewer;
+        var skyboxExt;
+
+        var options = {{
+            env: 'AutodeskProduction',
+            api: 'derivativeV2',
+            getAccessToken: function(onTokenReady) {{
+                log('Getting access token...');
+                onTokenReady('{accessToken}', 3599);
+            }}
+        }};
+
+        var documentId = 'urn:{encodedUrn}';
+        log('Document ID: ' + documentId);
+
+        // Set up button handlers
+       document.getElementById('skybox1').addEventListener('click', function() {{
+    log('Castle skybox button clicked');
+    if (skyboxExt) {{
+        skyboxExt.setSkybox('castle');
+    }} else {{
+        log('Skybox extension not available yet');
+    }}
+}});
+
+document.getElementById('skybox2').addEventListener('click', function() {{
+    log('Dwarven skybox button clicked');
+    if (skyboxExt) {{
+        skyboxExt.setSkybox('dwarven');
+    }} else {{
+        log('Skybox extension not available yet');
+    }}
+}});
+
+document.getElementById('skybox3').addEventListener('click', function() {{
+    log('Elven skybox button clicked');
+    if (skyboxExt) {{
+        skyboxExt.setSkybox('elven');
+    }} else {{
+        log('Skybox extension not available yet');
+    }}
+}});
+
+document.getElementById('skybox4').addEventListener('click', function() {{
+    log('Floating Island skybox button clicked');
+    if (skyboxExt) {{
+        skyboxExt.setSkybox('floatingIsland');
+    }} else {{
+        log('Skybox extension not available yet');
+    }}
+}});
+
+document.getElementById('skybox5').addEventListener('click', function() {{
+    log('War Torn skybox button clicked');
+    if (skyboxExt) {{
+        skyboxExt.setSkybox('warTorn');
+    }} else {{
+        log('Skybox extension not available yet');
+    }}
+}});
+
+document.getElementById('skybox6').addEventListener('click', function() {{
+    log('Pirate skybox button clicked');
+    if (skyboxExt) {{
+        skyboxExt.setSkybox('pirate');
+    }} else {{
+        log('Skybox extension not available yet');
+    }}
+}});
+
+        // Initialize viewer
+        Autodesk.Viewing.Initializer(options, function() {{
+            log('Viewer initialized');
+
+            var viewerDiv = document.getElementById('forgeViewer');
+            viewer = new Autodesk.Viewing.GuiViewer3D(viewerDiv);
+
+            log('Starting viewer...');
+            var started = viewer.start();
+            log('Viewer started: ' + started);
+
+            // Load the skybox extension
+            log('Loading skybox extension...');
+            viewer.loadExtension('SkyboxExtension').then(extension => {{
+                skyboxExt = extension;
+                log('Skybox extension loaded successfully and stored');
+            }}).catch(err => {{
+                log('Error loading skybox extension: ' + err.message);
+            }});
+
+            log('Loading document...');
+            Autodesk.Viewing.Document.load(documentId, function(doc) {{
+                log('Document loaded successfully');
+                var defaultModel = doc.getRoot().getDefaultGeometry();
+
+                if (defaultModel) {{
+                    log('Loading default model: ' + defaultModel.guid);
+                    viewer.loadDocumentNode(doc, defaultModel)
+                        .then(function(model) {{
+                            log('Model loaded successfully');
+                            viewer.fitToView();
+                        }})
+                        .catch(function(error) {{
+                            log('Error loading model: ' + error.message);
+                        }});
+                }} else {{
+                    log('No default geometry found');
+                }}
+            }}, function(errorCode, errorMsg) {{
+                log('Error loading document: ' + errorCode + ' - ' + errorMsg);
+            }});
+        }});
+    </script>
+</body>
+</html>";
+    }
+
+
 }

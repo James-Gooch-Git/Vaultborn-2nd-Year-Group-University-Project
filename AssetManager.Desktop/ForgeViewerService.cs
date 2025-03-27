@@ -31,7 +31,8 @@ public class ForgeViewerService
         if (!await EnsureTranslationReadyAsync(encodedUrn, isPdf: false))
             return null;
 
-        return ForgeHtmlTemplates.GetModelViewerHtml(encodedUrn, _accessToken);
+        // Use the enhanced viewer that includes skybox functionality
+        return ForgeHtmlTemplates.GetEnhancedModelViewerHtml(encodedUrn, _accessToken);
     }
 
     private async Task<bool> EnsureTranslationReadyAsync(string urn, bool isPdf)
@@ -50,7 +51,6 @@ public class ForgeViewerService
         {
             if (await _modelService.IsTranslationCompletedAsync(urn, _accessToken))
                 return true;
-
             await Task.Delay(2000);
         }
 
