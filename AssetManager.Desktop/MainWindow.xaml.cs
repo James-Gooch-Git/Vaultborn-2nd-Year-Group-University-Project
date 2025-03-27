@@ -499,13 +499,22 @@ namespace AssetManager.Desktop
         {
             if (sender is Button button && button.Tag is string hubID)
             {
-                selectedHubName = button.Content.ToString();
+                // Get the TextBlock inside the Button
+                if (button.Content is TextBlock textBlock)
+                {
+                    selectedHubName = textBlock.Text;
+                }
+                else
+                {
+                    selectedHubName = button.Content.ToString();
+                }
+
                 selectedHubID = hubID;
 
                 // Update UI to reflect selected hub
                 HubsHeaderTextBlock.Text = $"Hubs - {selectedHubName}";
 
-                HubsMenuPopup.IsOpen = false; // Close the menu after selecting
+                HubsMenuPopup.IsOpen = false;
 
                 LoadProjectsForHub(selectedHubID);
                 //GetAllModels();
@@ -514,23 +523,57 @@ namespace AssetManager.Desktop
 
         private void PopulateHubMenu()
         {
-            HubsMenuStackPanel.Children.Clear(); // Clear previous entries
+            HubsMenuStackPanel.Children.Clear();
 
             foreach (var hub in hubs)
             {
+                // Create Border wrapper for rounded corners
+                Border hubButtonBorder = new Border
+                {
+                    BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#98730C")),
+                    BorderThickness = new Thickness(2),
+                    CornerRadius = new CornerRadius(2),
+                    Margin = new Thickness(5),
+                    MinWidth = 100,
+                };
+
+                // Create a TextBlock inside the button to allow text wrapping
+                TextBlock hubTextBlock = new TextBlock
+                {
+                    Text = hub.HubName,
+                    Foreground = Brushes.White,
+                    TextWrapping = TextWrapping.Wrap,
+                    TextAlignment = TextAlignment.Center,
+                    HorizontalAlignment = HorizontalAlignment.Center
+                };
+
+                // Create Button inside the Border
                 Button hubButton = new Button
                 {
-                    Content = hub.HubName,
+                    Content = hubTextBlock,
                     Tag = hub.HubID,
+                    Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#98730C")),
+                    Foreground = Brushes.White,
+                    BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#98730C")),
+                    BorderThickness = new Thickness(2),
                     Padding = new Thickness(5),
-                    HorizontalAlignment = HorizontalAlignment.Stretch
+                    MinWidth = 100,
+                    MaxWidth = 200,
+                    HorizontalAlignment = HorizontalAlignment.Stretch,
+                    Cursor = Cursors.Hand
                 };
 
                 hubButton.Click += HubButton_Click;
-                HubsMenuStackPanel.Children.Add(hubButton);
+
+                // Add button inside the border
+                hubButtonBorder.Child = hubButton;
+                HubsMenuStackPanel.Children.Add(hubButtonBorder);
             }
 
-            HubsMenuPopup.StaysOpen = true; // Ensures popup stays open
+            // Adjusts popup size dynamically based on content
+            HubsMenuPopup.Width = Double.NaN;
+            HubsMenuPopup.Height = Double.NaN;
+            HubsMenuPopup.StaysOpen = true;
         }
 
         private void ToggleHubsMenu(object sender, MouseButtonEventArgs e)
@@ -541,13 +584,18 @@ namespace AssetManager.Desktop
             }
             else
             {
-                HubsMenuPopup.PlacementTarget = HubsHeaderTextBlock;
-                HubsMenuPopup.Placement = PlacementMode.Relative;
-                HubsMenuPopup.VerticalOffset = HubsHeaderTextBlock.ActualHeight + 5;
-                HubsMenuPopup.IsOpen = true;
+                // Set PlacementTarget to the Chevron Border instead of HubsHeaderTextBlock
+                Border chevronBorder = sender as Border;
+                if (chevronBorder != null)
+                {
+                    HubsMenuPopup.PlacementTarget = chevronBorder;
+                    HubsMenuPopup.Placement = PlacementMode.Bottom;
+                    HubsMenuPopup.VerticalOffset = 5;
+                    HubsMenuPopup.IsOpen = true;
+                }
             }
-            //HubsMenuPopup.IsOpen = !HubsMenuPopup.IsOpen;
         }
+
         #endregion
 
 
@@ -604,7 +652,6 @@ namespace AssetManager.Desktop
 
             ModelsContainer.Children.Clear();
 
-            // Get models from the project, ensuring we filter out deleted models
             List<Dictionary<string, string>> models = await GetModelsFromProject(_selectedProjectId, _folderId);
 
             if (models == null || models.Count == 0)
@@ -613,16 +660,13 @@ namespace AssetManager.Desktop
                 return;
             }
 
-            // Create a MongoConnection and ModelService for checking deletion status
             MongoConnection mongoConnection = new MongoConnection();
             ModelService modelService = new ModelService(mongoConnection);
 
             foreach (var model in models)
             {
-                // Double-check the model isn't deleted before adding it to the UI
                 string itemId = model["Id"];
 
-                // Skip if model is marked as deleted in the database
                 bool isDeleted = await modelService.IsModelDeleted(itemId);
                 if (isDeleted)
                 {
@@ -632,20 +676,22 @@ namespace AssetManager.Desktop
 
                 string projectId = _selectedProjectId;
 
+                // Updated Card Style
                 Border modelCard = new Border
                 {
                     Width = 253,
                     Height = 240,
-                    Background = Brushes.White,
-                    BorderBrush = Brushes.Transparent,
-                    CornerRadius = new CornerRadius(12),
+                    Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#540754")),
+                    BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#98730C")),
+                    BorderThickness = new Thickness(2),
+                    CornerRadius = new CornerRadius(5),
                     Margin = new Thickness(10),
                     Effect = new DropShadowEffect
                     {
                         Color = Colors.Black,
-                        Opacity = 0.1,
+                        Opacity = 0.2,
                         BlurRadius = 10,
-                        ShadowDepth = 2
+                        ShadowDepth = 3
                     },
                     Cursor = Cursors.Hand,
                     Tag = model
@@ -653,7 +699,7 @@ namespace AssetManager.Desktop
 
                 Grid modelContent = new Grid();
 
-                // Thumbnail and Background
+                // Thumbnail
                 Image thumbnailImage = new Image
                 {
                     Width = 130,
@@ -663,8 +709,8 @@ namespace AssetManager.Desktop
 
                 Border thumbnailContainer = new Border
                 {
-                    Background = new SolidColorBrush(Color.FromRgb(245, 245, 245)),
-                    CornerRadius = new CornerRadius(10),
+                    Background = new SolidColorBrush(Color.FromRgb(75, 0, 130)),
+                    CornerRadius = new CornerRadius(5),
                     Margin = new Thickness(10),
                     VerticalAlignment = VerticalAlignment.Top,
                     Height = 160,
@@ -672,7 +718,6 @@ namespace AssetManager.Desktop
                     Tag = model
                 };
 
-                // Handle thumbnail clicks separately to open in app viewer
                 thumbnailContainer.MouseLeftButtonDown += async (s, e) =>
                 {
                     if (s is Border thumbBorder && thumbBorder.Tag is Dictionary<string, string> selectedModel)
@@ -718,7 +763,7 @@ namespace AssetManager.Desktop
                     Text = model["Name"],
                     FontSize = 14,
                     FontWeight = FontWeights.SemiBold,
-                    Foreground = Brushes.Black,
+                    Foreground = Brushes.White,
                     HorizontalAlignment = HorizontalAlignment.Left,
                     VerticalAlignment = VerticalAlignment.Bottom,
                     Margin = new Thickness(12, 0, 0, 40),
@@ -731,7 +776,7 @@ namespace AssetManager.Desktop
                     Kind = PackIconKind.DotsVertical,
                     Width = 18,
                     Height = 18,
-                    Foreground = Brushes.Black,
+                    Foreground = Brushes.White,
                 };
 
                 Button menuButton = new Button
@@ -769,10 +814,9 @@ namespace AssetManager.Desktop
                 modelContent.Children.Add(menuButton);
                 modelCard.Child = modelContent;
 
-                // Default card click (only if not clicking thumbnail or menu)
+                // Default card click
                 modelCard.MouseLeftButtonDown += async (s, args) =>
                 {
-                    // Prevent thumbnail and menu clicks from triggering this
                     if (args.OriginalSource is DependencyObject source &&
                         (IsDescendantOf(source, thumbnailContainer) || IsDescendantOf(source, menuButton)))
                         return;
@@ -2149,26 +2193,30 @@ namespace AssetManager.Desktop
         {
             e.Handled = true;
 
-            if (ChevronDownClick.ContextMenu != null)
+            if (ChevronPopupMenu != null)
             {
-                if (!isDropdownOpen)
+                if (!ChevronPopupMenu.IsOpen)
                 {
-                    ChevronDownClick.ContextMenu.PlacementTarget = ChevronDownClick;
-                    ChevronDownClick.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
-                    ChevronDownClick.ContextMenu.IsOpen = true;
+                    // Open the popup and update icon
+                    ChevronPopupMenu.PlacementTarget = ChevronDownClick;
+                    ChevronPopupMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+                    ChevronPopupMenu.VerticalOffset = 5;
+                    ChevronPopupMenu.IsOpen = true;
+
                     ChevronDownClick.Kind = PackIconKind.ChevronUp;
-                    isDropdownOpen = true;
                 }
                 else
                 {
-                    ChevronDownClick.ContextMenu.IsOpen = false;
+                    // Close the popup and reset icon
+                    ChevronPopupMenu.IsOpen = false;
                     ChevronDownClick.Kind = PackIconKind.ChevronDown;
-                    isDropdownOpen = false;
                 }
             }
 
             User_Grid.Cursor = Cursors.Hand;
         }
+
+
 
         private void ProjectTreeView_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
@@ -3579,6 +3627,12 @@ namespace AssetManager.Desktop
 
         private void BtnLogout_Click(object sender, RoutedEventArgs e)
         {
+            // Close the popup before logging out
+            ChevronPopupMenu.IsOpen = false;
+
+            // Reset the chevron icon
+            ChevronDownClick.Kind = PackIconKind.ChevronDown;
+
             // Step 1: Clear tokens and session
             LoginWindow.PerformLogout();
 
@@ -3589,6 +3643,7 @@ namespace AssetManager.Desktop
             // Step 3: Close the current MainWindow
             this.Close();
         }
+
 
 
         private void BtnDownload_Click(object sender, RoutedEventArgs e)
@@ -5286,7 +5341,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             Models = searchResults;
             DisplayGridModels();
         }
-        
+
         //Filter tags
         private void Filter_Click(object sender, MouseButtonEventArgs e)
         {
@@ -5295,11 +5350,26 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 var icon = sender as Border;
                 if (icon != null)
                 {
-                    ContextMenu filterMenu =  this.FindResource("FilterContextMenu") as ContextMenu;
-                    if (filterMenu != null)
+                    Popup filterPopup = FindResource("FilterPopup") as Popup;
+
+                    if (filterPopup != null)
                     {
-                        filterMenu.PlacementTarget = icon;
-                        filterMenu.IsOpen = true;
+                        filterPopup.PlacementTarget = icon;
+
+                        // Toggle Popup (Open if closed, close if open)
+                        filterPopup.IsOpen = !filterPopup.IsOpen;
+
+                        if (filterPopup.IsOpen)
+                        {
+                            // Close when clicking outside
+                            Application.Current.MainWindow.PreviewMouseDown += (s, ev) =>
+                            {
+                                if (!filterPopup.IsMouseOver && !icon.IsMouseOver)
+                                {
+                                    filterPopup.IsOpen = false;
+                                }
+                            };
+                        }
                     }
                 }
             }
@@ -5309,14 +5379,32 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             }
         }
 
+
         private async void BtnClearFilters_Click(object sender, RoutedEventArgs e)
         {
-            ContextMenu filterMenu = FindResource("FilterContextMenu") as ContextMenu;
-            foreach (var item in filterMenu.Items)
+            Popup filterPopup = FindResource("FilterPopup") as Popup;
+            if (filterPopup != null && filterPopup.Child is Border border)
             {
-                if (item is CheckBox checkBox)
-                    checkBox.IsChecked = false;
+                // Find the main StackPanel inside the Border
+                if (border.Child is StackPanel mainStackPanel)
+                {
+                    // Find the ScrollViewer inside the StackPanel
+                    ScrollViewer scrollViewer = mainStackPanel.Children.OfType<ScrollViewer>().FirstOrDefault();
+
+                    if (scrollViewer != null && scrollViewer.Content is StackPanel checkBoxContainer)
+                    {
+                        foreach (var item in checkBoxContainer.Children)
+                        {
+                            if (item is CheckBox checkBox)
+                            {
+                                checkBox.IsChecked = false; // Or true if needed
+                            }
+                        }
+                    }
+                }
             }
+
+
 
             ModelsDataGrid.ItemsSource = originalResults;
             Models = originalResults;
@@ -5327,25 +5415,37 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         {
             try
             {
-                ModelsDataGrid.ItemsSource = originalResults;
+                //ModelsDataGrid.ItemsSource = originalResults;
+                originalResults = ModelsDataGrid.ItemsSource.Cast<Dictionary<string, string>>().ToList();
                 List<Dictionary<string, string>> models = new List<Dictionary<string, string>>();
                 List<string> selectedTags = new List<string>();
                 List<string> IDs = new List<string>();
-            
+
                 MongoConnection database = new MongoConnection();
-                
-                ContextMenu filterMenu = FindResource("FilterContextMenu") as ContextMenu;
-                foreach (var item in filterMenu.Items)
+
+                Popup filterPopup = FindResource("FilterPopup") as Popup;
+
+                if (filterPopup != null && filterPopup.Child is Border border)
                 {
-                    if (item != null && item is CheckBox checkBox)
+                    // Get the main StackPanel inside the Border
+                    if (border.Child is StackPanel mainStackPanel)
                     {
-                        if (checkBox.IsChecked == true)
+                        // Find the ScrollViewer inside the StackPanel
+                        ScrollViewer scrollViewer = mainStackPanel.Children.OfType<ScrollViewer>().FirstOrDefault();
+
+                        if (scrollViewer != null && scrollViewer.Content is StackPanel checkBoxContainer)
                         {
-                            selectedTags.Add(checkBox.Content.ToString());
+                            foreach (var item in checkBoxContainer.Children)
+                            {
+                                if (item is CheckBox checkBox && checkBox.IsChecked == true)
+                                {
+                                    selectedTags.Add(checkBox.Content.ToString());
+                                }
+                            }
                         }
                     }
                 }
-                
+
                 foreach (var item in ModelsDataGrid.Items)
                 {
                     if (item is Dictionary<string, string> modelData && modelData.ContainsKey("Id"))
@@ -5354,29 +5454,29 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                         IDs.Add(Id);
                     }
                 }
-                
+
                 ModelsDataGrid.ItemsSource = null;
-                
+
                 foreach (var id in IDs)
                 {
                     var filter = Builders<ModelData>.Filter.And(Builders<ModelData>.Filter.Eq("Id", id),
                         Builders<ModelData>.Filter.In("Tags", selectedTags));
-                
+
                     var result = await database.ModelData.Find(filter).FirstOrDefaultAsync();
 
                     if (result != null)
                     {
                         models.Add(new Dictionary<string, string>
-                        {
-                            { "Name", result.Name },
-                            { "Project", result.Foldername },
-                            { "LastModified", result.ModifiedDate },
-                            { "Id", id },
-                            { "ProjectId", result.FolderId}
-                        });
+                {
+                    { "Name", result.Name },
+                    { "Project", result.Foldername },
+                    { "LastModified", result.ModifiedDate },
+                    { "Id", id },
+                    { "ProjectId", result.FolderId}
+                });
                     }
                 }
-                
+
                 ModelsDataGrid.ItemsSource = models;
                 Models = models;
                 DisplayGridModels();
@@ -5386,6 +5486,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 MessageBox.Show($"Error filtering: {exception.Message}");
             }
         }
+
 
         private void CloseSidebar_Click(object sender, RoutedEventArgs e)
         {
@@ -5504,7 +5605,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 ModifiedByText.Text = modelMetadata.ModifiedBy;
 
                 FileSizeText.Text = $"{(modelMetadata.FileSize / 1_000_000.0):0.00} MB";
-                FolderNameText.Text = modelMetadata.Foldername;
+                //FolderNameText.Text = modelMetadata.Foldername;
                 FormatText.Text = modelMetadata.Format;
                 PolyCountText.Text = modelMetadata.PolyCount.ToString();
                 DimensionsText.Text = modelMetadata.Dimensions;
@@ -5877,22 +5978,32 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 {
                     tags.Add(tag);
                 }
-                
+
                 var icon = sender as Border;
                 if (icon != null)
                 {
-                    ContextMenu tagsMenu =  this.FindResource("AddTagsContextMenu") as ContextMenu;
-                    if (tagsMenu != null)
+                    Popup tagsPopup = FindResource("AddTagsPopupMenu") as Popup;
+                    if (tagsPopup != null && tagsPopup.Child is Border border)
                     {
-                        tagsMenu.PlacementTarget = icon;
-                        tagsMenu.IsOpen = true;
-                        foreach (var item in tagsMenu.Items)
+                        // Set popup position
+                        tagsPopup.PlacementTarget = icon;
+                        tagsPopup.IsOpen = true;
+
+                        // Get the main StackPanel inside the Border
+                        if (border.Child is StackPanel mainStackPanel)
                         {
-                            if (item != null && item is CheckBox checkBox)
+                            // Find the ScrollViewer inside the StackPanel
+                            ScrollViewer scrollViewer = mainStackPanel.Children.OfType<ScrollViewer>().FirstOrDefault();
+
+                            if (scrollViewer != null && scrollViewer.Content is StackPanel checkBoxContainer)
                             {
-                                if (tags.Contains(checkBox.Content))
+                                foreach (var item in checkBoxContainer.Children)
                                 {
-                                    checkBox.IsChecked = true;
+                                    if (item is CheckBox checkBox)
+                                    {
+                                        // Mark checkboxes as checked if the tag exists
+                                        checkBox.IsChecked = tags.Contains(checkBox.Content.ToString());
+                                    }
                                 }
                             }
                         }
@@ -5904,33 +6015,59 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 Console.WriteLine($"Error filtering: {exception.Message}");
             }
         }
+
         private async void BtnAddTags_Click(object sender, RoutedEventArgs e)
         {
-            List<string> selectedTags = new List<string>();
-
-            ContextMenu tagsMenu = FindResource("AddTagsContextMenu") as ContextMenu;
-            foreach (var item in tagsMenu.Items)
+            try
             {
-                if (item != null && item is CheckBox checkBox)
+                List<string> selectedTags = new List<string>();
+
+                Popup tagsPopup = FindResource("AddTagsPopupMenu") as Popup;
+
+                if (tagsPopup != null && tagsPopup.Child is Border border)
                 {
-                    if (checkBox.IsChecked == true)
+                    // Get the main StackPanel inside the Border
+                    if (border.Child is StackPanel mainStackPanel)
                     {
-                        selectedTags.Add(checkBox.Content.ToString());
+                        // Find the ScrollViewer inside the StackPanel
+                        ScrollViewer scrollViewer = mainStackPanel.Children.OfType<ScrollViewer>().FirstOrDefault();
+
+                        if (scrollViewer != null && scrollViewer.Content is StackPanel checkBoxContainer)
+                        {
+                            foreach (var item in checkBoxContainer.Children)
+                            {
+                                if (item is CheckBox checkBox && checkBox.IsChecked == true)
+                                {
+                                    selectedTags.Add(checkBox.Content.ToString());
+                                }
+                            }
+                        }
                     }
                 }
+
+                MongoConnection database = new MongoConnection();
+
+                var filter = Builders<ModelData>.Filter.Eq(x => x.Id, _selectedItemId);
+                var clear = Builders<ModelData>.Update.Set(x => x.Tags, new List<string>());
+                await database.ModelData.UpdateOneAsync(filter, clear);
+
+                var update = Builders<ModelData>.Update.AddToSetEach(x => x.Tags, selectedTags);
+                await database.ModelData.FindOneAndUpdateAsync(filter, update);
+
+                await DisplayTags();
+
+                // Close the popup after updating tags
+                if (tagsPopup != null)
+                {
+                    tagsPopup.IsOpen = false;
+                }
             }
-            
-            MongoConnection database = new MongoConnection();
-            
-            var filter = Builders<ModelData>.Filter.Eq(x => x.Id, _selectedItemId);
-            var clear = Builders<ModelData>.Update.Set(x => x.Tags, new List<string>() );
-            await database.ModelData.UpdateOneAsync(filter, clear);
-            
-            
-            var update = Builders<ModelData>.Update.AddToSetEach(x => x.Tags, selectedTags);
-            await database.ModelData.FindOneAndUpdateAsync(filter, update);
-            await DisplayTags();
+            catch (Exception exception)
+            {
+                MessageBox.Show($"Error adding tags: {exception.Message}");
+            }
         }
+
 
         private async Task DisplayTags()
         {
@@ -6835,6 +6972,12 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             }
             MarketplaceDataGrid.ItemsSource = searchResults;
             DisplayMarketplaceGrid(searchResults);
+        }
+
+        private async void SearchClear_Click(object sender, MouseButtonEventArgs e)
+        {
+            ModelsDataGrid.ItemsSource = null;
+            await LoadAllModels();
         }
 
         private async void MarketplaceClearSearch_Click(object sender, MouseButtonEventArgs e)

@@ -60,7 +60,7 @@ namespace AssetManager.Infrastructure.Models
         public string Format { get; set; }
 
         [BsonElement("_polycount")]
-        public int PolyCount { get; set; }
+        public string PolyCount { get; set; }
 
         [BsonElement("_dimensions")]
         public string Dimensions { get; set; }

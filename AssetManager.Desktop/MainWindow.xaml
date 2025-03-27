@@ -58,7 +58,7 @@
             </Setter>
         </Style>
 
-        <Style TargetType="MenuItem">
+        <!--<Style TargetType="MenuItem">
                 <Setter Property="Padding" Value="12,8"/>
                 <Setter Property="FontSize" Value="14"/>
                 <Setter Property="FontWeight" Value="SemiBold"/>
@@ -83,7 +83,7 @@
                         </ControlTemplate>
                     </Setter.Value>
                 </Setter>
-            </Style>
+            </Style>-->
 
 
 
@@ -146,7 +146,7 @@
                         <Grid Background="Transparent">
                             <Track Name="PART_Track" IsDirectionReversed="true">
                                 <Track.Thumb>
-                                    <Thumb Cursor="Hand" Background="#98730c" Width="6" />
+                                    <Thumb Cursor="Hand" Background="#540754" Width="6" />
                                 </Track.Thumb>
                             </Track>
                         </Grid>
@@ -155,221 +155,184 @@
             </Setter>
         </Style>
 
+        <Popup x:Key="FilterPopup" StaysOpen="True" Placement="Mouse" AllowsTransparency="True">
+            <Border Background="#540754" CornerRadius="5" BorderBrush="#98730C" BorderThickness="2" Padding="8" Width="240" Height="400">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <!-- Clear Filters Button -->
+                        <Border BorderBrush="#98730C" BorderThickness="1" CornerRadius="2" Margin="5">
+                            <Button x:Name="BtnClearFilters" Content="Clear Filters" Click="BtnClearFilters_Click"
+                            Background="#98730C" Foreground="White" BorderBrush="#98730C" BorderThickness="2"
+                            Width="90" Height="30" Cursor="Hand"/>
+                        </Border>
 
-        <ContextMenu x:Key="FilterContextMenu" Width="200" Height="400">
-            <Button x:Name="BtnClearFilters" Content="Clear Filters" Click="BtnClearFilters_Click"/>
-            <Button x:Name="BtnSearchFilters" Content="Search Filters" Click="BtnSearchFilters_Click"/>
-            <CheckBox Content="D and D"/>
-            <CheckBox Content="Pathfinder"/>
-            <CheckBox Content="Warhammer 40K"/>
-            <CheckBox Content="Warhammer AOS"/>
-            <CheckBox Content="Call of Cthulhu"/>
-            <CheckBox Content="Shadowrun"/>
-            <CheckBox Content="Starfinder"/>
-            <CheckBox Content="FATE"/>
-            <CheckBox Content="GURPS"/>
-            <CheckBox Content="World of Darkness"/>
-            <CheckBox Content="Savage Worlds"/>
-            <CheckBox Content="Blades in the Dark"/>
-            <CheckBox Content="Cyberpunk RED"/>
-            <CheckBox Content="Star Wars RPG"/>
-            <CheckBox Content="Fantasy"/>
-            <CheckBox Content="Sci-Fi"/>
-            <CheckBox Content="Steampunk"/>
-            <CheckBox Content="Cyberpunk"/>
-            <CheckBox Content="Post-Apocalyptic"/>
-            <CheckBox Content="Modern"/>
-            <CheckBox Content="Horror"/>
-            <CheckBox Content="Mythology"/>
-            <CheckBox Content="Dark Fantasy"/>
-            <CheckBox Content="High Fantasy"/>
-            <CheckBox Content="Medieval"/>
-            <CheckBox Content="Western"/>
-            <CheckBox Content="Space Opera"/>
-            <CheckBox Content="Lovecraftian"/>
-            <CheckBox Content="Dieselpunk"/>
-            <CheckBox Content="Hero"/>
-            <CheckBox Content="Villain"/>
-            <CheckBox Content="NPC"/>
-            <CheckBox Content="Monster"/>
-            <CheckBox Content="Boss Monster"/>
-            <CheckBox Content="Minion"/>
-            <CheckBox Content="Humanoid"/>
-            <CheckBox Content="Vehicle"/>
-            <CheckBox Content="Mech"/>
-            <CheckBox Content="Construct"/>
-            <CheckBox Content="Summonable Creature"/>
-            <CheckBox Content="Undead"/>
-            <CheckBox Content="Beast"/>
-            <CheckBox Content="Mount"/>
-            <CheckBox Content="Dragon"/>
-            <CheckBox Content="Giant"/>
-            <CheckBox Content="Warrior"/>
-            <CheckBox Content="Knight"/>
-            <CheckBox Content="Paladin"/>
-            <CheckBox Content="Barbarian"/>
-            <CheckBox Content="Rogue"/>
-            <CheckBox Content="Assassin"/>
-            <CheckBox Content="Ranger"/>
-            <CheckBox Content="Hunter"/>
-            <CheckBox Content="Sorcerer"/>
-            <CheckBox Content="Wizard"/>
-            <CheckBox Content="Cleric"/>
-            <CheckBox Content="Druid"/>
-            <CheckBox Content="Necromancer"/>
-            <CheckBox Content="Bard"/>
-            <CheckBox Content="Monk"/>
-            <CheckBox Content="Gunslinger"/>
-            <CheckBox Content="Artificer"/>
-            <CheckBox Content="Alchemist"/>
-            <CheckBox Content="Psionic"/>
-            <CheckBox Content="Human"/>
-            <CheckBox Content="Elf"/>
-            <CheckBox Content="Dwarf"/>
-            <CheckBox Content="Orc"/>
-            <CheckBox Content="Goblin"/>
-            <CheckBox Content="Troll"/>
-            <CheckBox Content="Demon"/>
-            <CheckBox Content="Devil"/>
-            <CheckBox Content="Undead"/>
-            <CheckBox Content="Skeleton"/>
-            <CheckBox Content="Zombie"/>
-            <CheckBox Content="Werewolf"/>
-            <CheckBox Content="Vampire"/>
-            <CheckBox Content="Golem"/>
-            <CheckBox Content="Elemental"/>
-            <CheckBox Content="Celestial"/>
-            <CheckBox Content="Fairy"/>
-            <CheckBox Content="Tiefling"/>
-            <CheckBox Content="Dragonborn"/>
-            <CheckBox Content="Halfling"/>
-            <CheckBox Content="Gnome"/>
-            <CheckBox Content="Lizardfolk"/>
-            <CheckBox Content="Beholder"/>
-            <CheckBox Content="Eldritch Horror"/>
-            <CheckBox Content="Alien"/>
-            <CheckBox Content="Kingdom Army"/>
-            <CheckBox Content="Rebel Forces"/>
-            <CheckBox Content="Pirates"/>
-            <CheckBox Content="Cultists"/>
-            <CheckBox Content="Dark Brotherhood"/>
-            <CheckBox Content="Holy Order"/>
-            <CheckBox Content="Empire"/>
-            <CheckBox Content="Mercenaries"/>
-            <CheckBox Content="Guilds"/>
-            <CheckBox Content="Coven"/>
-            <CheckBox Content="Druidic Circle"/>
-            <CheckBox Content="Necromantic Order"/>
-            <CheckBox Content="Intergalactic Federation"/>
-            <CheckBox Content="Hive Mind"/>
-        </ContextMenu>
+                        <!-- Search Filters Button -->
+                        <Border BorderBrush="#98730C" BorderThickness="1" CornerRadius="2" Margin="5">
+                            <Button x:Name="BtnSearchFilters" Content="Search Filters" Click="BtnSearchFilters_Click"
+                            Background="#98730C" Foreground="White" BorderBrush="#98730C" BorderThickness="2"
+                            Width="90" Height="30" Cursor="Hand"/>
+                        </Border>
+                    </StackPanel>
 
-        <ContextMenu x:Key="AddTagsContextMenu" Width="200" Height="400">
-            <Button x:Name="BtnAddTags" Content="Update Tags" Click="BtnAddTags_Click"/>
-            <CheckBox Content="D and D"/>
-            <CheckBox Content="Pathfinder"/>
-            <CheckBox Content="Warhammer 40K"/>
-            <CheckBox Content="Warhammer AOS"/>
-            <CheckBox Content="Call of Cthulhu"/>
-            <CheckBox Content="Shadowrun"/>
-            <CheckBox Content="Starfinder"/>
-            <CheckBox Content="FATE"/>
-            <CheckBox Content="GURPS"/>
-            <CheckBox Content="World of Darkness"/>
-            <CheckBox Content="Savage Worlds"/>
-            <CheckBox Content="Blades in the Dark"/>
-            <CheckBox Content="Cyberpunk RED"/>
-            <CheckBox Content="Star Wars RPG"/>
-            <CheckBox Content="Fantasy"/>
-            <CheckBox Content="Sci-Fi"/>
-            <CheckBox Content="Steampunk"/>
-            <CheckBox Content="Cyberpunk"/>
-            <CheckBox Content="Post-Apocalyptic"/>
-            <CheckBox Content="Modern"/>
-            <CheckBox Content="Horror"/>
-            <CheckBox Content="Mythology"/>
-            <CheckBox Content="Dark Fantasy"/>
-            <CheckBox Content="High Fantasy"/>
-            <CheckBox Content="Medieval"/>
-            <CheckBox Content="Western"/>
-            <CheckBox Content="Space Opera"/>
-            <CheckBox Content="Lovecraftian"/>
-            <CheckBox Content="Dieselpunk"/>
-            <CheckBox Content="Hero"/>
-            <CheckBox Content="Villain"/>
-            <CheckBox Content="NPC"/>
-            <CheckBox Content="Monster"/>
-            <CheckBox Content="Boss Monster"/>
-            <CheckBox Content="Minion"/>
-            <CheckBox Content="Humanoid"/>
-            <CheckBox Content="Vehicle"/>
-            <CheckBox Content="Mech"/>
-            <CheckBox Content="Construct"/>
-            <CheckBox Content="Summonable Creature"/>
-            <CheckBox Content="Undead"/>
-            <CheckBox Content="Beast"/>
-            <CheckBox Content="Mount"/>
-            <CheckBox Content="Dragon"/>
-            <CheckBox Content="Giant"/>
-            <CheckBox Content="Warrior"/>
-            <CheckBox Content="Knight"/>
-            <CheckBox Content="Paladin"/>
-            <CheckBox Content="Barbarian"/>
-            <CheckBox Content="Rogue"/>
-            <CheckBox Content="Assassin"/>
-            <CheckBox Content="Ranger"/>
-            <CheckBox Content="Hunter"/>
-            <CheckBox Content="Sorcerer"/>
-            <CheckBox Content="Wizard"/>
-            <CheckBox Content="Cleric"/>
-            <CheckBox Content="Druid"/>
-            <CheckBox Content="Necromancer"/>
-            <CheckBox Content="Bard"/>
-            <CheckBox Content="Monk"/>
-            <CheckBox Content="Gunslinger"/>
-            <CheckBox Content="Artificer"/>
-            <CheckBox Content="Alchemist"/>
-            <CheckBox Content="Psionic"/>
-            <CheckBox Content="Human"/>
-            <CheckBox Content="Elf"/>
-            <CheckBox Content="Dwarf"/>
-            <CheckBox Content="Orc"/>
-            <CheckBox Content="Goblin"/>
-            <CheckBox Content="Troll"/>
-            <CheckBox Content="Demon"/>
-            <CheckBox Content="Devil"/>
-            <CheckBox Content="Undead"/>
-            <CheckBox Content="Skeleton"/>
-            <CheckBox Content="Zombie"/>
-            <CheckBox Content="Werewolf"/>
-            <CheckBox Content="Vampire"/>
-            <CheckBox Content="Golem"/>
-            <CheckBox Content="Elemental"/>
-            <CheckBox Content="Celestial"/>
-            <CheckBox Content="Fairy"/>
-            <CheckBox Content="Tiefling"/>
-            <CheckBox Content="Dragonborn"/>
-            <CheckBox Content="Halfling"/>
-            <CheckBox Content="Gnome"/>
-            <CheckBox Content="Lizardfolk"/>
-            <CheckBox Content="Beholder"/>
-            <CheckBox Content="Eldritch Horror"/>
-            <CheckBox Content="Alien"/>
-            <CheckBox Content="Kingdom Army"/>
-            <CheckBox Content="Rebel Forces"/>
-            <CheckBox Content="Pirates"/>
-            <CheckBox Content="Cultists"/>
-            <CheckBox Content="Dark Brotherhood"/>
-            <CheckBox Content="Holy Order"/>
-            <CheckBox Content="Empire"/>
-            <CheckBox Content="Mercenaries"/>
-            <CheckBox Content="Guilds"/>
-            <CheckBox Content="Coven"/>
-            <CheckBox Content="Druidic Circle"/>
-            <CheckBox Content="Necromantic Order"/>
-            <CheckBox Content="Intergalactic Federation"/>
-            <CheckBox Content="Hive Mind"/>
-        </ContextMenu>
+                    <!-- Scrollable List for CheckBoxes -->
+                    <ScrollViewer Height="340" VerticalScrollBarVisibility="Auto">
+                        <ScrollViewer.Resources>
+                            <Style TargetType="ScrollBar" BasedOn="{StaticResource CustomScrollBarStyle}" />
+                        </ScrollViewer.Resources>
+                        <StackPanel Margin="5">
+                            <CheckBox Content="Alchemist" Foreground="White"/>
+                            <CheckBox Content="Assassin" Foreground="White"/>
+                            <CheckBox Content="Bard" Foreground="White"/>
+                            <CheckBox Content="Barbarian" Foreground="White"/>
+                            <CheckBox Content="Beast" Foreground="White"/>
+                            <CheckBox Content="Blades in the Dark" Foreground="White"/>
+                            <CheckBox Content="Boss Monster" Foreground="White"/>
+                            <CheckBox Content="Call of Cthulhu" Foreground="White"/>
+                            <CheckBox Content="Cleric" Foreground="White"/>
+                            <CheckBox Content="Construct" Foreground="White"/>
+                            <CheckBox Content="Cyberpunk" Foreground="White"/>
+                            <CheckBox Content="Cyberpunk RED" Foreground="White"/>
+                            <CheckBox Content="Dark Fantasy" Foreground="White"/>
+                            <CheckBox Content="Dieselpunk" Foreground="White"/>
+                            <CheckBox Content="D and D" Foreground="White"/>
+                            <CheckBox Content="Dragon" Foreground="White"/>
+                            <CheckBox Content="Druid" Foreground="White"/>
+                            <CheckBox Content="FATE" Foreground="White"/>
+                            <CheckBox Content="Fantasy" Foreground="White"/>
+                            <CheckBox Content="Giant" Foreground="White"/>
+                            <CheckBox Content="Gunslinger" Foreground="White"/>
+                            <CheckBox Content="GURPS" Foreground="White"/>
+                            <CheckBox Content="High Fantasy" Foreground="White"/>
+                            <CheckBox Content="Hero" Foreground="White"/>
+                            <CheckBox Content="Horror" Foreground="White"/>
+                            <CheckBox Content="Humanoid" Foreground="White"/>
+                            <CheckBox Content="Hunter" Foreground="White"/>
+                            <CheckBox Content="Knight" Foreground="White"/>
+                            <CheckBox Content="Lovecraftian" Foreground="White"/>
+                            <CheckBox Content="Mech" Foreground="White"/>
+                            <CheckBox Content="Medieval" Foreground="White"/>
+                            <CheckBox Content="Minion" Foreground="White"/>
+                            <CheckBox Content="Modern" Foreground="White"/>
+                            <CheckBox Content="Monster" Foreground="White"/>
+                            <CheckBox Content="Mount" Foreground="White"/>
+                            <CheckBox Content="Mythology" Foreground="White"/>
+                            <CheckBox Content="Necromancer" Foreground="White"/>
+                            <CheckBox Content="NPC" Foreground="White"/>
+                            <CheckBox Content="Paladin" Foreground="White"/>
+                            <CheckBox Content="Pathfinder" Foreground="White"/>
+                            <CheckBox Content="Post-Apocalyptic" Foreground="White"/>
+                            <CheckBox Content="Psionic" Foreground="White"/>
+                            <CheckBox Content="Ranger" Foreground="White"/>
+                            <CheckBox Content="Rogue" Foreground="White"/>
+                            <CheckBox Content="Savage Worlds" Foreground="White"/>
+                            <CheckBox Content="Sci-Fi" Foreground="White"/>
+                            <CheckBox Content="Shadowrun" Foreground="White"/>
+                            <CheckBox Content="Sorcerer" Foreground="White"/>
+                            <CheckBox Content="Space Opera" Foreground="White"/>
+                            <CheckBox Content="Starfinder" Foreground="White"/>
+                            <CheckBox Content="Star Wars RPG" Foreground="White"/>
+                            <CheckBox Content="Steampunk" Foreground="White"/>
+                            <CheckBox Content="Summonable Creature" Foreground="White"/>
+                            <CheckBox Content="Undead" Foreground="White"/>
+                            <CheckBox Content="Vehicle" Foreground="White"/>
+                            <CheckBox Content="Villain" Foreground="White"/>
+                            <CheckBox Content="Warhammer 40K" Foreground="White"/>
+                            <CheckBox Content="Warhammer AOS" Foreground="White"/>
+                            <CheckBox Content="Warrior" Foreground="White"/>
+                            <CheckBox Content="Western" Foreground="White"/>
+                            <CheckBox Content="Wizard" Foreground="White"/>
+                            <CheckBox Content="World of Darkness" Foreground="White"/>
+                        </StackPanel>
+                    </ScrollViewer>
+                </StackPanel>
+            </Border>
+        </Popup>
+
+        <Popup x:Key="AddTagsPopupMenu" StaysOpen="True" Placement="Mouse" AllowsTransparency="True">
+            <Border Background="#540754" CornerRadius="5" BorderBrush="#98730C" BorderThickness="2" Padding="8" Width="240" Height="400">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <!-- Clear Filters Button -->
+                        <Border BorderBrush="#98730C" BorderThickness="1" CornerRadius="2" Margin="5">
+                            <Button x:Name="BtnAddTags" Content="Update Tags" Click="BtnAddTags_Click" Background="#98730C" Foreground="White" BorderBrush="#98730C" BorderThickness="2" Width="90" Height="30" Cursor="Hand"/>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Scrollable List for CheckBoxes -->
+                    <ScrollViewer Height="340" VerticalScrollBarVisibility="Auto">
+
+                        <ScrollViewer.Resources>
+                            <Style TargetType="ScrollBar" BasedOn="{StaticResource CustomScrollBarStyle}" />
+                        </ScrollViewer.Resources>
+
+                        <StackPanel Margin="5">
+                            <CheckBox Content="Alchemist" Foreground="White"/>
+                            <CheckBox Content="Assassin" Foreground="White"/>
+                            <CheckBox Content="Bard" Foreground="White"/>
+                            <CheckBox Content="Barbarian" Foreground="White"/>
+                            <CheckBox Content="Beast" Foreground="White"/>
+                            <CheckBox Content="Blades in the Dark" Foreground="White"/>
+                            <CheckBox Content="Boss Monster" Foreground="White"/>
+                            <CheckBox Content="Call of Cthulhu" Foreground="White"/>
+                            <CheckBox Content="Cleric" Foreground="White"/>
+                            <CheckBox Content="Construct" Foreground="White"/>
+                            <CheckBox Content="Cyberpunk" Foreground="White"/>
+                            <CheckBox Content="Cyberpunk RED" Foreground="White"/>
+                            <CheckBox Content="Dark Fantasy" Foreground="White"/>
+                            <CheckBox Content="Dieselpunk" Foreground="White"/>
+                            <CheckBox Content="D and D" Foreground="White"/>
+                            <CheckBox Content="Dragon" Foreground="White"/>
+                            <CheckBox Content="Druid" Foreground="White"/>
+                            <CheckBox Content="FATE" Foreground="White"/>
+                            <CheckBox Content="Fantasy" Foreground="White"/>
+                            <CheckBox Content="Giant" Foreground="White"/>
+                            <CheckBox Content="Gunslinger" Foreground="White"/>
+                            <CheckBox Content="GURPS" Foreground="White"/>
+                            <CheckBox Content="High Fantasy" Foreground="White"/>
+                            <CheckBox Content="Hero" Foreground="White"/>
+                            <CheckBox Content="Horror" Foreground="White"/>
+                            <CheckBox Content="Humanoid" Foreground="White"/>
+                            <CheckBox Content="Hunter" Foreground="White"/>
+                            <CheckBox Content="Knight" Foreground="White"/>
+                            <CheckBox Content="Lovecraftian" Foreground="White"/>
+                            <CheckBox Content="Mech" Foreground="White"/>
+                            <CheckBox Content="Medieval" Foreground="White"/>
+                            <CheckBox Content="Minion" Foreground="White"/>
+                            <CheckBox Content="Modern" Foreground="White"/>
+                            <CheckBox Content="Monster" Foreground="White"/>
+                            <CheckBox Content="Mount" Foreground="White"/>
+                            <CheckBox Content="Mythology" Foreground="White"/>
+                            <CheckBox Content="Necromancer" Foreground="White"/>
+                            <CheckBox Content="NPC" Foreground="White"/>
+                            <CheckBox Content="Paladin" Foreground="White"/>
+                            <CheckBox Content="Pathfinder" Foreground="White"/>
+                            <CheckBox Content="Post-Apocalyptic" Foreground="White"/>
+                            <CheckBox Content="Psionic" Foreground="White"/>
+                            <CheckBox Content="Ranger" Foreground="White"/>
+                            <CheckBox Content="Rogue" Foreground="White"/>
+                            <CheckBox Content="Savage Worlds" Foreground="White"/>
+                            <CheckBox Content="Sci-Fi" Foreground="White"/>
+                            <CheckBox Content="Shadowrun" Foreground="White"/>
+                            <CheckBox Content="Sorcerer" Foreground="White"/>
+                            <CheckBox Content="Space Opera" Foreground="White"/>
+                            <CheckBox Content="Starfinder" Foreground="White"/>
+                            <CheckBox Content="Star Wars RPG" Foreground="White"/>
+                            <CheckBox Content="Steampunk" Foreground="White"/>
+                            <CheckBox Content="Summonable Creature" Foreground="White"/>
+                            <CheckBox Content="Undead" Foreground="White"/>
+                            <CheckBox Content="Vehicle" Foreground="White"/>
+                            <CheckBox Content="Villain" Foreground="White"/>
+                            <CheckBox Content="Warhammer 40K" Foreground="White"/>
+                            <CheckBox Content="Warhammer AOS" Foreground="White"/>
+                            <CheckBox Content="Warrior" Foreground="White"/>
+                            <CheckBox Content="Western" Foreground="White"/>
+                            <CheckBox Content="Wizard" Foreground="White"/>
+                            <CheckBox Content="World of Darkness" Foreground="White"/>
+                        </StackPanel>
+                    </ScrollViewer>
+                </StackPanel>
+            </Border>
+        </Popup>
 
         <local:StringToVisibilityConverter x:Key="StringToVisibilityConverter"/>
     </Window.Resources>
@@ -481,22 +444,36 @@
                     <Grid x:Name="User_Grid" Cursor="Hand" MouseLeftButtonDown="Chevron_Click" HorizontalAlignment="Center" VerticalAlignment="Center">
 
                         <StackPanel Orientation="Horizontal" MouseLeftButtonDown="Chevron_Click" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            
                             <TextBlock Grid.Column="1" MouseLeftButtonDown="Chevron_Click" x:Name="Username_TextBlock" FontSize="12" Foreground="#d1d5db" VerticalAlignment="Center" HorizontalAlignment="Right"/>
 
                             <Border Background="Transparent" MouseLeftButtonDown="Chevron_Click" BorderBrush="Transparent" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,0,10,0">
-                                <md:PackIcon Grid.Column="1" Name="ChevronDownClick" Kind="ChevronDown" MouseLeftButtonDown="Chevron_Click" Foreground="#d1d5db" VerticalAlignment="Center" HorizontalAlignment="Right">
 
-                                    <md:PackIcon.ContextMenu>
-                                        <ContextMenu Name="ChevronContextMenu" Placement="Bottom">
-                                            <MenuItem Header="Logout" Click="BtnLogout_Click" Cursor="Hand"/>
-                                            <!--<Separator/>
-                                            <MenuItem Header="Hubs" Cursor="Hand"/>-->
-                                        </ContextMenu>
-                                    </md:PackIcon.ContextMenu>
+                                <!-- Chevron Icon -->
+                                <md:PackIcon x:Name="ChevronDownClick" Kind="ChevronDown" Foreground="#d1d5db" VerticalAlignment="Center" HorizontalAlignment="Right" Cursor="Hand" MouseLeftButtonDown="Chevron_Click"/>
 
-                                </md:PackIcon>
                             </Border>
+
                         </StackPanel>
+
+                        <!-- Popup for Logout Menu -->
+                        <Popup x:Name="ChevronPopupMenu" Placement="Bottom" PlacementTarget="{Binding ElementName=ChevronDownClick}"
+       StaysOpen="True" AllowsTransparency="True" VerticalOffset="5">
+
+                            <Border Background="#540754" CornerRadius="5" BorderBrush="#98730C" BorderThickness="2" Padding="8"
+            Width="120">
+
+                                <StackPanel>
+                                    <Button Content="Logout" Click="BtnLogout_Click" 
+                    Background="#98730C" Foreground="White" BorderBrush="#98730C" 
+                    BorderThickness="2" Width="100" Height="30" Cursor="Hand"/>
+                                </StackPanel>
+
+                            </Border>
+
+                        </Popup>
+
+
                     </Grid>
 
                 </StackPanel>
@@ -531,16 +508,16 @@
                            VerticalAlignment="Center" HorizontalAlignment="Left"/>
 
                         <!-- Dropdown Arrow for Selecting a Hub -->
-                        <Border Grid.Column="1" Background="Transparent" VerticalAlignment="Center" HorizontalAlignment="Right" MouseLeftButtonDown="ToggleHubsMenu">
+                        <Border x:Name="HubsDropdownBorder" Grid.Column="1" Background="Transparent" VerticalAlignment="Center" HorizontalAlignment="Right" MouseLeftButtonDown="ToggleHubsMenu">
                             <md:PackIcon Kind="ChevronDown" Width="16" Height="16" Foreground="#d1d5db" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="Bold" Cursor="Hand"/>
                         </Border>
                     </Grid>
                 </Border>
 
                 <!-- Popup for Hubs Selection -->
-                <Popup x:Name="HubsMenuPopup" Placement="Relative" PlacementTarget="{Binding ElementName=HubsHeaderTextBlock}" StaysOpen="False" VerticalOffset="5">
-                    <Border Background="White" BorderBrush="Gray" BorderThickness="1" Padding="5">
-                        <StackPanel x:Name="HubsMenuStackPanel"/>
+                <Popup x:Name="HubsMenuPopup" Placement="Bottom" PlacementTarget="{Binding ElementName=HubsDropdownBorder}" StaysOpen="False" AllowsTransparency="True" VerticalOffset="5">
+                    <Border Background="#540754" CornerRadius="5" BorderBrush="#98730C" BorderThickness="2" Padding="8" Width="Auto" Height="Auto">
+                        <StackPanel x:Name="HubsMenuStackPanel" Margin="5"/>
                     </Border>
                 </Popup>
 
@@ -794,154 +771,6 @@
 
                     </StackPanel>
 
-                    <!--<Border MouseLeftButtonDown="MarketplaceGrid_Click" BorderBrush="#98730C" BorderThickness="3" CornerRadius="2" Width="90" Height="40" HorizontalAlignment="Left" Margin="130,0,0,0" Cursor="Hand">
-                        <Button x:Name="BtnMarketplace" Click="BtnMarketplace_Click" Content="Marketplace" BorderBrush="#98730C" BorderThickness="2" Background="#540754" Foreground="White" Width="90" Height="40" HorizontalAlignment="Center" VerticalAlignment="Center" Cursor="Hand"/>
-                    </Border>-->
-
-                    <!-- <Border MouseLeftButtonDown="UpArrow_Click" x:Name="UpArrowBorder" Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" Cursor="Hand" Margin="0,0,5,0" Visibility="Hidden">
-                        <md:PackIcon x:Name="UpArrow" Kind="ArrowUpBoldOutline" Height="30" Width="30" VerticalAlignment="Center" HorizontalAlignment="Center"/> 
-                    </Border>
-
-                    <TextBlock x:Name="UpvoteTextBlock" Text="0" Height="30" Width="30" FontSize="20" FontFamily="Arial" Margin="50,10,0,0" TextAlignment="Center" Visibility="Hidden"/>
-
-                    <Border MouseLeftButtonDown="DownArrow_Click" x:Name="DownArrowBorder" Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" Cursor="Hand" Margin="100,0,5,0" Visibility="Hidden">
-                        <md:PackIcon x:Name="DownArrow" Kind="ArrowDownBoldOutline" Height="30" Width="30" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                    </Border>
-                    
-                    
-                    <!-
-                    <Button HorizontalAlignment="Left" BorderThickness="0" x:Name="BtnDeleteModel" Width="100" Height="40" Click="BtnDeleteModel_Click" Cursor="Hand" Margin="180,0,0,0">
-                        <Button.Style>
-                            <Style TargetType="{x:Type Button}">
-
-                                <Setter Property="Background" Value="#F00000"/>
-                                <Setter Property="Foreground" Value="White"/>
-                                <Setter Property="Template">
-                                    <Setter.Value>
-                                        <ControlTemplate TargetType="{x:Type Button}">
-                                            <Border Background="{TemplateBinding Background}" BorderThickness="0">
-                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                            </Border>
-                                        </ControlTemplate>
-                                    </Setter.Value>
-                                </Setter>
-                                <Style.Triggers>
-                                    <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter Property="Background" Value="#D24A06"/>
-                                    </Trigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Button.Style>
-
-                        <StackPanel Orientation="Horizontal">
-                            <md:PackIcon Kind="Minus" Width="17" Height="17" VerticalAlignment="Center"/>
-                            <TextBlock Text="Delete" Margin="1,0,0,0" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Button>
-
-                    <Button HorizontalAlignment="Left" BorderThickness="0" x:Name="BtnViewInApp" 
-                        Width="100" Height="40" Click="BtnViewInApp_Click" Cursor="Hand" 
-                        Margin="420,0,0,0">
-
-                        <Button.Style>
-                            <Style TargetType="{x:Type Button}">
-                                <Setter Property="Background" Value="#4CAF50"/>
-                                <Setter Property="Foreground" Value="White"/>
-                                <Setter Property="Template">
-                                    <Setter.Value>
-                                        <ControlTemplate TargetType="{x:Type Button}">
-                                            <Border Background="{TemplateBinding Background}" BorderThickness="0">
-                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                            </Border>
-                                        </ControlTemplate>
-                                    </Setter.Value>
-                                </Setter>
-                                <Style.Triggers>
-                                    <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter Property="Background" Value="#388E3C"/>
-                                    </Trigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Button.Style>
-
-                        <StackPanel Orientation="Horizontal">
-                            <md:PackIcon Kind="Eye" Width="17" Height="17" VerticalAlignment="Center"/>
-                            <TextBlock Text="View in App" Margin="5,0,0,0" VerticalAlignment="Center"/>
-
-                        </StackPanel>
-                    </Button>-->
-                    <!-- <Button x:Name="BtnGenerate3D"
-                        Content="Generate 3D Model"
-                        Width="200" Height="40"
-                        Click="BtnGenerate3D_Click"
-                        HorizontalAlignment="Left"
-                        VerticalAlignment="Center"
-                        Margin="538,0,0,0"/> 
-                    -->
-                    <!--
-                    <Button HorizontalAlignment="Left" BorderThickness="0" x:Name="BtnDownloadModel"
-                                Width="123" Height="40" Click="BtnDownload_Click" Cursor="Hand" 
-    Margin="538,15,0,15">
-
-                        <Button.Style>
-                            <Style TargetType="{x:Type Button}">
-                                <Setter Property="Background" Value="#3C88E3"/>
-                                <Setter Property="Foreground" Value="White"/>
-                                <Setter Property="Template">
-                                    <Setter.Value>
-                                        <ControlTemplate TargetType="{x:Type Button}">
-                                            <Border Background="{TemplateBinding Background}" BorderThickness="0">
-                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                            </Border>
-                                        </ControlTemplate>
-                                    </Setter.Value>
-                                </Setter>
-                                <Style.Triggers>
-                                    <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter Property="Background" Value="#3C88E3"/>
-                                    </Trigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Button.Style>
-
-                        <StackPanel Orientation="Horizontal">
-                            <md:PackIcon Kind="Download" Width="17" Height="17" VerticalAlignment="Center"/>
-                            <TextBlock Text="Download Model" Margin="5,0,0,0" VerticalAlignment="Center"/>
-
-                        </StackPanel>
-                    </Button>
-
-
-
-
-                    <Button HorizontalAlignment="Left" BorderThickness="0" x:Name="BtnViewInFusion" Width="100" Height="40" Click="BtnViewInFusion_Click" Cursor="Hand" Margin="300,0,0,0">
-                        <Button.Style>
-                            <Style TargetType="{x:Type Button}">
-
-                                <Setter Property="Background" Value="#10B8FF"/>
-                                <Setter Property="Foreground" Value="White"/>
-                                <Setter Property="Template">
-                                    <Setter.Value>
-                                        <ControlTemplate TargetType="{x:Type Button}">
-                                            <Border Background="{TemplateBinding Background}" BorderThickness="0">
-                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                            </Border>
-                                        </ControlTemplate>
-                                    </Setter.Value>
-                                </Setter>
-                                <Style.Triggers>
-                                    <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter Property="Background" Value="#D24A06"/>
-                                    </Trigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Button.Style>
-
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="Open In Fusion" Margin="1,0,0,0" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Button>-->
-
                     <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
 
                         <!--<TextBlock Text="Sort By" Cursor="Hand" FontSize="13" Foreground="#4B4B4B" VerticalAlignment="Center"/>
@@ -993,7 +822,7 @@
                             </Rectangle.RenderTransform>
                         </Rectangle>
 
-                        <Button x:Name="SearchButton" Cursor="IBeam" Focusable="False"  Width="115" Height="24" Background="Transparent" BorderBrush="#d1d5db" Margin="0,0,20,0">
+                        <Button x:Name="SearchButton" Cursor="IBeam" Focusable="False" Width="115" Height="24" Background="Transparent" BorderBrush="#d1d5db" Margin="0,0,20,0">
 
                             <Button.Resources>
                                 <Style TargetType="Border">
@@ -1003,7 +832,7 @@
 
                             <StackPanel Orientation="Horizontal">
                                 <md:PackIcon Kind="Magnify" Width="14" Height="14" VerticalAlignment="Center" Foreground="#d1d5db" Margin="0,0,0,0"/>
-                                <TextBox x:Name="SearchText_Box" VerticalAlignment="Center" VerticalContentAlignment="Center" BorderBrush="Transparent" Width="92" FontSize="10" Height="19"  KeyDown="SearchText_Box_OnKeyDown">
+                                <TextBox x:Name="SearchText_Box" VerticalAlignment="Center" VerticalContentAlignment="Center" CaretBrush="#d1d5db" BorderBrush="Transparent" Width="86" FontSize="10" Height="19"  KeyDown="SearchText_Box_OnKeyDown">
                                     <TextBox.Style>
                                         <Style TargetType="TextBox">
                                             <Setter Property="Foreground" Value="Gray"/>
@@ -1013,8 +842,10 @@
                                             <Setter Property="BorderThickness" Value="1"/>
                                             <Style.Triggers>
                                                 <Trigger Property="IsKeyboardFocused" Value="True">
+                                                    <Setter Property="BorderBrush" Value="Transparent"/>
+                                                    <Setter Property="BorderThickness" Value="0"/>
                                                     <Setter Property="Text" Value=""/>
-                                                    <Setter Property="Foreground" Value="Black"/>
+                                                    <Setter Property="Foreground" Value="#d1d5db"/>
                                                 </Trigger>
                                                 <Trigger Property="IsKeyboardFocused" Value="False">
                                                     <Setter Property="Foreground" Value="Gray"/>
@@ -1024,7 +855,8 @@
                                         </Style>
                                     </TextBox.Style>
                                 </TextBox>
-                                <!--<TextBlock x:Name="SearchText" Text="Search By Name..." Foreground="#A3A3A3" FontSize="10" Margin="3,0,0,0" VerticalAlignment="Center"/>-->
+
+                                <md:PackIcon Panel.ZIndex="2" MouseLeftButtonDown="SearchClear_Click" Kind="Close" Width="10" Height="10" Foreground="#d1d5db" Cursor="Hand" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                             </StackPanel>
 
                         </Button>
@@ -1752,7 +1584,7 @@
                     <StackPanel Orientation="Vertical" HorizontalAlignment="Stretch" Margin="2,2,2,2">
 
                         <!-- Background Border Behind Image -->
-                        <Border Background="#E6E6E6" HorizontalAlignment="Stretch" Padding="10" CornerRadius="5">
+                        <Border Background="#4B0082" HorizontalAlignment="Stretch" Padding="10" CornerRadius="5">
                             <Grid>
                                 <Image x:Name="ModelImage" Width="120" Height="120" Stretch="UniformToFill" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Grid>
@@ -1768,7 +1600,7 @@
                 <StackPanel x:Name="ModelInfo" Grid.Row="1" Orientation="Vertical" Visibility="Collapsed" Margin="5,5,5,10">
 
                     <!-- Metadata Info -->
-                    <ScrollViewer HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Auto" Height="200" >
+                    <ScrollViewer HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Auto" Height="260" >
                         <ScrollViewer.Resources>
                             <Style TargetType="ScrollBar" BasedOn="{StaticResource CustomScrollBarStyle}" />
                         </ScrollViewer.Resources>
@@ -1833,10 +1665,10 @@
                             <TextBlock x:Name="ModifiedByText" Foreground="#d1d5db"/>
                         </StackPanel>
 
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
+                        <!--<StackPanel Orientation="Horizontal" Margin="0,0,0,15">
                             <TextBlock Text="Project: " FontWeight="Bold" Foreground="#d1d5db"/>
                             <TextBlock x:Name="FolderNameText" Foreground="#d1d5db"/>
-                        </StackPanel>
+                        </StackPanel>-->
 
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
                             <TextBlock Text="File Size: " FontWeight="Bold" Foreground="#d1d5db"/>

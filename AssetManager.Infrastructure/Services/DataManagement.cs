@@ -1194,15 +1194,29 @@ namespace AssetManager.Infrastructure.Services
                 string versionIdFinal = selectedVersion.GetProperty("id").GetString();
                 string name = attr.GetProperty("displayName").GetString();
                 string createdBy = attr.GetProperty("createUserName").GetString();
-                string createdDate = attr.GetProperty("createTime").GetString();
+                //string createdDate = attr.GetProperty("createTime").GetString();
                 string modifiedBy = attr.TryGetProperty("lastModifiedUserName", out var modBy) ? modBy.GetString() : "Not available";
-                string modifiedDate = attr.TryGetProperty("lastModifiedTime", out var modTime) ? modTime.GetString() : "Not available";
+                //string modifiedDate = attr.TryGetProperty("lastModifiedTime", out var modTime) ? modTime.GetString() : "Not available";
                 string fileType = attr.TryGetProperty("fileType", out var format) ? format.GetString() : "Not available";
                 long rawSize = attr.TryGetProperty("storageSize", out var size) ? size.GetInt64() : 0;
 
+                string createdDate = attr.GetProperty("createTime").GetString();
+                string modifiedDate = attr.TryGetProperty("lastModifiedTime", out var modTime) ? modTime.GetString() : "Not available";
+
+                // Format the dates to show "YYYY-MM-DD HH:mm:ss"
+                if (DateTime.TryParse(createdDate, out DateTime parsedCreatedDate))
+                {
+                    createdDate = parsedCreatedDate.ToString("yyyy-MM-dd HH:mm:ss");
+                }
+                if (DateTime.TryParse(modifiedDate, out DateTime parsedModifiedDate))
+                {
+                    modifiedDate = parsedModifiedDate.ToString("yyyy-MM-dd HH:mm:ss");
+                }
+
+
 
                 string folderName = "Not available";
-                string polyCount = "0"; // If available in derivatives, would be separate call
+                string polyCount = "Not Available"; // If available in derivatives, would be separate call
                 string dimensions = "Not available"; // Likewise
 
                 // Optional: extract from relationships
@@ -1224,7 +1238,7 @@ namespace AssetManager.Infrastructure.Services
                     Format = fileType,
                     FileSize = (int)rawSize,
                     Foldername = folderName,
-                    PolyCount = int.TryParse(polyCount, out int polyVal) ? polyVal : 0,
+                    PolyCount = polyCount,
                     Dimensions = dimensions
                 };
             }
@@ -1379,7 +1393,7 @@ namespace AssetManager.Infrastructure.Services
                     string versionNumber = attributes?.versionNumber?.ToString() ?? "N/A";
                     long fileSize = attributes?.storageSize ?? 0;
                     string fileType = attributes?.fileType ?? "N/A";
-                    string polyCount = attributes?.polyCount?.ToString() ?? "0";
+                    string polyCount = "Not Available";
                     string dimensions = (attributes?.dimensions != null)
                         ? $"{attributes.dimensions.height}cm (H) x {attributes.dimensions.width}cm (W)"
                         : "N/A";
@@ -1418,7 +1432,7 @@ namespace AssetManager.Infrastructure.Services
                         FileSize = (int)fileSize,
                         Version = versionNumber,
                         Format = fileType,
-                        PolyCount = int.TryParse(polyCount, out var count) ? count : 0,
+                        PolyCount = polyCount,
                         Dimensions = dimensions
                     };
 
