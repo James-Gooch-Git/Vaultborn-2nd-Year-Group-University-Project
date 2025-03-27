@@ -17,6 +17,76 @@
     
     
     <Window.Resources>
+
+        <Style TargetType="Border" x:Key="PopupContainer">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="BorderBrush" Value="#DDDDDD"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="8"/>
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect Color="Gray" BlurRadius="8" ShadowDepth="2"/>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="Button" x:Key="PopupMenuItem">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="Black"/>
+            <Setter Property="Padding" Value="10,6"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" 
+                            Padding="{TemplateBinding Padding}" 
+                            CornerRadius="8">
+                            <ContentPresenter/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#F5F5F5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="MenuItem">
+                <Setter Property="Padding" Value="12,8"/>
+                <Setter Property="FontSize" Value="14"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="Foreground" Value="Black"/>
+                <Setter Property="Background" Value="White"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="MenuItem">
+                            <Border Background="{TemplateBinding Background}" 
+                            CornerRadius="8" 
+                            Padding="{TemplateBinding Padding}">
+                                <Grid>
+                                    <ContentPresenter/>
+                                </Grid>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsHighlighted" Value="True">
+                                    <Setter Property="Background" Value="#EAEAEA"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+
+
         <!--<Style TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderBrush" Value="Transparent"/>
@@ -1311,15 +1381,6 @@
                     </Border>
                 </Popup>
 
-
-
-
-
-
-
-
-
-
             </Grid>
 
         </Border>
@@ -1938,33 +1999,18 @@
 
                         <!-- Comment Input Field with Send Icon -->
                         <Grid Width="Auto">
-                            <Border Background="White" Padding="2" BorderThickness="1" BorderBrush="#4B4b4b" Width="185" Height="28" VerticalAlignment="Center" HorizontalAlignment="Center">
+                            <Border Background="Transparent" Padding="2" BorderThickness="1" BorderBrush="#d1d5db" Width="185" Height="28" VerticalAlignment="Center" HorizontalAlignment="Center">
                                 <!-- Set a fixed height -->
                                 <Grid>
                                     <!-- Text Input -->
-                                    <TextBox x:Name="CommentContent" BorderThickness="0" VerticalContentAlignment="Center" VerticalAlignment="Center" Background="Transparent" Padding="5,0,35,0" Height="24">
-                                        <!--<TextBox.Style>
-                                            <Style TargetType="TextBox">
-                                                ~1~<Setter Property="Foreground" Value="Gray"/>
-                                                <Setter Property="Text" Value="Add a comment..."/>@1@
-                                                <Style.Triggers>
-                                                    <Trigger Property="IsKeyboardFocused" Value="True">
-                                                        <Setter Property="Text" Value=""/>
-                                                        <Setter Property="Foreground" Value="Black"/>
-                                                    </Trigger>
-                                                    ~1~<Trigger Property="IsKeyboardFocused" Value="False">
-                                                        <Setter Property="Foreground" Value="Gray"/>
-                                                        <Setter Property="Text" Value="Add a comment..."/>
-                                                    </Trigger>@1@
-                                                </Style.Triggers>
-                                            </Style>
-                                        </TextBox.Style>-->
+                                    <TextBox x:Name="CommentContent" BorderThickness="0" VerticalContentAlignment="Center" CaretBrush="#d1d5db" VerticalAlignment="Center" Background="Transparent" Foreground="#d1d5db" Padding="5,0,35,0" Height="24">
+                                        
                                     </TextBox>
                                     <!-- Reduced height -->
 
                                     <!-- Send Button (PackIcon inside input field) -->
                                     <Button x:Name="BtnAddComment" Click="BtnAddComment_Click" Width="24" Height="24" Background="Transparent" BorderThickness="0" HorizontalAlignment="Right" VerticalAlignment="Center">
-                                        <md:PackIcon Kind="Send" Width="18" Height="18" Foreground="#4B4B4B"/>
+                                        <md:PackIcon Kind="Send" Width="18" Height="18" Foreground="#d1d5db"/>
                                     </Button>
                                 </Grid>
                             </Border>

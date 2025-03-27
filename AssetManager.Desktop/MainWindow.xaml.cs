@@ -757,10 +757,7 @@ namespace AssetManager.Desktop
                         _selectedItemId = selectedModelId;
                         _selectedModel = selectedModel;
 
-                        ContextMenu contextMenu = CreateModelContextMenu(selectedModelId, selectedModelName);
-                        contextMenu.PlacementTarget = btn;
-                        contextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
-                        contextMenu.IsOpen = true;
+                        ShowModelPopupMenu(selectedModelId, selectedModelName);
 
                         ev.Handled = true;
                     }
@@ -1435,10 +1432,7 @@ namespace AssetManager.Desktop
                     Button button = s as Button;
                     if (button?.DataContext is Dictionary<string, string> model)
                     {
-                        ContextMenu contextMenu = CreateModelContextMenu(model["Id"], model["Name"]);
-                        contextMenu.PlacementTarget = button;
-                        contextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
-                        contextMenu.IsOpen = true;
+                        ShowModelPopupMenu(model["Id"], model["Name"]);
                     }
                 }));
 
@@ -2196,112 +2190,107 @@ namespace AssetManager.Desktop
             }
         }
 
-        private ContextMenu CreateModelContextMenu(string modelId, string modelName)
+        private Button CreateMenuButton(string text, string emoji, RoutedEventHandler handler, Popup popupMenu)
         {
-            ContextMenu menu = new ContextMenu();
-
-            MenuItem openInFusionItem = new MenuItem { Header = "🔷 Open in Fusion 360" };
-            // Store both ID and name in Tag as a tuple
-            openInFusionItem.Tag = new Tuple<string, string>(modelId, modelName);
-
-            openInFusionItem.Click += (s, e) =>
+            Button button = new Button
             {
-                if (s is MenuItem menuItem && menuItem.Tag is Tuple<string, string> modelInfo)
-                {
-                    string selectedModelId = modelInfo.Item1;
-                    string selectedModelName = modelInfo.Item2;
-
-                    Console.WriteLine($"🔷 Opening Model in Fusion 360: {selectedModelName} (ID: {selectedModelId})");
-
-                    // Update ALL global variables before calling the method
-                    _selectedItemId = selectedModelId;
-                    _selectedItemName = selectedModelName;
-
-                    // Log the values to ensure they're set properly
-                    Console.WriteLine($"Updated globals - ID: {_selectedItemId}, Name: {_selectedItemName}");
-
-                    // Call the updated method signature
-                    BtnViewInFusion_Click(s, e);
-                }
+                Content = $"{emoji} {text}",
+                FontSize = 14,
+                FontWeight = FontWeights.SemiBold,
+                Padding = new Thickness(8),
+                Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d1d5db")),
+                BorderThickness = new Thickness(0),
+                HorizontalContentAlignment = HorizontalAlignment.Left,
+                Cursor = Cursors.Hand,
+                Margin = new Thickness(0,7,0,7)
             };
 
-            MenuItem viewInAppItem = new MenuItem { Header = "🖥️ View in App" };
-            viewInAppItem.Tag = new Tuple<string, string>(modelId, modelName);
-            viewInAppItem.Click += (s, e) =>
+            // Create Style for the Button
+            Style buttonStyle = new Style(typeof(Button));
+
+            // Default background color
+            buttonStyle.Setters.Add(new Setter(Button.BackgroundProperty, new SolidColorBrush((Color)ColorConverter.ConvertFromString("#540754"))));
+            buttonStyle.Setters.Add(new Setter(Button.ForegroundProperty, Brushes.White));
+
+            // Control Template (Removes default Button styling)
+            ControlTemplate template = new ControlTemplate(typeof(Button));
+            FrameworkElementFactory borderFactory = new FrameworkElementFactory(typeof(Border));
+            borderFactory.SetValue(Border.BackgroundProperty, new TemplateBindingExtension(Button.BackgroundProperty));
+            borderFactory.SetValue(Border.BorderThicknessProperty, new Thickness(0));
+
+            // ContentPresenter to show button text/icons
+            FrameworkElementFactory contentPresenter = new FrameworkElementFactory(typeof(ContentPresenter));
+            contentPresenter.SetValue(HorizontalAlignmentProperty, HorizontalAlignment.Left);
+            contentPresenter.SetValue(VerticalAlignmentProperty, VerticalAlignment.Center);
+
+            borderFactory.AppendChild(contentPresenter);
+            template.VisualTree = borderFactory;
+            buttonStyle.Setters.Add(new Setter(Button.TemplateProperty, template));
+
+            // MouseOver Trigger (Hover Effect)
+            Trigger hoverTrigger = new Trigger { Property = UIElement.IsMouseOverProperty, Value = true };
+            hoverTrigger.Setters.Add(new Setter(Button.BackgroundProperty, new SolidColorBrush((Color)ColorConverter.ConvertFromString("#540754"))));
+
+            buttonStyle.Triggers.Add(hoverTrigger);
+
+            // Apply the style to the button
+            button.Style = buttonStyle;
+
+            // Button click action
+            button.Click += (s, e) =>
             {
-                if (s is MenuItem menuItem && menuItem.Tag is Tuple<string, string> modelInfo)
-                {
-                    string selectedModelId = modelInfo.Item1;
-                    Console.WriteLine($"🖥️ Viewing Model in App: {selectedModelId}");
-
-                    // Make sure globals are updated
-                    _selectedItemId = selectedModelId;
-                    _selectedItemName = modelInfo.Item2;
-
-                    // If your method still expects a parameter, pass it
-                    BtnViewInApp_Click(selectedModelId);
-                }
+                popupMenu.IsOpen = false; // Close popup when an option is clicked
+                handler.Invoke(s, e);
             };
 
-            MenuItem openCommentsItem = new MenuItem { Header = "💬 Open Comments" };
-            openCommentsItem.Tag = new Tuple<string, string>(modelId, modelName);
-            openCommentsItem.Click += async (s, e) =>
-            {
-                if (s is MenuItem menuItem && menuItem.Tag is Tuple<string, string> modelInfo)
-                {
-                    string selectedModelId = modelInfo.Item1;
-                    Console.WriteLine($"💬 Opening Comments for Model: {selectedModelId}");
-                    _selectedItemId = selectedModelId;
-                    _selectedItemName = modelInfo.Item2;
-
-                    await LoadComments();
-                }
-            };
-
-            MenuItem downloadItem = new MenuItem { Header = "📥 Download" };
-            downloadItem.Tag = new Tuple<string, string>(modelId, modelName);
-            downloadItem.Click += (s, e) =>
-            {
-                if (s is MenuItem menuItem && menuItem.Tag is Tuple<string, string> modelInfo)
-                {
-                    string selectedModelId = modelInfo.Item1;
-                    Console.WriteLine($"📥 Downloading Model: {selectedModelId}");
-
-                    // Make sure globals are updated
-                    _selectedItemId = selectedModelId;
-                    _selectedItemName = modelInfo.Item2;
-
-                    // If your method still expects a parameter, pass it
-                    BtnDownload_Click(selectedModelId);
-                }
-            };
-
-            MenuItem deleteItem = new MenuItem { Header = "🗑️ Delete" };
-            deleteItem.Tag = new Tuple<string, string>(modelId, modelName);
-            deleteItem.Click += (s, e) =>
-            {
-                if (s is MenuItem menuItem && menuItem.Tag is Tuple<string, string> modelInfo)
-                {
-                    string selectedModelId = modelInfo.Item1;
-                    Console.WriteLine($"🗑️ Deleting Model: {selectedModelId}");
-
-                    // Make sure globals are updated 
-                    _selectedItemId = selectedModelId;
-                    _selectedItemName = modelInfo.Item2;
-
-                    // If your method still expects a parameter, pass it
-                    BtnDeleteModel_Click(selectedModelId, _selectedProjectId);
-                }
-            };
-
-            menu.Items.Add(openInFusionItem);
-            menu.Items.Add(viewInAppItem);
-            menu.Items.Add(openCommentsItem);
-            menu.Items.Add(downloadItem);
-            menu.Items.Add(deleteItem);
-
-            return menu;
+            return button;
         }
+        private void ShowModelPopupMenu(string modelId, string modelName)
+        {
+            // Create Popup
+            Popup popupMenu = new Popup
+            {
+                Placement = PlacementMode.Mouse,
+                StaysOpen = false,
+                AllowsTransparency = true
+            };
+
+            // Create outer Border 
+            Border container = new Border
+            {
+                Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#540754")),
+                CornerRadius = new CornerRadius(10),
+                BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#98730c")), // Light gray border
+                BorderThickness = new Thickness(2),
+                Padding = new Thickness(6),
+                Effect = new DropShadowEffect
+                {
+                    Color = Colors.Gray,
+                    BlurRadius = 8,
+                    ShadowDepth = 2
+                }
+            };
+
+            // Create StackPanel to hold menu items
+            StackPanel menuStack = new StackPanel();
+
+            // Add menu items using CreateMenuButton
+            menuStack.Children.Add(CreateMenuButton("Open in Fusion 360", "🔷", (s, e) => BtnViewInFusion_Click(s, e), popupMenu));
+            menuStack.Children.Add(CreateMenuButton("View in App", "🖥️", (s, e) => BtnViewInApp_Click(modelId), popupMenu));
+            menuStack.Children.Add(CreateMenuButton("Open Comments", "💬", async (s, e) => await LoadComments(), popupMenu));
+            menuStack.Children.Add(CreateMenuButton("Download", "📥", (s, e) => BtnDownload_Click(modelId), popupMenu));
+            menuStack.Children.Add(CreateMenuButton("Delete", "🗑️", (s, e) => BtnDeleteModel_Click(modelId, _selectedProjectId), popupMenu));
+
+            // Set child of Border
+            container.Child = menuStack;
+
+            // Assign to Popup
+            popupMenu.Child = container;
+
+            // Show Popup
+            popupMenu.IsOpen = true;
+        }
+
 
         private async void List_Click(object sender, MouseButtonEventArgs e)
         {
@@ -2374,10 +2363,7 @@ namespace AssetManager.Desktop
                         if (s is Button btn && btn.DataContext is Dictionary<string, string> selectedModel)
                         {
                             // Show context menu at the button
-                            ContextMenu dynamicContextMenu = CreateModelContextMenu(selectedModel["Id"], selectedModel["Name"]);
-                            dynamicContextMenu.PlacementTarget = btn;
-                            dynamicContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
-                            dynamicContextMenu.IsOpen = true;
+                            ShowModelPopupMenu(selectedModel["Id"], selectedModel["Name"]);
                         }
                     }));
 
@@ -2399,10 +2385,7 @@ namespace AssetManager.Desktop
         {
             if (sender is Button btn && btn.DataContext is Dictionary<string, string> selectedModel)
             {
-                ContextMenu dynamicContextMenu = CreateModelContextMenu(selectedModel["Id"], selectedModel["Name"]);
-                dynamicContextMenu.PlacementTarget = btn;
-                dynamicContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
-                dynamicContextMenu.IsOpen = true;
+                ShowModelPopupMenu(selectedModel["Id"], selectedModel["Name"]);
             }
         }
 
@@ -2990,14 +2973,9 @@ namespace AssetManager.Desktop
                     Cursor = Cursors.Hand
                 };
 
-                ContextMenu contextMenu = CreateModelContextMenu(model["Id"], model["Name"]);
-                icon.ContextMenu = contextMenu;
-
                 icon.MouseLeftButtonUp += (s, e) =>
                 {
-                    icon.ContextMenu.PlacementTarget = icon;
-                    icon.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
-                    icon.ContextMenu.IsOpen = true;
+                    ShowModelPopupMenu(model["Id"], model["Name"]);
                 };
 
                 iconBorder.Child = icon;
@@ -3340,17 +3318,24 @@ namespace AssetManager.Desktop
 
         private string FindExistingModelFile(string modelName)
         {
-            string ModelStoragePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "DownloadedModels");
-                
-            var files = Directory.GetFiles(ModelStoragePath);
-
-            foreach (var file in files)
+            try
             {
-                if (Path.GetFileNameWithoutExtension(file).Equals(modelName, StringComparison.OrdinalIgnoreCase))
+                string ModelStoragePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "DownloadedModels");
+
+                var files = Directory.GetFiles(ModelStoragePath);
+
+                foreach (var file in files)
                 {
-                    Console.WriteLine("Model found in downloads");
-                    return file; // Return the first matching file found
+                    if (Path.GetFileNameWithoutExtension(file).Equals(modelName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        Console.WriteLine("Model found in downloads");
+                        return file; // Return the first matching file found
+                    }
                 }
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show("Please install Fusion 360");
             }
 
             return null; // No matching file found
