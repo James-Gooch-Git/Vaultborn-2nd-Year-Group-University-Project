@@ -19,14 +19,21 @@
             <ColumnDefinition Width="3*" /> <!-- Models -->
         </Grid.ColumnDefinitions>
 
+        <ListBox x:Name="BGListBox"
+            DisplayMemberPath="Name" 
+            Margin="50, 80,10, 60" 
+            BorderBrush="#FFD700" BorderThickness="1" 
+            Background="#FF000000" 
+            Opacity="0.5" >
+        </ListBox>
+        
         <!-- Projects List -->
         <ListBox x:Name="ProjectListBox" 
                  SelectionChanged="ProjectListBox_SelectionChanged"
                  DisplayMemberPath="Name"
                  Margin="50, 80,10, 60"
                  BorderBrush="#FFD700" BorderThickness="1"
-                 Background="#FF000000"
-                 Opacity="0.3"
+                 Background="Transparent"
                  Foreground="White"/>
         
         <TextBlock Text="Select Project" FontWeight="Bold" 
@@ -34,12 +41,20 @@
                    FontSize="16"/>
         
         <!-- Models List -->
-        <ListBox x:Name="ModelListBox" Grid.Column="1"
+        
+        <ListBox x:Name="BGListBox2" Grid.Column="1"
                  SelectionMode="Single"
                  Margin="10, 80, 50, 60"
                  BorderBrush="#FFD700" BorderThickness="1"
                  Background="#FF000000"
-                 Opacity="0.3"
+                 Opacity="0.5">
+        </ListBox>
+        
+        <ListBox x:Name="ModelListBox" Grid.Column="1"
+                 SelectionMode="Single"
+                 Margin="10, 80, 50, 60"
+                 BorderBrush="#FFD700" BorderThickness="1"
+                 Background="Transparent"
                  Foreground="White">
             <ListBox.ItemTemplate>
                 <DataTemplate>
