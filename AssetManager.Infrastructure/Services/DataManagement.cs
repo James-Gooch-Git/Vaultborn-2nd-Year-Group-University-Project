@@ -1270,7 +1270,7 @@ namespace AssetManager.Infrastructure.Services
 
 
                 string folderName = "Not available";
-                string polyCount = "Not Available"; // If available in derivatives, would be separate call
+                int polyCount = 0; // If available in derivatives, would be separate call
                 string dimensions = "Not available"; // Likewise
 
                 // Optional: extract from relationships
@@ -1447,7 +1447,7 @@ namespace AssetManager.Infrastructure.Services
                     string versionNumber = attributes?.versionNumber?.ToString() ?? "N/A";
                     long fileSize = attributes?.storageSize ?? 0;
                     string fileType = attributes?.fileType ?? "N/A";
-                    string polyCount = "Not Available";
+                    int polyCount = 0;
                     string dimensions = (attributes?.dimensions != null)
                         ? $"{attributes.dimensions.height}cm (H) x {attributes.dimensions.width}cm (W)"
                         : "N/A";

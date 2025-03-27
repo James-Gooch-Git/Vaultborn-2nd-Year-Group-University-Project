@@ -5872,7 +5872,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 FileSizeText.Text = $"{(modelMetadata.FileSize / 1_000_000.0):0.00} MB";
                 //FolderNameText.Text = modelMetadata.Foldername;
                 FormatText.Text = modelMetadata.Format;
-                PolyCountText.Text = modelMetadata.PolyCount.ToString();
+                PolyCountText.Text = "Not Available";
                 DimensionsText.Text = modelMetadata.Dimensions;
 
                 string versionInfo = modelMetadata.Version ?? "Latest Version";
