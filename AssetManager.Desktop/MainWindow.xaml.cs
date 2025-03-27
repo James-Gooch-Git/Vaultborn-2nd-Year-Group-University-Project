@@ -6208,6 +6208,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             MarketplaceDataGrid.ItemsSource = namesAZ;
             DisplayMarketplaceGrid(namesAZ);
             _selectedMarketplace = "Decks";
+            MarketplaceListIcon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#98730c"));
         }
 
         /*private async Task<List<Dictionary<string, string>>> GetAllListedModels()
@@ -6374,16 +6375,16 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         {
             MarketplaceDataGrid.Visibility = Visibility.Collapsed;
             MarketplaceGridView.Visibility = Visibility.Visible;
-            MarketplaceGridBorder.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
-            MarketplaceListBorder.Background = Brushes.Transparent;
+            MarketplaceGridIcon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#98730c"));
+            MarketplaceListIcon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d1d5db"));
         }
         
         private void MarketplaceList_Click(object sender, MouseButtonEventArgs e)
         {
             MarketplaceGridView.Visibility = Visibility.Collapsed;
             MarketplaceDataGrid.Visibility = Visibility.Visible;
-            MarketplaceListBorder.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
-            MarketplaceGridBorder.Background = Brushes.Transparent;
+            MarketplaceGridIcon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d1d5db"));
+            MarketplaceListIcon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#98730c"));
         }
 
         private void DisplayMarketplaceGrid(List<Dictionary<string, string>> models)
