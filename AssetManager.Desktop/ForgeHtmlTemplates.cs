@@ -913,12 +913,15 @@ document.getElementById('snapshotButton').addEventListener('click', function() {
     if (viewer) {{
         try {{
             // Use Forge Viewer's built-in screenshot capability
-            viewer.getScreenShot(viewer.container.clientWidth, viewer.container.clientHeight, function(blobUrl) {{
-                log('Screenshot captured');
-                
-                // Create a temporary link element to trigger download
-                var link = document.createElement('a');
-                link.href = blobUrl;
+            viewer.getScreenShot(
+                Math.round((33 * 96) / 25.4),  // Width in pixels (33mm)
+                Math.round((45 * 96) / 25.4),  // Height in pixels (45mm)
+                function(blobUrl) {{
+                    log('Screenshot captured');
+                    
+                    // Create a temporary link element to trigger download
+                    var link = document.createElement('a');
+                    link.href = blobUrl;
                 
                 // Generate a filename with current date/time
                 var date = new Date();
