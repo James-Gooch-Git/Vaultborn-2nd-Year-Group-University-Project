@@ -138,6 +138,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <PackageReference Include="AWSSDK.SecretsManager" Version="3.7.400.121" />
       <PackageReference Include="FuzzySharp" Version="2.0.2" />
       <PackageReference Include="IdentityModel.OidcClient" Version="6.0.0" />
       <PackageReference Include="MaterialDesignThemes" Version="5.2.1" />

@@ -29,7 +29,7 @@ public class CreateCard
                     { "model_id", modelId },
                     { "user_id", userId },
                     { "creation_date", DateTime.Now },
-                   { "deck_id", string.IsNullOrEmpty(deckId) ? BsonNull.Value : deckId }
+                   { "deck_id", deckId }
                 };
 
             // Store the image as binary data, not as a base64 string
