@@ -389,7 +389,6 @@ public static class ForgeHtmlTemplates
 
 
 
-
     public static string GetEnhancedModelViewerHtml(string encodedUrn, string accessToken)
     {
         return $@"<!DOCTYPE html>
@@ -406,6 +405,8 @@ public static class ForgeHtmlTemplates
         #log {{ position: fixed; bottom: 10px; left: 10px; right: 10px; height: 150px; background: rgba(0,0,0,0.7); color: white; overflow: auto; padding: 10px; font-family: monospace; z-index: 1000; display: none; }}
         #skyboxControls {{ position: absolute; top: 10px; left: 10px; z-index: 1000; background: rgba(255,255,255,0.9); padding: 10px; border-radius: 5px; }}
         .skyboxButton {{ margin-right: 5px; cursor: pointer; padding: 5px 10px; }}
+        #snapshotButton {{ background-color: #4CAF50; color: white; font-weight: bold; border: none; }}
+        #snapshotButton:hover {{ background-color: #45a049; }}
     </style>
 </head>
 <body>
@@ -417,7 +418,7 @@ public static class ForgeHtmlTemplates
      <button id='skybox5' class='skyboxButton'>War Torn Skybox</button>
      <button id='skybox6' class='skyboxButton'>Pirate Skybox</button>
      <button id='noSkybox' class='skyboxButton'>No Skybox</button>
-     
+     <button id='snapshotButton' class='skyboxButton'>Take Snapshot</button>
      <button id='toggleLogs' class='skyboxButton'>Show Logs</button>
 </div>
     <div id='forgeViewer'></div>
@@ -869,6 +870,103 @@ document.getElementById('skybox6').addEventListener('click', function() {{
     }}
 }});
 
+document.getElementById('noSkybox').addEventListener('click', function() {{
+    log('No skybox button clicked');
+    if (skyboxExt) {{
+        skyboxExt.removeSkybox();
+    }} else {{
+        log('Skybox extension not available yet');
+    }}
+}});
+
+document.getElementById('toggleLogs').addEventListener('click', function() {{
+    var logDiv = document.getElementById('log');
+    if (logDiv.style.display === 'none') {{
+        logDiv.style.display = 'block';
+        this.textContent = 'Hide Logs';
+    }} else {{
+        logDiv.style.display = 'none';
+        this.textContent = 'Show Logs';
+    }}
+}});
+
+// Add snapshot button handler
+document.getElementById('snapshotButton').addEventListener('click', function() {{
+    log('Snapshot button clicked');
+    if (viewer) {{
+        try {{
+            // Use Forge Viewer's built-in screenshot capability
+            viewer.getScreenShot(viewer.container.clientWidth, viewer.container.clientHeight, function(blobUrl) {{
+                log('Screenshot captured');
+                
+                // Create a temporary link element to trigger download
+                var link = document.createElement('a');
+                link.href = blobUrl;
+                
+                // Generate a filename with current date/time
+                var date = new Date();
+                var timestamp = date.getFullYear() + 
+                               '-' + ('0' + (date.getMonth() + 1)).slice(-2) + 
+                               '-' + ('0' + date.getDate()).slice(-2) + 
+                               '_' + ('0' + date.getHours()).slice(-2) + 
+                               '-' + ('0' + date.getMinutes()).slice(-2) + 
+                               '-' + ('0' + date.getSeconds()).slice(-2);
+                link.download = 'model_snapshot_' + timestamp + '.png';
+                
+                // Append to body, click and remove
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                log('Screenshot downloaded');
+            }});
+        }} catch (error) {{
+            log('Error capturing screenshot: ' + error.message);
+            
+            // Fallback method if viewer.getScreenShot fails
+            try {{
+                log('Trying alternative screenshot method...');
+                
+                // Get the canvas element from the viewer
+                const canvas = viewer.canvas;
+                if (!canvas) {{
+                    throw new Error('Canvas not available');
+                }}
+                
+                // Convert canvas to data URL
+                const dataUrl = canvas.toDataURL('image/png');
+                
+                // Create download link
+                const link = document.createElement('a');
+                link.href = dataUrl;
+                
+                // Generate filename
+                var date = new Date();
+                var timestamp = date.getFullYear() + 
+                               '-' + ('0' + (date.getMonth() + 1)).slice(-2) + 
+                               '-' + ('0' + date.getDate()).slice(-2) + 
+                               '_' + ('0' + date.getHours()).slice(-2) + 
+                               '-' + ('0' + date.getMinutes()).slice(-2) + 
+                               '-' + ('0' + date.getSeconds()).slice(-2);
+                link.download = 'model_snapshot_' + timestamp + '.png';
+                
+                // Trigger download
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                log('Screenshot downloaded using alternative method');
+            }} catch (fallbackError) {{
+                log('All screenshot methods failed: ' + fallbackError.message);
+                alert('Unable to take a screenshot. Please try again or use your browser\'s screenshot function.');
+            }}
+        }}
+    }} else {{
+        log('Viewer not available for screenshot');
+        alert('Viewer not ready. Please wait for the model to load completely.');
+    }}
+}});
+
         // Initialize viewer
         Autodesk.Viewing.Initializer(options, function() {{
             log('Viewer initialized');
@@ -915,6 +1013,4 @@ document.getElementById('skybox6').addEventListener('click', function() {{
 </body>
 </html>";
     }
-
-
 }

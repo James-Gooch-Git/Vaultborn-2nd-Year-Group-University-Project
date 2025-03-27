@@ -68,7 +68,17 @@
                 
                 <TextBlock Text="Image URL:" FontWeight="Bold"/>
                 <TextBox x:Name="ImageUrlTextBox" Margin="0,0, 30, 10" Background="AntiqueWhite"/>
-                
+                <Border BorderThickness="0" BorderBrush="AntiqueWhite" Height="23" VerticalAlignment="Top">
+                    <Button Content="📷" 
+                                FontSize="10"
+                                Width="20" Height="23"
+                                Margin="5,0,0,0"
+                                Background="AntiqueWhite"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                ToolTip="Load image from local folder"
+                                Click="LoadLocalImageButton_Click"/>
+                </Border>
                 <TextBlock Text="Description:" FontWeight="Bold"/>
                 <TextBox x:Name="DescriptionTextBox" Margin="0,0, 30, 0" Background="AntiqueWhite" Height="40"/>
 

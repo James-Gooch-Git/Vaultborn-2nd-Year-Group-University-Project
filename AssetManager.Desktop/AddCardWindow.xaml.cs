@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Windows;
 using System.Windows.Media.Imaging;
+using Microsoft.Win32;
 using AssetManager.Infrastructure.Data;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -19,6 +20,7 @@ namespace AssetManager.Desktop
         private string description;
         private string imageUrl;
         private string modelName;
+        private string localImagePath;
 
         public AddCardWindow(string deckId = null, string modelId = null)
         {
@@ -27,6 +29,7 @@ namespace AssetManager.Desktop
             InitializeComponent();
             //GetData();
         }
+        
 
         private async void GetData()
         {
@@ -124,6 +127,20 @@ namespace AssetManager.Desktop
                 MessageBox.Show("Card Name, 3D Model and Image URL are required.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
+            if (!string.IsNullOrEmpty(localImagePath))
+            {
+                // Convert the local image to base64 for storage
+                string base64Image = ConvertImageToBase64(localImagePath);
+                if (string.IsNullOrEmpty(base64Image))
+                {
+                    MessageBox.Show("Failed to process the image. Please try again.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                // Store the image in a proper location or use base64 directly
+                imageUrl = base64Image;
+            }
+
 
             var createCard = new CreateCard();
 
@@ -139,5 +156,99 @@ namespace AssetManager.Desktop
                 MessageBox.Show("Failed to add card. Please try again.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
+        private void LoadLocalImageButton_Click(object sender, RoutedEventArgs e)
+        {
+            string imagePath = LoadImageFromLocalFolder();
+            if (!string.IsNullOrEmpty(imagePath))
+            {
+                imageUrl = imagePath;
+                ImageUrlTextBox.Text = "Local image: " + Path.GetFileName(imagePath);
+                LoadLocalImageToPreview(imagePath);
+            }
+        }
+
+        // Function to load image from local folder, prioritizing ModelSnapshots folder
+        private string LoadImageFromLocalFolder()
+        {
+            // Define path to ModelSnapshots directory in Pictures folder
+            string picturesFolder = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
+            string modelSnapshotsFolder = Path.Combine(picturesFolder, "ModelSnapshots");
+
+            // Create the ModelSnapshots directory if it doesn't exist
+            try
+            {
+                if (!Directory.Exists(modelSnapshotsFolder))
+                {
+                    Directory.CreateDirectory(modelSnapshotsFolder);
+                    // If we just created the directory, it will be empty, so default to Pictures
+                    modelSnapshotsFolder = picturesFolder;
+                }
+            }
+            catch (Exception)
+            {
+                // If we can't create the directory, default to Pictures
+                modelSnapshotsFolder = picturesFolder;
+            }
+
+            OpenFileDialog openFileDialog = new OpenFileDialog
+            {
+                Title = "Select Snapshot Image",
+                Filter = "Image files (*.png;*.jpg;*.jpeg;*.bmp)|*.png;*.jpg;*.jpeg;*.bmp",
+                InitialDirectory = modelSnapshotsFolder
+            };
+
+            if (openFileDialog.ShowDialog() == true)
+            {
+                try
+                {
+                    string selectedFilePath = openFileDialog.FileName;
+                    localImagePath = selectedFilePath;
+                    return selectedFilePath;
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error loading image: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+
+            return null;
+        }
+
+        // Function to preview local image
+        private void LoadLocalImageToPreview(string imagePath)
+        {
+            try
+            {
+                BitmapImage bitmap = new BitmapImage();
+                bitmap.BeginInit();
+                bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                bitmap.UriSource = new Uri(imagePath);
+                bitmap.EndInit();
+
+                // Set the image to preview
+                SelectedCardImage.Source = bitmap;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error loading image preview: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private string ConvertImageToBase64(string imagePath)
+        {
+            try
+            {
+                byte[] imageBytes = File.ReadAllBytes(imagePath);
+                return Convert.ToBase64String(imageBytes);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error converting image: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return null;
+            }
+        }
     }
 }
+
+
