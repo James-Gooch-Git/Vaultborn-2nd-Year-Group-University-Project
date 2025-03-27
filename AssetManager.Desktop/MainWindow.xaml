@@ -350,7 +350,7 @@
                     </Border>
 
                     <Popup x:Name="NotificationsPopup" Placement="Bottom" PlacementTarget="{Binding ElementName=Bell}" StaysOpen="True" AllowsTransparency="True" PopupAnimation="Fade" HorizontalOffset="-250">
-                        <Border x:Name="NotificationCentre" Background="#5c1c1c" CornerRadius="5"
+                        <Border x:Name="NotificationCentre" Background="#540754" CornerRadius="5"
                                 Width="300" Height="300">
                             <!-- <Border.Effect>
                                 <DropShadowEffect BlurRadius="50" ShadowDepth="10" Color="Black" Opacity="0.2"/>
@@ -367,7 +367,7 @@
 
                                 <TextBlock Foreground="#d1d5db" Text="Notifications" VerticalAlignment="Center" Margin="5"/>
 
-                                <ListBox Grid.Row="1" x:Name="NotificationsListBox" Background="#5c1c1c" BorderBrush="Transparent" BorderThickness="0" MaxWidth="300" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto">
+                                <ListBox Grid.Row="1" x:Name="NotificationsListBox" Background="#540754" BorderBrush="Transparent" BorderThickness="0" MaxWidth="300" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto">
                                     <ListBox.ItemTemplate>
                                         <DataTemplate>
                                             <Border BorderBrush="#98730C" BorderThickness="0,1,0,1">
@@ -994,9 +994,9 @@
                             </Grid.RowDefinitions>
 
                             <!-- Close Viewer Button -->
-                            <Border Grid.Row="0" Background="#F0F0F0">
+                            <Border Grid.Row="0" Background="Transparent">
                                 <StackPanel Orientation="Horizontal" Margin="5">
-                                    <Button x:Name="BtnCloseViewer" Content="× Close" Background="Transparent" BorderBrush="#CCCCCC" Margin="10,5" Padding="8,3" Click="Btn_CloseViewer_Click"/>
+                                    <Button x:Name="BtnCloseViewer" Content="× Close" Foreground="#d1d5db" Background="#540754" BorderBrush="#98730c" BorderThickness="3" Margin="10,5" Padding="8,3" Click="Btn_CloseViewer_Click" Cursor="Hand"/>
                                 </StackPanel>
                             </Border>
 
@@ -1049,7 +1049,7 @@
                                         <Style TargetType="TextBlock">
                                             <Setter Property="HorizontalAlignment" Value="Center"/>
                                             <Setter Property="TextAlignment" Value="Center"/>
-                                            <Setter Property="Foreground" Value="White"/>
+                                            <Setter Property="Foreground" Value="#d1d5db"/>
                                             <Setter Property="FontSize" Value="15"/>
                                         </Style>
                                     </DataGridTextColumn.ElementStyle>
@@ -1079,7 +1079,7 @@
                                         <Style TargetType="TextBlock">
                                             <Setter Property="HorizontalAlignment" Value="Center"/>
                                             <Setter Property="TextAlignment" Value="Center"/>
-                                            <Setter Property="Foreground" Value="White"/>
+                                            <Setter Property="Foreground" Value="#d1d5db"/>
                                             <Setter Property="FontSize" Value="15"/>
                                         </Style>
                                     </DataGridTextColumn.ElementStyle>
@@ -1108,7 +1108,7 @@
                                     <DataGridTextColumn.ElementStyle>
                                         <Style TargetType="TextBlock">
                                             <Setter Property="HorizontalAlignment" Value="Center"/>
-                                            <Setter Property="Foreground" Value="White"/>
+                                            <Setter Property="Foreground" Value="#d1d5db"/>
                                             <Setter Property="TextAlignment" Value="Center"/>
                                             <Setter Property="FontSize" Value="15"/>
                                         </Style>
@@ -1333,16 +1333,16 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <TextBlock Text="Marketplace" FontSize="20" Foreground="#4B4b4b" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="20,0,0,0"/>
+                <TextBlock Text="Marketplace" FontSize="20" Foreground="#d1d5db" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="20,0,0,0"/>
 
-                <Border MouseLeftButtonDown="BtnLibrary_Click" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,20,0" Background="#5c1c1c" Height="30" Width="150" CornerRadius="6" Cursor="Hand">
+                <Border MouseLeftButtonDown="BtnLibrary_Click" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,20,0" Background="#540754" BorderBrush="#98730c" BorderThickness="2" Height="30" Width="150" CornerRadius="6" Cursor="Hand">
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                         <md:PackIcon Kind="ChevronLeft" Foreground="#d1d5db" Margin="0,0,8,0"/>
                         <TextBlock Text="Back To Asset Library" Foreground="#d1d5db" Margin="0,0,8,0"/>
                     </StackPanel>
                 </Border>
 
-                <Border HorizontalAlignment="Stretch" VerticalAlignment="Bottom" BorderBrush="#4B4B4B" BorderThickness="0,1,0,0" Margin="20,0,20,0"/>
+                <Border HorizontalAlignment="Stretch" VerticalAlignment="Bottom" BorderBrush="#98730c" BorderThickness="0,1,0,0" Margin="20,0,20,0"/>
 
                 <Grid Grid.Row="1">
 
@@ -1365,13 +1365,13 @@
 
                         <Border Cursor="Hand" MouseLeftButtonDown="MarketplaceSort_Click">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock x:Name="SortByTextBlock" Text="Sort By Name A-Z" Cursor="Hand" FontSize="13" Foreground="#4B4B4B" VerticalAlignment="Center"/>
-                                <md:PackIcon x:Name="SortChevron" Kind="ChevronDown" Cursor="Hand" Foreground="#4B4B4B" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                <TextBlock x:Name="SortByTextBlock" Text="Sort By Name A-Z" Cursor="Hand" FontSize="13" Foreground="#d1d5db" VerticalAlignment="Center"/>
+                                <md:PackIcon x:Name="SortChevron" Kind="ChevronDown" Cursor="Hand" Foreground="#d1d5db" VerticalAlignment="Center" Margin="0,0,5,0"/>
                             </StackPanel>
                         </Border>
 
-                        <Popup x:Name="SortPopup" Placement="Bottom" PlacementTarget="{Binding ElementName=SortChevron}" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade" HorizontalOffset="-105" Closed="SortPopup_Closed">
-                            <Border x:Name="SortBorder" Background="#5c1c1c" CornerRadius="5"
+                        <Popup x:Name="SortPopup" Placement="Bottom" PlacementTarget="{Binding ElementName=SortChevron}" StaysOpen="True" AllowsTransparency="True" PopupAnimation="Fade" HorizontalOffset="-105" Closed="SortPopup_Closed">
+                            <Border x:Name="SortBorder" Background="#540754" CornerRadius="5"
                                     Width="120" Height="130">
 
                                 <ListBox x:Name="SortListBox" SelectionChanged="SortListBox_SelectionChanged" Margin="10" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Disabled">
@@ -1384,7 +1384,7 @@
                             </Border>
                         </Popup>
 
-                        <Rectangle Fill="#A3A3A3" Height="20" Width="1" RenderTransformOrigin="0.5,0.5" Margin="0,0,5,0">
+                        <Rectangle Fill="#d1d5db" Height="20" Width="1" RenderTransformOrigin="0.5,0.5" Margin="0,0,5,0">
                             <Rectangle.RenderTransform>
                                 <TransformGroup>
                                     <ScaleTransform ScaleX="-1"/>
@@ -1396,10 +1396,10 @@
                         </Rectangle>
 
                         <Border MouseLeftButtonDown="Filter_Click" Background="Transparent" BorderBrush="Transparent" VerticalAlignment="Center" HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" Cursor="Hand" Margin="0,0,5,0">
-                            <md:PackIcon Kind="FilterOutline" Cursor="Hand" Style="{StaticResource IconHover}" VerticalAlignment="Center"/>
+                            <md:PackIcon Kind="FilterOutline" Foreground="#d1d5db" Cursor="Hand" Style="{StaticResource IconHover}" VerticalAlignment="Center"/>
                         </Border>
 
-                        <Rectangle Fill="#A3A3A3" Height="20" Width="1" RenderTransformOrigin="0.5,0.5" Margin="0,0,5,0">
+                        <Rectangle Fill="#d1d5db" Height="20" Width="1" RenderTransformOrigin="0.5,0.5" Margin="0,0,5,0">
                             <Rectangle.RenderTransform>
                                 <TransformGroup>
                                     <ScaleTransform ScaleX="-1"/>
@@ -1410,15 +1410,15 @@
                             </Rectangle.RenderTransform>
                         </Rectangle>
 
-                        <Border  x:Name="MarketplaceGridBorder" MouseLeftButtonDown="MarketplaceGrid_Click" Background="Transparent" BorderBrush="Transparent" CornerRadius="3" VerticalAlignment="Center" HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" Cursor="Hand" Margin="0,0,5,0">
-                            <md:PackIcon  MouseLeftButtonDown="MarketplaceGrid_Click" Kind="ViewGridOutline" Cursor="Hand" Style="{StaticResource IconHover}" VerticalAlignment="Center"/>
+                        <Border  x:Name="MarketplaceGridBorder" MouseLeftButtonDown="MarketplaceGrid_Click" Background="Transparent" BorderBrush="Transparent" CornerRadius="3" VerticalAlignment="Center" HorizontalAlignment="Center" Cursor="Hand" Margin="0,0,5,0">
+                            <md:PackIcon x:Name="MarketplaceGridIcon" MouseLeftButtonDown="MarketplaceGrid_Click" Foreground="#d1d5db" Kind="ViewGridOutline" Cursor="Hand" Style="{StaticResource IconHover}" VerticalAlignment="Center"/>
                         </Border>
 
-                        <Border x:Name="MarketplaceListBorder" MouseLeftButtonDown="MarketplaceList_Click" Background="#E9E9E9" BorderBrush="Transparent" CornerRadius="3" VerticalAlignment="Center" HorizontalAlignment="Center" MouseEnter="Border_Enter" MouseLeave="Border_Leave" Cursor="Hand" Margin="0,0,5,0">
-                            <md:PackIcon MouseLeftButtonDown="MarketplaceList_Click" Grid.Row="1" Grid.Column="1" Kind="FormatListBulleted" Cursor="Hand" Style="{StaticResource IconHover}" VerticalAlignment="Center"/>
+                        <Border x:Name="MarketplaceListBorder" MouseLeftButtonDown="MarketplaceList_Click" Background="Transparent" BorderBrush="Transparent" CornerRadius="3" VerticalAlignment="Center" HorizontalAlignment="Center" Cursor="Hand" Margin="0,0,5,0">
+                            <md:PackIcon x:Name="MarketplaceListIcon" MouseLeftButtonDown="MarketplaceList_Click" Foreground="#d1d5db" Kind="FormatListBulleted" Cursor="Hand" Style="{StaticResource IconHover}" VerticalAlignment="Center"/>
                         </Border>
 
-                        <Rectangle Fill="#A3A3A3" Height="20" Width="1" RenderTransformOrigin="0.5,0.5" Margin="0,0,8,0">
+                        <Rectangle Fill="#d1d5db" Height="20" Width="1" RenderTransformOrigin="0.5,0.5" Margin="0,0,8,0">
                             <Rectangle.RenderTransform>
                                 <TransformGroup>
                                     <ScaleTransform ScaleX="-1"/>
@@ -1429,7 +1429,7 @@
                             </Rectangle.RenderTransform>
                         </Rectangle>
 
-                        <Button Cursor="IBeam" Focusable="False"  Width="130" Height="24" Background="Transparent" BorderBrush="#4B4B4B" Margin="0,0,20,0">
+                        <Button Cursor="IBeam" Focusable="False"  Width="130" Height="24" Background="Transparent" BorderBrush="#d1d5db" Margin="0,0,20,0">
 
                             <Button.Resources>
                                 <Style TargetType="Border">
@@ -1438,10 +1438,10 @@
                             </Button.Resources>
 
                             <StackPanel Orientation="Horizontal">
-                                <md:PackIcon Kind="Magnify" Width="14" Height="14" VerticalAlignment="Center" Foreground="#4B4B4B" Margin="0,0,0,0"/>
+                                <md:PackIcon Kind="Magnify" Width="14" Height="14" VerticalAlignment="Center" Foreground="#d1d5db" Margin="0,0,0,0"/>
                                 <TextBox x:Name="MarketplaceSearchTextBox" VerticalAlignment="Center" VerticalContentAlignment="Center" Width="89" FontSize="10" Height="19" Margin="3,0,0,0" KeyDown="MarketplaceSearch_OnKeyDown"/>
                                 <!-- <TextBlock Text="Search By Name..." Foreground="#A3A3A3" FontSize="10" Margin="3,0,0,0" VerticalAlignment="Center"/> -->
-                                <md:PackIcon Kind="Close" Cursor="Hand" MouseLeftButtonDown="MarketplaceClearSearch_Click" Width="14" Height="14" VerticalAlignment="Center" Foreground="#4B4B4B" Margin="3,0,0,0"/>
+                                <md:PackIcon Kind="Close" Cursor="Hand" MouseLeftButtonDown="MarketplaceClearSearch_Click" Width="14" Height="14" VerticalAlignment="Center" Foreground="#d1d5db" Margin="3,0,0,0"/>
                             </StackPanel>
 
                         </Button>
@@ -1500,6 +1500,7 @@
                                     <Setter Property="HorizontalAlignment" Value="Center"/>
                                     <Setter Property="TextAlignment" Value="Center"/>
                                     <Setter Property="FontSize" Value="15"/>
+                                    <Setter Property="Foreground" Value="#d1d5db"/>
                                 </Style>
                             </DataGridTextColumn.ElementStyle>
 
@@ -1507,10 +1508,10 @@
                                 <Style TargetType="DataGridColumnHeader">
                                     <Setter Property="HorizontalContentAlignment" Value="Center"/>
                                     <Setter Property="Background" Value="Transparent"/>
-                                    <Setter Property="BorderBrush" Value="#4B4B4B"/>
+                                    <Setter Property="BorderBrush" Value="#98730c"/>
                                     <Setter Property="BorderThickness" Value="0,0,0,1"/>
                                     <Setter Property="FontSize" Value="16"/>
-                                    <Setter Property="Foreground" Value="#4B4B4B"/>
+                                    <Setter Property="Foreground" Value="#d1d5db"/>
                                     <Setter Property="Margin" Value="0,10,0,5"/>
                                     <Setter Property="Padding" Value="0,0,0,10"/>
                                 </Style>
@@ -1529,6 +1530,7 @@
                                     <Setter Property="HorizontalAlignment" Value="Center"/>
                                     <Setter Property="TextAlignment" Value="Center"/>
                                     <Setter Property="FontSize" Value="15"/>
+                                    <Setter Property="Foreground" Value="#d1d5db"/>
                                 </Style>
                             </DataGridTextColumn.ElementStyle>
 
@@ -1536,10 +1538,10 @@
                                 <Style TargetType="DataGridColumnHeader">
                                     <Setter Property="HorizontalContentAlignment" Value="Center"/>
                                     <Setter Property="Background" Value="Transparent"/>
-                                    <Setter Property="BorderBrush" Value="#4B4B4B"/>
+                                    <Setter Property="BorderBrush" Value="#98730c"/>
                                     <Setter Property="BorderThickness" Value="0,0,0,1"/>
                                     <Setter Property="FontSize" Value="16"/>
-                                    <Setter Property="Foreground" Value="#4B4B4B"/>
+                                    <Setter Property="Foreground" Value="#d1d5db"/>
                                     <Setter Property="Margin" Value="0,10,0,5"/>
                                     <Setter Property="Padding" Value="0,0,0,10"/>
                                 </Style>
@@ -1558,6 +1560,7 @@
                                     <Setter Property="HorizontalAlignment" Value="Center"/>
                                     <Setter Property="TextAlignment" Value="Center"/>
                                     <Setter Property="FontSize" Value="15"/>
+                                    <Setter Property="Foreground" Value="#d1d5db"/>
                                 </Style>
                             </DataGridTextColumn.ElementStyle>
 
@@ -1565,10 +1568,10 @@
                                 <Style TargetType="DataGridColumnHeader">
                                     <Setter Property="HorizontalContentAlignment" Value="Center"/>
                                     <Setter Property="Background" Value="Transparent"/>
-                                    <Setter Property="BorderBrush" Value="#4B4B4B"/>
+                                    <Setter Property="BorderBrush" Value="#98730c"/>
                                     <Setter Property="BorderThickness" Value="0,0,0,1"/>
                                     <Setter Property="FontSize" Value="16"/>
-                                    <Setter Property="Foreground" Value="#4B4B4B"/>
+                                    <Setter Property="Foreground" Value="#d1d5db"/>
                                     <Setter Property="Margin" Value="0,10,0,5"/>
                                     <Setter Property="Padding" Value="0,0,0,10"/>
                                 </Style>
@@ -1587,6 +1590,7 @@
                                     <Setter Property="HorizontalAlignment" Value="Center"/>
                                     <Setter Property="TextAlignment" Value="Center"/>
                                     <Setter Property="FontSize" Value="15"/>
+                                    <Setter Property="Foreground" Value="#d1d5db"/>
                                 </Style>
                             </DataGridTextColumn.ElementStyle>
 
@@ -1594,10 +1598,10 @@
                                 <Style TargetType="DataGridColumnHeader">
                                     <Setter Property="HorizontalContentAlignment" Value="Center"/>
                                     <Setter Property="Background" Value="Transparent"/>
-                                    <Setter Property="BorderBrush" Value="#4B4B4B"/>
+                                    <Setter Property="BorderBrush" Value="#98730c"/>
                                     <Setter Property="BorderThickness" Value="0,0,0,1"/>
                                     <Setter Property="FontSize" Value="16"/>
-                                    <Setter Property="Foreground" Value="#4B4B4B"/>
+                                    <Setter Property="Foreground" Value="#d1d5db"/>
                                     <Setter Property="Margin" Value="0,10,0,5"/>
                                     <Setter Property="Padding" Value="0,0,0,10"/>
                                 </Style>
@@ -1617,10 +1621,10 @@
                                 <Style TargetType="DataGridColumnHeader">
                                     <Setter Property="HorizontalContentAlignment" Value="Center"/>
                                     <Setter Property="Background" Value="Transparent"/>
-                                    <Setter Property="BorderBrush" Value="#4B4B4B"/>
+                                    <Setter Property="BorderBrush" Value="#98730c"/>
                                     <Setter Property="BorderThickness" Value="0,0,0,1"/>
                                     <Setter Property="FontSize" Value="16"/>
-                                    <Setter Property="Foreground" Value="#4B4B4B"/>
+                                    <Setter Property="Foreground" Value="#d1d5db"/>
                                     <Setter Property="Margin" Value="0,10,0,5"/>
                                     <Setter Property="Padding" Value="0,0,0,10"/>
                                 </Style>
@@ -1636,9 +1640,9 @@
                                 <DataTemplate>
                                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
                                         <Border BorderBrush="Green" BorderThickness="4" CornerRadius="4" Visibility="{Binding [BuyVisibility], Converter={StaticResource StringToVisibilityConverter}}">
-                                            <Button Click="BtnBuy_Click" Content="Buy" Background="Green" Foreground="Azure" Width="50" Height="20" BorderBrush="Green" BorderThickness="2"/>
+                                            <Button Click="BtnBuy_Click" Content="Buy" Background="Green" Foreground="#d1d5db" Width="50" Height="20" BorderBrush="Green" BorderThickness="2"/>
                                         </Border>
-                                        <TextBlock Text="Purchased" FontWeight="Normal" VerticalAlignment="Center" HorizontalAlignment="Center" Visibility="{Binding [PurchasedVisibility], Converter={StaticResource StringToVisibilityConverter}}"/>
+                                        <TextBlock Text="Purchased" Foreground="#d1d5db" FontWeight="Normal" VerticalAlignment="Center" HorizontalAlignment="Center" Visibility="{Binding [PurchasedVisibility], Converter={StaticResource StringToVisibilityConverter}}"/>
                                     </StackPanel>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
@@ -1647,7 +1651,7 @@
                 </DataGrid>
 
                 <Popup x:Name="BuyPopup" Placement="Bottom" PlacementTarget="{Binding ElementName=ModelsButton}" StaysOpen="True" AllowsTransparency="True" PopupAnimation="Fade" HorizontalOffset="150">
-                    <Border x:Name="BuyBorder" Background="#5c1c1c" CornerRadius="5"
+                    <Border x:Name="BuyBorder" Background="#540754" CornerRadius="5"
                             Width="400" Height="400">
 
                         <wv2:WebView2  Name="webView" Source="about:blank" Height="390" Width="390" HorizontalAlignment="Center" VerticalAlignment="Center"/>
@@ -1703,7 +1707,12 @@
                 <StackPanel x:Name="ModelInfo" Grid.Row="1" Orientation="Vertical" Visibility="Collapsed" Margin="5,5,5,10">
 
                     <!-- Metadata Info -->
-                    <StackPanel Orientation="Vertical" Margin="0,0,0,5">
+                    <ScrollViewer HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Auto" Height="200" >
+                        <ScrollViewer.Resources>
+                            <Style TargetType="ScrollBar" BasedOn="{StaticResource CustomScrollBarStyle}" />
+                        </ScrollViewer.Resources>
+                        
+                        <StackPanel Orientation="Vertical" Margin="0,0,0,5">
 
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,15">
                             <TextBlock Text="Model Version: " FontWeight="Bold" Foreground="#d1d5db" VerticalAlignment="Center"/>
@@ -1837,6 +1846,7 @@
                         </StackPanel>
 
                     </StackPanel>
+                    </ScrollViewer>
 
                     <TextBlock Text="Tags:" FontWeight="Bold" Foreground="#d1d5db" Margin="0,0,0,5"/>
 
@@ -1875,12 +1885,12 @@
                     </Grid>
 
                     <!-- List Model Button & Popup -->
-                    <Border x:Name="ListModelButtonBorder" MouseLeftButtonDown="MarketplaceGrid_Click" BorderBrush="#98730C" BorderThickness="3" CornerRadius="2" Width="90" Height="40" HorizontalAlignment="Center" Margin="0,20,0,0" Cursor="Hand">
+                    <Border x:Name="ListModelButtonBorder" BorderBrush="#98730C" BorderThickness="3" CornerRadius="2" Width="90" Height="40" HorizontalAlignment="Center" Margin="0,20,0,0" Cursor="Hand">
                         <Button  x:Name="BtnListModel" Content="List Model" Click="BtnListModel_Click" Grid.Row="4" BorderBrush="#98730C" BorderThickness="2" Background="#540754" Foreground="White" Width="90" Height="40" HorizontalAlignment="Center" VerticalAlignment="Center" Cursor="Hand"/>
                     </Border>
 
                     <Popup x:Name="ListModelPopup" Placement="Bottom" PlacementTarget="{Binding ElementName=BtnListModel}" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade" HorizontalOffset="-150">
-                        <Border x:Name="ListModelBorder" Background="#5c1c1c" CornerRadius="5" Width="200" Height="200">
+                        <Border x:Name="ListModelBorder" Background="#540754" CornerRadius="5" Width="200" Height="200">
                             <Grid Margin="10,10,10,2">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="30"/>
