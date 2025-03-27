@@ -4,7 +4,16 @@
         Title="Select Model" Height="500" Width="800" ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner">
     
-    <Grid Margin="20">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="8*" /> <!-- Projects and Models -->
+            <RowDefinition Height="2.5*" /> <!-- Confirm -->
+        </Grid.RowDefinitions>
+        
+        <Grid.Background>
+            <ImageBrush ImageSource="pack://application:,,,/Assets/CityMarket.png"></ImageBrush>
+        </Grid.Background>
+        
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="2*" /> <!-- Projects -->
             <ColumnDefinition Width="3*" /> <!-- Models -->
@@ -14,15 +23,17 @@
         <ListBox x:Name="ProjectListBox" 
                  SelectionChanged="ProjectListBox_SelectionChanged"
                  DisplayMemberPath="Name"
-                 Margin="10"
+                 Margin="50, 80,10, 60"
                  BorderBrush="#FFD700" BorderThickness="1"
                  Background="#1A000000"
                  Foreground="White"/>
-
+        
+        <TextBlock Text="Select Project" FontWeight="Bold" Foreground="Azure" Margin="50,0, 0, 220" Height="40"/>
+        
         <!-- Models List -->
         <ListBox x:Name="ModelListBox" Grid.Column="1"
                  SelectionMode="Single"
-                 Margin="10"
+                 Margin="10, 80, 50, 60"
                  BorderBrush="#FFD700" BorderThickness="1"
                  Background="#1A000000"
                  Foreground="White">
@@ -34,11 +45,19 @@
                 </DataTemplate>
             </ListBox.ItemTemplate>
         </ListBox>
+        
+        <TextBlock Grid.Column="1" Text="Select Model" FontWeight="Bold" Foreground="Azure" Margin="10,0, 0, 220" Height="40"/>
 
         <!-- Confirm Selection Button -->
-        <Button Content="Select Model" Grid.ColumnSpan="2"
-                Width="150" Height="40"
-                HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="10"
-                Click="SelectModelButton_Click"/>
+        <Button Grid.Column="1" Grid.Row="1"
+                Width="150" Height="70"
+                HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0, 0, 60, 80"
+                Background="Transparent"
+                Click="SelectModelButton_Click">
+                <Grid>
+                      <TextBlock Text="Select Model" />
+                      <Image Source = "pack://application:,,,/Assets/buttongold.png" Stretch="Fill"/> 
+                </Grid>
+        </Button>   
     </Grid>
 </Window>

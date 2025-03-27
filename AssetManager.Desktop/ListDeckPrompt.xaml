@@ -16,7 +16,7 @@
         
     <Grid>
         <Grid.Background>
-            <ImageBrush ImageSource="pack://application:,,,/Assets/addCardBG.png"></ImageBrush>
+            <ImageBrush ImageSource="pack://application:,,,/Assets/Marketplace.png"></ImageBrush>
         </Grid.Background>
         <!-- TextBox for Price Input -->
         <StackPanel>

@@ -12,7 +12,7 @@
         </LinearGradientBrush>
     </Window.Resources>
         
-    <Grid Margin="20">
+    <Grid>
         <Grid.Background>  
             <ImageBrush ImageSource="pack://application:,,,/Assets/addCardBG.png"></ImageBrush>  
         </Grid.Background> 
@@ -36,9 +36,11 @@
                    Margin="0,0,0,10"/>
 
         <!-- Deck Name Input -->
+        <TextBlock>"Enter deck name..."
+        </TextBlock>
         <TextBox x:Name="DeckNameBox"
-                 Text="Enter deck name..."
                  FontSize="14"
+                 Width="200"
                  Margin="0,5,0,5"
                  Grid.Row="1"/>
 
@@ -46,7 +48,8 @@
         <TextBox x:Name="DeckDescriptionBox"
                  Text="Enter deck description..."
                  FontSize="14"
-                 Height="80"
+                 Width="200"
+                 Height="90"
                  TextWrapping="Wrap"
                  AcceptsReturn="True"
                  VerticalScrollBarVisibility="Auto"
@@ -55,7 +58,7 @@
 
         <!-- Buttons -->
         <StackPanel Orientation="Horizontal"
-                    HorizontalAlignment="Right"
+                    HorizontalAlignment="Center"
                     Grid.Row="3">
             <Button Content="Cancel"
                     Width="80"

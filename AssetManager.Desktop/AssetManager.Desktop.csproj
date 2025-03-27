@@ -131,6 +131,14 @@
       <Content Include="Assets\addCardBG.png">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </Content>
+      <None Remove="Assets\CityMarket.png" />
+      <Content Include="Assets\CityMarket.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <None Remove="Assets\Marketplace.png" />
+      <Content Include="Assets\Marketplace.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
     </ItemGroup>
 
     <ItemGroup>
