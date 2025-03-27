@@ -350,7 +350,7 @@
                     </Border>
 
                     <Popup x:Name="NotificationsPopup" Placement="Bottom" PlacementTarget="{Binding ElementName=Bell}" StaysOpen="True" AllowsTransparency="True" PopupAnimation="Fade" HorizontalOffset="-250">
-                        <Border x:Name="NotificationCentre" Background="#5c1c1c" CornerRadius="5"
+                        <Border x:Name="NotificationCentre" Background="#540754" CornerRadius="5"
                                 Width="300" Height="300">
                             <!-- <Border.Effect>
                                 <DropShadowEffect BlurRadius="50" ShadowDepth="10" Color="Black" Opacity="0.2"/>
@@ -367,7 +367,7 @@
 
                                 <TextBlock Foreground="#d1d5db" Text="Notifications" VerticalAlignment="Center" Margin="5"/>
 
-                                <ListBox Grid.Row="1" x:Name="NotificationsListBox" Background="#5c1c1c" BorderBrush="Transparent" BorderThickness="0" MaxWidth="300" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto">
+                                <ListBox Grid.Row="1" x:Name="NotificationsListBox" Background="#540754" BorderBrush="Transparent" BorderThickness="0" MaxWidth="300" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto">
                                     <ListBox.ItemTemplate>
                                         <DataTemplate>
                                             <Border BorderBrush="#98730C" BorderThickness="0,1,0,1">
@@ -1356,8 +1356,8 @@
                             </StackPanel>
                         </Border>
 
-                        <Popup x:Name="SortPopup" Placement="Bottom" PlacementTarget="{Binding ElementName=SortChevron}" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade" HorizontalOffset="-105" Closed="SortPopup_Closed">
-                            <Border x:Name="SortBorder" Background="#5c1c1c" CornerRadius="5"
+                        <Popup x:Name="SortPopup" Placement="Bottom" PlacementTarget="{Binding ElementName=SortChevron}" StaysOpen="True" AllowsTransparency="True" PopupAnimation="Fade" HorizontalOffset="-105" Closed="SortPopup_Closed">
+                            <Border x:Name="SortBorder" Background="#540754" CornerRadius="5"
                                     Width="120" Height="130">
 
                                 <ListBox x:Name="SortListBox" SelectionChanged="SortListBox_SelectionChanged" Margin="10" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Disabled">
@@ -1637,7 +1637,7 @@
                 </DataGrid>
 
                 <Popup x:Name="BuyPopup" Placement="Bottom" PlacementTarget="{Binding ElementName=ModelsButton}" StaysOpen="True" AllowsTransparency="True" PopupAnimation="Fade" HorizontalOffset="150">
-                    <Border x:Name="BuyBorder" Background="#5c1c1c" CornerRadius="5"
+                    <Border x:Name="BuyBorder" Background="#540754" CornerRadius="5"
                             Width="400" Height="400">
 
                         <wv2:WebView2  Name="webView" Source="about:blank" Height="390" Width="390" HorizontalAlignment="Center" VerticalAlignment="Center"/>
@@ -1693,7 +1693,12 @@
                 <StackPanel x:Name="ModelInfo" Grid.Row="1" Orientation="Vertical" Visibility="Collapsed" Margin="5,5,5,10">
 
                     <!-- Metadata Info -->
-                    <StackPanel Orientation="Vertical" Margin="0,0,0,5">
+                    <ScrollViewer HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Auto" Height="200" >
+                        <ScrollViewer.Resources>
+                            <Style TargetType="ScrollBar" BasedOn="{StaticResource CustomScrollBarStyle}" />
+                        </ScrollViewer.Resources>
+                        
+                        <StackPanel Orientation="Vertical" Margin="0,0,0,5">
 
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,15">
                             <TextBlock Text="Model Version: " FontWeight="Bold" Foreground="#d1d5db" VerticalAlignment="Center"/>
@@ -1827,6 +1832,7 @@
                         </StackPanel>
 
                     </StackPanel>
+                    </ScrollViewer>
 
                     <TextBlock Text="Tags:" FontWeight="Bold" Foreground="#d1d5db" Margin="0,0,0,5"/>
 
@@ -1870,7 +1876,7 @@
                     </Border>
 
                     <Popup x:Name="ListModelPopup" Placement="Bottom" PlacementTarget="{Binding ElementName=BtnListModel}" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade" HorizontalOffset="-150">
-                        <Border x:Name="ListModelBorder" Background="#5c1c1c" CornerRadius="5" Width="200" Height="200">
+                        <Border x:Name="ListModelBorder" Background="#540754" CornerRadius="5" Width="200" Height="200">
                             <Grid Margin="10,10,10,2">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="30"/>

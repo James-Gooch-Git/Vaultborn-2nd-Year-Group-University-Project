@@ -6566,8 +6566,15 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         //sort 
         private void MarketplaceSort_Click(object sender, MouseButtonEventArgs e)
         {
-            SortChevron.Kind = PackIconKind.ChevronUp;
-            SortPopup.IsOpen = true;
+            if (SortPopup.IsOpen == false)
+            {
+                SortChevron.Kind = PackIconKind.ChevronUp;
+                SortPopup.IsOpen = true;
+            }
+            else if (SortPopup.IsOpen == true)
+            {
+                SortPopup.IsOpen = false;
+            }
         }
 
         private async void SortListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
