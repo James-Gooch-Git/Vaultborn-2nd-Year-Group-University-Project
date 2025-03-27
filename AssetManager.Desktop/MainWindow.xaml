@@ -76,7 +76,7 @@
                         <Grid Background="Transparent">
                             <Track Name="PART_Track" IsDirectionReversed="true">
                                 <Track.Thumb>
-                                    <Thumb Cursor="Hand" Background="DarkViolet" Width="6" />
+                                    <Thumb Cursor="Hand" Background="#98730c" Width="6" />
                                 </Track.Thumb>
                             </Track>
                         </Grid>
@@ -325,7 +325,7 @@
 
         <Thumb Grid.Row="1" Grid.Column="1" Width="5" Cursor="SizeWE" DragDelta="ResizeSidebarThumb_DragDelta" Background="#98730c" />
 
-        <Border Grid.Row="0" Grid.ColumnSpan="5" BorderBrush="#797979" BorderThickness="0,0,0,1">
+        <Border Grid.Row="0" Grid.ColumnSpan="5" BorderBrush="#98730c" BorderThickness="0,0,0,1">
             <!-- <Border.Background>
                 <ImageBrush ImageSource="\Assets\ScaleBackground.png" Stretch="UniformToFill" />
             </Border.Background> -->
@@ -436,7 +436,7 @@
         </Border>
 
 
-        <Border x:Name="ProjectsBorder" Grid.Row="1" Grid.Column="0" BorderBrush="#98730c" BorderThickness="0,0,1,0" Padding="5,0,5,0">
+        <Border x:Name="ProjectsBorder" Grid.Row="1" Grid.Column="0" BorderBrush="Transparent" BorderThickness="0,0,1,0" Padding="5,0,5,0">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -496,21 +496,32 @@
                     </StackPanel>
                 </Grid>
 
-                <!-- TreeView for Projects -->
-                <TreeView Grid.Row="2" x:Name="ProjectTreeView" Background="Transparent" BorderThickness="0" Margin="0,10,0,10"
-                  SelectedItemChanged="ProjectTreeView_SelectedItemChanged" 
-                  MouseDoubleClick="ProjectTreeView_MouseDoubleClick" 
-                  MouseLeftButtonDown="ProjectTreeView_MouseLeftButtonDown">
-                    <TreeView.ItemContainerStyle>
-                        <Style TargetType="TreeViewItem">
-                            <EventSetter Event="Expanded" Handler="TreeViewItem_Expanded"/>
-                            <Setter Property="FontSize" Value="16"/>
-                            <Setter Property="Foreground" Value="#d1d5db"/>
-                            <!--<Setter Property="FontWeight" Value="Bold"/>-->
-                            <Setter Property="Padding" Value="3"/>
-                        </Style>
-                    </TreeView.ItemContainerStyle>
-                </TreeView>
+                <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" FlowDirection="RightToLeft" Padding="0" Margin="0">
+                    <ScrollViewer.Resources>
+                        <Style TargetType="ScrollBar" BasedOn="{StaticResource CustomScrollBarStyle}" />
+                    </ScrollViewer.Resources>
+                    
+                    <TreeView Grid.Row="2"
+                          x:Name="ProjectTreeView"
+                          Background="Transparent"
+                          BorderThickness="0"
+                          FlowDirection="LeftToRight"
+                          Margin="0,10,0,10"
+                          SelectedItemChanged="ProjectTreeView_SelectedItemChanged"
+                          MouseDoubleClick="ProjectTreeView_MouseDoubleClick"
+                          MouseLeftButtonDown="ProjectTreeView_MouseLeftButtonDown">
+                        <TreeView.ItemContainerStyle>
+                            <Style TargetType="TreeViewItem">
+                                <EventSetter Event="Expanded" Handler="TreeViewItem_Expanded"/>
+                                <Setter Property="FontSize" Value="16"/>
+                                <Setter Property="Foreground" Value="#d1d5db"/>
+                                <!--<Setter Property="FontWeight" Value="Bold"/>-->
+                                <Setter Property="Padding" Value="3"/>
+                            </Style>
+                        </TreeView.ItemContainerStyle>
+                    </TreeView>
+                </ScrollViewer>
+
             </Grid>
         </Border>
 
@@ -1645,7 +1656,7 @@
         <Thumb Grid.Row="1" Grid.Column="3" Width="5" Cursor="SizeWE" DragDelta="ResizeModelSidebar_DragDelta" Background="#98730c"/>
 
         <!-- Model Info Sidebar -->
-        <Border Grid.Row="1" Grid.Column="4" BorderBrush="#98730c" BorderThickness="1,0,0,0" Padding="5,0,5,0">
+        <Border Grid.Row="1" Grid.Column="4" BorderBrush="Transparent" BorderThickness="1,0,0,0" Padding="5,0,5,0">
 
             <Grid>
                 <Grid.RowDefinitions>

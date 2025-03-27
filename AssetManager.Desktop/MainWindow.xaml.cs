@@ -1067,7 +1067,7 @@ namespace AssetManager.Desktop
 
                             // Wait for translation to complete
                             int maxRetries = 5;
-                            int delayMs = 5000;
+                            int delayMs = 4999;
                             for (int attempt = 1; attempt <= maxRetries; attempt++)
                             {
                                 Console.WriteLine($"⏳ Waiting for translation... (Attempt {attempt}/{maxRetries})");
