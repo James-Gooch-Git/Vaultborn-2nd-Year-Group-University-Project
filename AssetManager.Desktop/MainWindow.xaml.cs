@@ -71,6 +71,8 @@ namespace AssetManager.Desktop
         private const int REFRESH_INTERVAL_MINUTES = 15;
         private bool _isRefreshing = false;
         private bool showLatestVersions = true;
+        private Dictionary<string, TreeViewItem> itemLookup = new Dictionary<string, TreeViewItem>();
+
 
 
         private List<Dictionary<string, string>> originalResults;
@@ -1501,93 +1503,6 @@ namespace AssetManager.Desktop
         }
 
 
-
-        //NEEDS MIGRATING TO UI SERVICES || UI FUNCTIONALITY//
-        #region UI Functionality
-        private async void TreeViewItem_Expanded(object sender, RoutedEventArgs e)
-        {
-            if (sender is TreeViewItem item && item.Tag is (string projectId, string folderId, bool isFolder))
-            {
-                if (item.Items.Count == 1 && item.Items[0] == null)
-                {
-                    item.Items.Clear();
-
-                    var items = await DataManagement.GetProjectItems(projectId, folderId);
-
-                    if (items == null || !items.Any())
-                    {
-                        item.Items.Add(new TreeViewItem { Header = "❌ No items found" });
-                        return;
-                    }
-
-                    foreach (var (itemId, itemName, isFolderItem) in items)
-                    {
-                        bool is3DModel = false;
-
-                        if (!isFolderItem)
-                        {
-                            string extension = Path.GetExtension(itemName)?.ToLowerInvariant();
-                            is3DModel = Accepted3DModelExtensions.Contains(extension);
-                            // You can now use `is3DModel` for logic or tag
-                        }
-
-                        TreeViewItem fileItem = new TreeViewItem
-                        {
-                            //Header = isFolderItem ? CreateHeader("Icons2/folder_icon.svg", itemName, 28, 28) : CreateHeader(GetIconForExtension(Path.GetExtension(itemName)), itemName, 28, 28),
-                            Header =
-                            isFolderItem
-                            ? CreateHeader("Icons2/folder_icon5.svg", itemName, 25, 25)
-                            : CreateHeader(GetIconForExtension(Path.GetExtension(itemName)), itemName, 30, 30),
-                            Tag = (projectId, itemId, isFolderItem, is3DModel),
-                            ContextMenu = CreateContextMenu(projectId, itemId, isFolderItem)
-                        };
-
-
-                        if (isFolderItem)
-                        {
-                            await LoadSubfoldersAsync(fileItem, projectId, itemId);
-                        }
-
-                        item.Items.Add(fileItem);
-                    }
-                }
-            }
-        }
-
-        private static StackPanel CreateHeader(string iconPath, string displayName, double width, double height)
-        {
-            var stack = new StackPanel
-            {
-                Orientation = Orientation.Horizontal,
-                Margin = new Thickness(2)
-            };
-
-            var svgIcon = new SvgViewbox
-            {
-                Width = width,
-                Height = height,
-                Margin = new Thickness(0, 0, 8, 0),
-                Stretch = Stretch.Uniform,
-                Source = new Uri($"pack://application:,,,/{iconPath}", UriKind.Absolute)
-            };
-
-            var label = new TextBlock
-            {
-                Text = displayName,
-                FontSize = 14,
-                VerticalAlignment = VerticalAlignment.Center,
-                Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d1d5db"))
-            };
-
-            stack.Children.Add(svgIcon);
-            stack.Children.Add(label);
-            return stack;
-        }
-
-
-
-
-
         /*  private async void TreeViewItem_Expanded(object sender, RoutedEventArgs e)
           {
               if (sender is TreeViewItem item)
@@ -1758,6 +1673,96 @@ namespace AssetManager.Desktop
         //}
 
 
+
+
+        //NEEDS MIGRATING TO UI SERVICES || UI FUNCTIONALITY//
+
+        private static StackPanel CreateHeader(string iconPath, string displayName, double width, double height)
+        {
+            var stack = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                Margin = new Thickness(2)
+            };
+
+            var svgIcon = new SvgViewbox
+            {
+                Width = width,
+                Height = height,
+                Margin = new Thickness(0, 0, 8, 0),
+                Stretch = Stretch.Uniform,
+                Source = new Uri($"pack://application:,,,/{iconPath}", UriKind.Absolute)
+            };
+
+            var label = new TextBlock
+            {
+                Text = displayName,
+                FontSize = 14,
+                VerticalAlignment = VerticalAlignment.Center,
+                Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#d1d5db"))
+            };
+
+            stack.Children.Add(svgIcon);
+            stack.Children.Add(label);
+            return stack;
+        }
+        #region UI Functionality
+
+
+        private async void TreeViewItem_Expanded(object sender, RoutedEventArgs e)
+        {
+            if (sender is TreeViewItem item && item.Tag is (string projectId, string folderId, bool isFolder))
+            {
+                // Add the current folder/item to the dictionary
+                itemLookup[folderId] = item;
+
+                // Check if it's the first time the item is expanded
+                if (item.Items.Count == 1 && item.Items[0] == null)
+                {
+                    item.Items.Clear();
+
+                    var items = await DataManagement.GetProjectItems(projectId, folderId);
+
+                    if (items == null || !items.Any())
+                    {
+                        item.Items.Add(new TreeViewItem { Header = "❌ No items found" });
+                        return;
+                    }
+
+                    foreach (var (itemId, itemName, isFolderItem) in items)
+                    {
+                        bool is3DModel = false;
+
+                        if (!isFolderItem)
+                        {
+                            string extension = Path.GetExtension(itemName)?.ToLowerInvariant();
+                            is3DModel = Accepted3DModelExtensions.Contains(extension);
+                        }
+
+                        TreeViewItem fileItem = new TreeViewItem
+                        {
+                            // Set the header based on whether it's a folder or file
+                            Header = isFolderItem
+                                ? CreateHeader("Icons2/folder_icon5.svg", itemName, 25, 25)
+                                : CreateHeader(GetIconForExtension(Path.GetExtension(itemName)), itemName, 30, 30),
+                            Tag = (projectId, itemId, isFolderItem, is3DModel),
+                            ContextMenu = CreateContextMenu(projectId, itemId, isFolderItem)
+                        };
+
+                        // If it's a folder, load subfolders
+                        if (isFolderItem)
+                        {
+                            await LoadSubfoldersAsync(fileItem, projectId, itemId);
+                        }
+
+                        item.Items.Add(fileItem);
+                    }
+                }
+            }
+        }
+
+
+
         private async Task LoadSubfoldersAsync(TreeViewItem parentFolder, string projectId, string folderId)
         {
             try
@@ -1768,7 +1773,7 @@ namespace AssetManager.Desktop
                     return;
                 }
 
-                // ✅ This already filters out deleted models
+                // ✅ Fetch subitems (folders/files)
                 var subItems = await DataManagement.GetProjectItems(projectId, folderId);
 
                 // Clear previous items
@@ -1776,7 +1781,7 @@ namespace AssetManager.Desktop
 
                 if (subItems == null || subItems.Count == 0)
                 {
-                    parentFolder.Items.Add(new TreeViewItem { Header = " (empty)", IsEnabled = false });
+                    parentFolder.Items.Add(new TreeViewItem { Header = "No subfolders found", IsEnabled = false });
                     return;
                 }
 
@@ -1796,18 +1801,21 @@ namespace AssetManager.Desktop
                     TreeViewItem subItem = new TreeViewItem
                     {
                         Header = isSubFolder
-                        ? CreateHeader("Icons2/folder_icon5.svg", subItemName, 25, 25)
-                        : CreateHeader(GetIconForExtension(Path.GetExtension(subItemName)), subItemName, 30, 30),
-
+                            ? CreateHeader("Icons2/folder_icon5.svg", subItemName, 25, 25)
+                            : CreateHeader(GetIconForExtension(Path.GetExtension(subItemName)), subItemName, 30, 30),
                         Tag = (projectId, subItemId, isSubFolder, is3DModel),
                         ContextMenu = CreateContextMenu(projectId, subItemId, isSubFolder)
                     };
+
+                    // Add the subfolder to the dictionary for future reference
+                    itemLookup[subItemId] = subItem;
 
                     if (isSubFolder)
                     {
                         // Lazy load children when expanded
                         subItem.Items.Add(new TreeViewItem { Header = "Loading...", IsEnabled = false });
 
+                        // Handle expanding the folder to load its children
                         subItem.Expanded += async (s, e) =>
                         {
                             if (subItem.Items.Count == 1 && subItem.Items[0] is TreeViewItem dummy && dummy.Header.ToString() == "Loading...")
@@ -1815,9 +1823,10 @@ namespace AssetManager.Desktop
                                 subItem.Items.Clear();
                                 await LoadSubfoldersAsync(subItem, projectId, subItemId);
 
+                                // If no subfolders are found, display empty message
                                 if (subItem.Items.Count == 0)
                                 {
-                                    subItem.Items.Add(new TreeViewItem { Header = " (empty)", IsEnabled = false });
+                                    subItem.Items.Add(new TreeViewItem { Header = "Empty", IsEnabled = false });
                                 }
                             }
                         };
@@ -1828,7 +1837,11 @@ namespace AssetManager.Desktop
             }
             catch (Exception ex)
             {
+                // Log error details to the debug output
                 Debug.WriteLine($"❌ Error in LoadSubfoldersAsync: {ex.Message}\n{ex.StackTrace}");
+
+                // Optional: Show an error message to the user if necessary
+                MessageBox.Show($"Error loading subfolders: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -1836,73 +1849,6 @@ namespace AssetManager.Desktop
 
 
 
-
-        private ContextMenu CreateContextMenu(string projectId, string itemId, bool isFolder)
-        {
-            ContextMenu menu = new ContextMenu();
-            {
-                if (isFolder)
-                {
-                    MenuItem createFolderItem = new MenuItem { Header = "📁 Create New Folder" };
-                    createFolderItem.Click += async (s, e) => await CreateNewFolder(projectId, itemId); // Use selected folder
-                    menu.Items.Add(createFolderItem);
-                }
-            }
-            return menu;
-        }
-
-
-        private async Task CreateNewFolder(string projectId, string parentFolderId)
-        {
-            string folderName = PromptForFolderName();
-            if (string.IsNullOrWhiteSpace(folderName)) return;
-
-            // Disable the context menu while creating the folder to prevent multiple clicks
-            ContextMenu currentMenu = ContextMenuService.GetContextMenu(ProjectTreeView);
-            if (currentMenu != null) currentMenu.IsEnabled = false;
-
-            bool success = await DataManagement.CreateNewFolder(projectId, parentFolderId, folderName);
-
-            if (currentMenu != null) currentMenu.IsEnabled = true;
-
-            if (success)
-            {
-                // Find the parent item in the TreeView
-                TreeViewItem parentItem = FindTreeViewItem(ProjectTreeView.Items, parentFolderId);
-                if (parentItem != null)
-                {
-                    // Remove the "empty folder" message if it exists
-                    var emptyFolderItem = parentItem.Items.OfType<TreeViewItem>()
-                        .FirstOrDefault(item => item.Header.ToString() == "📂 This folder is empty");
-
-                    if (emptyFolderItem != null)
-                    {
-                        parentItem.Items.Remove(emptyFolderItem);
-                    }
-
-                    // Add the new folder to the TreeView
-                    await AddNewFolderToTreeView(parentItem, projectId, parentFolderId, folderName);
-                }
-            }
-        }
-
-        //await LoadProjectsForHub(selectedHubID);
-
-
-
-        private async Task AddNewFolderToTreeView(TreeViewItem parentItem, string projectId, string parentFolderId, string folderName)
-        {
-            TreeViewItem newFolderItem = new TreeViewItem
-            {
-                Header = $"📁 {folderName}",
-                Tag = (projectId, parentFolderId, true, false), // Correct tuple structure
-                ContextMenu = CreateContextMenu(projectId, parentFolderId, true)
-            };
-
-
-            // Add the new folder to the parent folder’s items
-            parentItem.Items.Add(newFolderItem);
-        }
 
         private string PromptForFolderName()
         {
@@ -1913,40 +1859,245 @@ namespace AssetManager.Desktop
                 "New Folder"
             );
 
-            return string.IsNullOrWhiteSpace(folderName) ? null : folderName;
+            // If the user provides an empty folder name, ask again
+            while (string.IsNullOrWhiteSpace(folderName))
+            {
+                MessageBox.Show("Folder name cannot be empty. Please enter a valid folder name.", "Invalid Input", MessageBoxButton.OK, MessageBoxImage.Warning);
+                folderName = Microsoft.VisualBasic.Interaction.InputBox(
+                    "Enter the name for the new folder:",
+                    "Create New Folder",
+                    "New Folder"
+                );
+            }
+
+            return folderName;
         }
 
-        private TreeViewItem FindTreeViewItem(ItemCollection items, string folderId)
-        {
-            if (items == null) return null; // ✅ Prevent null reference
 
-            foreach (TreeViewItem item in items)
+        private ContextMenu CreateContextMenu(string projectId, string itemId, bool isFolder)
+        {
+            ContextMenu menu = new ContextMenu();
+
+            if (isFolder)
             {
-                if (item?.Tag is (string _, string id, _) && id == folderId) // ✅ Null check
+                if (string.IsNullOrEmpty(itemId))
                 {
-                    return item;
+                    // It's better to provide a more friendly message if itemId is null or empty
+                    MessageBox.Show("This folder cannot be modified as it does not contain a valid item ID.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return menu; // Exit early if no valid itemId
                 }
 
-                TreeViewItem found = FindTreeViewItem(item?.Items, folderId);
-                if (found != null) return found;
+                MenuItem createFolderItem = new MenuItem { Header = "📁 Create New Folder" };
+
+                createFolderItem.Click += async (s, e) =>
+                {
+                    // Handle folder creation asynchronously
+                    string newFolderId = await CreateNewFolder(projectId, itemId);
+                    if (string.IsNullOrEmpty(newFolderId))
+                    {
+                        MessageBox.Show("Failed to create the new folder. Please try again.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                    else
+                    {
+                        MessageBox.Show($"New folder created successfully with ID: {newFolderId}", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                };
+
+                menu.Items.Add(createFolderItem);
             }
-            return null;
+            return menu;
         }
+
+        private async Task<string> CreateNewFolder(string projectId, string parentFolderId, bool isNewProjectFolder = false)
+        {
+            string folderName = PromptForFolderName();
+            if (string.IsNullOrWhiteSpace(folderName)) return null;
+
+            // Disable the context menu while creating the folder to prevent multiple clicks
+            ContextMenu currentMenu = ContextMenuService.GetContextMenu(ProjectTreeView);
+            if (currentMenu != null) currentMenu.IsEnabled = false;
+
+            string folderId = await DataManagement.CreateNewFolder(projectId, parentFolderId, folderName);
+
+            if (currentMenu != null) currentMenu.IsEnabled = true;
+
+            if (string.IsNullOrEmpty(folderId))
+            {
+                MessageBox.Show("Could not create new folder, folder id is null or empty.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return null;
+            }
+
+            MessageBox.Show($"Successfully added new folder to Hub\n Project id: {projectId} \n Parent folder ID: {parentFolderId}");
+
+            // Fetch the parent item directly from the dictionary
+            if (itemLookup.TryGetValue(parentFolderId, out TreeViewItem parentItem))
+            {
+                // Remove the "empty folder" message if it exists
+                var emptyFolderItem = parentItem.Items.OfType<TreeViewItem>()
+                    .FirstOrDefault(item => item.Header.ToString() == "📂 This folder is empty");
+
+                if (emptyFolderItem != null)
+                {
+                    parentItem.Items.Remove(emptyFolderItem);
+                }
+
+                // Add the new folder to the TreeView
+                await AddNewFolderToTreeView(parentItem, projectId, folderId, folderName);
+
+                return folderId;
+            }
+            else
+            {
+                MessageBox.Show("Parent item was not found in the TreeView.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return null;
+            }
+        }
+
+
+        private async Task AddNewFolderToTreeView(TreeViewItem parentItem, string projectId, string folderId, string folderName)
+        {
+            // Create the new folder TreeViewItem
+            TreeViewItem newFolderItem = new TreeViewItem
+            {
+                Header = CreateHeader("Icons2/folder_icon5.svg", folderName, 25, 25),
+                Tag = (projectId, folderId, true, false), // Correct tuple structure
+                ContextMenu = CreateContextMenu(projectId, folderId, true)
+            };
+
+            // Add the new folder to the parent folder’s items
+            parentItem.Items.Add(newFolderItem);
+
+            // Add "empty" item to indicate the folder is empty
+            newFolderItem.Items.Add(new TreeViewItem { Header = "📂 This folder is empty", IsEnabled = false });
+
+            // Add the new folder item to the dictionary for future access
+            itemLookup[folderId] = newFolderItem;
+        }
+
+
+        //private TreeViewItem FindTreeViewItem(ItemCollection items, string folderId)
+        //{
+        //    if (items == null || string.IsNullOrEmpty(folderId)) return null;
+
+        //    foreach (TreeViewItem item in items)
+        //    {
+        //        var tagTuple = item?.Tag as Tuple<string, string, bool, bool>;
+
+        //        // Debug output to see what tag data is being compared
+        //        Debug.WriteLine($"Checking item with FolderId: {tagTuple?.Item2}, Target FolderId: {folderId}");
+
+        //        // Check if the folderId matches
+        //        if (tagTuple != null && tagTuple.Item2 == folderId)
+        //        {
+        //            return item;
+        //        }
+
+        //        // Recursively search in the child items if necessary
+        //        if (item?.Items != null)
+        //        {
+        //            TreeViewItem found = FindTreeViewItem(item.Items, folderId);
+        //            if (found != null) return found;
+        //        }
+        //    }
+        //    return null;
+        //}
+
+
+
+
+
+
+
         #endregion
 
+
+        #region UI Buttons
+        private async void CreateNewFolder_Click(object sender, RoutedEventArgs e)
+        {
+            if (_selectedProjectId == null)
+            {
+                MessageBox.Show("Please select a project to create a new folder.");
+                return;
+            }
+
+            var parentFolder = await DataManagement.GetTopLevelFolder(selectedHubID, _selectedProjectId);
+
+            if (parentFolder.Equals(default) || string.IsNullOrWhiteSpace(parentFolder.FolderId) || string.IsNullOrWhiteSpace(parentFolder.FolderName))
+            {
+                MessageBox.Show("Failed to retrieve the top-level folder. Please try again later.");
+                return;
+            }
+
+
+
+            var parentFolderId = parentFolder.FolderId;
+
+            // Proceed with creating a new folder
+            await CreateNewFolder(_selectedProjectId, parentFolderId, true);
+        }
+
+        //private async Task ExpandFolderByProjectId(string projectId)
+        //{
+        //    foreach (var item in ProjectTreeView.Items)
+        //    {
+        //        if (item is TreeViewItem treeViewItem && treeViewItem.Tag is (string folderProjectId, string folderId, bool isFolder))
+        //        {
+        //            // Check if the project ID matches
+        //            if (folderProjectId == projectId)
+        //            {
+        //                // Ensure the item is collapsed (i.e., it has not been expanded yet)
+        //                if (!treeViewItem.IsExpanded)
+        //                {
+        //                    treeViewItem.IsExpanded = true;
+
+        //                    // Load items for the folder
+        //                    var items = await DataManagement.GetProjectItems(projectId, folderId);
+
+        //                    if (items == null || !items.Any())
+        //                    {
+        //                        treeViewItem.Items.Add(new TreeViewItem { Header = "❌ No items found" });
+        //                    }
+        //                    else
+        //                    {
+        //                        foreach (var (itemId, itemName, isFolderItem) in items)
+        //                        {
+        //                            bool is3DModel = false;
+
+        //                            if (!isFolderItem)
+        //                            {
+        //                                string extension = Path.GetExtension(itemName)?.ToLowerInvariant();
+        //                                is3DModel = Accepted3DModelExtensions.Contains(extension);
+        //                            }
+
+        //                            TreeViewItem fileItem = new TreeViewItem
+        //                            {
+        //                                Header = isFolderItem
+        //                                    ? CreateHeader("Icons2/folder_icon5.svg", itemName, 25, 25)
+        //                                    : CreateHeader(GetIconForExtension(Path.GetExtension(itemName)), itemName, 30, 30),
+        //                                Tag = (projectId, itemId, isFolderItem, is3DModel),
+        //                                ContextMenu = CreateContextMenu(projectId, itemId, isFolderItem)
+        //                            };
+
+        //                            if (isFolderItem)
+        //                            {
+        //                                await LoadSubfoldersAsync(fileItem, projectId, itemId);
+        //                            }
+
+        //                            treeViewItem.Items.Add(fileItem);
+        //                        }
+        //                    }
+        //                }
+
+        //                // Stop after the first match
+        //                return;
+        //            }
+        //        }
+        //    }
+        //}
 
 
 
         //UI BUTTONS//
-        #region UI Buttons
-        private void CreateNewFolder_Click(object sender, RoutedEventArgs e)
-        {
-            Console.WriteLine("hello");
-            MessageBox.Show("bruh");
-
-            return;
-        }
-
         private async void ProjectTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
             if (e.NewValue is TreeViewItem selectedItem)
