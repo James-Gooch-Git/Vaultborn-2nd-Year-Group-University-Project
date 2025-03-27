@@ -1168,18 +1168,27 @@
 
 
                 <Button x:Name="VersionsSelectButton" Visibility="Collapsed" 
-                    Template="{StaticResource MiddleButton2Template}"
                     FontFamily="Georgia"
                     FontSize="12"
                     FontWeight="Bold"
-                    Foreground="#000000"
+                    Foreground="#d1d5db"
+                    BorderBrush="#98730c"
+                    BorderThickness="3"
+                    Background="#540754"
                     HorizontalAlignment="Right"
                     VerticalAlignment="Bottom"
                     Width="250" Height="70" 
                     Margin="0,0,40,20" 
                     Content="Show First Versions" 
                     Click="VersionSliderButton_Click" Grid.Row="2"
-                    Cursor="Hand"/>
+                    Cursor="Hand">
+                    
+                    <Button.Resources>
+                        <Style TargetType="Border">
+                            <Setter Property="CornerRadius" Value="10"/>
+                        </Style>
+                    </Button.Resources>
+                </Button>
                 <Popup Name="VersionError" IsOpen="False" Placement="Center" StaysOpen="True">
                     <Border Background="LightBlue" BorderBrush="Black" BorderThickness="1" Padding="10" HorizontalAlignment="Center" VerticalAlignment="Center">
                         <StackPanel>
