@@ -233,7 +233,7 @@ public class TokenService
                 {
                     string refreshToken = refreshTokenElement.GetString();
                     TokenManager.SetRefreshToken(refreshToken);
-                    Console.WriteLine("? Refresh token stored");
+                    Console.WriteLine($"? Refresh token stored {refreshToken}");
                 }
 
                 return token;
