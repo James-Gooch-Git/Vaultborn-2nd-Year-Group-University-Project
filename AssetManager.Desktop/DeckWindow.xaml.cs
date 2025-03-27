@@ -267,7 +267,7 @@ namespace AssetManager.Desktop
             }
         }
         
-        private static async Task<ImageSource> LoadImageFromUrl(string imageUrl)
+        public static async Task<ImageSource> LoadImageFromUrl(string imageUrl)
         {
             if (imageUrl.StartsWith("https://developer.api.autodesk.com"))
             {

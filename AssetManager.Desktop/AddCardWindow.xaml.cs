@@ -8,6 +8,7 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using AssetManager.Infrastructure.DOC;
 using Autodesk.Forge.Model;
+using System.Windows.Media;
 
 namespace AssetManager.Desktop
 {
@@ -55,7 +56,9 @@ namespace AssetManager.Desktop
                 }
 
                 string modelName = model.GetValue("_name", "").AsString;
-                byte[] thumbnailData = model.Contains("thumbnail_data") ? model["thumbnail_data"].AsByteArray : null;
+                string thumbnailData = model.Contains("thumbnail_url") ? model["thumbnail_url"].AsString : null;
+
+                ImageSource thumbnail = await DeckView.LoadImageFromUrl(thumbnailData);
 
                 if (thumbnailData == null || thumbnailData.Length == 0)
                 {
@@ -64,8 +67,8 @@ namespace AssetManager.Desktop
                 else
                 {
                     ImageUrlTextBox.Text = "Model default thumbnail";
-                    AddThumbnail(thumbnailData);
-                    imageData = thumbnailData;
+                    AddThumbnail(thumbnail);
+                   // imageData = thumbnailData;
                 }
 
                 ModelTextBox.Text = modelName;
@@ -78,23 +81,22 @@ namespace AssetManager.Desktop
             }
         }
 
-        private void AddThumbnail(byte[] imageBytes)
+        private void AddThumbnail(ImageSource imageUrl)
         {
-            // ✅ Convert binary thumbnail to image
-            if (imageBytes != null && imageBytes.Length > 0)
+            try
             {
-                BitmapImage bitmap = new BitmapImage();
+                // Check if the imageUrl is valid
+                
 
-                using (MemoryStream ms = new MemoryStream(imageBytes))
-                {
-                    bitmap.BeginInit();
-                    bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                    bitmap.StreamSource = ms;
-                    bitmap.EndInit();
-                }
+                // Set the image to preview
+                SelectedCardImage.Source = imageUrl;
 
-                // ✅ Set the image to preview
-                SelectedCardImage.Source = bitmap;
+                Console.WriteLine("Image loaded successfully");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading image: {ex.Message}");
+                // You might want to set a default/placeholder image here
             }
         }
 
