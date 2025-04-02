@@ -2,7 +2,7 @@
 
 ## How to install: 
 
-Go to the google drive below and download the installer within the 'installer' folder  
+Go to the google drive below and download 'Vaultborn_Installer' within the 'installer' folder  
 
 Once downloaded, you should be able to run the installer  
 
