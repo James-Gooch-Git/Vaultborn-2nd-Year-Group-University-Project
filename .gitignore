@@ -32,3 +32,4 @@ AssetManager.Infrastructure/bin/Debug/net8.0/win-x64/AssetManager.Infrastructure
 *.dll
 *.dll
 *.dll
+.env
