@@ -37,13 +37,12 @@ Autodesk APS, PayPal), especially if the repo is or was ever public.
      risk — but the file should be cleaned up or deleted.
 
 **Remediation plan**
-- [ ] Rotate MongoDB Atlas password
-- [ ] Rotate Autodesk app client secret
-- [ ] Rotate PayPal client secret
-- [ ] Load secrets from environment variables / AWS Secrets Manager — note the
-      project already contains a working helper (`AssetManager.Infrastructure/Services/AWSSecrets.cs`)
-      that none of these services use
-- [ ] Remove dead `appsettings.json` Postgres config
+- [x] Rotate MongoDB Atlas password *(credentials confirmed revoked)*
+- [x] Rotate Autodesk app client secret *(credentials confirmed revoked)*
+- [x] Rotate PayPal client secret *(credentials confirmed revoked)*
+- [x] Load secrets from environment variables — done via `AppSecrets`
+      (`VAULTBORN_*` variables, see README "Configuring credentials")
+- [x] Remove dead `appsettings.json` Postgres config
 
 ### 🟡 Repo hygiene
 
