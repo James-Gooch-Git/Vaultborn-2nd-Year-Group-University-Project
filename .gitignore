@@ -1,35 +1,25 @@
+# Build output
 bin/
 obj/
-**/*.dll
-**/*.pdb
 /packages/
-riderModule.iml
-/_ReSharper.Caches/
-# Ignore Asset Manager Infrastructure files
-AssetManager.Infrastructure/bin/Debug/net8.0/win-x64/*.dll
-AssetManager.Infrastructure/bin/Debug/net8.0/win-x64/*.pdb
+*.dll
+*.pdb
 
-
-# Visual Studio User-Specific Files
+# Visual Studio user-specific files
 *.suo
 *.user
 *.userosscache
 *.sln.docstates
+*.csproj.user
+*.xaml.cache
 .vs/
-# JetBrains Rider settings
+
+# JetBrains Rider
 .idea/
+riderModule.iml
+/_ReSharper.Caches/
 *.DotSettings
 *.DotSettings.user
 
-# MSBuild auto-generated files
-*.csproj.user
-*.suo
-*.user
-
-*.xaml.cache
-AssetManager.Infrastructure/bin/Debug/net8.0/win-x64/AssetManager.Infrastructure.dll
-AssetManager.Infrastructure/bin/Debug/net8.0/win-x64/AssetManager.Infrastructure.pdb
-*.dll
-*.dll
-*.dll
+# Secrets
 .env

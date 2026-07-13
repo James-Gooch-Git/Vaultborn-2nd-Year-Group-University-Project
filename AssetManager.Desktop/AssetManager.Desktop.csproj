@@ -17,9 +17,6 @@
       <None Remove="Icons\**" />
       <Page Remove="Icons\**" />
     </ItemGroup>
-	<ItemGroup>
-		<ProjectReference Include="..\AssetManager.Infrastructure\AssetManager.Infrastructure.csproj" />
-	</ItemGroup>
     <ItemGroup>
       <None Remove="Assets\addCardBG.png" />
       <None Remove="Assets\AppIcon.ico" />
@@ -170,14 +167,8 @@
     </ItemGroup>
     
     <ItemGroup>
-        <ProjectReference Include="..\AssetManager.Core\AssetManager.Core.csproj" />
         <ProjectReference Include="..\AssetManager.Infrastructure\AssetManager.Infrastructure.csproj" />
     </ItemGroup>
-	<ItemGroup>
-		<Content Include="Resources\requests\**\*">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</Content>
-	</ItemGroup>
 
     <ItemGroup>
       <Resource Include="Assets\Button2.png">
@@ -282,8 +273,5 @@
       </Page>
     </ItemGroup>
     
-    <ItemGroup>
-      <Folder Include="Resources\requests\" />
-    </ItemGroup>
 
 </Project>

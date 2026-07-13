@@ -133,11 +133,6 @@
 
     </ItemGroup>
 
-
-	<ItemGroup>
-        <ProjectReference Include="..\AssetManager.Core\AssetManager.Core.csproj" />
-    </ItemGroup>
-
 	<ItemGroup>
     		<PackageReference Include="SkiaSharp" Version="3.116.1" />
     		<PackageReference Include="System.Collections" Version="4.3.0" />
@@ -178,8 +173,11 @@
 
 
 	<ItemGroup>
-	  <Folder Include="NewFolder\" />
-	</ItemGroup>
+      <None Update="appsettings.json">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
+
 
 
 	<ItemGroup>

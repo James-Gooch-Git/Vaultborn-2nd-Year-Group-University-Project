@@ -29,8 +29,6 @@ namespace AssetManagement.Infrastructure.Fusion
                 );
 
                 CopyAddinToPath(tempAddinPath, userAddinsPath);
-                InstallPythonRequests();
-
 
                 // Clean up temp directory
                 Directory.Delete(tempAddinPath, true);
@@ -53,7 +51,7 @@ namespace AssetManagement.Infrastructure.Fusion
 
             string[] directories = {
         ".vscode", "commands/commandDialog/resources", "commands/paletteSend/resources",
-        "commands/paletteShow/resources/html/static", "lib/fusionAddInUtils", "requests"
+        "commands/paletteShow/resources/html/static", "lib/fusionAddInUtils"
     };
 
             string[] embeddedResources = {
@@ -101,21 +99,6 @@ namespace AssetManagement.Infrastructure.Fusion
             {
                 File.WriteAllText(Path.Combine(addinPath, "auth_token.txt"), accessToken);
             }
-            // Define the source and destination paths for the 'requests' directory
-            string sourceRequestsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "requests");
-            string destinationRequestsPath = Path.Combine(addinPath, "requests");
-
-            // Check if the 'requests' directory exists and copy it
-            if (Directory.Exists(sourceRequestsPath))
-            {
-                CopyDirectory(sourceRequestsPath, destinationRequestsPath);
-                Console.WriteLine($"✅ Copied 'requests' directory from: {sourceRequestsPath}");
-            }
-            else
-            {
-                Console.WriteLine($"⚠️ Warning: 'requests' directory not found at {sourceRequestsPath}");
-            }
-
         }
 
         private static void CopyDirectory(string sourceDir, string destinationDir)
@@ -195,76 +178,6 @@ namespace AssetManagement.Infrastructure.Fusion
 
         }
 
-        private static void InstallPythonRequests()
-        {
-            try
-            {
-                string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-                string sourcePath = Path.Combine(baseDir, "Resources", "requests");
-
-                Console.WriteLine($"Source path: {sourcePath}");
-                if (!Directory.Exists(sourcePath))
-                {
-                    Console.WriteLine("❌ Source 'requests' folder not found.");
-                    return;
-                }
-
-                // ⚠️ Update this to the actual Fusion 360 Python site-packages path on your system
-                string fusionPythonPath = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                    "Autodesk",
-                    "webdeploy",
-                    "production"
-                );
-
-                // Find the correct Fusion deployment subfolder
-                var fusionDirs = Directory.GetDirectories(fusionPythonPath)
-                    .Where(d => File.Exists(Path.Combine(d, "Fusion360.exe")))  // crude but helpful filter
-                    .ToList();
-
-                if (fusionDirs.Count == 0)
-                {
-                    Console.WriteLine("❌ Could not find Fusion 360 install directory.");
-                    return;
-                }
-
-                string sitePackagesPath = null;
-                foreach (var dir in fusionDirs)
-                {
-                    string potential = Path.Combine(dir, "Python", "lib", "site-packages");
-                    if (Directory.Exists(potential))
-                    {
-                        sitePackagesPath = potential;
-                        break;
-                    }
-                }
-
-                if (sitePackagesPath == null)
-                {
-                    Console.WriteLine("❌ Could not locate Fusion 360 site-packages directory.");
-                    return;
-                }
-
-                Console.WriteLine($"✅ Target Fusion site-packages path: {sitePackagesPath}");
-
-                // Final target
-                string targetPath = Path.Combine(sitePackagesPath, "requests");
-                if (Directory.Exists(targetPath))
-                {
-                    Console.WriteLine("ℹ️ Existing 'requests' folder found in Fusion. Deleting...");
-                    Directory.Delete(targetPath, true);
-                }
-
-                Console.WriteLine($"📦 Copying 'requests' to Fusion site-packages...");
-                CopyDirectory(sourcePath, targetPath);
-
-                Console.WriteLine("✅ 'requests' successfully installed into Fusion site-packages.");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"❌ Error in InstallPythonRequests: {ex.Message}\n{ex.StackTrace}");
-            }
-        }
 
 
 
