@@ -7,11 +7,10 @@ using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Web;
+using AssetManager.Infrastructure.Http;
 
 public class FileDownloadService
 {
-    private static readonly HttpClient httpClient = new HttpClient();
-
     public async Task DownloadModelAsync(string projectId, string itemId)
     {
         if (string.IsNullOrEmpty(projectId) || string.IsNullOrEmpty(itemId))
@@ -92,36 +91,6 @@ public class FileDownloadService
         Console.WriteLine($"✅ Model metadata saved: {metadataPath}");
     }
 
-    /*    private async Task<string> GetStorageIdFromItem(string projectId, string itemId, string accessToken)
-        {
-            string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/items/{itemId}";
-
-            using var client = new HttpClient();
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-
-            HttpResponseMessage response = await client.GetAsync(url);
-            if (!response.IsSuccessStatusCode)
-            {
-                return null;
-            }
-
-            string jsonResponse = await response.Content.ReadAsStringAsync();
-            using JsonDocument doc = JsonDocument.Parse(jsonResponse);
-            JsonElement root = doc.RootElement;
-
-            if (root.TryGetProperty("included", out JsonElement includedArray) && includedArray.GetArrayLength() > 0)
-            {
-                return includedArray[0]
-                    .GetProperty("relationships")
-                    .GetProperty("storage")
-                    .GetProperty("data")
-                    .GetProperty("id")
-                    .GetString();
-            }
-
-            return null;
-        }*/
-
     public async Task<string> GetStorageIdFromItem(string projectId, string itemId, string versionId = null)
     {
         string url;
@@ -143,10 +112,10 @@ public class FileDownloadService
 
         Console.WriteLine($"🌍 API URL: {url}");
 
-        using HttpClient httpClient = new HttpClient();
-        httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TokenManager.GetToken());
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", TokenManager.GetToken());
 
-        HttpResponseMessage response = await httpClient.GetAsync(url);
+        HttpResponseMessage response = await SharedHttp.Client.SendAsync(request);
         //Console.WriteLine($"🔍 API Response: {response}");
 
         if (!response.IsSuccessStatusCode)
@@ -220,10 +189,10 @@ public class FileDownloadService
         string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/versions/{encodedVersionId}";
         Console.WriteLine($"🔍 Fetching Storage ID for Version: {versionId} from {url}");
 
-        using HttpClient httpClient = new HttpClient();
-        httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TokenManager.GetToken());
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", TokenManager.GetToken());
 
-        HttpResponseMessage response = await httpClient.GetAsync(url);
+        HttpResponseMessage response = await SharedHttp.Client.SendAsync(request);
         if (!response.IsSuccessStatusCode)
         {
             Console.WriteLine($"❌ Error retrieving storage ID. Status Code: {response.StatusCode}");
@@ -271,10 +240,10 @@ public class FileDownloadService
     {
         string url = $"https://developer.api.autodesk.com/oss/v2/buckets/{bucketKey}/objects/{objectKey}/signeds3download";
 
-        using var client = new HttpClient();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
-        HttpResponseMessage response = await client.GetAsync(url);
+        HttpResponseMessage response = await SharedHttp.Client.SendAsync(request);
         if (!response.IsSuccessStatusCode) return null;
 
         string jsonResponse = await response.Content.ReadAsStringAsync();
@@ -286,10 +255,10 @@ public class FileDownloadService
     {
         string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/items/{itemId}";
 
-        using var client = new HttpClient();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
-        HttpResponseMessage response = await client.GetAsync(url);
+        HttpResponseMessage response = await SharedHttp.Client.SendAsync(request);
         if (!response.IsSuccessStatusCode) return "DownloadedModel.obj";
 
         string jsonResponse = await response.Content.ReadAsStringAsync();
@@ -308,8 +277,7 @@ public class FileDownloadService
 
     private async Task DownloadFileAsync(string signedUrl, string saveDirectory, string fileName)
     {
-        using var client = new HttpClient();
-        HttpResponseMessage response = await client.GetAsync(signedUrl);
+        HttpResponseMessage response = await SharedHttp.Client.GetAsync(signedUrl);
         if (!response.IsSuccessStatusCode)
         {
             Console.WriteLine($"❌ Download failed: {response.StatusCode}");
@@ -332,13 +300,13 @@ public class FileDownloadService
         string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/items/{itemId}/versions";
         string accessToken = TokenManager.GetToken();
 
-        using HttpClient httpClient = new HttpClient();
-        httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
         try
         {
             Console.WriteLine($"🔍 Fetching versions for Item: {itemId}");
-            HttpResponseMessage response = await httpClient.GetAsync(url);
+            HttpResponseMessage response = await SharedHttp.Client.SendAsync(request);
 
             if (!response.IsSuccessStatusCode)
             {

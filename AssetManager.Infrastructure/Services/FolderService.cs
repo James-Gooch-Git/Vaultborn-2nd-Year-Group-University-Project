@@ -3,6 +3,7 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using AssetManager.Infrastructure.Services;
+using AssetManager.Infrastructure.Http;
 using ForgeViewerApp;
 using System.Net.Http;
 using Newtonsoft.Json;
@@ -193,26 +194,23 @@ namespace AssetManagement.Infrastructure.Services
             string hubId = await DataManagement.GetPersonalHub();
             string url = $"https://developer.api.autodesk.com/project/v1/hubs/{hubId}/projects/{projectId}";
 
-            using (HttpClient httpClient = new HttpClient())
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.Add("Authorization", $"Bearer {TokenManager.GetToken()}");
+
+            HttpResponseMessage response = await SharedHttp.Client.SendAsync(request);
+            string responseContent = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
             {
-                HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url);
-                request.Headers.Add("Authorization", $"Bearer {TokenManager.GetToken()}");
-
-                HttpResponseMessage response = await httpClient.SendAsync(request);
-                string responseContent = await response.Content.ReadAsStringAsync();
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    Console.WriteLine($"❌ Error fetching root folder ID for project {projectId}: {responseContent}");
-                    return null;
-                }
-
-                var jsonResponse = JsonConvert.DeserializeObject<dynamic>(responseContent);
-                string rootFolderId = jsonResponse["data"]["relationships"]["rootFolder"]["data"]["id"].ToString();
-
-                Console.WriteLine($"✅ Root folder ID for project {projectId}: {rootFolderId}");
-                return rootFolderId;
+                Console.WriteLine($"❌ Error fetching root folder ID for project {projectId}: {responseContent}");
+                return null;
             }
+
+            var jsonResponse = JsonConvert.DeserializeObject<dynamic>(responseContent);
+            string rootFolderId = jsonResponse["data"]["relationships"]["rootFolder"]["data"]["id"].ToString();
+
+            Console.WriteLine($"✅ Root folder ID for project {projectId}: {rootFolderId}");
+            return rootFolderId;
         }
 
         private async Task<string> EnsureFolderExists(string projectID, string parentFolderId, string folderName)
@@ -303,9 +301,8 @@ namespace AssetManagement.Infrastructure.Services
 
             HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url);
             request.Headers.Add("Authorization", $"Bearer {TokenManager.GetToken()}");
-            HttpClient httpClient = new HttpClient();
 
-            HttpResponseMessage response = await httpClient.SendAsync(request);
+            HttpResponseMessage response = await SharedHttp.Client.SendAsync(request);
             string responseContent = await response.Content.ReadAsStringAsync();
 
             if (!response.IsSuccessStatusCode)

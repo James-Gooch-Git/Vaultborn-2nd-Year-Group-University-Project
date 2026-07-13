@@ -32,7 +32,6 @@ namespace AssetManager.Desktop
         private string loginURL = $"https://developer.api.autodesk.com/authentication/v2/authorize";
         private string _codeVerifier;
         private readonly TokenService _tokenService = new TokenService();
-        private readonly HttpClient _httpClient = new HttpClient();
 
         private readonly string userSession;
         private readonly string aToken;
@@ -110,7 +109,7 @@ namespace AssetManager.Desktop
         {
             try
             {
-                await webView.EnsureCoreWebView2Async(null);
+                await WebViewHelper.InitializeAsync(webView, Redirected);
 
                 string nonce = GenerateNonce();
                 Pkce pkce = GeneratePkce();
@@ -124,14 +123,6 @@ namespace AssetManager.Desktop
                                   + $"&prompt=login"
                                   + $"&code_challenge={pkce.CodeChallenge}"
                                   + $"&code_challenge_method=S256";
-
-                if (webView.CoreWebView2 == null)
-                {
-                    Console.WriteLine("❌ WebView is not initialized. Initializing...");
-                    await webView.EnsureCoreWebView2Async(); // ✅ Ensure initialization
-                }
-                webView.CoreWebView2.NavigationStarting -= Redirected;
-                webView.CoreWebView2.NavigationStarting += Redirected;
 
                 webView.CoreWebView2.Navigate(loginURL);
             }
@@ -400,8 +391,7 @@ namespace AssetManager.Desktop
                                   + $"&code_challenge={pkce.CodeChallenge}"
                                   + $"&code_challenge_method=S256";
 
-                webView.CoreWebView2.NavigationStarting -= Redirected;
-                webView.CoreWebView2.NavigationStarting += Redirected;
+                await WebViewHelper.InitializeAsync(webView, Redirected);
                 webView.CoreWebView2.Navigate(loginURL);
             }
             catch (Exception ex)
@@ -429,39 +419,6 @@ namespace AssetManager.Desktop
             }
         }
 
-       /* private async void Window_Loaded(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                // Ensure WebView2 is initialized before navigating
-                await webView.EnsureCoreWebView2Async();
-                Console.WriteLine("✅ WebView2 initialized successfully.");
-
-                // Generate login URL
-            
-                Console.WriteLine($"🔗 Navigating to: {loginURL}");
-
-                // Attach event listener only once
-                webView.CoreWebView2.NavigationStarting -= Redirected;
-                webView.CoreWebView2.NavigationStarting += Redirected;
-
-                // Navigate to the Autodesk login page
-                if (!string.IsNullOrEmpty(loginURL))
-                {
-                    webView.Source = new Uri(loginURL);
-                }
-                else
-                {
-                    Console.WriteLine("❌ Error: loginURL is null or empty.");
-                }
-
-                webView.Source = new Uri(loginURL);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"❌ WebView2 initialization failed: {ex.Message}");
-            }
-        }*/
 
 
         /// <summary>
@@ -656,26 +613,6 @@ namespace AssetManager.Desktop
         }
     }
 
-/*    private async void Window_Loaded(object sender, RoutedEventArgs e)
-    {
-        try
-        {
-            // Ensure WebView2 is initialized
-            await webView.EnsureCoreWebView2Async();
-            Console.WriteLine("✅ WebView2 initialized successfully.");
-
-            // Generate URL dynamically
-            string loginURL = GenerateLoginUrl();
-            Console.WriteLine($"🔗 Navigating to: {loginURL}");
-
-            webView.Source = new Uri(loginURL);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"❌ WebView2 initialization failed: {ex.Message}");
-        }
-    }
-*/
 
     public static class Base64Url
     {

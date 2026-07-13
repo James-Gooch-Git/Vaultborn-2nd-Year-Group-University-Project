@@ -6,21 +6,20 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using AssetManager.Infrastructure.Http;
 
 namespace AssetManager.Infrastructure.Services
 {
     public class ModelUpload
     {
         private readonly string _accessToken;
-        private readonly HttpClient _httpClient;
         private const string API_BASE_URL = "https://developer.api.autodesk.com";
         private string _uploadKey;  // ✅ Store the correct upload key at the class level
-        private bool _uploadFinalized = false; 
+        private bool _uploadFinalized = false;
 
         public ModelUpload(string accessToken)
         {
             _accessToken = accessToken;
-            _httpClient = new HttpClient();
         }
 
         /// <summary>
@@ -63,7 +62,7 @@ namespace AssetManager.Infrastructure.Services
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
             request.Content = content;
 
-            HttpResponseMessage response = await _httpClient.SendAsync(request);
+            HttpResponseMessage response = await SharedHttp.Client.SendAsync(request);
             string responseBody = await response.Content.ReadAsStringAsync();
 
             Console.WriteLine($"📥 Response: {responseBody}");
@@ -96,7 +95,7 @@ namespace AssetManager.Infrastructure.Services
             using var request = new HttpRequestMessage(HttpMethod.Get, url);
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
 
-            HttpResponseMessage response = await _httpClient.SendAsync(request);
+            HttpResponseMessage response = await SharedHttp.Client.SendAsync(request);
             string json = await response.Content.ReadAsStringAsync();
 
             if (!response.IsSuccessStatusCode)
@@ -134,7 +133,7 @@ namespace AssetManager.Infrastructure.Services
                 using var content = new ByteArrayContent(fileBytes);
                 content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
 
-                HttpResponseMessage response = await _httpClient.PutAsync(signedUrl, content);
+                HttpResponseMessage response = await SharedHttp.Client.PutAsync(signedUrl, content);
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -205,7 +204,7 @@ namespace AssetManager.Infrastructure.Services
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
             request.Content = content;
 
-            HttpResponseMessage response = await _httpClient.SendAsync(request);
+            HttpResponseMessage response = await SharedHttp.Client.SendAsync(request);
             string responseBody = await response.Content.ReadAsStringAsync();
 
             Console.WriteLine($"📥 Forge Finalization Response - {responseBody}");
@@ -311,7 +310,7 @@ namespace AssetManager.Infrastructure.Services
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
             request.Content = content;
 
-            HttpResponseMessage response = await _httpClient.SendAsync(request);
+            HttpResponseMessage response = await SharedHttp.Client.SendAsync(request);
             string responseBody = await response.Content.ReadAsStringAsync();
 
             Console.WriteLine($"📥 Response: {responseBody}");

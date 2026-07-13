@@ -6,14 +6,14 @@ namespace AssetManager.Infrastructure.DOC;
 
 public class CreateCard
 {
+    private readonly MongoConnection _mongo = new();
     private readonly IMongoCollection<BsonDocument> _cardsCollection;
     private readonly IMongoCollection<BsonDocument> _decksCollection;
 
     public CreateCard()
     {
-        var mongo = new MongoConnection();
-        _cardsCollection = mongo.GetCollection("Cards");
-        _decksCollection = mongo.GetCollection("Decks");
+        _cardsCollection = _mongo.GetCollection("Cards");
+        _decksCollection = _mongo.GetCollection("Decks");
     }
 
     public void AddNewCard(string userId, string cardName, string description,

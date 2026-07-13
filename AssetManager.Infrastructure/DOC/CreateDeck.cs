@@ -6,12 +6,12 @@ namespace AssetManager.Infrastructure.DOC;
 
 public class CreateDeck
 {
+    private readonly MongoConnection _mongo = new();
     private readonly IMongoCollection<BsonDocument> _decksCollection;
 
     public CreateDeck()
     {
-        var mongo = new MongoConnection();
-        _decksCollection = mongo.GetCollection("Decks");
+        _decksCollection = _mongo.GetCollection("Decks");
     }
     
     public async Task AddNewDeck(string owner, string name, string description)

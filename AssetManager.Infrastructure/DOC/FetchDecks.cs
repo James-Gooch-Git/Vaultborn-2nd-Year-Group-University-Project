@@ -6,11 +6,11 @@ namespace AssetManager.Infrastructure.DOC;
 
 public class FetchDecks
 {
+    private readonly MongoConnection _mongo = new();
     private readonly IMongoCollection<BsonDocument> _decksCollection;
     private readonly string _userId;
 
     FetchDecks(string userId) {
-        var mongo = new MongoConnection();
         _userId = userId;
     }
     

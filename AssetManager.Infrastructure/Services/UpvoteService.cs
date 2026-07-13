@@ -7,9 +7,10 @@ namespace AssetManager.Infrastructure.Services;
 
 public class UpvoteService
 {
+    private readonly MongoConnection database = new();
+
     public async Task<int> GetModelUpvoteCount(string id)
     {
-        MongoConnection database = new MongoConnection();
         var userData = await database.ModelData.Find(x => x.Id == id).FirstOrDefaultAsync();
         if (userData == null)
         {
@@ -17,10 +18,9 @@ public class UpvoteService
         }
         return userData.UpvoteCount;
     }
-    
+
     public async Task SetUserModelVote(string modelId, string userId)
     {
-        MongoConnection database = new MongoConnection();
         var findVote = await database.Upvotes.Find(x => x.ModelId == modelId && x.UserId == userId).FirstOrDefaultAsync();
 
         if (findVote == null)
@@ -36,7 +36,6 @@ public class UpvoteService
     
     public async Task UpdateUserModelVote(string modelId, string userId, int vote)
     {
-        MongoConnection database = new MongoConnection();
         var filter = Builders<Upvotes>.Filter.And(
             Builders<Upvotes>.Filter.Eq("ModelId", modelId),
             Builders<Upvotes>.Filter.Eq("UserId", userId));
@@ -46,7 +45,6 @@ public class UpvoteService
     
     public async Task<int> GetUserModelVote(string modelId, string userId)
     {
-        MongoConnection database = new MongoConnection();
         var result = await database.Upvotes.Find(x => x.ModelId == modelId && x.UserId == userId).FirstOrDefaultAsync();
         if (result == null)
         {

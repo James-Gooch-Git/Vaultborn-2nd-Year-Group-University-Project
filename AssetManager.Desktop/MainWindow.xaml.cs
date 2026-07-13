@@ -14,6 +14,7 @@ using SharpVectors.Converters;
 using MongoDB.Driver;
 using System.Windows.Media;
 using AssetManager.Infrastructure.Data;
+using AssetManager.Infrastructure.Http;
 using System.Windows.Media.Imaging;
 using System.Net;
 using System.Windows.Input;
@@ -63,7 +64,7 @@ namespace AssetManager.Desktop
         private readonly FileDownloadService _filedwnService;
         private List<Dictionary<string, string>> Models;
         public static string _userId = Environment.GetEnvironmentVariable("userId", EnvironmentVariableTarget.User);
-        private static readonly HttpClient client = new HttpClient();
+        private static readonly MongoConnection _db = new();
         private string selectedHubName = "Loading..."; // Default value before hubs load
         private bool isModelLoaded = false;
         private Dictionary<int, (int VersionNumber, string VersionID)> versionsMarkerData = new Dictionary<int, (int, string)>();
@@ -98,8 +99,6 @@ namespace AssetManager.Desktop
 
 
 
-            //InitializeWebView2();
-            //  ModelDataGrid.SelectionChanged += ModelDataGrid_SelectionChanged;
             Initialize();
 
         }
@@ -151,40 +150,6 @@ namespace AssetManager.Desktop
                 // 🔹 Initialize data
                 LoadHubsAsync();
                 LoadingProgressBar.Progress = 0.3;
-                /* await LoadAllModels();
-                 if (!ModelsDataGrid.Columns.Any(col => col.Header?.ToString() == "Actions"))
-                 {
-                     var actionsColumn = new DataGridTemplateColumn
-                     {
-                         Header = "Actions",
-                         Width = new DataGridLength(50)
-                     };
-
-                     var cellTemplate = new DataTemplate();
-                     var buttonFactory = new FrameworkElementFactory(typeof(Button));
-
-                     buttonFactory.SetValue(Button.ContentProperty, "⋮"); // Three-dot menu
-                     buttonFactory.SetValue(Button.CursorProperty, Cursors.Hand);
-                     buttonFactory.SetValue(Button.ToolTipProperty, "Click for options");
-
-                     // ✅ Open ContextMenu when button is clicked
-                     buttonFactory.AddHandler(Button.ClickEvent, new RoutedEventHandler((s, ev) =>
-                     {
-                         if (s is Button btn && btn.DataContext is Dictionary<string, string> selectedModel)
-                         {
-                             ContextMenu dynamicContextMenu = CreateModelContextMenu(selectedModel["Id"], selectedModel["Name"]);
-                             dynamicContextMenu.PlacementTarget = btn;
-                             dynamicContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
-                             dynamicContextMenu.IsOpen = true;
-                         }
-                     }));
-
-                     cellTemplate.VisualTree = buttonFactory;
-                     actionsColumn.CellTemplate = cellTemplate;
-
-                     ModelsDataGrid.Columns.Add(actionsColumn);
-                 }
- */
                 var hubDetails = await DataManagement.GetPersonalHubDetails();
 
                 if (hubDetails == null)
@@ -209,7 +174,6 @@ namespace AssetManager.Desktop
                 LoadingProgressBar.Progress = 0.7;
                 await DisplayNotifications();
                 await AddNotifsToCentre();
-                //FusionManager.InitializePythonEngine();
                 //InitialiseFolders();
                 Username_TextBlock.Text = await _userService.GetUserName(_userId);
                 UserPic_Image.Source = new BitmapImage(new Uri(await _userService.GetUserPic(_userId)));
@@ -277,10 +241,6 @@ namespace AssetManager.Desktop
 
             var items = await DataManagement.GetItemsInFolder(projectid, folderId);
 
-            /*foreach (var (itemId, itemName) in items)
-            {
-                Console.WriteLine($"Item Name: {itemName}\t Item ID: {itemId}");
-            }*/
 
             string itemid = "urn: adsk.wipprod:dm.lineage:pwGqGrbgRx6IUlR4Wtskdg";
             Image tempImage = new Image();
@@ -389,119 +349,6 @@ namespace AssetManager.Desktop
             }
         }
 
-        //NEEDS MIGRATING TO USERSERVICES || USER INFORMATION//
-        /*#region User Services
-        private async Task<string> GetUserName(string userId)
-        {
-            MongoConnection database = new MongoConnection();
-            var userData = await database.Users.Find(x => x.Id == userId).FirstOrDefaultAsync();
-            if (userData == null)
-            {
-                return "Unknown User";
-            }
-            return userData.Username;
-        }
-
-        private async Task<string> GetUserPic(string userId)
-        {
-            MongoConnection database = new MongoConnection();
-            var userData = await database.Users.Find(x => x.Id == userId).FirstOrDefaultAsync();
-
-            if (userData == null)
-            {
-                // Failsafe: shouldn't happen if InsertUserDataDB runs properly
-                return "https://your-bucket.s3.amazonaws.com/fallback.png";
-            }
-
-            // List of your official AWS profile pic URLs
-            List<string> awsProfilePics = new List<string>
-{
-    "https://usericonsvaultborn.s3.eu-north-1.amazonaws.com/Angel.png",
-    "https://usericonsvaultborn.s3.eu-north-1.amazonaws.com/BusinessMan.png",
-    "https://usericonsvaultborn.s3.eu-north-1.amazonaws.com/Cthulu.png",
-    "https://usericonsvaultborn.s3.eu-north-1.amazonaws.com/Unicorn.png",
-    "https://usericonsvaultborn.s3.eu-north-1.amazonaws.com/Vampire.png",
-    "https://usericonsvaultborn.s3.eu-north-1.amazonaws.com/Werewolf.png",
-    "https://usericonsvaultborn.s3.eu-north-1.amazonaws.com/Witch.jpeg",
-    "https://usericonsvaultborn.s3.eu-north-1.amazonaws.com/Wizard.png"
-};
-
-
-            string currentPic = userData.ProfilePic;
-
-            // ✅ If the saved MongoDB profile pic is not one of your approved AWS images
-            if (!string.IsNullOrEmpty(currentPic) && !awsProfilePics.Contains(currentPic))
-            {
-                Random rng = new Random();
-                string newPic = awsProfilePics[rng.Next(awsProfilePics.Count)];
-
-                // Update the user document in MongoDB with the new profile picture
-                var update = Builders<User>.Update.Set(u => u.ProfilePic, newPic);
-                await database.Users.UpdateOneAsync(x => x.Id == userId, update);
-
-                return newPic;
-            }
-
-            // ✅ If it's already one of your official pics, just return it
-            return currentPic;
-        }
-
-
-
- 
-        
-        private async Task<string> GetModelProjectId(string modelId)
-        {
-            MongoConnection database = new MongoConnection();
-            var userData = await database.ModelData.Find(x => x.Id == modelId).FirstOrDefaultAsync();
-            if (userData == null)
-            {
-                return "Unknown Project";
-            }
-            return userData.FolderId;
-        }
-        
-        private async Task<string> GetModelSeller(string modelId)
-        {
-            MongoConnection database = new MongoConnection();
-            var userData = await database.ListedModels.Find(x => x.ModelId == modelId).FirstOrDefaultAsync();
-            if (userData == null)
-            {
-                return "Unknown User";
-            }
-            return userData.SellerId;
-        }
-
-        private async Task<string> GetDeckName(string deckId)
-        {
-            MongoConnection database = new MongoConnection();
-
-            var collection = database.GetCollection("Decks");
-            var filter = Builders<BsonDocument>.Filter.Eq("_id", ObjectId.Parse(deckId));
-            var decks = await collection.Find(filter).FirstOrDefaultAsync();
-            if (decks == null)
-            {
-                return "Unknown Deck";
-            }
-
-            return decks["name"].ToString();
-        }
-        
-        private async Task<string> GetDeckOwner(string deckId)
-        {
-            MongoConnection database = new MongoConnection();
-
-            var collection = database.GetCollection("Decks");
-            var filter = Builders<BsonDocument>.Filter.Eq("_id", ObjectId.Parse(deckId));
-            var decks = await collection.Find(filter).FirstOrDefaultAsync();
-            if (decks == null)
-            {
-                return "Unknown User";
-            }
-
-            return decks["owner_id"].ToString();
-        }
-        #endregion*/
 
         //NEEDS MIGRATING TO HUBS SERVICE || HUBS//
         #region HUBS
@@ -670,8 +517,7 @@ namespace AssetManager.Desktop
                 return;
             }
 
-            MongoConnection mongoConnection = new MongoConnection();
-            ModelService modelService = new ModelService(mongoConnection);
+            ModelService modelService = new ModelService(_db);
 
             foreach (var model in models)
             {
@@ -889,11 +735,18 @@ namespace AssetManager.Desktop
             return false;
         }
 
+        // Sends a GET request with a per-request bearer token through the shared HttpClient.
+        private static async Task<HttpResponseMessage> GetWithBearerAsync(string url, string accessToken)
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+            return await SharedHttp.Client.SendAsync(request);
+        }
+
         private async Task<List<Dictionary<string, string>>> GetAllModels()
         {
             List<Dictionary<string, string>> allModels = new List<Dictionary<string, string>>();
-            MongoConnection mongoConnection = new MongoConnection();
-            ModelService modelService = new ModelService(mongoConnection);
+            ModelService modelService = new ModelService(_db);
             FileDownloadService fileService = new FileDownloadService();
 
             string accessToken = TokenManager.GetToken();
@@ -907,10 +760,8 @@ namespace AssetManager.Desktop
 
             try
             {
-                using (HttpClient client = new HttpClient())
                 {
-                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-                    HttpResponseMessage hubsResponse = await client.GetAsync(hubsUrl);
+                    HttpResponseMessage hubsResponse = await GetWithBearerAsync(hubsUrl, accessToken);
 
                     if (!hubsResponse.IsSuccessStatusCode)
                     {
@@ -943,7 +794,7 @@ namespace AssetManager.Desktop
 
                             string modelsUrl =
                                 $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/folders/{folderId}/contents";
-                            HttpResponseMessage modelsResponse = await client.GetAsync(modelsUrl);
+                            HttpResponseMessage modelsResponse = await GetWithBearerAsync(modelsUrl, accessToken);
 
                             if (!modelsResponse.IsSuccessStatusCode)
                             {
@@ -1257,8 +1108,7 @@ namespace AssetManager.Desktop
         {
             var models = new List<Dictionary<string, string>>();
             FileDownloadService fileService = new FileDownloadService();
-            MongoConnection mongoConnection = new MongoConnection();
-            ModelService modelService = new ModelService(mongoConnection);
+            ModelService modelService = new ModelService(_db);
 
             string accessToken = TokenManager.GetToken();
             if (string.IsNullOrEmpty(accessToken))
@@ -1271,9 +1121,7 @@ namespace AssetManager.Desktop
 
             try
             {
-                using var client = new HttpClient();
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-                var response = await client.GetAsync(url);
+                var response = await GetWithBearerAsync(url, accessToken);
 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -1353,151 +1201,6 @@ namespace AssetManager.Desktop
         }
 
 
-        /*       private async void LoadModelsForSelectedProject()
-               {
-                   if (string.IsNullOrEmpty(_selectedProjectId) || string.IsNullOrEmpty(_folderId))
-                   {
-                       Console.WriteLine("❌ No project selected, cannot load models.");
-                       Dispatcher.Invoke(() =>
-                       {
-                           ModelsDataGrid.ItemsSource = null;
-                           ModelsDataGrid.Items.Clear();
-                       });
-                       return;
-                   }
-
-                   Console.WriteLine($"🔄 Fetching models for Project: {_selectedProjectId}, Folder: {_folderId}");
-
-                   var models = await GetModelsFromProject(_selectedProjectId, _folderId);
-
-                   if (models == null || !models.Any())
-                   {
-                       Console.WriteLine("❌ No models found for this project.");
-                       Dispatcher.Invoke(() =>
-                       {
-                           ModelsDataGrid.ItemsSource = null;
-                           ModelsDataGrid.Items.Clear();
-                       });
-                       return;
-                   }
-
-                   // Log the models we're loading
-                   Console.WriteLine($"Found {models.Count} models for project {_selectedProjectId}:");
-                   foreach (var model in models)
-                   {
-                       Console.WriteLine($"- {model["Name"]} (ID: {model["Id"]})");
-                   }
-
-                   Dispatcher.Invoke(() =>
-                   {
-                       ModelsDataGrid.ItemsSource = null;
-                       ModelsDataGrid.Items.Clear();
-                       ModelsDataGrid.ItemsSource = models;
-
-                       // Auto-select the first item if available
-                       if (models.Count > 0)
-                       {
-                           ModelsDataGrid.SelectedIndex = 0;
-                           Console.WriteLine("✅ Auto-selected first model in grid");
-
-                           // The selection changed event will be triggered automatically,
-                           // which will set all the global IDs
-                       }
-                   });
-
-                   Console.WriteLine($"✅ {models.Count} models loaded successfully.");
-               }*/
-
-        /*      private async void LoadModelsForSelectedProject()
-        {
-            if (string.IsNullOrEmpty(_selectedProjectId) || string.IsNullOrEmpty(_folderId))
-            {
-                Console.WriteLine("❌ No project selected, cannot load models.");
-                Dispatcher.Invoke(() =>
-                {
-                    ModelsDataGrid.ItemsSource = null;
-                    ModelsDataGrid.Items.Clear();
-                });
-                return;
-            }
-
-            Console.WriteLine($"🔄 Fetching models for Project: {_selectedProjectId}, Folder: {_folderId}");
-
-            var models = await GetModelsFromProject(_selectedProjectId, _folderId);
-
-            if (models == null || !models.Any())
-            {
-                Console.WriteLine("❌ No models found for this project.");
-                Dispatcher.Invoke(() =>
-                {
-                    ModelsDataGrid.ItemsSource = null;
-                    ModelsDataGrid.Items.Clear();
-                });
-                return;
-            }
-
-            // Log the models we're loading
-            Console.WriteLine($"Found {models.Count} models for project {_selectedProjectId}:");
-            foreach (var model in models)
-            {
-                Console.WriteLine($"- {model["Name"]} (ID: {model["Id"]})");
-            }
-
-            Dispatcher.Invoke(() =>
-            {
-                ModelsDataGrid.ItemsSource = null;
-                ModelsDataGrid.Items.Clear();
-                ModelsDataGrid.ItemsSource = models;
-                originalResults = models;
-
-                // Clear existing columns
-                ModelsDataGrid.Columns.Clear();
-
-                // Normal Data Columns
-                ModelsDataGrid.Columns.Add(new System.Windows.Controls.DataGridTextColumn
-                {
-                    Header = "Name",
-                    Binding = new Binding("Name")
-                });
-                ModelsDataGrid.Columns.Add(new System.Windows.Controls.DataGridTextColumn
-                {
-                    Header = "Project",
-                    Binding = new Binding("Project")
-                });
-                ModelsDataGrid.Columns.Add(new System.Windows.Controls.DataGridTextColumn
-                {
-                    Header = "Last Modified",
-                    Binding = new Binding("LastModified")
-                });
-
-                // ✅ Add Three-Dot Menu Column
-                DataGridTemplateColumn menuColumn = new DataGridTemplateColumn { Header = "Poo", Width = 50 };
-                FrameworkElementFactory menuButtonFactory = new FrameworkElementFactory(typeof(Button));
-                menuButtonFactory.SetValue(Button.ContentProperty, "⋮");
-                menuButtonFactory.SetValue(Button.WidthProperty, 30.0);
-                menuButtonFactory.SetValue(Button.HeightProperty, 30.0);
-                menuButtonFactory.SetValue(Button.ToolTipProperty, "More Options");
-                menuButtonFactory.SetValue(Button.BackgroundProperty, Brushes.Transparent);
-                menuButtonFactory.SetValue(Button.BorderBrushProperty, Brushes.Transparent);
-
-                // Attach event handler to open context menu
-                menuButtonFactory.AddHandler(Button.ClickEvent, new RoutedEventHandler((s, e) =>
-                {
-                    Button button = s as Button;
-                    if (button?.DataContext is Dictionary<string, string> model)
-                    {
-                        ShowModelPopupMenu(model["Id"], model["Name"]);
-                    }
-                }));
-
-                DataTemplate menuTemplate = new DataTemplate { VisualTree = menuButtonFactory };
-                menuColumn.CellTemplate = menuTemplate;
-                ModelsDataGrid.Columns.Add(menuColumn);
-            });
-
-            Console.WriteLine($"✅ {models.Count} models loaded successfully.");
-        }
-*/
 
 
 
@@ -1548,174 +1251,8 @@ namespace AssetManager.Desktop
         }
 
 
-        /*  private async void TreeViewItem_Expanded(object sender, RoutedEventArgs e)
-          {
-              if (sender is TreeViewItem item)
-              {
-                  // ✅ Check if this is a Forge Folder (Project ID + Folder ID)
-                  if (item.Tag is (string projectId, string folderId, bool isFolder))
-                  {
-                      if (item.Items.Count == 1 && item.Items[0] == null) // Check if it needs loading
-                      {
-                          item.Items.Clear();
-
-                          var items = await DataManagement.GetProjectItems(projectId, folderId);
-
-                          if (items == null || !items.Any())
-                          {
-                              item.Items.Add(new TreeViewItem { Header = "❌ No items found" });
-                              return;
-                          }
-
-                          foreach (var (itemId, itemName, isFolderItem) in items)
-                          {
-                              TreeViewItem fileItem = new TreeViewItem
-                              {
-                                  Header = isFolderItem ? $"📁 {itemName}" : $"📄 {itemName}",
-                                  Tag = (projectId, itemId, isFolderItem),
-                                  ContextMenu = CreateContextMenu(projectId, itemId, isFolderItem)
-                              };
-
-                              if (isFolderItem)
-                              {
-                                  fileItem.Items.Add(null); // Placeholder for lazy loading
-                              }
-
-                              item.Items.Add(fileItem);
-                          }
-                      }
-                  }
-                  // ✅ Check if this is a LOCAL folder path
-                  else if (item.Tag is string localPath)
-                  {
-                      if (Directory.Exists(localPath))
-                      {
-                          item.Items.Clear(); // Remove placeholder
-
-                          foreach (var dir in Directory.GetDirectories(localPath))
-                          {
-                              TreeViewItem dirItem = new TreeViewItem
-                              {
-                                  Header = $"📂 {Path.GetFileName(dir)}",
-                                  Tag = dir,
-                                  Items = { null } // Placeholder for expansion
-                              };
-
-                              item.Items.Add(dirItem);
-                          }
-
-                          foreach (var file in Directory.GetFiles(localPath))
-                          {
-                              TreeViewItem fileItem = new TreeViewItem
-                              {
-                                  Header = $"📄 {Path.GetFileName(file)}",
-                                  Tag = file
-                              };
-
-                              item.Items.Add(fileItem);
-                          }
-                      }
-                  }
-              }
-          }*/
 
 
-        //private async Task LoadSubfoldersAsync(TreeViewItem parentFolder, string projectId, string folderId)
-        //{
-        //    try
-        //    {
-        //        if (parentFolder == null || string.IsNullOrEmpty(projectId) || string.IsNullOrEmpty(folderId))
-        //        {
-        //            Debug.WriteLine("⚠️ LoadSubfoldersAsync was called with null or empty values.");
-        //            return;
-        //        }
-
-        //        var subItems = await DataManagement.GetProjectItems(projectId, folderId);
-
-        //        // Clear previous items
-        //        parentFolder.Items.Clear();
-
-        //        if (subItems == null || subItems.Count == 0)
-        //        {
-        //            Debug.WriteLine($"⚠️ No subitems found for folderId: {folderId}");
-
-        //            // **Ensure empty folders keep a placeholder**
-        //            parentFolder.Items.Add(new TreeViewItem { Header = "📂 This folder is empty", IsEnabled = false });
-        //            return;
-        //        }
-
-        //        // Group items into folders and files
-        //        var groupedItems = subItems
-        //            .GroupBy(item => item.Item3) // Group by folder vs file
-        //            .ToDictionary(g => g.Key, g => g.ToList());
-
-        //        // **First, process folders**
-        //        if (groupedItems.ContainsKey(true)) // Key is 'true' for folders
-        //        {
-        //            if (string.IsNullOrEmpty(subItemId) || string.IsNullOrEmpty(subItemName))
-        //                continue;
-
-        //            bool is3DModel = false;
-
-        //            if (!isSubFolder)
-        //            {
-        //                string extension = Path.GetExtension(subItemName)?.ToLowerInvariant();
-        //                is3DModel = Accepted3DModelExtensions.Contains(extension);
-        //            }
-        //        }
-
-        //        // **Next, process files**
-        //        if (groupedItems.ContainsKey(false)) // Key is 'false' for files
-        //        {
-        //            foreach (var (subItemId, subItemName, isSubFolder) in groupedItems[false])
-        //            {
-        //                bool isPdf = !isSubFolder && Path.GetExtension(subItemName)?.ToLowerInvariant() == ".pdf";
-
-        //            TreeViewItem subItem = new TreeViewItem
-        //            {
-        //                Header = isSubFolder
-        //                ? CreateHeader("Icons2/folder_icon.svg", subItemName, 30, 30)
-        //                : CreateHeader(GetIconForExtension(Path.GetExtension(subItemName)), subItemName, 30, 30),
-
-        //                Tag = (projectId, subItemId, isSubFolder, is3DModel),
-        //                ContextMenu = CreateContextMenu(projectId, subItemId, isSubFolder)
-        //            };
-
-        //                parentFolder.Items.Add(subItem);
-        //            }
-        //        }
-
-        //        // After loading subfolders and files, handle lazy loading for folders when expanded
-        //        foreach (TreeViewItem subItem in parentFolder.Items)
-        //        {
-        //            if (subItem.Tag is (string subProjectId, string subFolderId, bool isSubFolder) && isSubFolder)
-        //            {
-        //                // Lazy load children when expanded
-        //                subItem.Items.Add(new TreeViewItem { Header = "Loading...", IsEnabled = false });
-
-        //                subItem.Expanded += async (s, e) =>
-        //                {
-        //                    if (subItem.Items.Count == 1 && subItem.Items[0] is TreeViewItem dummy && dummy.Header.ToString() == "Loading...")
-        //                    {
-        //                        subItem.Items.Clear();
-
-        //                        // Load the subfolder items again (one-time load)
-        //                        await LoadSubfoldersAsync(subItem, subProjectId, subFolderId);
-
-        //                        if (subItem.Items.Count == 0)
-        //                        {
-        //                            subItem.Items.Add(new TreeViewItem { Header = "📂 This folder is empty", IsEnabled = false });
-        //                        }
-        //                    }
-        //                };
-        //            }
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Debug.WriteLine($"❌ Error in LoadSubfoldersAsync: {ex.Message}\n{ex.StackTrace}");
-        //    }
-        //}
 
 
 
@@ -2029,32 +1566,6 @@ namespace AssetManager.Desktop
  }
 
 
- //private TreeViewItem FindTreeViewItem(ItemCollection items, string folderId)
- //{
- //    if (items == null || string.IsNullOrEmpty(folderId)) return null;
-
- //    foreach (TreeViewItem item in items)
- //    {
- //        var tagTuple = item?.Tag as Tuple<string, string, bool, bool>;
-
- //        // Debug output to see what tag data is being compared
- //        Debug.WriteLine($"Checking item with FolderId: {tagTuple?.Item2}, Target FolderId: {folderId}");
-
- //        // Check if the folderId matches
- //        if (tagTuple != null && tagTuple.Item2 == folderId)
- //        {
- //            return item;
- //        }
-
- //        // Recursively search in the child items if necessary
- //        if (item?.Items != null)
- //        {
- //            TreeViewItem found = FindTreeViewItem(item.Items, folderId);
- //            if (found != null) return found;
- //        }
- //    }
- //    return null;
- //}
 
 
  #endregion
@@ -2084,64 +1595,6 @@ namespace AssetManager.Desktop
  }
 
 
-        //private async Task ExpandFolderByProjectId(string projectId)
-        //{
-        //    foreach (var item in ProjectTreeView.Items)
-        //    {
-        //        if (item is TreeViewItem treeViewItem && treeViewItem.Tag is (string folderProjectId, string folderId, bool isFolder))
-        //        {
-        //            // Check if the project ID matches
-        //            if (folderProjectId == projectId)
-        //            {
-        //                // Ensure the item is collapsed (i.e., it has not been expanded yet)
-        //                if (!treeViewItem.IsExpanded)
-        //                {
-        //                    treeViewItem.IsExpanded = true;
-
-        //                    // Load items for the folder
-        //                    var items = await DataManagement.GetProjectItems(projectId, folderId);
-
-        //                    if (items == null || !items.Any())
-        //                    {
-        //                        treeViewItem.Items.Add(new TreeViewItem { Header = "❌ No items found" });
-        //                    }
-        //                    else
-        //                    {
-        //                        foreach (var (itemId, itemName, isFolderItem) in items)
-        //                        {
-        //                            bool is3DModel = false;
-
-        //                            if (!isFolderItem)
-        //                            {
-        //                                string extension = Path.GetExtension(itemName)?.ToLowerInvariant();
-        //                                is3DModel = Accepted3DModelExtensions.Contains(extension);
-        //                            }
-
-        //                            TreeViewItem fileItem = new TreeViewItem
-        //                            {
-        //                                Header = isFolderItem
-        //                                    ? CreateHeader("Icons2/folder_icon5.svg", itemName, 25, 25)
-        //                                    : CreateHeader(GetIconForExtension(Path.GetExtension(itemName)), itemName, 30, 30),
-        //                                Tag = (projectId, itemId, isFolderItem, is3DModel),
-        //                                ContextMenu = CreateContextMenu(projectId, itemId, isFolderItem)
-        //                            };
-
-        //                            if (isFolderItem)
-        //                            {
-        //                                await LoadSubfoldersAsync(fileItem, projectId, itemId);
-        //                            }
-
-        //                            treeViewItem.Items.Add(fileItem);
-        //                        }
-        //                    }
-        //                }
-
-        //                // Stop after the first match
-        //                return;
-        //            }
-        //        }
-        //    }
-        //}
 
 
 
@@ -2626,109 +2079,6 @@ namespace AssetManager.Desktop
             }
         }
 
-        //private async void List_Click(object sender, MouseButtonEventArgs e)
-        //{
-        //    ModelsDataGrid.Visibility = Visibility.Visible; // Show DataGrid
-        //    Grid_View.Visibility = Visibility.Collapsed;
-        //    isModelLoaded = false;
-        //    try
-        //    {
-        //        ModelsDataGrid.ItemsSource = null; // Clear previous data
-        //                                           // Fetch models for the selected project
-        //        List<Dictionary<string, string>> models = await GetModelsFromProject(_selectedProjectId, _folderId);
-        //        if (models == null || models.Count == 0)
-        //        {
-        //            Console.WriteLine("🔄 No models found, clearing grid.");
-        //            ModelsDataGrid.ItemsSource = null;
-        //            return;
-        //        }
-        //        ModelsDataGrid.ItemsSource = models;
-        //        Console.WriteLine($"✅ Loaded {models.Count} models.");
-
-        //        // Ensure SelectionChanged event is attached
-        //        // Note: Since you already have a comprehensive ModelsDataGrid_SelectionChanged method,
-        //        // this ensures it's properly attached when switching to list view
-        //        ModelsDataGrid.SelectionChanged -= ModelsDataGrid_SelectionChanged;
-        //        ModelsDataGrid.SelectionChanged += ModelsDataGrid_SelectionChanged;
-
-        //        // ✅ Add Versions column if it doesn't exist yet
-        //        //if (!ModelsDataGrid.Columns.Any(col => col.Header?.ToString() == "Versions"))
-        //        //{
-        //        //    var versionsColumn = new DataGridTemplateColumn
-        //        //    {
-        //        //        Header = "Versions",
-        //        //        Width = new DataGridLength(80)
-        //        //    };
-        //        //    var versionTemplate = new DataTemplate();
-        //        //    var versionButtonFactory = new FrameworkElementFactory(typeof(Button));
-        //        //    versionButtonFactory.SetValue(Button.ContentProperty, "Versions ▼");
-        //        //    versionButtonFactory.SetValue(Button.WidthProperty, 70.0);
-        //        //    versionButtonFactory.SetValue(Button.CursorProperty, Cursors.Hand);
-        //        //    versionButtonFactory.SetValue(Button.ToolTipProperty, "Show model versions");
-        //        //    versionButtonFactory.SetValue(Button.BackgroundProperty, Brushes.Transparent);
-        //        //    versionButtonFactory.SetValue(Button.BorderBrushProperty, Brushes.Transparent);
-
-        //        //    // Open versions menu when button is clicked
-        //        //    versionButtonFactory.AddHandler(Button.ClickEvent, new RoutedEventHandler((s, ev) =>
-        //        //    {
-        //        //        if (s is Button btn && btn.DataContext is Dictionary<string, string> selectedModel)
-        //        //        {
-        //        //            // Note: We don't need to manually update _selectedItemId here since
-        //        //            // clicking the button will also select the row, triggering the SelectionChanged event
-
-        //        //            ContextMenu versionsMenu = CreateModelVersionsMenu(selectedModel["Id"], selectedModel["Name"]);
-        //        //            versionsMenu.PlacementTarget = btn;
-        //        //            versionsMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
-        //        //            versionsMenu.IsOpen = true;
-        //        //        }
-        //        //    }));
-
-        //        //    versionTemplate.VisualTree = versionButtonFactory;
-        //        //    versionsColumn.CellTemplate = versionTemplate;
-
-        //        //    // Add at the beginning (index 0) so it appears on the left
-        //        //    ModelsDataGrid.Columns.Insert(0, versionsColumn);
-        //        //}
-
-        //        // ✅ Ensure "Actions" column exists only once
-        //        if (!ModelsDataGrid.Columns.Any(col => col.Header?.ToString() == "Actions"))
-        //        {
-        //            var actionsColumn = new DataGridTemplateColumn
-        //            {
-        //                Header = "Actions",
-        //                Width = new DataGridLength(50)
-        //            };
-        //            var cellTemplate = new DataTemplate();
-        //            var buttonFactory = new FrameworkElementFactory(typeof(Button));
-        //            buttonFactory.SetValue(Button.ContentProperty, "⋮"); // Three-dot menu
-        //            buttonFactory.SetValue(Button.CursorProperty, Cursors.Hand);
-        //            buttonFactory.SetValue(Button.ToolTipProperty, "Click for options");
-        //            // ✅ Open ContextMenu when button is clicked
-        //            buttonFactory.AddHandler(Button.ClickEvent, new RoutedEventHandler((s, ev) =>
-        //            {
-        //                if (s is Button btn && btn.DataContext is Dictionary<string, string> selectedModel)
-        //                {
-        //                    // Note: We don't need to manually update _selectedItemId here since
-        //                    // clicking the button will also select the row, triggering the SelectionChanged event
-
-        //                    ContextMenu dynamicContextMenu = CreateModelContextMenu(selectedModel["Id"], selectedModel["Name"]);
-        //                    dynamicContextMenu.PlacementTarget = btn;
-        //                    dynamicContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
-        //                    dynamicContextMenu.IsOpen = true;
-        //                }
-        //            }));
-        //            cellTemplate.VisualTree = buttonFactory;
-        //            actionsColumn.CellTemplate = cellTemplate;
-        //            ModelsDataGrid.Columns.Add(actionsColumn);
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        MessageBox.Show($"❌ Error loading models: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-        //    }
-        //    Grid_Border.Background = Brushes.Transparent;
-        //    List_Border.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
-        //}
 
 
         private ContextMenu CreateModelVersionsMenu(string modelId, string modelName)
@@ -2881,11 +2231,6 @@ namespace AssetManager.Desktop
         {
             Console.WriteLine($"🔍 Selected version {versionId} for model {modelId}");
 
-            // Display a notification
-            //MessageBox.Show($"Selected Version ID: {versionId} for Model ID: {modelId}",
-            //                "Version Selected",
-            //                MessageBoxButton.OK,
-            //                MessageBoxImage.Information);
 
             RefreshCurrentModel(versionId);
         }
@@ -2939,156 +2284,6 @@ namespace AssetManager.Desktop
             selectedModel.BorderThickness = new Thickness(2);
         }
 
-        // Helper method to highlight the currently selected model
-
-        //private async void Grid_Click(object sender, MouseButtonEventArgs e)
-        //{
-        //    // Clear previous grid data
-        //    ModelsContainer.Children.Clear();
-
-        //    if (string.IsNullOrEmpty(_selectedProjectId))
-        //    {
-        //        MessageBox.Show("❌ Please select a project to view models.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
-
-        //        CreateGridView(Models);
-        //        ModelsDataGrid.Visibility = Visibility.Collapsed; // Hide DataGrid
-        //        Grid_View.Visibility = Visibility.Visible; // Show Grid View
-        //        List_Border.Background = Brushes.Transparent;
-        //        Grid_Border.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
-        //        return;
-        //    }
-
-        //    ModelsDataGrid.Visibility = Visibility.Collapsed; // Hide DataGrid
-        //    Grid_View.Visibility = Visibility.Visible; // Show Grid View
-
-        //    try
-        //    {
-        //        // Fetch models for the selected project only
-        //        List<Dictionary<string, string>> models = await GetModelsFromProject(_selectedProjectId, _folderId);
-
-        //        if (models == null || models.Count == 0)
-        //        {
-        //            MessageBox.Show("No models found for this project.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
-        //            return;
-        //        }
-
-        //        foreach (var model in models)
-        //        {
-        //            string projectId = _selectedProjectId;
-        //            string itemId = model["Id"];
-
-        //            // UI Container for Model
-        //            Border modelSquare = new Border
-        //            {
-        //                Width = 263,
-        //                Height = 300, // Increased to fit the image
-        //                CornerRadius = new CornerRadius(5),
-        //                Background = Brushes.White,
-        //                BorderBrush = Brushes.LightGray,
-        //                BorderThickness = new Thickness(1),
-        //                Margin = new Thickness(10),
-        //                Effect = new DropShadowEffect
-        //                {
-        //                    Color = Colors.Black,
-        //                    Opacity = 0.1,
-        //                    BlurRadius = 10,
-        //                    ShadowDepth = 2
-        //                }
-        //            };
-
-        //            StackPanel content = new StackPanel
-        //            {
-        //                Orientation = Orientation.Vertical,
-        //                VerticalAlignment = VerticalAlignment.Center,
-        //                HorizontalAlignment = HorizontalAlignment.Left
-        //            };
-
-        //            // Thumbnail Image
-        //            Image thumbnailImage = new Image
-        //            {
-        //                Width = 200,
-        //                Height = 200,
-        //                Margin = new Thickness(10),
-        //                Stretch = Stretch.Uniform
-        //            };
-
-        //            // Load thumbnail asynchronously
-        //            _ = ShowThumbnail(projectId, itemId, thumbnailImage);
-
-        //            TextBlock modelName = new TextBlock
-        //            {
-        //                Text = model["Name"],
-        //                FontSize = 16,
-        //                FontWeight = FontWeights.Normal,
-        //                TextAlignment = TextAlignment.Center,
-        //                HorizontalAlignment = HorizontalAlignment.Left,
-        //                TextWrapping = TextWrapping.Wrap,
-        //                Margin = new Thickness(5, 2, 5, 2)
-        //            };
-
-        //            // ✅ Three-dot menu button
-        //            Button menuButton = new Button
-        //            {
-        //                Content = "⋮", // Three-dot icon
-        //                FontSize = 18,
-        //                Width = 30,
-        //                Height = 30,
-        //                Background = Brushes.Transparent,
-        //                BorderBrush = Brushes.Transparent,
-        //                Padding = new Thickness(5),
-        //                HorizontalAlignment = HorizontalAlignment.Right,
-        //                ToolTip = "More Options"
-        //            };
-
-        //            // ✅ Ensure the menu button has the correct model assigned
-        //            menuButton.DataContext = model;
-
-        //            // ✅ Ensure the menu opens on button click and retrieves correct ID dynamically
-        //            menuButton.Click += (s, e) =>
-        //            {
-        //                if (s is Button btn && btn.DataContext is Dictionary<string, string> selectedModel)
-        //                {
-        //                    string selectedModelId = selectedModel["Id"];
-        //                    string selectedModelName = selectedModel["Name"];
-        //                    _selectedItemId = selectedModel["Id"];
-
-        //                    Console.WriteLine($"🔍 Three-dot menu clicked for Model ID: {selectedModelId}");
-
-        //                    // ✅ Generate ContextMenu dynamically on click
-        //                    ContextMenu dynamicContextMenu = CreateModelContextMenu(selectedModelId, selectedModelName);
-
-        //                    dynamicContextMenu.PlacementTarget = btn;
-        //                    dynamicContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
-        //                    dynamicContextMenu.IsOpen = true;
-        //                }
-        //            };
-
-        //            // Container for Model Name + Menu Button
-        //            DockPanel topPanel = new DockPanel();
-        //            DockPanel.SetDock(modelName, Dock.Left);
-        //            DockPanel.SetDock(menuButton, Dock.Right);
-        //            topPanel.Children.Add(modelName);
-        //            topPanel.Children.Add(menuButton);
-
-        //            // Add elements to content panel
-        //            content.Children.Add(thumbnailImage);
-        //            content.Children.Add(topPanel);
-
-        //            modelSquare.Child = content;
-        //            ModelsContainer.Children.Add(modelSquare);
-        //        }
-
-        //        Console.WriteLine($"✅ {models.Count} models loaded successfully in grid view.");
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        MessageBox.Show($"❌ Error loading models: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-        //    }
-
-        //    // Update UI styles to reflect active view mode
-        //    List_Border.Background = Brushes.Transparent;
-        //    Grid_Border.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
-        //}
 
         private void CreateGridView(List<Dictionary<string, string>> models)
         {
@@ -3236,250 +2431,13 @@ namespace AssetManager.Desktop
             }
         }
 
-        //private void CreateGridView(List<Dictionary<string, string>> models)
-        //{
-        //    foreach (var model in models)
-        //    {
-        //        // UI Container for Model
-        //            Border modelSquare = new Border
-        //            {
-        //                Width = 263,
-        //                Height = 300, // Increased to fit the image
-        //                CornerRadius = new CornerRadius(5),
-        //                Background = Brushes.White,
-        //                BorderBrush = Brushes.LightGray,
-        //                BorderThickness = new Thickness(1),
-        //                Margin = new Thickness(10),
-        //                Effect = new DropShadowEffect
-        //                {
-        //                    Color = Colors.Black,
-        //                    Opacity = 0.1,
-        //                    BlurRadius = 10,
-        //                    ShadowDepth = 2
-        //                }
-        //            };
 
-        //            StackPanel content = new StackPanel
-        //            {
-        //                Orientation = Orientation.Vertical,
-        //                VerticalAlignment = VerticalAlignment.Center,
-        //                HorizontalAlignment = HorizontalAlignment.Left
-        //            };
-
-        //            // Thumbnail Image
-        //            Image thumbnailImage = new Image
-        //            {
-        //                Width = 200,
-        //                Height = 200,
-        //                Margin = new Thickness(10),
-        //                Stretch = Stretch.Uniform
-        //            };
-
-        //            // Load thumbnail asynchronously
-        //            _ = ShowThumbnail(model["ProjectId"], model["Id"], thumbnailImage);
-
-        //            TextBlock modelName = new TextBlock
-        //            {
-        //                Text = model["Name"],
-        //                FontSize = 16,
-        //                FontWeight = FontWeights.Normal,
-        //                TextAlignment = TextAlignment.Center,
-        //                HorizontalAlignment = HorizontalAlignment.Left,
-        //                TextWrapping = TextWrapping.Wrap,
-        //                Margin = new Thickness(5, 2, 5, 2)
-        //            };
-
-        //            // ✅ Three-dot menu button
-        //            Button menuButton = new Button
-        //            {
-        //                Content = "⋮", // Three-dot icon
-        //                FontSize = 18,
-        //                Width = 30,
-        //                Height = 30,
-        //                Background = Brushes.Transparent,
-        //                BorderBrush = Brushes.Transparent,
-        //                Padding = new Thickness(5),
-        //                HorizontalAlignment = HorizontalAlignment.Right,
-        //                ToolTip = "More Options"
-        //            };
-
-        //            // ✅ Ensure the menu button has the correct model assigned
-        //            menuButton.DataContext = model;
-
-        //            // ✅ Create and attach ContextMenu
-        //            ContextMenu contextMenu = CreateModelContextMenu(model["Id"], model["Name"]);
-        //            menuButton.ContextMenu = contextMenu;
-
-        //            // ✅ Ensure the menu opens on button click
-        //            menuButton.Click += (s, e) =>
-        //            {
-        //                if (s is Button btn && btn.DataContext is Dictionary<string, string> selectedModel)
-        //                {
-        //                    ContextMenu dynamicContextMenu = CreateModelContextMenu(selectedModel["Id"], selectedModel["Name"]);
-        //                    dynamicContextMenu.PlacementTarget = btn;
-        //                    dynamicContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
-        //                    dynamicContextMenu.IsOpen = true;
-        //                }
-        //            };
-
-        //            // Container for Model Name + Menu Button
-        //            DockPanel topPanel = new DockPanel();
-        //            DockPanel.SetDock(modelName, Dock.Left);
-        //            DockPanel.SetDock(menuButton, Dock.Right);
-        //            topPanel.Children.Add(modelName);
-        //            topPanel.Children.Add(menuButton);
-
-        //            // Add elements to content panel
-        //            content.Children.Add(thumbnailImage);
-        //            content.Children.Add(topPanel);
-
-        //            modelSquare.Child = content;
-        //            ModelsContainer.Children.Add(modelSquare);
-        //    }
-        //}
-
-        /*
-                private void SetupDataGrid()
-                {
-                    if (ModelsDataGrid.Columns.Count > 0)
-                    {
-                        Console.WriteLine("🔄 DataGrid already set up, skipping redundant setup.");
-                        return;
-                    }
-        
-
-/*
-        private void SetupDataGrid()
-        {
-            if (ModelsDataGrid.Columns.Count > 0)
-            {
-                Console.WriteLine("🔄 DataGrid already set up, skipping redundant setup.");
-                return;
-            }
-
-                    Console.WriteLine("🛠️ Setting up DataGrid...");
-
-                    ModelsDataGrid.Columns.Clear(); // Clear previous setup
-                    ModelsDataGrid.AutoGenerateColumns = false;
-
-                    ModelsDataGrid.Columns.Add(new System.Windows.Controls.DataGridTextColumn
-                    {
-                        Header = "Name",
-                        Binding = new Binding("Name"),
-                        Width = new DataGridLength(1, DataGridLengthUnitType.Star)
-                    });
-
-                    ModelsDataGrid.Columns.Add(new System.Windows.Controls.DataGridTextColumn
-                    {
-                        Header = "Project",
-                        Binding = new Binding("Project"),
-                        Width = new DataGridLength(1, DataGridLengthUnitType.Star)
-                    });
-
-                    ModelsDataGrid.Columns.Add(new System.Windows.Controls.DataGridTextColumn
-                    {
-                        Header = "Last Modified",
-                        Binding = new Binding("LastModified"),
-                        Width = new DataGridLength(1, DataGridLengthUnitType.Star)
-                    });
-
-                    // Ensure Actions Column is only added once
-                    if (!ModelsDataGrid.Columns.Any(col => col.Header?.ToString() == "Actions"))
-                    {
-                        var actionsColumn = new DataGridTemplateColumn
-                        {
-                            Header = "Actions",
-                            Width = new DataGridLength(50)
-                        };
-
-                        var cellTemplate = new DataTemplate();
-                        var buttonFactory = new FrameworkElementFactory(typeof(Button));
-
-                        buttonFactory.SetValue(Button.ContentProperty, "⋮"); // Three dots
-                        buttonFactory.SetValue(Button.CursorProperty, Cursors.Hand);
-                        buttonFactory.SetValue(Button.ToolTipProperty, "Click for options");
-
-                        // Make sure the button opens the ContextMenu dynamically
-                        buttonFactory.AddHandler(Button.ClickEvent, new RoutedEventHandler((s, e) =>
-                        {
-                            if (s is Button btn && btn.DataContext is Dictionary<string, string> model)
-                            {
-                                ContextMenu dynamicContextMenu = CreateModelContextMenu(model["Id"], model["Name"]);
-                                dynamicContextMenu.PlacementTarget = btn;
-                                dynamicContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
-                                dynamicContextMenu.IsOpen = true;
-                            }
-                        }));
-
-                        cellTemplate.VisualTree = buttonFactory;
-                        actionsColumn.CellTemplate = cellTemplate;
-
-                        ModelsDataGrid.Columns.Add(actionsColumn);
-                    }
-
-                    // ✅ Attach ContextMenu to **entire DataGridRow**
-                    ModelsDataGrid.RowStyle = new Style(typeof(DataGridRow))
-                    {
-                        Setters =
-                {
-                    new EventSetter(DataGridRow.LoadedEvent, new RoutedEventHandler((s, e) =>
-                    {
-                        if (s is DataGridRow row && row.DataContext is Dictionary<string, string> model)
-                        {
-                            // Ensure each row gets the correct menu dynamically
-                            row.ContextMenu = CreateModelContextMenu(model["Id"], model["Name"]);
-                        }
-                    }))
-                }
-                    };
-
-                    Console.WriteLine("✅ DataGrid setup complete.");
-                }
-
-        */
 
         #endregion
 
         //NEEDS MIGRATING TO FUSION SERVICES || OPEN WITH FUSION FUNCTIONALITY //
         #region Fusion Functionality
 
-        //Fusion with Hubs
-        /*private async void LaunchFusionWithModel()
-        {
-            if (string.IsNullOrEmpty(_selectedProjectId) || string.IsNullOrEmpty(_selectedItemId))
-            {
-                MessageBox.Show("❌ No model selected.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            try
-            {
-                // Fetch the latest storage ID to ensure we open the correct cloud version
-                string storageId = await _filedwnService.GetStorageIdFromItem(_selectedProjectId, _selectedItemId);
-
-                if (string.IsNullOrEmpty(storageId))
-                {
-                    MessageBox.Show("❌ Could not retrieve storage ID for the model.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
-                }
-
-                // Construct the Fusion 360 command URL
-                string fusionUri = $"fusion360://command=openCloudModel&projectId={_selectedProjectId}&itemId={_selectedItemId}&storage={storageId}";
-
-                Console.WriteLine($"✅ Launching Fusion 360 with model: {fusionUri}");
-
-                // Open Fusion 360 with the correct model reference
-                Process.Start(new ProcessStartInfo
-                {
-                    FileName = fusionUri,
-                    UseShellExecute = true
-                });
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"❌ Failed to launch Fusion 360: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }*/
         private void LaunchFusionWithModel(string modelPath)
         {
             try
@@ -3641,53 +2599,6 @@ namespace AssetManager.Desktop
             }
         }
 
-        /*    private async void BtnViewInFusion_Click(object sender, RoutedEventArgs e)
-            {
-                Console.WriteLine($"View in Fusion button clicked. Using global IDs:");
-                Console.WriteLine($"- Selected Item ID: {_selectedItemId}");
-                Console.WriteLine($"- Selected Project ID: {_selectedProjectId}");
-                Console.WriteLine($"- Selected Item Name: {_selectedItemName}");
-
-                if (string.IsNullOrEmpty(_selectedItemId) || string.IsNullOrEmpty(_selectedProjectId))
-                {
-                    MessageBox.Show("❌ Please select a model before viewing in Fusion 360.", "Error", MessageBoxButton.OK,
-                        MessageBoxImage.Error);
-                    return;
-                }
-
-                string modelFilePath = FindExistingModelFile(_selectedItemName);
-
-                if (modelFilePath == null)
-                {
-                    Console.WriteLine("Downloading model");
-                    // No matching file found, so download it
-                    var fileDownloadService = new FileDownloadService();
-                    await fileDownloadService.DownloadModelAsync(_selectedProjectId, _selectedItemId);
-                }
-
-                try
-                {
-                    string saveDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-                        "DownloadedModels", _selectedItemName);
-                    Console.WriteLine("Model dir: " + saveDirectory);
-
-                    if (!Directory.Exists(saveDirectory))
-                    {
-                        LaunchFusionWithModel(saveDirectory);
-                    }
-                    else
-                    {
-                        // Directory exists, so we can just launch Fusion with the model
-                        LaunchFusionWithModel(saveDirectory);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"❌ Error launching Fusion script: {ex.Message}\n{ex.StackTrace}",
-                        "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
-    */
 
         #endregion
 
@@ -3738,8 +2649,7 @@ namespace AssetManager.Desktop
             try
             {
                 // Initialize connection to MongoDB and create ModelService
-                MongoConnection mongoConnection = new MongoConnection();
-                ModelService modelService = new ModelService(mongoConnection);
+                ModelService modelService = new ModelService(_db);
 
                 // First update the database to mark the model as deleted
                 Console.WriteLine($"Marking model {itemId} as deleted in database...");
@@ -3778,41 +2688,6 @@ namespace AssetManager.Desktop
             }
         }
 
-        /*
-                private async Task BtnDeleteModel_Click(string selectedItemId, string projectId)
-                {
-                    try
-                    {
-                        if (string.IsNullOrEmpty(selectedItemId))
-                        {
-                            MessageBox.Show("No item selected for deletion.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
-                            return;
-                        }
-
-                        string itemId = _selectedItemId;
-                        projectId = _selectedProjectId;
-                        string accessToken = _accessToken; // Retrieve this dynamically from your authentication system
-
-                        Console.WriteLine($"Attempting to delete item: {itemId} from project: {projectId}");
-
-                        DeleteModel deleteModel = new(accessToken);
-                        bool isDeleted = await deleteModel.DeleteLatestModelVersionAsync(projectId, itemId);
-
-                        if (isDeleted)
-                        {
-                            MessageBox.Show("Model deleted successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
-                        }
-                        else
-                        {
-                            MessageBox.Show("Failed to delete the model. Please check the logs.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show($"An error occurred: {ex.Message}", "Exception", MessageBoxButton.OK, MessageBoxImage.Error);
-                    }
-                }
-        */
 
         private void BtnLogout_Click(object sender, RoutedEventArgs e)
         {
@@ -3852,40 +2727,6 @@ namespace AssetManager.Desktop
 
 
 
-        //Fusion using Hub 
-
-        /*    private async void BtnViewInFusion_Click(string selectedItemId)
-            {
-                Console.WriteLine($"View in Fusion button clicked. Using global IDs:");
-                Console.WriteLine($"- Selected Item ID: {_selectedItemId}");
-                Console.WriteLine($"- Selected Project ID: {_selectedProjectId}");
-                Console.WriteLine($"- Selected Item Name: {_selectedItemName}");
-
-                if (string.IsNullOrEmpty(_selectedItemId) || string.IsNullOrEmpty(_selectedProjectId))
-                {
-                    MessageBox.Show("❌ Please select a model before viewing in Fusion 360.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-
-                try
-                {
-                    // ✅ Construct the correct Fusion 360 command URI
-                    string fusionUri = $"fusion360://command=CreateFusionDesign&projectId={_selectedProjectId}&itemId={_selectedItemId}";
-
-                    Console.WriteLine($"✅ Launching Fusion 360 with model: {fusionUri}");
-
-                    // ✅ Open Fusion 360 with the correct model reference
-                    Process.Start(new ProcessStartInfo
-                    {
-                        FileName = fusionUri,
-                        UseShellExecute = true
-                    });
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"❌ Error launching Fusion 360: {ex.Message}\n{ex.StackTrace}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }*/
 
 
 
@@ -3895,112 +2736,6 @@ namespace AssetManager.Desktop
         //FORGE VIEWER 
         #region Forge Viewer
 
-        /*     private async void BtnViewInApp_Click(string selectedItemId)
-             {
-                 // ✅ Track the last active view
-                 if (ModelsDataGrid.Visibility == Visibility.Visible)
-                 {
-                     _lastViewType = ViewType.List;
-                 }
-                 else if (Grid_View.Visibility == Visibility.Visible)
-                 {
-                     _lastViewType = ViewType.Grid;
-                 }
-
-                 // Hide both views
-                 ModelsDataGrid.Visibility = Visibility.Collapsed;
-                 Grid_View.Visibility = Visibility.Collapsed;
-
-                 // Show the Forge Viewer
-                 ForgeViewerContainer.Visibility = Visibility.Visible;
-                 ForgeWebView.Visibility = Visibility.Visible;
-
-                 Console.WriteLine($"View in App button clicked. Returning to: {_lastViewType} view after closing.");
-
-                 ModelsDataGrid.Visibility = Visibility.Collapsed;
-                 Grid_View.Visibility = Visibility.Collapsed;
-
-                 // Show Forge Viewer
-                 ForgeViewerContainer.Visibility = Visibility.Visible;
-                 ForgeWebView.Visibility = Visibility.Visible;
-
-                 Console.WriteLine($"View in App button clicked. Using global IDs:");
-                 Console.WriteLine($"- Selected Item ID: {_selectedItemId}");
-                 Console.WriteLine($"- Selected Project ID: {_selectedProjectId}");
-                 Console.WriteLine($"- Storage ID: {_objectId}");
-
-                 if (string.IsNullOrEmpty(_selectedItemId) || string.IsNullOrEmpty(_selectedProjectId))
-                 {
-                     MessageBox.Show("❌ Please select a model before viewing.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                     return;
-                 }
-
-                 // If we already have the storage ID, use it directly
-                 string objectId = _objectId;
-
-                 // If not available, fetch it on demand
-                 if (string.IsNullOrEmpty(objectId))
-                 {
-                     Console.WriteLine("🔍 Storage ID not set globally, fetching now...");
-                     FileDownloadService fileService = new FileDownloadService();
-                     objectId = await fileService.GetStorageIdFromItem(_selectedProjectId, _selectedItemId);
-                     if (string.IsNullOrEmpty(objectId))
-                     {
-                         MessageBox.Show("Could not retrieve model information.", "Model Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                         return;
-                     }
-                     _objectId = objectId; // Update global storage ID
-                 }
-
-                 // Encode URN
-                 string encodedUrn = EncodeObjectIdToUrn(objectId);
-                 if (string.IsNullOrEmpty(encodedUrn))
-                 {
-                     MessageBox.Show("Failed to process model identifier.", "Processing Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                     return;
-                 }
-
-                 Console.WriteLine($"✅ Encoded URN: {encodedUrn}");
-
-                 // Continue with model viewer loading...
-                 ModelDerivativeService modelService = new ModelDerivativeService(new HttpClient());
-                 bool translationComplete = await modelService.IsTranslationCompletedAsync(encodedUrn, _accessToken);
-
-
-            // Open Forge Viewer in a new window
-            //ForgeViewerWindow forgeViewer = new ForgeViewerWindow(encodedUrn);
-            // forgeViewer.Show();
-            LoadForgeViewer(encodedUrn);
-
-        }
-
-                 if (!translationComplete)
-                 {
-                     Console.WriteLine("🔄 Submitting translation job...");
-                     bool jobResponse = await modelService.SubmitModelForTranslationAsync(encodedUrn, _accessToken);
-
-
-                     Console.WriteLine($"✅ Translation job submitted: {jobResponse}");
-
-                     if (!jobResponse)
-                     {
-                         MessageBox.Show("❌ Translation job failed to submit.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                         return;
-                     }
-                 }
-
-                 Console.WriteLine($"🔍 Opening Forge Viewer for Model: {_selectedItemId}");
-
-                 // Open Forge Viewer in a new window
-                 //ForgeViewerWindow forgeViewer = new ForgeViewerWindow(encodedUrn);
-                 // forgeViewer.Show();
-                 LoadForgeViewer(encodedUrn);
-                 int numberOfVersions = await GetNumberOfVersions();
-                 GenerateMarkers(numberOfVersions);
-
-                 Grid versionSlider = VersionSlider;
-                 versionSlider.Visibility = Visibility.Visible;
-             }*/
 
         public async void BtnViewInApp_Click(string selectedItemId)
         {
@@ -4147,8 +2882,7 @@ namespace AssetManager.Desktop
 
         private async Task LoadHtmlIntoForgeWebViewAsync(string html)
         {
-            if (ForgeWebView.CoreWebView2 == null)
-                await ForgeWebView.EnsureCoreWebView2Async();
+            await WebViewHelper.InitializeAsync(ForgeWebView);
 
             ForgeWebView.NavigateToString(html);
 
@@ -4278,155 +3012,6 @@ namespace AssetManager.Desktop
             showLatestVersions = true;
         }
 
-        //Trying the SKybox
-        /* private async void LoadForgeViewer(string encodedUrn)
-        {
-            try
-            {
-                ForgeWebView.Visibility = Visibility.Visible;
-
-                // Initialize WebView2 if not already initialized
-                if (ForgeWebView.CoreWebView2 == null)
-                {
-                    await ForgeWebView.EnsureCoreWebView2Async();
-                    ForgeWebView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = false;
-                    ForgeWebView.CoreWebView2.Settings.AreDefaultScriptDialogsEnabled = true;
-                }
-
-                string accessToken = TokenManager.GetToken();
-                if (string.IsNullOrEmpty(accessToken))
-                {
-                    Console.WriteLine("❌ Access token is missing.");
-                    MessageBox.Show("Authentication error. Please log in again.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-
-                Console.WriteLine("🔄 Initializing WebView2...");
-                await ForgeWebView.EnsureCoreWebView2Async();
-                Console.WriteLine("✅ WebView2 initialized successfully.");
-
-                // HTML Content with Forge Viewer integration
-                string htmlContent = $@"<!DOCTYPE html>
-<html>
-<head>
-    <meta charset='UTF-8'>
-    <meta http-equiv='X-UA-Compatible' content='IE=Edge' />
-    <title>Forge Viewer</title>
-    <script src='https://developer.api.autodesk.com/modelderivative/v2/viewers/7.52/viewer3D.min.js'></script>
-    <link rel='stylesheet' href='https://developer.api.autodesk.com/modelderivative/v2/viewers/7.52/style.min.css' type='text/css'>
-</head>
-<body>
-    <div id='forgeViewer' style='width: 100%; height: 100vh;'></div>
-
-    <!-- Log Display Area -->
-    <div id=""logConsole"" 
-        style=""position: absolute; bottom: 10px; left: 10px; width: 95%; max-height: 200px; overflow-y: auto; 
-        background: rgba(0, 0, 0, 0.7); color: white; padding: 10px; font-family: monospace;"">
-        <strong>Logs:</strong><br>
-    </div>
-
-    <script>
-        function logMessage(message) {{
-            console.log(message);  // Standard Console Log
-            let logDiv = document.getElementById(""logConsole"");
-            logDiv.innerHTML += message + ""<br>""; // Append log to UI
-            logDiv.scrollTop = logDiv.scrollHeight; // Auto-scroll to latest log
-        }}
-
-        Autodesk.Viewing.Private.env = {{ DISABLE_MIXPANEL_TRACKING: true }};
-        Autodesk.Viewing.Private.trackUsage = function() {{}};
-
-        var options = {{
-            env: 'AutodeskProduction',
-            getAccessToken: function(onTokenReady) {{
-                onTokenReady('{{accessToken}}', 3599);
-            }}
-        }};
-
-        var documentId = 'urn:{{encodedUrn}}';
-        Autodesk.Viewing.Initializer(options, function() {{
-            logMessage('✅ Viewer initialized.');
-            var viewerDiv = document.getElementById('forgeViewer');
-            window.viewer = new Autodesk.Viewing.GuiViewer3D(viewerDiv);
-            viewer.start();
-
-            Autodesk.Viewing.Document.load(documentId, function(doc) {{
-                var defaultModel = doc.getRoot().getDefaultGeometry();
-                viewer.loadDocumentNode(doc, defaultModel).then(function() {{
-                    logMessage('✅ Model loaded successfully.');
-                    
-                    viewer.loadExtension('CustomSkyboxExtension').then(() => {{
-                        logMessage('✅ CustomSkyboxExtension successfully loaded');
-                    }}).catch(err => {{
-                        logMessage('❌ Error loading CustomSkyboxExtension: ' + err);
-                    }});
-
-                }});
-            }}, function(errorMsg) {{
-                logMessage('❌ Error loading document: ' + errorMsg);
-            }});
-        }});
-    </script>
-</body>
-
-</html>";
-
-                ForgeWebView.NavigateToString(htmlContent);
-
-                // Inject the Skybox extension JavaScript after WebView2 loads
-                ForgeWebView.CoreWebView2.NavigationCompleted += async (sender, args) =>
-                {
-                    string jsScript = @"
-class CustomSkyboxExtension extends Autodesk.Viewing.Extension {
-    constructor(viewer, options) {
-        super(viewer, options);
-    }
-
-    load() {
-        console.log('✅ CustomSkyboxExtension loaded');
-
-               let envMapUrls = [
-            ""https://my-skybox-images.s3.eu-north-1.amazonaws.com/px.png"", // Right (+X)
-            ""https://my-skybox-images.s3.eu-north-1.amazonaws.com/nx.png"", // Left (-X)
-            ""https://my-skybox-images.s3.eu-north-1.amazonaws.com/py.png"", // Top (+Y)
-            ""https://my-skybox-images.s3.eu-north-1.amazonaws.com/ny.png"", // Bottom (-Y)
-            ""https://my-skybox-images.s3.eu-north-1.amazonaws.com/pz.png"", // Front (+Z)
-            ""https://my-skybox-images.s3.eu-north-1.amazonaws.com/nz.png""  // Back (-Z)
-        ];
-
-
-        viewer.impl.setLightPreset(0); // Disable Autodesk default lighting
-        viewer.impl.createCubeMapFromUrls(envMapUrls, function(cubeMap) {
-            if (cubeMap) {
-                viewer.impl.setBackgroundCubeMap(cubeMap);
-                viewer.impl.setUseCubeMap(true);
-                console.log('✅ Skybox Applied Successfully');
-            } else {
-                console.error('❌ Failed to load skybox cube map');
-            }
-        });
-
-        viewer.impl.invalidate(true, true, false);
-        return true;
-    }
-
-    unload() {
-        console.log('❌ CustomSkyboxExtension unloaded');
-        return true;
-    }
-}
-
-Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', CustomSkyboxExtension);
-";
-
-                    await ForgeWebView.CoreWebView2.ExecuteScriptAsync(jsScript);
-                };
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"❌ WebView2 initialization failed: {ex.Message}");
-            }
-        }*/
 
 
 
@@ -4436,111 +3021,6 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             return !string.IsNullOrEmpty(filename) &&
                    System.IO.Path.GetExtension(filename).Equals(".pdf", StringComparison.OrdinalIgnoreCase);
         }
-        /*  private async void OpenPdfInForgeViewer(string projectId, string itemId, string fileName)
-          {
-              try
-              {
-                  // Track the last active view for when we close the viewer
-                  if (ModelsDataGrid.Visibility == Visibility.Visible)
-                  {
-                      _lastViewType = ViewType.List;
-                  }
-                  else if (Grid_View.Visibility == Visibility.Visible)
-                  {
-                      _lastViewType = ViewType.Grid;
-                  }
-
-                  // Hide both views
-                  ModelsDataGrid.Visibility = Visibility.Collapsed;
-                  Grid_View.Visibility = Visibility.Collapsed;
-
-                  // Show the Forge Viewer
-                  ForgeViewerContainer.Visibility = Visibility.Visible;
-                  ForgeWebView.Visibility = Visibility.Visible;
-
-                  Console.WriteLine($"📑 Opening PDF in Forge Viewer: {fileName}");
-                  Console.WriteLine($"- Item ID: {itemId}");
-                  Console.WriteLine($"- Project ID: {projectId}");
-
-                  // Get the storage ID for the PDF file
-                  string objectId;
-                  FileDownloadService fileService = new FileDownloadService();
-                  objectId = await fileService.GetStorageIdFromItem(projectId, itemId);
-
-                  if (string.IsNullOrEmpty(objectId))
-                  {
-                      MessageBox.Show("Could not retrieve PDF file information.", "PDF Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                      return;
-                  }
-
-                  _objectId = objectId; // Update global storage ID
-
-                  // Encode URN
-                  string encodedUrn = EncodeObjectIdToUrn(objectId);
-                  if (string.IsNullOrEmpty(encodedUrn))
-                  {
-                      MessageBox.Show("Failed to process PDF identifier.", "Processing Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                      return;
-                  }
-
-                  Console.WriteLine($"✅ Encoded URN for PDF: {encodedUrn}");
-
-                  // Check if the PDF file is already translated
-                  ModelDerivativeService modelService = new ModelDerivativeService(new HttpClient());
-                  bool translationComplete = await modelService.IsTranslationCompletedAsync(encodedUrn, _accessToken);
-
-                  if (!translationComplete)
-                  {
-                      Console.WriteLine("🔄 Submitting PDF translation job...");
-
-                      // For PDFs, we use the specialized PDF translation method
-                      bool jobResponse = await modelService.SubmitPdfForTranslationAsync(encodedUrn, _accessToken);
-
-                      Console.WriteLine($"✅ PDF translation job submitted: {jobResponse}");
-
-                      if (!jobResponse)
-                      {
-                          MessageBox.Show("❌ PDF translation job failed to submit.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                          return;
-                      }
-
-                      // Wait for translation to complete
-                      int maxRetries = 30;
-                      int delayMs = 2000;
-                      bool isReady = false;
-
-                      for (int attempt = 1; attempt <= maxRetries; attempt++)
-                      {
-                          Console.WriteLine($"⏳ Waiting for PDF translation... (Attempt {attempt}/{maxRetries})");
-
-                          isReady = await modelService.IsTranslationCompletedAsync(encodedUrn, _accessToken);
-                          if (isReady)
-                          {
-                              Console.WriteLine("✅ PDF translation completed successfully!");
-                              break;
-                          }
-
-                          await Task.Delay(delayMs);
-                      }
-
-                      if (!isReady)
-                      {
-                          MessageBox.Show("❌ PDF translation failed or timed out.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                          return;
-                      }
-                  }
-
-                  Console.WriteLine($"🔍 Opening Forge Viewer for PDF: {fileName}");
-
-                  // Load PDF in Forge Viewer - reuse your existing method with a PDF flag
-                  LoadForgeViewer(encodedUrn, true);
-              }
-              catch (Exception ex)
-              {
-                  MessageBox.Show($"❌ Error opening PDF: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                  Console.WriteLine($"❌ Error opening PDF: {ex.Message}\n{ex.StackTrace}");
-              }
-          }*/
         private async void OpenPdfInForgeViewer(string projectId, string itemId, string fileName)
         {
             try
@@ -4959,8 +3439,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             {
                 Console.WriteLine($"🔄 Refreshing models for Project: {_selectedProjectId}, Folder: {_folderId}");
 
-                MongoConnection mongoConnection = new MongoConnection();
-                ModelService modelService = new ModelService(mongoConnection);
+                ModelService modelService = new ModelService(_db);
                 FileDownloadService fileService = new FileDownloadService();
 
                 var models = await DataManagement.GetProjectItems(_selectedProjectId, _folderId);
@@ -5317,13 +3796,12 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
                 string thumbnailUrl = $"https://developer.api.autodesk.com/modelderivative/v2/designdata/{urn}/thumbnail";
 
-                using (HttpClient client = new HttpClient())
                 {
-                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
-
                     Console.WriteLine($"📷 Fetching thumbnail from: {thumbnailUrl}");
 
-                    byte[] imageBytes = await client.GetByteArrayAsync(thumbnailUrl);
+                    using HttpResponseMessage thumbResponse = await GetWithBearerAsync(thumbnailUrl, _accessToken);
+                    thumbResponse.EnsureSuccessStatusCode();
+                    byte[] imageBytes = await thumbResponse.Content.ReadAsByteArrayAsync();
                     BitmapImage bitmapImage = new BitmapImage();
                     using (MemoryStream stream = new MemoryStream(imageBytes))
                     {
@@ -5352,7 +3830,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         //V This function is referenced by a 0 referenced function 
         private async Task<bool> EnsureModelTranslation(string encodedUrn)
         {
-            ModelDerivativeService modelService = new ModelDerivativeService(client);
+            ModelDerivativeService modelService = new ModelDerivativeService(SharedHttp.Client);
 
             bool isReady = await ModelDerivativeService.IsModelDerivativeReady(encodedUrn);
             if (!isReady)
@@ -5403,15 +3881,15 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
             try
             {
-                using (HttpClient client = new HttpClient())
                 {
                     // Ensure valid token
                     string accessToken = TokenManager.GetToken();
-                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
                     Console.WriteLine($"📷 Fetching thumbnail from: {thumbnailUrl}");
 
-                    byte[] imageBytes = await client.GetByteArrayAsync(thumbnailUrl);
+                    using HttpResponseMessage thumbResponse = await GetWithBearerAsync(thumbnailUrl, accessToken);
+                    thumbResponse.EnsureSuccessStatusCode();
+                    byte[] imageBytes = await thumbResponse.Content.ReadAsByteArrayAsync();
 
                     BitmapImage bitmapImage = new BitmapImage();
                     using (MemoryStream stream = new MemoryStream(imageBytes))
@@ -5477,11 +3955,8 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             {
                 //MessageBox.Show($"{DateTime.Now}");
                 string url = $"https://developer.api.autodesk.com/data/v1/projects/{projectId}/items/{modelId}";
-                using (HttpClient client = new HttpClient())
                 {
-                    client.DefaultRequestHeaders.Clear();
-                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TokenManager.GetToken());
-                    var response = await client.GetAsync(url);
+                    var response = await GetWithBearerAsync(url, TokenManager.GetToken());
                     string responseString = await response.Content.ReadAsStringAsync();
                     var JsonResponse = JsonConvert.DeserializeObject<dynamic>(responseString);
 
@@ -5514,13 +3989,12 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
         private async static void InsertModelDB(ModelData modelData)
         {
-            MongoConnection database = new MongoConnection();
-            var findModel = await database.ModelData.Find(x => x.Id == modelData.Id).FirstOrDefaultAsync();
+            var findModel = await _db.ModelData.Find(x => x.Id == modelData.Id).FirstOrDefaultAsync();
 
             if (findModel == null)
             {
                 MessageBox.Show($"New model {modelData.Name}");
-                await database.ModelData.InsertOneAsync(modelData);
+                await _db.ModelData.InsertOneAsync(modelData);
                 string message = $"New Model - {modelData.Name}";
                 await InsertNotifDB(modelData.Id, message, _userId);
             }
@@ -5529,16 +4003,15 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         private async Task InsertModelVersionDB(string modelId, string projectId)
         {
             _selectedProjectId = projectId;
-            MongoConnection database = new MongoConnection();
             var versions = await GetModelVersions(modelId);
             int verNum = int.Parse(versions[0]["VersionNumber"]);
             Versions model = new Versions { Id = modelId, VersionNumber = verNum };
 
-            var findModelVersion = await database.Versions.Find(x => x.Id == modelId).FirstOrDefaultAsync();
+            var findModelVersion = await _db.Versions.Find(x => x.Id == modelId).FirstOrDefaultAsync();
 
             if (findModelVersion == null)
             {
-                await database.Versions.InsertOneAsync(model);
+                await _db.Versions.InsertOneAsync(model);
                 return;
             }
             if (findModelVersion.VersionNumber < verNum)
@@ -5546,7 +4019,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 MessageBox.Show($"New model version {verNum}");
                 var filter = Builders<Versions>.Filter.Eq(x => x.Id, modelId);
                 var update = Builders<Versions>.Update.Set("VersionNumber", verNum);
-                await database.Versions.UpdateOneAsync(filter, update);
+                await _db.Versions.UpdateOneAsync(filter, update);
                 DataManagement dataService = new DataManagement();
                 string modelName = await dataService.GetModelName(modelId);
                 string message = $"New version {verNum} on model - {modelName}";
@@ -5555,6 +4028,15 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         }
 
         //Fuzzy search
+        // Shared fuzzy-search helper: scores each item's name against the query with FuzzySharp
+        // and returns the top matches in score order (same behaviour at every call site).
+        private static List<T> GetTopFuzzyMatches<T>(string query, IReadOnlyList<T> items, Func<T, string> nameSelector, int limit = 3)
+        {
+            var names = items.Select(nameSelector).ToList();
+            var topResults = FuzzySharp.Process.ExtractTop(query, names, limit: limit);
+            return topResults.Select(match => items[match.Index]).ToList();
+        }
+
         private async void SearchText_Box_OnKeyDown(object sender, KeyEventArgs e)
         {
             try
@@ -5562,19 +4044,13 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 List<Dictionary<string, string>> searchResults = new List<Dictionary<string, string>>();
                 if (e.Key == Key.Enter)
                 {
-                    MongoConnection database = new MongoConnection();
-                    List<ModelData> result = await database.ModelData.Find(x => x.PublicPrivate == "Public" || x.HubId == hubID).ToListAsync();
+                    List<ModelData> result = await _db.ModelData.Find(x => x.PublicPrivate == "Public" || x.HubId == hubID).ToListAsync();
 
-                    var modelNames = result.Select(x => x.Name).ToList();
-                    var topResults = FuzzySharp.Process.ExtractTop(SearchText_Box.Text, modelNames, limit: 3);
-
-                    foreach (var match in topResults)
+                    foreach (var model in GetTopFuzzyMatches(SearchText_Box.Text, result, x => x.Name))
                     {
-                        var model = result[match.Index];
-                        Console.WriteLine($"{match.Value}: {model.Name}");
                         if (model != null)
                         {
-                            Console.WriteLine($"Found Match: {match.Value}");
+                            Console.WriteLine($"Found Match: {model.Name}");
                             string name = await _userService.GetUserName(model.CreatedBy);
                             //MessageBox.Show($"Result: {match.Value}, Score: {match.Score}");
                             searchResults.Add(new Dictionary<string, string>
@@ -5685,7 +4161,6 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 List<string> selectedTags = new List<string>();
                 List<string> IDs = new List<string>();
 
-                MongoConnection database = new MongoConnection();
 
                 Popup filterPopup = FindResource("FilterPopup") as Popup;
 
@@ -5726,7 +4201,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     var filter = Builders<ModelData>.Filter.And(Builders<ModelData>.Filter.Eq("Id", id),
                         Builders<ModelData>.Filter.In("Tags", selectedTags));
 
-                    var result = await database.ModelData.Find(filter).FirstOrDefaultAsync();
+                    var result = await _db.ModelData.Find(filter).FirstOrDefaultAsync();
 
                     if (result != null)
                     {
@@ -5787,8 +4262,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 PublicPrivateText.Text = "Private";
             }
 
-            MongoConnection database = new MongoConnection();
-            var findListing = await database.ListedModels.Find(x => x.ModelId == _selectedItemId).FirstOrDefaultAsync();
+            var findListing = await _db.ListedModels.Find(x => x.ModelId == _selectedItemId).FirstOrDefaultAsync();
             if (findListing != null)
             {
                 ListModelButtonBorder.Visibility = Visibility.Collapsed;
@@ -6118,10 +4592,9 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
         private async Task UpdateModelUpvoteCount(int num, string id)
         {
-            MongoConnection database = new MongoConnection();
             var filter = Builders<ModelData>.Filter.Eq("Id", id);
             var update = Builders<ModelData>.Update.Inc("UpvoteCount", num);
-            await database.ModelData.UpdateOneAsync(filter, update);
+            await _db.ModelData.UpdateOneAsync(filter, update);
             int upvoteCount = await _upvoteService.GetModelUpvoteCount(id);
             UpvoteTextBlock.Text = upvoteCount.ToString();
         }
@@ -6165,11 +4638,10 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         {
             try
             {
-                MongoConnection database = new MongoConnection();
                 var filter = Builders<ModelData>.Filter.Eq(x => x.Id, _selectedItemId);
                 var update = Builders<ModelData>.Update.Set(x => x.PublicPrivate, visibility);
 
-                var result = await database.ModelData.FindOneAndUpdateAsync(filter, update);
+                var result = await _db.ModelData.FindOneAndUpdateAsync(filter, update);
 
                 if (result != null)
                 {
@@ -6191,8 +4663,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         {
             try
             {
-                MongoConnection database = new MongoConnection();
-                var result = await database.ModelData.Find(x => x.Id == _selectedItemId).FirstOrDefaultAsync();
+                var result = await _db.ModelData.Find(x => x.Id == _selectedItemId).FirstOrDefaultAsync();
 
                 if (result != null)
                 {
@@ -6208,27 +4679,6 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             }
         }
 
-        //private async void PublicPrivateComboBox_OnSelectionChangedComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        //{
-        //    ComboBox comboBox = sender as ComboBox;
-        //    var selectedItem = comboBox.SelectedItem as ComboBoxItem;
-        //    string option = selectedItem.Content.ToString();
-        //    selectedItem.IsEnabled = true;
-        //    selectedItem.IsSelected = true;
-
-        //    MongoConnection database = new MongoConnection();
-        //    var filter = Builders<ModelData>.Filter.Eq(x => x.Id, _selectedItemId);
-        //    var update = Builders<ModelData>.Update.Set(x => x.PublicPrivate, option);
-        //    await database.ModelData.FindOneAndUpdateAsync(filter, update);
-        //    //MessageBox.Show($"Model updated to {option}");
-        //}
-
-        //private async Task<string> GetModelVisibility()
-        //{
-        //    MongoConnection database = new MongoConnection();
-        //    var result = await database.ModelData.Find(x => x.Id == _selectedItemId).FirstOrDefaultAsync();
-        //    return result.PublicPrivate;
-        //}
 
 
         //Tags
@@ -6309,14 +4759,13 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     }
                 }
 
-                MongoConnection database = new MongoConnection();
 
                 var filter = Builders<ModelData>.Filter.Eq(x => x.Id, _selectedItemId);
                 var clear = Builders<ModelData>.Update.Set(x => x.Tags, new List<string>());
-                await database.ModelData.UpdateOneAsync(filter, clear);
+                await _db.ModelData.UpdateOneAsync(filter, clear);
 
                 var update = Builders<ModelData>.Update.AddToSetEach(x => x.Tags, selectedTags);
-                await database.ModelData.FindOneAndUpdateAsync(filter, update);
+                await _db.ModelData.FindOneAndUpdateAsync(filter, update);
 
                 await DisplayTags();
 
@@ -6387,12 +4836,6 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             }
         }
 
-        /*private async Task<ModelData> GetModelTags()
-        {
-            MongoConnection database = new MongoConnection();
-            var result = await database.ModelData.Find(x => x.Id == _selectedItemId).FirstOrDefaultAsync();
-            return result;
-        }*/
 
         //Comments feature
         private async void BtnAddComment_Click(object sender, RoutedEventArgs e)
@@ -6414,7 +4857,6 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                         verNum = int.Parse(_selectedVersionNum);
                     }
 
-                    MongoConnection database = new MongoConnection();
                     Comment commentContent = new Comment
                     {
                         CommentId = ObjectId.GenerateNewId(),
@@ -6425,7 +4867,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                         VersionNumber = verNum
                     };
 
-                    await database.Comments.InsertOneAsync(commentContent);
+                    await _db.Comments.InsertOneAsync(commentContent);
                     ListNewComment(commentContent);
                 }
             }
@@ -6553,12 +4995,11 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 ListComments.ItemsSource = null;
                 List<CommentItem> commentItems = new List<CommentItem>();
 
-                MongoConnection database = new MongoConnection();
                 var sortOrder = sortOption == "Newest"
                     ? Builders<Comment>.Sort.Descending(x => x.CreatedDateTime)
                     : Builders<Comment>.Sort.Ascending(x => x.CreatedDateTime);
 
-                List<Comment> sortedComments = await database.Comments
+                List<Comment> sortedComments = await _db.Comments
                     .Find(x => x.AssetId == assetId)
                     .Sort(sortOrder)
                     .ToListAsync();
@@ -6628,61 +5069,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             MarketplaceListIcon.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#98730c"));
         }
 
-        /*private async Task<List<Dictionary<string, string>>> GetAllListedModels()
-        {
-            MongoConnection database = new MongoConnection();
-            List<Dictionary<string, string>> allListedModels = new List<Dictionary<string, string>>();
-            var listedModels = await database.ListedModels.Find(FilterDefinition<ListedModels>.Empty).ToListAsync();
-            foreach (var model in listedModels)
-            {
-                bool purchased = await CheckModelPurchased(model.ModelId, _userId);
-                string projectId = await _userService.GetModelProjectId(model.ModelId);
-                string sellerName = await _userService.GetUserName(model.SellerId);
-                allListedModels.Add(new Dictionary<string, string>
-                {
-                    { "Name", model.Name },
-                    { "Description", model.Description },
-                    { "Seller", sellerName },
-                    { "Id", model.ModelId },
-                    { "Price", $"£{model.Price.ToString("0.00")}"},
-                    { "ProjectId", projectId},
-                    { "BuyVisibility", purchased ? "Collapsed" : "Visible" },
-                    { "PurchasedVisibility", purchased ? "Visible" : "Collapsed" }
-                });
-            }
-            return allListedModels;
-        }*/
 
-        /*private async Task<List<Dictionary<string, string>>> GetAllListedDecks()
-        {
-            MongoConnection database = new MongoConnection();
-            List<Dictionary<string, string>> allListedDecks = new List<Dictionary<string, string>>();
-
-            var collection = database.GetCollection("Decks");
-            var filter = Builders<BsonDocument>.Filter.Eq("is_listed", true);
-            var decks = await collection.Find(filter).ToListAsync();
-
-            foreach (var deck in decks)
-            {
-                bool purchased = await CheckModelPurchased(deck["_id"].ToString(), _userId);
-                string sellerName = await _userService.GetUserName(deck["owner_id"].ToString());
-                double amount = double.Parse(deck["price"].ToString());
-                string price = amount.ToString("0.00");
-                allListedDecks.Add(new Dictionary<string, string>
-                {
-                    { "Name", deck["name"].ToString() },
-                    { "Description",deck["description"].ToString() },
-                    { "Seller", sellerName },
-                    { "Id", deck["_id"].ToString() },
-                    { "Price", $"£{price}"},
-                    { "BuyVisibility", purchased ? "Collapsed" : "Visible" },
-                    { "PurchasedVisibility", purchased ? "Visible" : "Collapsed" },
-                    { "ProjectId", "N/A"}
-                });
-            }
-            
-            return allListedDecks;
-        }*/
 
         private async void BtnMarketplace_Click(object sender, RoutedEventArgs e)
         {
@@ -6729,7 +5116,6 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
         {
             try
             {
-                MongoConnection database = new MongoConnection();
 
                 if ((PriceTextBox.Text == "Enter Price" || string.IsNullOrEmpty(PriceTextBox.Text)) ||
                     (DescriptionTextBox.Text == "Enter Description") || string.IsNullOrEmpty(DescriptionTextBox.Text))
@@ -6766,7 +5152,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                     Tags = tags,
                     Description = DescriptionTextBox.Text
                 };
-                await database.ListedModels.InsertOneAsync(models);
+                await _db.ListedModels.InsertOneAsync(models);
 
                 MessageBox.Show($"Model listing successful!");
             }
@@ -7095,9 +5481,8 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 {
                     webView.CoreWebView2.Navigate("about:blank");
                     BuyPopup.IsOpen = false;
-                    MongoConnection database = new MongoConnection();
                     Purchased purchased = new Purchased { ModelId = _buyItemId, UserId = _userId };
-                    await database.Purchased.InsertOneAsync(purchased);
+                    await _db.Purchased.InsertOneAsync(purchased);
 
                     if (_selectedMarketplace == "Models")
                     {
@@ -7159,8 +5544,7 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             }
             else
             {
-                webView.CoreWebView2.NavigationStarting -= Redirected;
-                webView.CoreWebView2.NavigationStarting += Redirected;
+                await WebViewHelper.InitializeAsync(webView, Redirected);
 
                 webView.CoreWebView2.Navigate(approvalUrl);
             }
@@ -7183,22 +5567,16 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             List<Dictionary<string, string>> searchResults = new List<Dictionary<string, string>>();
             if (e.Key == Key.Enter)
             {
-                MongoConnection database = new MongoConnection();
 
                 if (_selectedMarketplace == "Models")
                 {
-                    List<ListedModels> result = await database.ListedModels.Find(FilterDefinition<ListedModels>.Empty).ToListAsync();
+                    List<ListedModels> result = await _db.ListedModels.Find(FilterDefinition<ListedModels>.Empty).ToListAsync();
 
-                    var modelNames = result.Select(x => x.Name).ToList();
-                    var topResults = FuzzySharp.Process.ExtractTop(MarketplaceSearchTextBox.Text, modelNames, limit: 3);
-
-                    foreach (var match in topResults)
+                    foreach (var model in GetTopFuzzyMatches(MarketplaceSearchTextBox.Text, result, x => x.Name))
                     {
-                        var model = result[match.Index];
-                        Console.WriteLine($"{match.Value}: {model.Name}");
                         if (model != null)
                         {
-                            Console.WriteLine($"Found Match: {match.Value}");
+                            Console.WriteLine($"Found Match: {model.Name}");
                             string sellerName = await _userService.GetUserName(model.SellerId);
                             string projectId = await _userService.GetModelProjectId(model.ModelId);
                             bool purchased = await _userService.CheckModelPurchased(model.ModelId, _userId);
@@ -7218,20 +5596,15 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 }
                 else if (_selectedMarketplace == "Decks")
                 {
-                    var collection = database.GetCollection("Decks");
+                    var collection = _db.GetCollection("Decks");
                     var filter = Builders<BsonDocument>.Filter.Eq("is_listed", true);
                     var decks = await collection.Find(filter).ToListAsync();
 
-                    var deckNames = decks.Select(x => x["name"].ToString()).ToList();
-                    var topResults = FuzzySharp.Process.ExtractTop(MarketplaceSearchTextBox.Text, deckNames, limit: 3);
-
-                    foreach (var match in topResults)
+                    foreach (var deck in GetTopFuzzyMatches(MarketplaceSearchTextBox.Text, decks, x => x["name"].ToString()))
                     {
-                        var deck = decks[match.Index];
-                        Console.WriteLine($"{match.Value}: {deck["name"].ToString()}");
                         if (deck != null)
                         {
-                            Console.WriteLine($"Found Match: {match.Value}");
+                            Console.WriteLine($"Found Match: {deck["name"]}");
                             bool purchased = await _userService.CheckModelPurchased(deck["_id"].ToString(), _userId);
                             string sellerName = await _userService.GetUserName(deck["owner_id"].ToString());
                             double amount = double.Parse(deck["price"].ToString());
@@ -7274,17 +5647,6 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             }
         }
 
-        /*public async Task<bool> CheckModelPurchased(string modelId, string userId)
-        {
-            MongoConnection database = new MongoConnection();
-            var result = await database.Purchased.Find(x => x.ModelId == modelId && x.UserId == userId).FirstOrDefaultAsync();
-            if (result == null)
-            {
-                return false;
-            }
-
-            return true;
-        }*/
 
         //notifs
         private void Bell_Click(object sender, MouseButtonEventArgs e)
@@ -7304,7 +5666,6 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
 
         private static async Task InsertNotifDB(string modelId, string message, string userId)
         {
-            MongoConnection database = new MongoConnection();
             Notifications notif = new Notifications
             {
                 Id = new ObjectId(),
@@ -7314,24 +5675,12 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 Pending = 1
             };
 
-            await database.Notifications.InsertOneAsync(notif);
+            await _db.Notifications.InsertOneAsync(notif);
         }
 
-        /*private async Task<List<Notifications>> GetPendingNotifications()
-        {
-            MongoConnection database = new MongoConnection();
-            var result = await database.Notifications.Find(x => x.UserId == _userId && x.Pending == 1).ToListAsync();
-            if (result == null)
-            {
-                return null;
-            }
-
-            return result;
-        }*/
 
         private async Task AddNotifsToCentre()
         {
-            MongoConnection database = new MongoConnection();
             List<Notifications> notifs = await _userService.GetPendingNotifications(_userId);
             foreach (var notif in notifs)
             {
@@ -7339,14 +5688,13 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 NotificationsListBox.Items.Add(item);
                 var filter = Builders<Notifications>.Filter.Eq(x => x.Id, notif.Id);
                 var update = Builders<Notifications>.Update.Set("Pending", 0);
-                await database.Notifications.UpdateOneAsync(filter, update);
+                await _db.Notifications.UpdateOneAsync(filter, update);
             }
         }
 
         private async Task DisplayNotifications()
         {
-            MongoConnection database = new MongoConnection();
-            var result = await database.Notifications.Find(x => x.UserId == _userId && x.Pending == 0).ToListAsync();
+            var result = await _db.Notifications.Find(x => x.UserId == _userId && x.Pending == 0).ToListAsync();
 
             if (result != null)
             {
@@ -7366,10 +5714,9 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
                 {
                     if (NotificationsListBox.Items[i] is NotificationItem notif)
                     {
-                        MongoConnection database = new MongoConnection();
                         ObjectId id = ObjectId.Parse(notif.Id);
                         var filter = Builders<Notifications>.Filter.Eq(x => x.Id, id);
-                        await database.Notifications.DeleteOneAsync(filter);
+                        await _db.Notifications.DeleteOneAsync(filter);
                     }
                     NotificationsListBox.Items.RemoveAt(i);
                 }
@@ -7386,202 +5733,6 @@ Autodesk.Viewing.theExtensionManager.registerExtension('CustomSkyboxExtension', 
             public string Message { get; set; }
         }
 
-        //COMMENTED OUT FUNCTIONS//
-
-        /* private void BtnGenerate3D_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
-        */
-        /*  public async Task ShowThumbnail(string projectId, string itemId)
-   {
-       string thumbnailUrl = await DataManagement.GetLatestItemThumbnail(projectId, itemId);
-
-       if (string.IsNullOrEmpty(thumbnailUrl))
-       {
-           Console.WriteLine("❌ Thumbnail URL is null or empty.");
-           return;
-       }
-
-       try
-       {
-           using (HttpClient client = new HttpClient())
-           {
-               // Ensure valid token
-               string accessToken = TokenManager.GetToken();
-
-
-               // Add Authorization header
-               client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-
-               // Debug: Print Thumbnail URL
-               Console.WriteLine($"📷 Fetching thumbnail from: {thumbnailUrl}");
-
-               byte[] imageBytes = await client.GetByteArrayAsync(thumbnailUrl);
-
-               // Create a BitmapImage from the byte array
-               BitmapImage bitmapImage = new BitmapImage();
-               using (MemoryStream stream = new MemoryStream(imageBytes))
-               {
-                   bitmapImage.BeginInit();
-                   bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
-                   bitmapImage.StreamSource = stream;
-                   bitmapImage.EndInit();
-               }
-
-               bitmapImage.Freeze(); // Make it usable across threads
-
-               // Update UI on the main thread
-               Application.Current.Dispatcher.Invoke(() =>
-               {
-                   //ThumbnailImage.Source = bitmapImage;
-               });
-           }
-       }
-       catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.Unauthorized)
-       {
-           Console.WriteLine("❌ Unauthorized! Check your access token and permissions.");
-       }
-       catch (Exception ex)
-       {
-           Console.WriteLine($"❌ Error loading thumbnail: {ex.Message}");
-       }
-   }
-
-*/
-        /*   private void ModelsDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
-   {
-       if (ModelsDataGrid.SelectedItem is Dictionary<string, string> model)
-       {
-           _selectedModel = model;
-
-           if (model.TryGetValue("Id", out string modelId))
-           {
-               _selectedItemId = modelId;
-           }
-           else
-           {
-               _selectedItemId = null;
-               Console.WriteLine("❌ Model ID missing in selection.");
-           }
-
-           _selectedItemName = model.ContainsKey("Name") ? model["Name"] : "Unknown";
-           _selectedProjectId = model.ContainsKey("ProjectId") ? model["ProjectId"] : null;
-           _selectedProjectName = model.ContainsKey("Project") ? model["Project"] : null;
-
-           Console.WriteLine($"✅ Selected Model: {_selectedItemName} (ID: {_selectedItemId}, selected Project ID: {_selectedProjectId})");
-       }
-   }
-*/
-        /* private void DragDeltaThumb(object sender, DragDeltaEventArgs e)
-        {
-            if (ResizeSidebar.Width.IsAuto || ResizeSidebar.Width.IsStar)
-            {
-                ResizeSidebar.Width = new GridLength(ResizeSidebar.ActualWidth, GridUnitType.Pixel);
-            }
-
-            double newWidth = ResizeSidebar.Width.Value = e.HorizontalChange;
-
-            if (newWidth > 100 && newWidth < 400)
-            {
-                ResizeSidebar.Width = new GridLength(newWidth);
-            }
-        }*/
-        /* private async void Grid_Click(object sender, MouseButtonEventArgs e)
-        {
-            if (string.IsNullOrEmpty(_selectedProjectId))
-            {
-                MessageBox.Show("❌ Please select a project to view models.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            ModelsDataGrid.Visibility = Visibility.Collapsed; // Hide DataGrid
-            Grid_View.Visibility = Visibility.Visible; // Show Grid View
-
-            // Clear previous grid data
-            ModelsContainer.Children.Clear();
-
-            try
-            {
-                // Fetch models for the selected project only
-                List<Dictionary<string, string>> models = await GetModelsFromProject(_selectedProjectId, _folderId);
-
-                if (models == null || models.Count == 0)
-                {
-                    MessageBox.Show("No models found for this project.", "Info", MessageBoxButton.OK, MessageBoxImage.Information);
-                    return;
-                }
-
-                // Populate grid with models from the selected project
-                foreach (var model in models)
-                {
-                    Border modelSquare = new Border
-                    {
-                        Width = 263,
-                        Height = 253,
-                        CornerRadius = new CornerRadius(5),
-                        Background = Brushes.White,
-                        BorderBrush = Brushes.LightGray,
-                        BorderThickness = new Thickness(1),
-                        Margin = new Thickness(10),
-                        Effect = new DropShadowEffect
-                        {
-                            Color = Colors.Black,
-                            Opacity = 0.1,
-                            BlurRadius = 10,
-                            ShadowDepth = 2
-                        }
-                    };
-
-                    StackPanel content = new StackPanel
-                    {
-                        Orientation = Orientation.Vertical,
-                        VerticalAlignment = VerticalAlignment.Center,
-                        HorizontalAlignment = HorizontalAlignment.Left
-                    };
-
-                    TextBlock modelName = new TextBlock
-                    {
-                        Text = model["Name"],
-                        FontSize = 16,
-                        FontWeight = FontWeights.Normal,
-                        TextAlignment = TextAlignment.Center,
-                        HorizontalAlignment = HorizontalAlignment.Left,
-                        TextWrapping = TextWrapping.Wrap,
-                        Margin = new Thickness(5, 2, 5, 2)
-                    };
-
-                    TextBlock projectName = new TextBlock
-                    {
-                        Text = $"Project: {model["Project"]}",
-                        FontSize = 14,
-                        FontWeight = FontWeights.Normal,
-                        Foreground = Brushes.Gray,
-                        TextAlignment = TextAlignment.Left,
-                        HorizontalAlignment = HorizontalAlignment.Left,
-                        TextWrapping = TextWrapping.Wrap,
-                        Margin = new Thickness(5, 2, 5, 2)
-                    };
-
-                    content.Children.Add(modelName);
-                    content.Children.Add(projectName);
-                    modelSquare.Child = content;
-                    ModelsContainer.Children.Add(modelSquare);
-                }
-
-                Console.WriteLine($"✅ {models.Count} models loaded successfully in grid view.");
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"❌ Error loading models: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-
-            // Update UI styles to reflect active view mode
-            List_Border.Background = Brushes.Transparent;
-            Grid_Border.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9E9E9"));
-        }
-
-*/
 
 
 

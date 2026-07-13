@@ -1,4 +1,5 @@
 using AssetManager.Infrastructure.Data;
+using AssetManager.Infrastructure.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
@@ -8,8 +9,7 @@ namespace AssetManager.Infrastructure.Services
     public class DeleteService
     {
         private readonly FileDownloadService _fileService = new FileDownloadService();
-       MongoConnection _mongo = new MongoConnection();
-       // ModelService _modelService = new ModelService(_mongo);
+        private readonly MongoConnection _mongo = new();
 
         public async Task<bool> DeleteModelAsync(string projectId, string itemId, string folderId)
         {
@@ -25,10 +25,10 @@ namespace AssetManager.Infrastructure.Services
                     if (!string.IsNullOrEmpty(bucketKey) && !string.IsNullOrEmpty(objectKey))
                     {
                         string url = $"https://developer.api.autodesk.com/oss/v2/buckets/{bucketKey}/objects/{objectKey}";
-                        using var client = new HttpClient();
-                        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TokenManager.GetToken());
+                        using var request = new HttpRequestMessage(HttpMethod.Delete, url);
+                        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", TokenManager.GetToken());
 
-                        var deleteResponse = await client.DeleteAsync(url);
+                        var deleteResponse = await SharedHttp.Client.SendAsync(request);
                         Console.WriteLine(deleteResponse.IsSuccessStatusCode
                             ? $"✅ Deleted OSS object: {objectKey}"
                             : $"❌ Failed OSS delete: {deleteResponse.StatusCode} - {deleteResponse.ReasonPhrase}");

@@ -12,9 +12,10 @@ namespace AssetManager.Infrastructure.Services
 {
     public class UserService
     {
+        private readonly MongoConnection database = new();
+
         public async Task<string> GetUserName(string userId)
         {
-            MongoConnection database = new MongoConnection();
             var userData = await database.Users.Find(x => x.Id == userId).FirstOrDefaultAsync();
             if (userData == null)
             {
@@ -25,7 +26,6 @@ namespace AssetManager.Infrastructure.Services
 
         public async Task<string> GetUserPic(string userId)
         {
-            MongoConnection database = new MongoConnection();
             var userData = await database.Users.Find(x => x.Id == userId).FirstOrDefaultAsync();
 
             if (userData == null)
@@ -73,7 +73,6 @@ namespace AssetManager.Infrastructure.Services
         
         public async Task<string> GetModelProjectId(string modelId)
         {
-            MongoConnection database = new MongoConnection();
             var userData = await database.ModelData.Find(x => x.Id == modelId).FirstOrDefaultAsync();
             if (userData == null)
             {
@@ -84,7 +83,6 @@ namespace AssetManager.Infrastructure.Services
         
         public async Task<string> GetModelSeller(string modelId)
         {
-            MongoConnection database = new MongoConnection();
             var userData = await database.ListedModels.Find(x => x.ModelId == modelId).FirstOrDefaultAsync();
             if (userData == null)
             {
@@ -95,7 +93,6 @@ namespace AssetManager.Infrastructure.Services
 
         public async Task<string> GetDeckName(string deckId)
         {
-            MongoConnection database = new MongoConnection();
 
             var collection = database.GetCollection("Decks");
             var filter = Builders<BsonDocument>.Filter.Eq("_id", ObjectId.Parse(deckId));
@@ -110,7 +107,6 @@ namespace AssetManager.Infrastructure.Services
         
         public async Task<string> GetDeckOwner(string deckId)
         {
-            MongoConnection database = new MongoConnection();
 
             var collection = database.GetCollection("Decks");
             var filter = Builders<BsonDocument>.Filter.Eq("_id", ObjectId.Parse(deckId));
@@ -125,7 +121,6 @@ namespace AssetManager.Infrastructure.Services
         
         public async Task<ModelData> GetModelTags(string modelId)
         {
-            MongoConnection database = new MongoConnection();
             var result = await database.ModelData.Find(x => x.Id == modelId).FirstOrDefaultAsync();
             return result;
         }
@@ -134,7 +129,6 @@ namespace AssetManager.Infrastructure.Services
         {
             try
             {
-                MongoConnection database = new MongoConnection();
                 var allComments = await database.Comments.Find(x => x.AssetId == assetId ).ToListAsync();
                 return allComments;
             }
@@ -147,7 +141,6 @@ namespace AssetManager.Infrastructure.Services
         
         public async Task<bool> CheckModelPurchased(string modelId, string userId)
         {
-            MongoConnection database = new MongoConnection();
             var result = await database.Purchased.Find(x => x.ModelId == modelId && x.UserId == userId).FirstOrDefaultAsync();
             if (result == null)
             {
@@ -159,7 +152,6 @@ namespace AssetManager.Infrastructure.Services
         
         public async Task<List<Dictionary<string, string>>> GetAllListedModels(string userId)
         {
-            MongoConnection database = new MongoConnection();
             List<Dictionary<string, string>> allListedModels = new List<Dictionary<string, string>>();
             var listedModels = await database.ListedModels.Find(FilterDefinition<ListedModels>.Empty).ToListAsync();
             foreach (var model in listedModels)
@@ -184,7 +176,6 @@ namespace AssetManager.Infrastructure.Services
         
         public async Task<List<Dictionary<string, string>>> GetAllListedDecks(string userId)
         {
-            MongoConnection database = new MongoConnection();
             List<Dictionary<string, string>> allListedDecks = new List<Dictionary<string, string>>();
 
             var collection = database.GetCollection("Decks");
@@ -215,7 +206,6 @@ namespace AssetManager.Infrastructure.Services
         
         public async Task<List<Notifications>> GetPendingNotifications(string userId)
         {
-            MongoConnection database = new MongoConnection();
             var result = await database.Notifications.Find(x => x.UserId == userId && x.Pending == 1).ToListAsync();
             if (result == null)
             {
@@ -227,7 +217,6 @@ namespace AssetManager.Infrastructure.Services
 
         public async Task AddDeckToUser(string deckId, string userId)
         {
-            MongoConnection database = new MongoConnection();
             var filter = Builders<User>.Filter.Eq("_id", userId);
             var update = Builders<User>.Update.AddToSet(x => x.Decks, deckId);
             await database.Users.UpdateOneAsync(filter, update);
