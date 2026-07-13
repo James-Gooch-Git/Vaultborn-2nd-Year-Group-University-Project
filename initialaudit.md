@@ -291,7 +291,7 @@ time-sensitive.
 
 **Do immediately (regardless of any refactoring):**
 1. Rotate the MongoDB, Autodesk, and PayPal credentials (Step 1) — they are
-   in git history.
+   in git history. 
 2. Remove all secret/token logging and the registry-persisted refresh token
    (Step 2), and stop injecting write-scoped tokens into viewer HTML
    (Step 4.1) — request a `viewables:read`-only token for the viewer.

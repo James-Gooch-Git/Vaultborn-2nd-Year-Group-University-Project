@@ -31,9 +31,6 @@
 		</Content>
 	</ItemGroup>
 	<ItemGroup>
-      <EmbeddedResource Include="Fusion\Resources\.env">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </EmbeddedResource>
       <EmbeddedResource Include="Fusion\Resources\AddInIcon.svg">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </EmbeddedResource>
@@ -130,6 +127,7 @@
       <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
       <PackageReference Include="pythonnet" Version="3.1.0-preview2024-09-06" />
       <PackageReference Include="RestSharp" Version="112.1.1-alpha.0.4" />
+      <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
         <PackageReference Include="Microsoft.AspNetCore.App" />
 
 
@@ -146,7 +144,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <None Remove="Fusion\Resources\.env" />
 	  <None Remove="Fusion\Resources\AddInIcon.svg" />
 	  <None Remove="Fusion\Resources\commands\commandDialog\entry.py" />
 	  <None Remove="Fusion\Resources\commands\commandDialog\resources\16x16.png" />
@@ -178,13 +175,6 @@
 	<ItemGroup>
 	  <Page Include="Fusion\Resources\commands\commandDialog\resources\16x16.png" />
 	</ItemGroup>
-
-
-	<ItemGroup>
-      <None Update="appsettings.json">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </None>
-    </ItemGroup>
 
 
 	<ItemGroup>

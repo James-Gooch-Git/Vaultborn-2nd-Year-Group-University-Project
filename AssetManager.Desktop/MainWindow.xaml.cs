@@ -144,7 +144,6 @@ namespace AssetManager.Desktop
                     TokenManager.GetToken();
                 }
 
-                Console.WriteLine($"✅ Debug: Retrieved Access Token: {_accessToken}");
 
                 Username_TextBlock.Text = await _userService.GetUserName(_userId);
                 UserPic_Image.Source = new BitmapImage(new Uri(await _userService.GetUserPic(_userId)));

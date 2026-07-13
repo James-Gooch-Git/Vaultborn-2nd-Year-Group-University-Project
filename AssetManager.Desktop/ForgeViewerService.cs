@@ -5,6 +5,7 @@ public class ForgeViewerService
 {
     private readonly ModelDerivativeService _modelService;
     private readonly FileDownloadService _fileService;
+    private readonly TokenService _tokenService = new();
     private readonly string _accessToken;
 
     public ForgeViewerService(string accessToken)
@@ -23,7 +24,10 @@ public class ForgeViewerService
         if (!await EnsureTranslationReadyAsync(encodedUrn, isPdf: true))
             return null;
 
-        return ForgeHtmlTemplates.GetPdfViewerHtml(encodedUrn, _accessToken);
+        // The token embedded in viewer HTML is exposed to page script, so it must
+        // be a read-only viewables token — never the broad-scope _accessToken.
+        string viewerToken = await _tokenService.GetViewerAccessTokenAsync();
+        return ForgeHtmlTemplates.GetPdfViewerHtml(encodedUrn, viewerToken);
     }
 
     public async Task<string?> GetModelViewerHtmlAsync(string encodedUrn)
@@ -31,8 +35,9 @@ public class ForgeViewerService
         if (!await EnsureTranslationReadyAsync(encodedUrn, isPdf: false))
             return null;
 
+        string viewerToken = await _tokenService.GetViewerAccessTokenAsync();
         // Use the enhanced viewer that includes skybox functionality
-        return ForgeHtmlTemplates.GetEnhancedModelViewerHtml(encodedUrn, _accessToken);
+        return ForgeHtmlTemplates.GetEnhancedModelViewerHtml(encodedUrn, viewerToken);
     }
 
     private async Task<bool> EnsureTranslationReadyAsync(string urn, bool isPdf)

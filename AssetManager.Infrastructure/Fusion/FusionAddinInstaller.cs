@@ -48,7 +48,7 @@ namespace AssetManagement.Infrastructure.Fusion
             // Define files and directories to create
             string[] files = {
         "SaveToHub2.manifest", "SaveToHub2.py", "config.py",
-        "savetohub_palette.html", "AddInIcon.svg", ".env", "embedded_requests.py"
+        "savetohub_palette.html", "AddInIcon.svg", "embedded_requests.py"
     };
 
             string[] directories = {

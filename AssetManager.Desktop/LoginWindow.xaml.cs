@@ -18,13 +18,15 @@ using System.Text.Json;
 using Newtonsoft.Json.Linq;
 using AssetManager.Infrastructure.Data;
 using AssetManager.Infrastructure.Models;
+using AssetManager.Infrastructure.Configuration;
+using AssetManager.Infrastructure.Security;
 
 
 namespace AssetManager.Desktop
 {
     public partial class LoginWindow : Window
     {
-        private const string ClientID = "eK6vNFNyFAin4PouWXfN00RfePKGZwSqeh6RTcjKAvHAqyOW";
+        private static string ClientID => AppSecrets.ApsClientId;
         private const string TokenUrl = "https://developer.api.autodesk.com/authentication/v2/token";
         private const string RedirectUri = "http://localhost:8080/callback";
         private string loginURL = $"https://developer.api.autodesk.com/authentication/v2/authorize";
@@ -42,8 +44,8 @@ namespace AssetManager.Desktop
         {
             InitializeComponent();
             userSession = Environment.GetEnvironmentVariable("userId", EnvironmentVariableTarget.User);
-            aToken = Environment.GetEnvironmentVariable("accessToken", EnvironmentVariableTarget.User);
-            refreshToken = Environment.GetEnvironmentVariable("refresh_token", EnvironmentVariableTarget.User);
+            aToken = SessionTokenStore.Get("accessToken");
+            refreshToken = SessionTokenStore.Get("refresh_token");
             TokenManager.SetRefreshToken(refreshToken);
 
             if (!string.IsNullOrEmpty(userSession) && !string.IsNullOrEmpty(aToken))
@@ -77,10 +79,9 @@ namespace AssetManager.Desktop
         {
             Console.WriteLine("👤 Logging out...");
 
-            // Clear session environment variables
+            // Clear session state
             Environment.SetEnvironmentVariable("userId", "", EnvironmentVariableTarget.User);
-            Environment.SetEnvironmentVariable("accessToken", "", EnvironmentVariableTarget.User);
-            Environment.SetEnvironmentVariable("twoLeggedToken", "", EnvironmentVariableTarget.User);
+            SessionTokenStore.Clear();
         }
 
 
@@ -91,9 +92,7 @@ namespace AssetManager.Desktop
 
             // Clear user session and stored tokens
             Environment.SetEnvironmentVariable("userId", "", EnvironmentVariableTarget.User);
-            Environment.SetEnvironmentVariable("accessToken", "", EnvironmentVariableTarget.User);
-            Environment.SetEnvironmentVariable("twoLeggedToken", "", EnvironmentVariableTarget.User);
-            Environment.SetEnvironmentVariable("refreshToken", "", EnvironmentVariableTarget.User);
+            SessionTokenStore.Clear();
 
             MessageBox.Show("⚠️ Your session has expired. Please log in again.", "Session Expired", MessageBoxButton.OK, MessageBoxImage.Warning);
 
@@ -157,8 +156,8 @@ namespace AssetManager.Desktop
         private async void ValidateUserSession()
         {
             string userSession = Environment.GetEnvironmentVariable("userId", EnvironmentVariableTarget.User);
-            string storedAccessToken = Environment.GetEnvironmentVariable("accessToken", EnvironmentVariableTarget.User);
-            string storedTwoLeggedToken = Environment.GetEnvironmentVariable("twoLeggedToken", EnvironmentVariableTarget.User);
+            string storedAccessToken = SessionTokenStore.Get("accessToken");
+            string storedTwoLeggedToken = SessionTokenStore.Get("twoLeggedToken");
 
             if (!string.IsNullOrEmpty(userSession) && !string.IsNullOrEmpty(storedAccessToken))
             {
@@ -215,8 +214,7 @@ namespace AssetManager.Desktop
         private void ClearStoredCredentials()
         {
             Environment.SetEnvironmentVariable("userId", "", EnvironmentVariableTarget.User);
-            Environment.SetEnvironmentVariable("accessToken", "", EnvironmentVariableTarget.User);
-            Environment.SetEnvironmentVariable("twoLeggedToken", "", EnvironmentVariableTarget.User);
+            SessionTokenStore.Clear();
         }
 
         /// <summary>
@@ -277,7 +275,7 @@ namespace AssetManager.Desktop
                         // Pass the scopes parameter to Get2LeggedTokenAsync
                         string twoLeggedToken = await _tokenService.Get2LeggedTokenAsync(scopes);
                         TokenManager.SetTwoLeggedToken(twoLeggedToken);
-                        Environment.SetEnvironmentVariable("twoLeggedToken", twoLeggedToken, EnvironmentVariableTarget.User);
+                        SessionTokenStore.Set("twoLeggedToken", twoLeggedToken);
                         await RefreshToken();
                         return true;
                     }
@@ -352,11 +350,8 @@ namespace AssetManager.Desktop
         
         private static async Task RefreshToken()
         {
-            string clientID = ClientID;
-            Console.WriteLine($"Client ID: {clientID}");
             string tokenURL = "https://developer.api.autodesk.com/authentication/v2/token";
             string refreshToken = TokenManager.GetRefreshToken();
-            Console.WriteLine($"Refresh Token: {refreshToken}");
 
             using (HttpClient client = new HttpClient())
             {
@@ -364,19 +359,23 @@ namespace AssetManager.Desktop
                 {
                     { "grant_type", "refresh_token" },
                     { "refresh_token", refreshToken },
-                    { "client_id", clientID },
+                    { "client_id", ClientID },
                     {  "scope", "data:read data:write data:create bucket:read bucket:create bucket:update account:write" } ,
                 };
 
                 var tokenParameters = new FormUrlEncodedContent(tokenContent);
                 var tokenResponse = await client.PostAsync(tokenURL, tokenParameters);
                 var tokenResponseContent = await tokenResponse.Content.ReadAsStringAsync();
-                Console.WriteLine($"Refresh Token function response: {tokenResponseContent}");
+                if (!tokenResponse.IsSuccessStatusCode)
+                {
+                    Console.WriteLine($"Token refresh failed: {tokenResponse.StatusCode}");
+                    return;
+                }
                 var tokenData = JsonConvert.DeserializeObject<TokenData>(tokenResponseContent);
                 TokenManager.SetToken(tokenData.access_token);
                 TokenManager.SetRefreshToken(tokenData.refresh_token);
-                Environment.SetEnvironmentVariable("accessToken", tokenData.access_token, EnvironmentVariableTarget.User);
-                Environment.SetEnvironmentVariable("refresh_token", tokenData.refresh_token, EnvironmentVariableTarget.User);
+                SessionTokenStore.Set("accessToken", tokenData.access_token);
+                SessionTokenStore.Set("refresh_token", tokenData.refresh_token);
             }
         }
 
@@ -425,7 +424,6 @@ namespace AssetManager.Desktop
 
                 if (!string.IsNullOrEmpty(authCode))
                 {
-                    Console.WriteLine($"✅ Authorization Code: {authCode}");
                     await GetAccessToken(authCode);
                 }
             }
@@ -501,11 +499,10 @@ namespace AssetManager.Desktop
                 // Verify tokens were saved correctly
                 Console.WriteLine($"After storage - TokenManager has token: {!string.IsNullOrEmpty(TokenManager.GetToken())}");
 
-                // Save to environment variables
-                Environment.SetEnvironmentVariable("accessToken", token, EnvironmentVariableTarget.User);
-                Environment.SetEnvironmentVariable("twoLeggedToken", twoLeggedToken, EnvironmentVariableTarget.User);
-                Environment.SetEnvironmentVariable("refresh_token", TokenManager.GetRefreshToken(), EnvironmentVariableTarget.User);
-                Console.WriteLine("✅ Tokens stored in environment variables");
+                // Persist tokens encrypted at rest
+                SessionTokenStore.Set("accessToken", token);
+                SessionTokenStore.Set("twoLeggedToken", twoLeggedToken);
+                SessionTokenStore.Set("refresh_token", TokenManager.GetRefreshToken());
 
                 // Now get user data with the token we just received
                 GetUserData(token);

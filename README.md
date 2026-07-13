@@ -26,3 +26,27 @@ It also versions updates for testing and cloud-save version control, allowing ro
 
 With the app you can create, upload, download, buy (with PayPal), sell, version, share and delete 3D models and create custom collections. 
 
+---
+
+## Configuring credentials
+
+No credentials are stored in the repository. Before running the app, set the
+following environment variables (process or user scope):
+
+| Variable | Value |
+| --- | --- |
+| `VAULTBORN_MONGODB_URI` | MongoDB Atlas connection string |
+| `VAULTBORN_APS_CLIENT_ID` | Autodesk Platform Services app client ID |
+| `VAULTBORN_APS_CLIENT_SECRET` | Autodesk Platform Services app client secret |
+| `VAULTBORN_PAYPAL_CLIENT_ID` | PayPal (sandbox) client ID |
+| `VAULTBORN_PAYPAL_CLIENT_SECRET` | PayPal (sandbox) client secret |
+
+For example, in PowerShell:
+
+```powershell
+[Environment]::SetEnvironmentVariable("VAULTBORN_APS_CLIENT_ID", "<your id>", "User")
+```
+
+Session tokens are persisted encrypted (Windows DPAPI, current-user scope) under
+`%LOCALAPPDATA%\Vaultborn\session.bin` — never in environment variables or the registry.
+

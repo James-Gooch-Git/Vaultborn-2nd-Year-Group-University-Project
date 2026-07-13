@@ -1,49 +1,49 @@
 using System.Text;
+using AssetManager.Infrastructure.Configuration;
+using AssetManager.Infrastructure.Http;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace AssetManager.Infrastructure.Services;
 
 public class PayPalService
 {
-    private string clientId = "AczMZeknBHiVxYKbTXXJcnBBQGzbyxezvXljdSo762l99bhMOfQIvZYsUOljr3CcZwZ4BjtLZMnUUZ1O";
-    private string clientSecret = "EBFRT8ssTMtNlfw2753rw689IE6PF9MY4TQnotc3SUCm9rY-7vTxpkhwHK7GecKfrgPn1GLfk3FEvalC";
+    // Sandbox environment; switch to https://api-m.paypal.com for production.
+    private const string BaseUrl = "https://api-m.sandbox.paypal.com";
+
+    private static string ClientId => AppSecrets.PayPalClientId;
+    private static string ClientSecret => AppSecrets.PayPalClientSecret;
 
     public async Task<string> GetPayPalAccessToken()
     {
         try
         {
-            using var httpClient = new HttpClient();
+            var request = new HttpRequestMessage(HttpMethod.Post, $"{BaseUrl}/v1/oauth2/token")
             {
-                var url = "https://api-m.sandbox.paypal.com/v1/oauth2/token";
-                var data = new Dictionary<string, string>()
+                Content = new FormUrlEncodedContent(new Dictionary<string, string>
                 {
                     { "grant_type", "client_credentials" }
-                };
-                
-                var authArray = Encoding.ASCII.GetBytes($"{clientId}:{clientSecret}");
-                var encodedData = Convert.ToBase64String(authArray);
-                
-                httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", encodedData);
-                
-                var content = new FormUrlEncodedContent(data);
-                
-                var response = await httpClient.PostAsync(url, content);
-                var responseString = await response.Content.ReadAsStringAsync();
-                var jsonResponse = JsonConvert.DeserializeObject<PayPalAccessTokenResponse>(responseString);
-                return jsonResponse.access_token;
-            }
+                })
+            };
+            var authArray = Encoding.ASCII.GetBytes($"{ClientId}:{ClientSecret}");
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue(
+                "Basic", Convert.ToBase64String(authArray));
+
+            var response = await SharedHttp.Client.SendAsync(request);
+            response.EnsureSuccessStatusCode();
+            var responseString = await response.Content.ReadAsStringAsync();
+            var jsonResponse = JsonConvert.DeserializeObject<PayPalAccessTokenResponse>(responseString);
+            return jsonResponse.access_token;
         }
         catch (Exception e)
         {
-            Console.WriteLine($"Error getting API context: {e.Message}");
+            Console.WriteLine($"Error getting PayPal access token: {e.Message}");
             return null;
         }
     }
 
     public async Task<string> CreateOrder(string accessToken, double amount, string currency = "GBP")
     {
-        var url = "https://api-m.sandbox.paypal.com/v2/checkout/orders";
-
         var data = new
         {
             intent = "CAPTURE",
@@ -65,33 +65,48 @@ public class PayPalService
                 cancel_url = "https://localhost:8080/cancel"
             }
         };
-        
-        using var httpClient = new HttpClient();
-        httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
-        var content = new StringContent(JsonConvert.SerializeObject(data), Encoding.UTF8, "application/json");
-        var response = await httpClient.PostAsync(url, content);
+
+        var request = new HttpRequestMessage(HttpMethod.Post, $"{BaseUrl}/v2/checkout/orders")
+        {
+            Content = new StringContent(JsonConvert.SerializeObject(data), Encoding.UTF8, "application/json")
+        };
+        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+
+        var response = await SharedHttp.Client.SendAsync(request);
         var responseString = await response.Content.ReadAsStringAsync();
-        var jsonResponse = JsonConvert.DeserializeObject<dynamic>(responseString);
-        string approvalUrl = jsonResponse["links"][1]["href"];
-        Console.WriteLine($"Approval Url: {approvalUrl}");
+        if (!response.IsSuccessStatusCode)
+        {
+            Console.WriteLine($"PayPal CreateOrder failed: {response.StatusCode}");
+            return null;
+        }
+
+        // Link order is not guaranteed by the API — select by rel, never by index.
+        var jsonResponse = JObject.Parse(responseString);
+        string approvalUrl = jsonResponse["links"]?
+            .FirstOrDefault(l => (string)l["rel"] == "approve")?["href"]?.ToString();
+        if (approvalUrl == null)
+            Console.WriteLine("PayPal CreateOrder response contained no approve link");
         return approvalUrl;
     }
 
     public async Task<bool> CapturePayment(string token, string accessToken)
     {
-        var url = $"https://api-m.sandbox.paypal.com/v2/checkout/orders/{token}/capture";
-        using var httpClient = new HttpClient();
-        httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
-        var content = new StringContent("", Encoding.UTF8, "application/json");
-        var response = await httpClient.PostAsync(url, content);
-        var responseString = await response.Content.ReadAsStringAsync();
-        var jsonResponse = JsonConvert.DeserializeObject<dynamic>(responseString);
-        Console.WriteLine($"PayPal Capture Response: {jsonResponse}");
-        if (jsonResponse.status == "COMPLETED")
+        var request = new HttpRequestMessage(HttpMethod.Post, $"{BaseUrl}/v2/checkout/orders/{token}/capture")
         {
-            return true;
+            Content = new StringContent("", Encoding.UTF8, "application/json")
+        };
+        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+
+        var response = await SharedHttp.Client.SendAsync(request);
+        var responseString = await response.Content.ReadAsStringAsync();
+        if (!response.IsSuccessStatusCode)
+        {
+            Console.WriteLine($"PayPal capture failed: {response.StatusCode}");
+            return false;
         }
-        return false;
+
+        var jsonResponse = JObject.Parse(responseString);
+        return (string)jsonResponse["status"] == "COMPLETED";
     }
 
     private class PayPalAccessTokenResponse

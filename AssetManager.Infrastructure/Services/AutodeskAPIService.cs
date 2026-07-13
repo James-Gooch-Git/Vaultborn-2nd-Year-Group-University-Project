@@ -14,27 +14,14 @@ namespace ForgeViewerApp
  
     public class AutodeskApiService
     {
-       
-
-
-        string ClientId = "eK6vNFNyFAin4PouWXfN00RfePKGZwSqeh6RTcjKAvHAqyOW";
-        string ClientSecret = "EqBJJlqKczzkLfZSJO2cg3BajCxkZGGTGwHWFhn5jrpGSEledCG1deeBVALq734W";
-        private readonly HttpClient _client = new HttpClient();
+        private static string ClientId => AssetManager.Infrastructure.Configuration.AppSecrets.ApsClientId;
+        private static string ClientSecret => AssetManager.Infrastructure.Configuration.AppSecrets.ApsClientSecret;
+        private readonly HttpClient _client = AssetManager.Infrastructure.Http.SharedHttp.Client;
         private readonly TokenService _tokenService;
-        private readonly string _ClientId;
-        private readonly string _ClientSecret;
-  
 
-
-        public AutodeskApiService(TokenService tokenService, string clientId, string clientSecret)
+        public AutodeskApiService(TokenService tokenService)
         {
-            _client = new HttpClient();
             _tokenService = tokenService;
-            _ClientId = clientId;
-            _ClientSecret = clientSecret;
-
-            Console.WriteLine("ID: " + _ClientId);
-            Console.WriteLine("Secret: " + _ClientSecret);
         }
 
 
