@@ -5,7 +5,7 @@ Date started: 2026-07-13.
 
 - **Step 1 — Security & repo hygiene: COMPLETE (findings below)**
 - **Step 2 — Infrastructure layer (services, data access): COMPLETE (findings below)**
-- Step 3 — Core layer (models, redundancy): pending
+- **Step 3 — Core layer (models, redundancy): COMPLETE (findings below)**
 - Step 4 — Desktop code-behind (MainWindow etc.): pending
 
 ---
@@ -159,7 +159,53 @@ leaking into the data layer.
 
 ## Step 3: Core layer
 
-_(pending)_
+### 🟠 `AssetManager.Core` is an empty project
+
+1. **The Core project contains zero source files** — only a `.csproj`. The
+   classes it once held (`FusionManager`, `HelloWorld`, `Class1`) were deleted
+   over time. Both Desktop and Infrastructure still reference it, so today it
+   contributes nothing except its package references:
+   - **`python` 3.13.2** — this NuGet package embeds an entire CPython
+     distribution into the build output of every project that references Core.
+   - **`pythonnet` 3.0.5** — conflicts with the `3.1.0-preview` version
+     referenced by Desktop and Infrastructure (two different pythonnet
+     versions in one solution).
+   - **`Microsoft.AspNetCore.App` 2.2.8** — an out-of-support ASP.NET Core
+     2.2 package pinned inside a net8.0 library; this reference style has been
+     invalid since .NET Core 3.0 and drags in dozens of obsolete assemblies.
+   - WebView2, IdentityModel.OidcClient, RestSharp — all duplicated in the
+     other two projects anyway.
+
+   **Fix:** either delete the project (and the two dangling references) or —
+   better — make it a real Core: move the domain models out of
+   Infrastructure into it, with no NuGet dependencies at all.
+
+### 🟡 Domain-model issues (models live in Infrastructure/Models)
+
+2. **The layering is inverted.** For a Core/Infrastructure split, domain
+   models (`Model`, `ModelData`, `User`, `Comment`, …) should live in Core;
+   instead they sit in Infrastructure next to the Mongo code, and Core is
+   empty.
+3. **`Model` vs `ModelData` are two overlapping representations** of the same
+   concept in different collections (`Models` and `ModelData`), with
+   inconsistent conventions: `Model` uses ObjectId string IDs and `DateTime`;
+   `ModelData` uses underscore-prefixed Bson field names and stores
+   **dates as strings** (`CreatedDate`, `ModifiedDate`), making date queries
+   and sorting unreliable.
+4. `ModelData.FileSize` is an `int` (caps at ~2 GB and mismatches the `long`
+   used for file sizes elsewhere); `Thumbnail_Base64` stores image bytes
+   inline in the document, pushing toward Mongo's 16 MB document limit and
+   bloating every query that fetches model lists.
+5. `Model.CreatedAt` defaults to `DateTime.Now` (local time) rather than
+   `DateTime.UtcNow`.
+
+### 🟡 Stray top-level directories
+
+6. **`Executable/` contains only committed build output** — an old
+   `Executable.exe`/`.dll`/`.pdb` with no corresponding source project in the
+   solution. Dead weight; delete from the repo.
+7. **`Uploads/` is test debris** — `test.txt`, `uploadTest.txt.txt`, and the
+   30 MB `p3166.glb` noted in Step 1.
 
 ## Step 4: Desktop code-behind
 
