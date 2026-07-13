@@ -6,7 +6,9 @@ Date started: 2026-07-13.
 - **Step 1 — Security & repo hygiene: COMPLETE (findings below)**
 - **Step 2 — Infrastructure layer (services, data access): COMPLETE (findings below)**
 - **Step 3 — Core layer (models, redundancy): COMPLETE (findings below)**
-- Step 4 — Desktop code-behind (MainWindow etc.): pending
+- **Step 4 — Desktop code-behind (MainWindow etc.): COMPLETE (findings below)**
+
+**Audit complete — see "Overall summary & priorities" at the end.**
 
 ---
 
@@ -209,4 +211,98 @@ leaking into the data layer.
 
 ## Step 4: Desktop code-behind
 
-_(pending)_
+~10,900 lines of C# plus ~3,100 of XAML. `MainWindow.xaml.cs` alone is
+**7,663 lines / 187 methods** — effectively the whole application in one class.
+
+### 🔴 Security
+
+1. **Over-scoped access token injected into WebView JavaScript.** The viewer
+   HTML templates (`ForgeHtmlTemplates.cs:95`, `:830` —
+   `onTokenReady('{accessToken}', 3599)`) interpolate the raw bearer token
+   into page script. The 2-legged token from
+   `TokenService.GetViewerAccessTokenAsync` carries `account:write`,
+   `data:write`, `bucket:create` scopes — a viewer needs `viewables:read`
+   only. Any script in that page (the templates load remote CDN JS) can
+   exfiltrate a token that can write to the Autodesk account.
+
+### 🟠 Architecture / correctness
+
+2. **God-class code-behind.** All business logic — OAuth flows, Forge API
+   orchestration, Mongo queries, PayPal purchase flow, Fusion launching,
+   search, marketplace — lives in `MainWindow.xaml.cs` event handlers. There
+   is no MVVM: no view models, no bindings to speak of, no testable unit
+   anywhere in the UI layer. This is the root cause of the "port = rewrite"
+   problem.
+3. **60 `async void` event handlers**, most with swallow-everything catches.
+   An unhandled exception in an `async void` crashes the process; a handled
+   one typically just `Console.WriteLine`s into the void (280 occurrences in
+   this file; there is no console attached).
+4. **46 more `new MongoConnection()`/`new HttpClient()` instantiations** in
+   `MainWindow.xaml.cs` alone (on top of Infrastructure's 66) — the UI talks
+   to the database directly, bypassing even the thin service layer that
+   exists.
+5. **104 `MessageBox.Show` calls** as the sole error-reporting mechanism,
+   mixed with silent failures — inconsistent UX and impossible to test.
+6. **Duplicated OAuth redirect handling** — `LoginWindow.xaml.cs` and
+   `MainWindow.xaml.cs` each implement their own `Redirected` navigation
+   handler and WebView2 initialization (~4 copies of
+   `EnsureCoreWebView2Async` + handler-attach boilerplate).
+7. **Duplicated fuzzy-search blocks** — the FuzzySharp search logic is pasted
+   three times (`MainWindow.xaml.cs:5570`, `:7194`, `:7227`) for library
+   models, marketplace models, and marketplace decks.
+8. **~872 commented-out lines** in `MainWindow.xaml.cs` (roughly one line in
+   nine), plus disabled features left as comments (`InitializeWebView2`,
+   `FusionManager.InitializePythonEngine`). Version control makes this
+   clutter pointless — delete it.
+9. **`ForgeHtmlTemplates.cs` is 1,046 lines of HTML/JS inside C# string
+   literals.** Unlintable, unhighlighted, and easy to break. Should be
+   `.html` content files (like `savetohub_palette.html` already is) with
+   token/URN injected via `postMessage` rather than string interpolation.
+10. **Fragile Fusion 360 discovery** — the app scans
+    `%LOCALAPPDATA%\Autodesk\webdeploy\production\*` for the Fusion
+    executable in two places (`OpenFusion.cs:49`,
+    `MainWindow.xaml.cs:3542`) with duplicated logic and old
+    hash-pinned paths left in comments.
+11. **Polling with `Task.Delay(2000)` × 30 retries** for Model Derivative
+    translation (`ForgeViewerService.cs`) — blocks the flow for up to a
+    minute with no progress feedback or cancellation.
+
+### 🟡 Project-file hygiene
+
+12. `AssetManager.Desktop.csproj` references
+    `AssetManager.Infrastructure.csproj` **twice** (two separate
+    `ProjectReference` ItemGroups) and commits a stray
+    `AssetManager.Desktop_azcjhdjh_wpftmp.csproj` temp file.
+13. The csproj carries dozens of hand-edited per-asset entries (many
+    `None Remove` / re-`Include` pairs) where a single glob would do; several
+    referenced assets (e.g. AI-generated PNGs with 60-char midjourney
+    filenames) are multi-megabyte and belong in a compressed/optimized form.
+
+---
+
+## Overall summary & priorities
+
+The project works, but nearly every layer shows the same three habits:
+copy-paste instead of extraction, `catch → log-to-nowhere → return null`
+instead of error handling, and direct construction (`new HttpClient()`,
+`new MongoConnection()`) instead of shared instances. None of that is unusual
+for a second-year group project — but the security items are real and
+time-sensitive.
+
+**Do immediately (regardless of any refactoring):**
+1. Rotate the MongoDB, Autodesk, and PayPal credentials (Step 1) — they are
+   in git history.
+2. Remove all secret/token logging and the registry-persisted refresh token
+   (Step 2), and stop injecting write-scoped tokens into viewer HTML
+   (Step 4.1) — request a `viewables:read`-only token for the viewer.
+
+**Highest-value structural fixes, in order:**
+3. One shared `MongoClient` and `HttpClient` behind DI (~112 call sites).
+4. Extract business logic from `MainWindow.xaml.cs` into services/view models
+   — even partially. This is also 80% of the groundwork for any future
+   cross-platform rebuild.
+5. Collapse `DataManagement.cs` duplication around shared helpers.
+6. Delete dead weight: empty Core project references and its obsolete
+   packages, `Executable/`, `Uploads/`, commented-out code, vendored
+   `requests` library, duplicate csproj references.
+7. Unify error handling (exceptions or Result type + a real logger).
